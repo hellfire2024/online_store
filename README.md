@@ -10,22 +10,27 @@ A React TypeScript ecommerce application with admin dashboard capabilities.
 ## Quick Start
 
 ### 1. Install Dependencies
+
 ```bash
 npm install
 ```
 
 ### 2. Start Development Server
+
 ```bash
 npm run dev
 ```
+
 The app will automatically open in your browser at `http://localhost:5173`
 
 ### 3. Build for Production
+
 ```bash
 npm run build
 ```
 
 ### 4. Preview Production Build
+
 ```bash
 npm run preview
 ```
@@ -43,6 +48,7 @@ If you haven't already set up a GitHub repository:
    - Do NOT add .gitignore (we have one)
 
 2. **Initialize Git & Connect to GitHub** (run in the project directory):
+
 ```bash
 git init
 git add .
@@ -51,6 +57,7 @@ git branch -M main
 git remote add origin https://github.com/YOUR_USERNAME/online_store.git
 git push -u origin main
 ```
+
 Replace `YOUR_USERNAME` and `online_store` with your actual GitHub username and repository name.
 
 ### Regular Backup Workflow
@@ -74,6 +81,7 @@ git push
 ### VS Code Integration
 
 VS Code has built-in Git integration:
+
 - **Source Control tab** (Ctrl+Shift+G): View and manage changes
 - **Stage files**: Click the + button next to changed files
 - **Commit**: Type your message and click the checkmark
@@ -105,6 +113,7 @@ VS Code has built-in Git integration:
 ## Environment Variables
 
 Create a `.env` file in the project root for any API keys or configuration:
+
 ```
 VITE_API_KEY=your_key_here
 ```
@@ -120,6 +129,7 @@ Access in code with: `import.meta.env.VITE_API_KEY`
 ## Support
 
 For issues with:
+
 - **Vite**: https://vitejs.dev
 - **React**: https://react.dev
 - **TypeScript**: https://www.typescriptlang.org

@@ -1,95 +1,254 @@
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { useAdmin } from "../../context/AdminContext";
+import { Page } from "../../types";
+import { useToast } from "../../hooks/useToast";
+import { useUnsavedChanges } from "../../context/UnsavedChangesContext";
+import { useEditor, EditorContent, Editor } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import Image from "@tiptap/extension-image";
+import Link from "@tiptap/extension-link";
 
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useAdmin } from '../../context/AdminContext';
-import { Page } from '../../types';
-import { useToast } from '../../hooks/useToast';
-import ReactQuill from 'react-quill';
+// --- Toolbar Component ---
+const MenuBar: React.FC<{ editor: Editor | null }> = ({ editor }) => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const addImageFromFile = useCallback(() => {
+    fileInputRef.current?.click();
+  }, []);
+
+  const handleFileChange = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (file && editor) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const src = e.target?.result as string;
+          editor.chain().focus().setImage({ src }).run();
+        };
+        reader.readAsDataURL(file);
+      }
+    },
+    [editor]
+  );
+
+  const setLink = useCallback(() => {
+    if (!editor) return;
+    const previousUrl = editor.getAttributes("link").href;
+    const url = window.prompt("Enter URL", previousUrl);
+    if (url === null) return;
+    if (url === "") {
+      editor.chain().focus().extendMarkRange("link").unsetLink().run();
+      return;
+    }
+    editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
+  }, [editor]);
+
+  if (!editor) {
+    return null;
+  }
+
+  const buttonClass = (isActive: boolean) =>
+    `p-2 rounded-md transition-colors ${
+      isActive ? "bg-slate-700 text-sky-400" : "text-gray-400 hover:bg-slate-700"
+    }`;
+
+  return (
+    <div className="flex flex-wrap items-center gap-2 p-2 bg-slate-800 border-b border-slate-700">
+      <button
+        type="button"
+        onClick={() => editor.chain().focus().toggleBold().run()}
+        className={buttonClass(editor.isActive("bold"))}
+      >
+        Bold
+      </button>
+      <button
+        type="button"
+        onClick={() => editor.chain().focus().toggleItalic().run()}
+        className={buttonClass(editor.isActive("italic"))}
+      >
+        Italic
+      </button>
+      <button
+        type="button"
+        onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+        className={buttonClass(editor.isActive("heading", { level: 2 }))}
+      >
+        H2
+      </button>
+      <button
+        type="button"
+        onClick={() => editor.chain().focus().toggleBulletList().run()}
+        className={buttonClass(editor.isActive("bulletList"))}
+      >
+        List
+      </button>
+      <button
+        type="button"
+        onClick={addImageFromFile}
+        className={buttonClass(false)}
+      >
+        Image
+      </button>
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileChange}
+        className="hidden"
+        accept="image/*"
+      />
+      <button
+        type="button"
+        onClick={setLink}
+        className={buttonClass(editor.isActive("link"))}
+      >
+        Link
+      </button>
+    </div>
+  );
+};
 
 const PageEditor: React.FC = () => {
-    const { pageId } = useParams<{ pageId: string }>();
-    const navigate = useNavigate();
-    const { pages, addPage, updatePage } = useAdmin();
-    const { addToast } = useToast();
-    
-    const [page, setPage] = useState<Partial<Page>>({ title: '', path: '', content: '' });
-    const isNewPage = !pageId;
+  const { pageId } = useParams<{ pageId: string }>();
+  const navigate = useNavigate();
+  const { pages, addPage, updatePage } = useAdmin();
+  const { addToast } = useToast();
+  const [page, setPage] = useState<Omit<Page, "id"> | Page | null>(null);
+  const [originalPage, setOriginalPage] = useState<Omit<Page, "id"> | Page | null>(null);
+  const { setHasUnsavedChanges } = useUnsavedChanges();
 
-    useEffect(() => {
-        if (!isNewPage) {
-            const existingPage = pages.find(p => p.id === pageId);
-            if (existingPage) {
-                setPage(existingPage);
-            }
-        }
-    }, [pageId, pages, isNewPage]);
+  // THIS IS THE CORRECT AND FINAL ARCHITECTURE.
+  // The editor is created ONLY ONCE with a stable configuration that is never redefined.
+  const editor = useEditor({
+    extensions: useMemo(() => [
+      StarterKit.configure({
+        // The Link extension is configured here. It is NOT added again below.
+        link: { autolink: false, openOnClick: false },
+      }),
+      Image,
+    ], []),
+    editorProps: useMemo(() => ({
+      attributes: {
+        class: "prose prose-invert max-w-none p-4 h-96 overflow-y-auto focus:outline-none",
+      },
+    }), []),
+    content: "", // IMPORTANT: Always initialize empty.
+    onUpdate: ({ editor }) => {
+      setPage((prev) => (prev ? { ...prev, content: editor.getHTML() } : null));
+    },
+  });
 
-    const handleSave = async () => {
-        if (!page.title || !page.path) {
-            addToast('Title and Path are required.', 'error');
-            return;
-        }
+  const hasUnsavedChanges = JSON.stringify(page) !== JSON.stringify(originalPage);
 
-        if (isNewPage) {
-            await addPage(page as Omit<Page, 'id'>);
-            addToast('Page created successfully!', 'success');
-        } else {
-            await updatePage(page as Page);
-            addToast('Page updated successfully!', 'success');
-        }
-        navigate('/admin/pages');
-    };
+  useEffect(() => {
+    setHasUnsavedChanges(hasUnsavedChanges);
+  }, [hasUnsavedChanges]);
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value } = e.target;
-        let processedValue = value;
-        if (name === 'path') {
-            processedValue = value.startsWith('/') ? value : `/${value}`;
-            processedValue = processedValue.toLowerCase().replace(/\s+/g, '-');
-        }
-        setPage(prev => ({ ...prev, [name]: processedValue }));
-    };
+  // This effect is now solely responsible for loading content into the stable editor.
+  useEffect(() => {
+    if (editor) {
+      let pageToLoad: Omit<Page, "id"> | Page;
+      if (pageId) {
+        pageToLoad = pages.find((p) => p.id === pageId) || { title: "Not Found", path: "", content: "" };
+      } else {
+        pageToLoad = { title: "", path: "", content: "<p>Start writing your page here...</p>" };
+      }
 
-    const handleContentChange = (content: string) => {
-        setPage(prev => ({ ...prev, content }));
-    };
+      setPage(pageToLoad);
+      setOriginalPage(pageToLoad);
 
-    const inputClasses = "w-full p-2 bg-slate-700 border border-slate-600 rounded-md text-white";
+      if (editor.getHTML() !== pageToLoad.content) {
+        editor.commands.setContent(pageToLoad.content, false);
+      }
+    }
+  }, [pageId, pages, editor]);
 
-    return (
-        <div>
-            <div className="flex justify-between items-center mb-8">
-                <h1 className="text-3xl font-bold text-white">{isNewPage ? 'Create New Page' : 'Edit Page'}</h1>
-                <div>
-                    <button onClick={() => navigate('/admin/pages')} className="bg-slate-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-slate-700 mr-4">
-                        Back to Pages
-                    </button>
-                    <button onClick={handleSave} className="bg-sky-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-sky-600">
-                        Save Page
-                    </button>
-                </div>
-            </div>
+  const handleSave = async () => {
+    if (page) {
+      if ("id" in page) {
+        await updatePage(page);
+        addToast("Page updated successfully!", "success");
+        setOriginalPage(JSON.parse(JSON.stringify(page)));
+      } else {
+        const newPage = await addPage(page);
+        addToast("Page created successfully!", "success");
+        navigate(`/admin/pages/edit/${newPage.id}`);
+      }
+    }
+  };
 
-            <div className="bg-slate-800 p-6 rounded-lg border border-slate-700 space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label htmlFor="title" className="block text-sm font-medium text-gray-300 mb-1">Page Title</label>
-                        <input type="text" id="title" name="title" value={page.title} onChange={handleChange} placeholder="e.g., Privacy Policy" className={inputClasses} />
-                    </div>
-                    <div>
-                        <label htmlFor="path" className="block text-sm font-medium text-gray-300 mb-1">URL Path</label>
-                        <input type="text" id="path" name="path" value={page.path} onChange={handleChange} placeholder="/privacy-policy" className={inputClasses} />
-                    </div>
-                </div>
-                <div>
-                    <label htmlFor="content" className="block text-sm font-medium text-gray-300 mb-1">Page Content</label>
-                    <div className="bg-white text-gray-800 rounded-md overflow-hidden">
-                         <ReactQuill theme="snow" value={page.content} onChange={handleContentChange} style={{ height: '400px', border: 'none' }} />
-                    </div>
-                </div>
-            </div>
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (page) {
+      setPage({ ...page, [e.target.name]: e.target.value });
+    }
+  };
+  
+  const handlePreview = () => {
+    if (page) {
+      const previewHtml = `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <title>Preview: ${page.title}</title>
+            <style> body { font-family: sans-serif; max-width: 800px; margin: 2rem auto; } img { max-width: 100%; } </style>
+        </head>
+        <body>
+            <h1>${page.title}</h1>
+            <hr>
+            <div>${page.content}</div>
+        </body>
+        </html>
+      `;
+      const blob = new Blob([previewHtml], { type: "text/html" });
+      window.open(URL.createObjectURL(blob), "_blank");
+    }
+  };
+
+  if (!editor || !page) {
+    return <div className="text-white">Loading Editor...</div>;
+  }
+  
+  return (
+    <div className="max-w-4xl mx-auto">
+      <h1 className="text-3xl font-bold text-white mb-8">
+        {pageId ? "Edit Page" : "Create New Page"}
+      </h1>
+      <div className="space-y-6">
+        <input
+          type="text"
+          name="title"
+          placeholder="Page Title"
+          value={page.title}
+          onChange={handleChange}
+          className="w-full p-3 bg-slate-800 border-2 border-slate-700 rounded-md text-white text-2xl font-bold focus:outline-none focus:ring-2 focus:ring-sky-500"
+        />
+         <input
+          type="text"
+          name="path"
+          placeholder="/url-path"
+          value={page.path}
+          onChange={handleChange}
+          className="w-full p-2 bg-slate-800 border-2 border-slate-700 rounded-md text-white"
+        />
+        
+        <div className="bg-slate-900 border-2 border-slate-700 rounded-md">
+          <MenuBar editor={editor} />
+          <EditorContent editor={editor} />
         </div>
-    );
+      </div>
+      <div className="flex justify-end mt-8 gap-4">
+        <button onClick={handlePreview} className="bg-slate-600 text-white font-bold py-2 px-8 rounded-lg">Preview</button>
+        <button 
+            onClick={handleSave} 
+            className="bg-sky-500 text-white font-bold py-2 px-8 rounded-lg disabled:opacity-50"
+            disabled={!hasUnsavedChanges}
+        >
+          Save Page
+        </button>
+      </div>
+    </div>
+  );
 };
 
 export default PageEditor;

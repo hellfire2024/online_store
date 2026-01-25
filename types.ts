@@ -1,4 +1,3 @@
-
 export interface Product {
   id: string;
   name: string;
@@ -14,7 +13,7 @@ export interface CartItem {
   product: Product;
   quantity: number;
   customization?: {
-    type: 'gallery' | 'upload';
+    type: "gallery" | "upload";
     value: string; // URL for gallery, data URL for upload
   };
 }
@@ -22,7 +21,7 @@ export interface CartItem {
 // ===== CUSTOMER TYPES =====
 export interface CustomerAddress {
   id: string;
-  type: 'shipping' | 'billing';
+  type: "shipping" | "billing";
   fullName: string;
   streetAddress: string;
   city: string;
@@ -38,7 +37,7 @@ export interface CustomerOrder {
   orderNumber: string;
   date: string;
   total: number;
-  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+  status: "pending" | "processing" | "shipped" | "delivered" | "cancelled";
   shippingAddress: CustomerAddress;
   items: CartItem[];
   trackingNumber?: string;
@@ -74,7 +73,7 @@ export interface AdminUser {
   id: string;
   username: string;
   email: string;
-  role: 'super_admin' | 'admin' | 'manager';
+  role: "super_admin" | "admin" | "manager";
   permissions: string[];
   createdAt: string;
   lastLogin?: string;
@@ -132,8 +131,13 @@ export interface Page {
   content: string; // Can contain HTML
 }
 
-export type PaymentProvider = 'none' | 'stripe' | 'paypal' | 'square' | 'authorizeNet';
-export type ShippingProvider = 'none' | 'flatRate' | 'fedex' | 'ups' | 'usps';
+export type PaymentProvider =
+  | "none"
+  | "stripe"
+  | "paypal"
+  | "square"
+  | "authorizeNet";
+export type ShippingProvider = "none" | "flatRate" | "fedex" | "ups" | "usps";
 
 export interface SiteSettings {
   logoText: string;
@@ -143,7 +147,7 @@ export interface SiteSettings {
   heroSubtitle: string;
   heroBackgroundImageUrl: string;
   aboutPageContent: string;
-  
+
   footerSocialLinks: MenuItem[];
   footerContactEmail: string;
   footerContactPhone: string;

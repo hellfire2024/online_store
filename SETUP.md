@@ -3,26 +3,32 @@
 ## Step-by-Step Setup Instructions
 
 ### Step 1: Install Git (If Not Already Installed)
+
 Git is required for version control and GitHub backup.
 
 **Windows:**
+
 - Download from https://git-scm.com/download/win
 - Run the installer and accept default options
 - Restart VS Code after installation
 
 **Verify installation:**
+
 ```powershell
 git --version
 ```
 
 ### Step 2: Configure Git (First Time Only)
+
 ```powershell
 git config --global user.name "Your Name"
 git config --global user.email "hellfire67878@gmail.com"
 ```
 
 ### Step 3: Initialize Git Repository
+
 In the project folder, run:
+
 ```powershell
 git init
 git add .
@@ -31,12 +37,14 @@ git branch -M main
 ```
 
 ### Step 4: Create GitHub Repository
+
 1. Go to https://github.com/new
 2. Create a new repository (name it `online_store` or similar)
 3. **Do NOT** initialize with README, .gitignore, or license
 4. Click "Create repository"
 
 ### Step 5: Connect Local Git to GitHub
+
 Run the following commands to connect your local repository to GitHub:
 
 ```powershell
@@ -57,17 +65,21 @@ git push -u origin main
 4. When `git push` prompts for password, paste your token instead (do NOT store it in files or documents)
 
 To save credentials so you don't have to paste the token every time:
+
 ```powershell
 git config --global credential.helper wincred
 ```
+
 Your token will be securely stored in Windows Credential Manager.
 
 **CRITICAL - Authentication Details:**
 When `git push` prompts you, use your **fine-grained token**:
+
 - **Username**: `hellfire2024` (your GitHub username)
 - **Password**: Paste your fine-grained Personal Access Token (starts with `github_pat_`)
 
 Make sure you're running this from your project directory:
+
 ```powershell
 cd C:\Temp\online_store
 git push -u origin main
@@ -75,9 +87,11 @@ git push -u origin main
 
 **Alternative - Use SSH (More Secure):**
 If authentication keeps failing, use SSH instead:
+
 1. Generate SSH key: https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-gpg-key
 2. Add key to GitHub: https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account
 3. Change remote URL:
+
 ```powershell
 git remote set-url origin git@github.com:hellfire2024/online_store.git
 git push -u origin main
@@ -88,11 +102,13 @@ git push -u origin main
 ## Starting Development
 
 ### Launch Development Server
+
 ```powershell
 npm run dev
 ```
 
 This will:
+
 - Start a live development server at `http://localhost:5173`
 - Automatically open in your browser
 - Hot reload on file changes
@@ -110,6 +126,7 @@ This will:
 7. **Click `...` menu → Push** to push to GitHub
 
 **Or use the terminal:**
+
 ```powershell
 git add .
 git commit -m "Your change description"
@@ -117,6 +134,7 @@ git push
 ```
 
 **With GitHub Pull Requests Extension (Recommended):**
+
 1. Do steps 1-6 above on a feature branch
 2. Click "Create Pull Request" in VS Code (GitHub extension)
 3. Add description
@@ -138,6 +156,7 @@ Install these extensions for a better development experience:
 6. **Git Graph** - mhutchie.git-graph (visual commit history)
 
 **Recommended for automated workflow:**
+
 - Install "GitHub Pull Requests" extension to create and merge PRs without leaving VS Code
 - GitLens shows commit history inline in your code
 
@@ -146,6 +165,7 @@ Install these extensions for a better development experience:
 ## Development Workflow
 
 ### File Structure
+
 ```
 src/
 ├── components/           # Reusable React components
@@ -159,6 +179,7 @@ src/
 ```
 
 ### Available npm Commands
+
 - `npm run dev` - Start development server
 - `npm run build` - Build for production
 - `npm run preview` - Preview production build locally
@@ -167,6 +188,7 @@ src/
 ### Code Changes & Version Control
 
 **Every session:**
+
 ```
 1. npm run dev          # Start dev server
 2. Make changes in VS Code
@@ -179,6 +201,7 @@ src/
 **Recommended: Hourly Commit & Push Workflow**
 
 For frequent saves without Pull Requests (quick solo development):
+
 ```powershell
 # Every hour or when you've made progress:
 git add .
@@ -189,6 +212,7 @@ git push
 **Professional: Feature Branch + Pull Request Workflow**
 
 For better code organization (recommended best practice):
+
 ```powershell
 # Start a new feature
 git checkout -b feature/feature-name
@@ -212,6 +236,7 @@ git push
 ```
 
 **Commit Message Best Practices:**
+
 - `WIP: ` - Work in progress (hourly commits)
 - `Feature: ` - New feature complete
 - `Fix: ` - Bug fix
@@ -223,7 +248,9 @@ git push
 ## Troubleshooting
 
 ### Port 5173 already in use?
+
 Edit `vite.config.ts` and change the port number:
+
 ```typescript
 server: {
   port: 5174,  // Change this number
@@ -231,6 +258,7 @@ server: {
 ```
 
 ### Node modules issues?
+
 ```powershell
 Remove-Item node_modules -Recurse
 Remove-Item package-lock.json
@@ -238,15 +266,19 @@ npm install
 ```
 
 ### Git not found?
+
 Restart VS Code after installing Git
 
 ### Push rejected?
+
 Make sure you've set the correct remote:
+
 ```powershell
 git remote -v  # Check your remote URL
 ```
 
 ### Need to sync with latest GitHub changes?
+
 ```powershell
 git pull
 ```
@@ -256,6 +288,7 @@ git pull
 ## GitHub Backup Verification
 
 Check that your changes are backed up:
+
 1. Go to your GitHub repository URL
 2. You should see your latest commits listed
 3. Click on commits to see the file changes

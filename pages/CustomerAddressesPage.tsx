@@ -1,22 +1,28 @@
-import React, { useState } from 'react';
-import { useCustomerAuth } from '../context/CustomerAuthContext';
-import { useToast } from '../hooks/useToast';
-import { CustomerAddress } from '../types';
+import React, { useState } from "react";
+import { useCustomerAuth } from "../context/CustomerAuthContext";
+import { useToast } from "../hooks/useToast";
+import { CustomerAddress } from "../types";
 
 const CustomerAddressesPage: React.FC = () => {
-  const { customer, addAddress, updateAddress, deleteAddress, setDefaultAddress } = useCustomerAuth();
+  const {
+    customer,
+    addAddress,
+    updateAddress,
+    deleteAddress,
+    setDefaultAddress,
+  } = useCustomerAuth();
   const { addToast } = useToast();
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [formData, setFormData] = useState<Omit<CustomerAddress, 'id'>>({
-    type: 'shipping',
-    fullName: '',
-    streetAddress: '',
-    city: '',
-    state: '',
-    zipCode: '',
-    country: 'USA',
-    phone: '',
+  const [formData, setFormData] = useState<Omit<CustomerAddress, "id">>({
+    type: "shipping",
+    fullName: "",
+    streetAddress: "",
+    city: "",
+    state: "",
+    zipCode: "",
+    country: "USA",
+    phone: "",
     isDefault: false,
   });
 
@@ -30,23 +36,23 @@ const CustomerAddressesPage: React.FC = () => {
 
   const handleAddAddress = async () => {
     if (!formData.fullName || !formData.streetAddress || !formData.city) {
-      addToast('Please fill in all required fields', 'error');
+      addToast("Please fill in all required fields", "error");
       return;
     }
 
     const result = await addAddress(formData);
     if (result.success) {
-      addToast('Address added successfully', 'success');
+      addToast("Address added successfully", "success");
       setIsAdding(false);
       setFormData({
-        type: 'shipping',
-        fullName: '',
-        streetAddress: '',
-        city: '',
-        state: '',
-        zipCode: '',
-        country: 'USA',
-        phone: '',
+        type: "shipping",
+        fullName: "",
+        streetAddress: "",
+        city: "",
+        state: "",
+        zipCode: "",
+        country: "USA",
+        phone: "",
         isDefault: false,
       });
     }
@@ -55,7 +61,7 @@ const CustomerAddressesPage: React.FC = () => {
   const handleUpdateAddress = async (addressId: string) => {
     const result = await updateAddress({ id: addressId, ...formData });
     if (result.success) {
-      addToast('Address updated successfully', 'success');
+      addToast("Address updated successfully", "success");
       setEditingId(null);
     }
   };
@@ -63,14 +69,17 @@ const CustomerAddressesPage: React.FC = () => {
   const handleDeleteAddress = async (addressId: string) => {
     const result = await deleteAddress(addressId);
     if (result.success) {
-      addToast('Address deleted successfully', 'success');
+      addToast("Address deleted successfully", "success");
     }
   };
 
-  const handleSetDefault = async (addressId: string, type: 'shipping' | 'billing') => {
+  const handleSetDefault = async (
+    addressId: string,
+    type: "shipping" | "billing",
+  ) => {
     const result = await setDefaultAddress(addressId, type);
     if (result.success) {
-      addToast('Default address updated', 'success');
+      addToast("Default address updated", "success");
     }
   };
 
@@ -82,7 +91,7 @@ const CustomerAddressesPage: React.FC = () => {
           onClick={() => setIsAdding(!isAdding)}
           className="px-4 py-2 bg-sky-500 hover:bg-sky-600 text-white rounded-md"
         >
-          {isAdding ? 'Cancel' : '+ Add Address'}
+          {isAdding ? "Cancel" : "+ Add Address"}
         </button>
       </div>
 
@@ -96,14 +105,18 @@ const CustomerAddressesPage: React.FC = () => {
               type="text"
               placeholder="Full Name"
               value={formData.fullName}
-              onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, fullName: e.target.value })
+              }
               className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white"
             />
             <input
               type="text"
               placeholder="Street Address"
               value={formData.streetAddress}
-              onChange={(e) => setFormData({ ...formData, streetAddress: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, streetAddress: e.target.value })
+              }
               className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white"
             />
             <div className="grid grid-cols-2 gap-4">
@@ -111,14 +124,18 @@ const CustomerAddressesPage: React.FC = () => {
                 type="text"
                 placeholder="City"
                 value={formData.city}
-                onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, city: e.target.value })
+                }
                 className="px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white"
               />
               <input
                 type="text"
                 placeholder="State"
                 value={formData.state}
-                onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, state: e.target.value })
+                }
                 className="px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white"
               />
             </div>
@@ -127,14 +144,18 @@ const CustomerAddressesPage: React.FC = () => {
                 type="text"
                 placeholder="Zip Code"
                 value={formData.zipCode}
-                onChange={(e) => setFormData({ ...formData, zipCode: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, zipCode: e.target.value })
+                }
                 className="px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white"
               />
               <input
                 type="tel"
                 placeholder="Phone"
                 value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, phone: e.target.value })
+                }
                 className="px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white"
               />
             </div>
@@ -152,15 +173,24 @@ const CustomerAddressesPage: React.FC = () => {
       <div className="space-y-4">
         {customer.addresses.length === 0 ? (
           <div className="bg-slate-800 p-6 rounded-lg border border-slate-700 text-center">
-            <p className="text-gray-400">No addresses saved yet. Add one to get started!</p>
+            <p className="text-gray-400">
+              No addresses saved yet. Add one to get started!
+            </p>
           </div>
         ) : (
           customer.addresses.map((address) => (
-            <div key={address.id} className="bg-slate-800 p-6 rounded-lg border border-slate-700">
+            <div
+              key={address.id}
+              className="bg-slate-800 p-6 rounded-lg border border-slate-700"
+            >
               <div className="flex justify-between items-start mb-4">
                 <div>
-                  <h3 className="text-lg font-bold text-white">{address.fullName}</h3>
-                  <p className="text-gray-400 text-sm capitalize">{address.type} Address {address.isDefault && '(Default)'}</p>
+                  <h3 className="text-lg font-bold text-white">
+                    {address.fullName}
+                  </h3>
+                  <p className="text-gray-400 text-sm capitalize">
+                    {address.type} Address {address.isDefault && "(Default)"}
+                  </p>
                 </div>
                 <div className="space-x-2">
                   <button
@@ -180,7 +210,9 @@ const CustomerAddressesPage: React.FC = () => {
 
               <div className="text-gray-300">
                 <p>{address.streetAddress}</p>
-                <p>{address.city}, {address.state} {address.zipCode}</p>
+                <p>
+                  {address.city}, {address.state} {address.zipCode}
+                </p>
                 <p>{address.country}</p>
                 <p className="text-sm mt-2">{address.phone}</p>
               </div>

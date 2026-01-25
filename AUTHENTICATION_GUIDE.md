@@ -11,6 +11,7 @@ Your e-commerce platform now has a professional, industry-standard authenticatio
 ### Authentication Types
 
 #### 1. **Customer Authentication**
+
 - Email + Password login
 - Full registration with validation
 - Order history tracking
@@ -19,6 +20,7 @@ Your e-commerce platform now has a professional, industry-standard authenticatio
 - Password reset capability
 
 #### 2. **Admin Authentication**
+
 - Username + Password login
 - Multi-user support (multiple admins)
 - Role-based permissions (super_admin, admin, manager)
@@ -51,7 +53,9 @@ types.ts                          # UPDATED - New Customer & Admin types
 ## Customer Features
 
 ### 1. Registration & Login
+
 **Login Page Features:**
+
 - Dual tabs: "Customer" and "Admin"
 - Email-based authentication
 - Password validation (min 8 characters)
@@ -61,7 +65,9 @@ types.ts                          # UPDATED - New Customer & Admin types
 **File:** [LoginPage.tsx](../../pages/LoginPage.tsx#L1-L100)
 
 ### 2. Account Profile
+
 **Features:**
+
 - View profile information
 - Edit name and phone number
 - Email preferences (marketing, order updates, announcements)
@@ -71,7 +77,9 @@ types.ts                          # UPDATED - New Customer & Admin types
 **File:** [CustomerAccountPage.tsx](../../pages/CustomerAccountPage.tsx#L1-L150)
 
 ### 3. Address Management
+
 **Features:**
+
 - Add multiple shipping/billing addresses
 - Edit existing addresses
 - Delete addresses
@@ -81,7 +89,9 @@ types.ts                          # UPDATED - New Customer & Admin types
 **File:** [CustomerAddressesPage.tsx](../../pages/CustomerAddressesPage.tsx#L1-L200)
 
 ### 4. Order History
+
 **Features:**
+
 - View all customer orders
 - Order status tracking (pending, processing, shipped, delivered, cancelled)
 - Order details (items, total, date)
@@ -92,6 +102,7 @@ types.ts                          # UPDATED - New Customer & Admin types
 **File:** [CustomerOrdersPage.tsx](../../pages/CustomerOrdersPage.tsx#L1-L180)
 
 ### 5. Password Management
+
 - `requestPasswordReset(email)` - Trigger password reset email
 - `resetPassword(token, newPassword)` - Complete password reset
 - `changePassword(current, new)` - Change password while logged in
@@ -101,7 +112,9 @@ types.ts                          # UPDATED - New Customer & Admin types
 ## Admin Features
 
 ### 1. Multi-User Admin System
+
 **Built-in Admin Users:**
+
 ```typescript
 {
   username: "admin",
@@ -119,45 +132,52 @@ types.ts                          # UPDATED - New Customer & Admin types
 ```
 
 ### 2. Customer Management
+
 **Admin Dashboard Functions:**
 
 #### View All Customers
+
 ```typescript
 const { customers, fetchCustomers } = useAdmin();
 await fetchCustomers();
 ```
 
 #### Get Specific Customer
+
 ```typescript
 const customer = getCustomer(customerId);
 // Returns full customer profile with addresses & orders
 ```
 
 #### Password Reset
+
 ```typescript
 const result = await sendPasswordResetEmail(customerId);
 // Sends password reset email to customer
 ```
 
 #### Update Customer Address
+
 ```typescript
 const result = await updateCustomerAddress(customerId, addressId, updates);
 // Modify shipping/billing addresses
 ```
 
 #### Email Preferences
+
 ```typescript
 const result = await updateCustomerEmailPreferences(customerId, {
   marketing: false,
   orderUpdates: true,
-  announcements: true
+  announcements: true,
 });
 ```
 
 #### Deactivate/Reactivate Customer
+
 ```typescript
-await deactivateCustomer(customerId);    // Prevent logins
-await reactivateCustomer(customerId);    // Re-enable access
+await deactivateCustomer(customerId); // Prevent logins
+await reactivateCustomer(customerId); // Re-enable access
 ```
 
 ---
@@ -230,6 +250,7 @@ function AdminCustomerDashboard() {
 ## Data Models
 
 ### Customer Type
+
 ```typescript
 interface Customer {
   id: string;
@@ -250,12 +271,13 @@ interface Customer {
 ```
 
 ### Admin User Type
+
 ```typescript
 interface AdminUser {
   id: string;
   username: string;
   email: string;
-  role: 'super_admin' | 'admin' | 'manager';
+  role: "super_admin" | "admin" | "manager";
   permissions: string[];
   createdAt: string;
   lastLogin?: string;
@@ -264,10 +286,11 @@ interface AdminUser {
 ```
 
 ### Customer Address
+
 ```typescript
 interface CustomerAddress {
   id: string;
-  type: 'shipping' | 'billing';
+  type: "shipping" | "billing";
   fullName: string;
   streetAddress: string;
   city: string;
@@ -280,13 +303,14 @@ interface CustomerAddress {
 ```
 
 ### Customer Order
+
 ```typescript
 interface CustomerOrder {
   id: string;
   orderNumber: string;
   date: string;
   total: number;
-  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+  status: "pending" | "processing" | "shipped" | "delivered" | "cancelled";
   shippingAddress: CustomerAddress;
   items: CartItem[];
   trackingNumber?: string;
@@ -298,28 +322,32 @@ interface CustomerOrder {
 ## Login Credentials
 
 ### Customer
+
 - Any email + password (for demo)
 - Registration creates new account
 
 ### Admin
-| Username | Password | Role | Access |
-|----------|----------|------|--------|
-| admin | admin123 | super_admin | Everything |
-| manager | admin123 | admin | Products, Orders, Customers, Galleries |
+
+| Username | Password | Role        | Access                                 |
+| -------- | -------- | ----------- | -------------------------------------- |
+| admin    | admin123 | super_admin | Everything                             |
+| manager  | admin123 | admin       | Products, Orders, Customers, Galleries |
 
 ---
 
 ## Security Notes
 
 ### Implemented
+
 ✅ Password length validation (min 8 characters)  
 ✅ Password confirmation matching  
 ✅ Terms & conditions agreement  
 ✅ Role-based access control (RBAC)  
 ✅ Account activation/deactivation  
-✅ Local storage for session persistence  
+✅ Local storage for session persistence
 
 ### Production Recommendations
+
 - Use HTTPS/TLS for all transmissions
 - Implement bcrypt for password hashing
 - Add email verification for registration
@@ -334,6 +362,7 @@ interface CustomerOrder {
 ## Integration Points
 
 ### Routes to Add to App.tsx
+
 ```typescript
 <Route path="/login" element={<LoginPage />} />
 <Route path="/register" element={<RegisterPage />} />
@@ -347,6 +376,7 @@ interface CustomerOrder {
 ```
 
 ### Provider Setup (App.tsx)
+
 ```typescript
 <CustomerAuthProvider>
   <AdminProvider>
@@ -377,10 +407,12 @@ interface CustomerOrder {
 ## Testing Credentials
 
 ### Admin Login
+
 - **Username:** admin
 - **Password:** admin123
 
 ### Customer Registration
+
 - **Email:** your@email.com
 - **Password:** SecurePass123 (min 8 chars)
 - **Name:** Your Name
@@ -390,15 +422,18 @@ interface CustomerOrder {
 ## Troubleshooting
 
 ### Customer not persisting after refresh
+
 - Check if localStorage is enabled
 - Check browser DevTools → Application → Local Storage
 
 ### Admin login not working
+
 - Verify username matches exactly (case-sensitive)
 - Check password is "admin123"
 - Clear localStorage and try again
 
 ### Addresses not saving
+
 - Ensure customer is logged in first
 - Check browser console for errors
 - Verify all required fields are filled
@@ -408,6 +443,7 @@ interface CustomerOrder {
 ## Support
 
 For questions or issues with the authentication system, refer to:
+
 - [CustomerAuthContext.tsx](../../context/CustomerAuthContext.tsx)
 - [AdminContext.tsx](../../context/AdminContext.tsx)
 - [LoginPage.tsx](../../pages/LoginPage.tsx)

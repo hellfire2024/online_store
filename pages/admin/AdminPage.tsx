@@ -1,19 +1,18 @@
-
-import React, { useEffect } from 'react';
-import { Routes, Route, useNavigate } from 'react-router-dom';
-import { useAdmin } from '../../context/AdminContext';
-import AdminSidebar from '../../components/admin/AdminSidebar';
-import Dashboard from './Dashboard';
-import ProductManagement from './ProductManagement';
-import GalleriesManagement from './GalleriesManagement';
-import HomepageContentManagement from './HomepageContentManagement';
-import StaffManagement from './StaffManagement';
-import ReviewsManagement from './ReviewsManagement';
-import SettingsManagement from './SettingsManagement';
-import ServicesManagement from './ServicesManagement';
-import PagesManagement from './PagesManagement';
-import PageEditor from './PageEditor';
-import NavigationManagement from './NavigationManagement';
+import React, { useEffect } from "react";
+import { Routes, Route, useNavigate } from "react-router-dom";
+import { useAdmin } from "../../context/AdminContext";
+import AdminSidebar from "../../components/admin/AdminSidebar";
+import Dashboard from "./Dashboard";
+import ProductManagement from "./ProductManagement";
+import GalleriesManagement from "./GalleriesManagement";
+import HomepageContentManagement from "./HomepageContentManagement";
+import StaffManagement from "./StaffManagement";
+import ReviewsManagement from "./ReviewsManagement";
+import SettingsManagement from "./SettingsManagement";
+import ServicesManagement from "./ServicesManagement";
+import PagesManagement from "./PagesManagement";
+import PageEditor from "./PageEditor";
+import NavigationManagement from "./NavigationManagement";
 
 const AdminPage: React.FC = () => {
   const { isAdminAuthenticated } = useAdmin();
@@ -21,7 +20,7 @@ const AdminPage: React.FC = () => {
 
   useEffect(() => {
     if (!isAdminAuthenticated) {
-      navigate('/');
+      navigate("/");
     }
   }, [isAdminAuthenticated, navigate]);
 
@@ -30,14 +29,14 @@ const AdminPage: React.FC = () => {
   }
 
   return (
-    <div className="flex">
+    <div className="flex h-screen bg-slate-900 text-gray-300">
       <AdminSidebar />
-      <div className="flex-grow p-8 bg-slate-800/50 rounded-lg ml-64">
+      <main className="flex-grow p-8 overflow-auto">
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/products" element={<ProductManagement />} />
-          <Route path="/gallery" element={<GalleriesManagement />} />
-          <Route path="/content" element={<HomepageContentManagement />} />
+          <Route path="/galleries" element={<GalleriesManagement />} />
+          <Route path="/homepage" element={<HomepageContentManagement />} />
           <Route path="/staff" element={<StaffManagement />} />
           <Route path="/reviews" element={<ReviewsManagement />} />
           <Route path="/services" element={<ServicesManagement />} />
@@ -47,7 +46,7 @@ const AdminPage: React.FC = () => {
           <Route path="/pages/new" element={<PageEditor />} />
           <Route path="/navigation" element={<NavigationManagement />} />
         </Routes>
-      </div>
+      </main>
     </div>
   );
 };

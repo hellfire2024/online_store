@@ -1,16 +1,19 @@
-import React, { useState } from 'react';
-import { useAdmin } from '../../context/AdminContext';
-import { useNavigate } from 'react-router-dom';
-import { useToast } from '../../hooks/useToast';
+import React, { useState } from "react";
+import { useAdmin } from "../../context/AdminContext";
+import { useNavigate } from "react-router-dom";
+import { useToast } from "../../hooks/useToast";
 
 interface AdminLoginModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-const AdminLoginModal: React.FC<AdminLoginModalProps> = ({ isOpen, onClose }) => {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
+  isOpen,
+  onClose,
+}) => {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { loginAdmin } = useAdmin();
   const navigate = useNavigate();
@@ -23,11 +26,11 @@ const AdminLoginModal: React.FC<AdminLoginModalProps> = ({ isOpen, onClose }) =>
     const result = await loginAdmin(username, password);
 
     if (result.success) {
-      addToast('Admin login successful!', 'success');
+      addToast("Admin login successful!", "success");
       onClose();
-      navigate('/admin');
+      navigate("/admin");
     } else {
-      addToast(result.error || 'Login failed', 'error');
+      addToast(result.error || "Login failed", "error");
     }
     setIsLoading(false);
   };
@@ -35,9 +38,17 @@ const AdminLoginModal: React.FC<AdminLoginModalProps> = ({ isOpen, onClose }) =>
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center" onClick={onClose}>
-      <div className="bg-slate-800 rounded-lg shadow-2xl p-8 w-full max-w-sm border border-slate-700" onClick={e => e.stopPropagation()}>
-        <h2 className="text-2xl font-bold text-white text-center mb-6">Admin Login</h2>
+    <div
+      className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center"
+      onClick={onClose}
+    >
+      <div
+        className="bg-slate-800 rounded-lg shadow-2xl p-8 w-full max-w-sm border border-slate-700"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 className="text-2xl font-bold text-white text-center mb-6">
+          Admin Login
+        </h2>
         <form onSubmit={handleSubmit}>
           <div className="space-y-4">
             <input
@@ -55,12 +66,12 @@ const AdminLoginModal: React.FC<AdminLoginModalProps> = ({ isOpen, onClose }) =>
               onChange={(e) => setPassword(e.target.value)}
               className="w-full p-3 bg-slate-700 border border-slate-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
             />
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               className="w-full bg-sky-500 text-white font-bold py-3 rounded-lg hover:bg-sky-600 transition-colors disabled:opacity-50"
               disabled={isLoading}
             >
-              {isLoading ? 'Logging in...' : 'Login'}
+              {isLoading ? "Logging in..." : "Login"}
             </button>
           </div>
         </form>
