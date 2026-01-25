@@ -63,13 +63,23 @@ git config --global credential.helper wincred
 Your token will be securely stored in Windows Credential Manager.
 
 **CRITICAL - Authentication Details:**
-When `git push` prompts you:
-- **Username**: Enter your EMAIL: `hellfire67878@gmail.com` (NOT your GitHub username)
-- **Password**: Paste your Personal Access Token (starts with `github_pat_`)
+When `git push` prompts you, use your **fine-grained token**:
+- **Username**: `hellfire2024` (your GitHub username)
+- **Password**: Paste your fine-grained Personal Access Token (starts with `github_pat_`)
 
 Make sure you're running this from your project directory:
 ```powershell
 cd C:\Temp\online_store
+git push -u origin main
+```
+
+**Alternative - Use SSH (More Secure):**
+If authentication keeps failing, use SSH instead:
+1. Generate SSH key: https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-gpg-key
+2. Add key to GitHub: https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account
+3. Change remote URL:
+```powershell
+git remote set-url origin git@github.com:hellfire2024/online_store.git
 git push -u origin main
 ```
 
@@ -89,19 +99,30 @@ This will:
 
 ### Making Changes & Backing Up to GitHub
 
-1. **Make changes** in VS Code
-2. **Open Source Control** (Ctrl+Shift+G)
-3. **Stage changes** (click + next to changed files or click "Stage All Changes")
-4. **Add a commit message** describing your changes
-5. **Commit** (click checkmark button)
-6. **Push to GitHub** (click ... menu → Push)
+**VS Code GUI Method (Easiest - No Terminal):**
 
-Or use the terminal:
+1. **Make changes** in VS Code
+2. **Open Source Control** (Ctrl+Shift+G or left sidebar)
+3. **See all changed files** listed
+4. **Click `+` next to each file** to stage (or click "Stage All Changes")
+5. **Type your commit message** in the message box at top
+6. **Click the checkmark ✓** to commit
+7. **Click `...` menu → Push** to push to GitHub
+
+**Or use the terminal:**
 ```powershell
 git add .
 git commit -m "Your change description"
 git push
 ```
+
+**With GitHub Pull Requests Extension (Recommended):**
+1. Do steps 1-6 above on a feature branch
+2. Click "Create Pull Request" in VS Code (GitHub extension)
+3. Add description
+4. Click "Create"
+5. When ready, click "Merge" in the PR view
+6. Your code is merged to main and pushed automatically
 
 ---
 
@@ -110,10 +131,15 @@ git push
 Install these extensions for a better development experience:
 
 1. **ES7+ React/Redux/React-Native snippets** - dsznajder.es7-react-js-snippets
-2. **TypeScript Vue Plugin (Volar)** - Vue.vscode-typescript-vue-plugin
-3. **Tailwind CSS IntelliSense** - bradlc.vscode-tailwindcss
-4. **Prettier - Code formatter** - esbenp.prettier-vscode
-5. **GitLens — Git supercharged** - eamodio.gitlens
+2. **Tailwind CSS IntelliSense** - bradlc.vscode-tailwindcss
+3. **Prettier - Code formatter** - esbenp.prettier-vscode
+4. **GitLens — Git supercharged** - eamodio.gitlens
+5. **GitHub Pull Requests** - GitHub.vscode-pull-request-github (for Pull Requests from VS Code)
+6. **Git Graph** - mhutchie.git-graph (visual commit history)
+
+**Recommended for automated workflow:**
+- Install "GitHub Pull Requests" extension to create and merge PRs without leaving VS Code
+- GitLens shows commit history inline in your code
 
 ---
 
@@ -149,6 +175,48 @@ src/
 5. git commit -m "..."  # Create commit
 6. git push             # Back up to GitHub
 ```
+
+**Recommended: Hourly Commit & Push Workflow**
+
+For frequent saves without Pull Requests (quick solo development):
+```powershell
+# Every hour or when you've made progress:
+git add .
+git commit -m "WIP: Working on [feature name]"
+git push
+```
+
+**Professional: Feature Branch + Pull Request Workflow**
+
+For better code organization (recommended best practice):
+```powershell
+# Start a new feature
+git checkout -b feature/feature-name
+git push -u origin feature/feature-name
+
+# Work with hourly commits
+git add .
+git commit -m "WIP: [what you did]"
+git push
+
+# When feature is complete
+git commit -m "Feature: [description]"
+git push
+
+# Create Pull Request on GitHub.com
+# Review your changes, then merge to main
+git checkout main
+git pull
+git merge feature/feature-name
+git push
+```
+
+**Commit Message Best Practices:**
+- `WIP: ` - Work in progress (hourly commits)
+- `Feature: ` - New feature complete
+- `Fix: ` - Bug fix
+- `Refactor: ` - Code cleanup
+- `Docs: ` - Documentation updates
 
 ---
 

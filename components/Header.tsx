@@ -1,8 +1,7 @@
-
 import React from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
-import { useAuth } from '../context/AuthContext';
+import { useCustomerAuth } from '../context/CustomerAuthContext';
 import { useAdmin } from '../context/AdminContext';
 
 const CartIcon: React.FC = () => (
@@ -23,7 +22,7 @@ const UserIcon: React.FC = () => (
 
 const Header: React.FC = () => {
   const { itemCount } = useCart();
-  const { isAuthenticated, user, logout } = useAuth();
+  const { customer, logout } = useCustomerAuth();
   const { siteSettings, menus } = useAdmin();
   
   const headerMenu = menus.find(m => m.id === 'menu_header');
@@ -44,13 +43,14 @@ const Header: React.FC = () => {
             ))}
           </nav>
           <div className="flex items-center space-x-5">
-            {isAuthenticated ? (
+            {customer ? (
                 <div className="relative group">
-                    <span className="flex items-center cursor-pointer text-gray-300 hover:text-white">
+                    <Link to="/account" className="flex items-center cursor-pointer text-gray-300 hover:text-white">
                         <UserIcon />
-                    </span>
+                    </Link>
                     <div className="absolute right-0 mt-2 w-48 bg-slate-800 border border-slate-700 rounded-md shadow-lg py-1 z-50 hidden group-hover:block">
-                        <div className="px-4 py-2 text-sm text-gray-200">{user?.name}</div>
+                        <div className="px-4 py-2 text-sm text-gray-200 border-b border-slate-700">{customer?.name}</div>
+                        <Link to="/account" className="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-slate-700 hover:text-white">My Account</Link>
                         <button onClick={logout} className="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-slate-700 hover:text-white">
                             Logout
                         </button>

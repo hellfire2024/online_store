@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useAdmin } from '../../context/AdminContext';
 import { useNavigate } from 'react-router-dom';
@@ -10,21 +9,27 @@ interface AdminLoginModalProps {
 }
 
 const AdminLoginModal: React.FC<AdminLoginModalProps> = ({ isOpen, onClose }) => {
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const { login } = useAdmin();
+  const [isLoading, setIsLoading] = useState(false);
+  const { loginAdmin } = useAdmin();
   const navigate = useNavigate();
   const { addToast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (login(password)) {
+    setIsLoading(true);
+
+    const result = await loginAdmin(username, password);
+
+    if (result.success) {
       addToast('Admin login successful!', 'success');
       onClose();
       navigate('/admin');
     } else {
-      setError('Incorrect password.');
+      addToast(result.error || 'Login failed', 'error');
     }
+    setIsLoading(false);
   };
 
   if (!isOpen) return null;
@@ -36,16 +41,26 @@ const AdminLoginModal: React.FC<AdminLoginModalProps> = ({ isOpen, onClose }) =>
         <form onSubmit={handleSubmit}>
           <div className="space-y-4">
             <input
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => { setPassword(e.target.value); setError(''); }}
+              type="text"
+              placeholder="Username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
               className="w-full p-3 bg-slate-700 border border-slate-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
               autoFocus
             />
-            {error && <p className="text-red-500 text-sm text-center">{error}</p>}
-            <button type="submit" className="w-full bg-sky-500 text-white font-bold py-2 rounded-lg hover:bg-sky-600 transition-colors">
-              Login
+            <input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full p-3 bg-slate-700 border border-slate-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
+            />
+            <button 
+              type="submit" 
+              className="w-full bg-sky-500 text-white font-bold py-3 rounded-lg hover:bg-sky-600 transition-colors disabled:opacity-50"
+              disabled={isLoading}
+            >
+              {isLoading ? 'Logging in...' : 'Login'}
             </button>
           </div>
         </form>

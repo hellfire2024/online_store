@@ -19,10 +19,66 @@ export interface CartItem {
   };
 }
 
+// ===== CUSTOMER TYPES =====
+export interface CustomerAddress {
+  id: string;
+  type: 'shipping' | 'billing';
+  fullName: string;
+  streetAddress: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  country: string;
+  phone: string;
+  isDefault: boolean;
+}
+
+export interface CustomerOrder {
+  id: string;
+  orderNumber: string;
+  date: string;
+  total: number;
+  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+  shippingAddress: CustomerAddress;
+  items: CartItem[];
+  trackingNumber?: string;
+}
+
+export interface Customer {
+  id: string;
+  name: string;
+  email: string;
+  password?: string; // Never stored in state, only for API
+  phone?: string;
+  createdAt: string;
+  lastLogin: string;
+  addresses: CustomerAddress[];
+  orders: CustomerOrder[];
+  emailPreferences: {
+    marketing: boolean;
+    orderUpdates: boolean;
+    announcements: boolean;
+  };
+  isActive: boolean;
+}
+
+// Keep original User type for backward compatibility
 export interface User {
   id: string;
   name: string;
   email: string;
+}
+
+// ===== ADMIN TYPES =====
+export interface AdminUser {
+  id: string;
+  username: string;
+  email: string;
+  role: 'super_admin' | 'admin' | 'manager';
+  permissions: string[];
+  createdAt: string;
+  lastLogin?: string;
+  isActive: boolean;
 }
 
 export interface GalleryImage {
