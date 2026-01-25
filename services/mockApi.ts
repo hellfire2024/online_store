@@ -8,7 +8,6 @@ import {
   SiteSettings,
   Page,
   Menu,
-  MenuItem,
 } from "../types";
 
 let mockProducts: Product[] = [
@@ -86,34 +85,34 @@ let mockGalleryImages: Record<string, GalleryImage[]> = {
     {
       id: "g1",
       name: "Abstract Waves",
-      url: "https://picsum.photos/seed/wave/500/500",
+      imageUrl: "https://picsum.photos/seed/wave/500/500",
     },
     {
       id: "g2",
       name: "Geometric Sun",
-      url: "https://picsum.photos/seed/sun/500/500",
+      imageUrl: "https://picsum.photos/seed/sun/500/500",
     },
     {
       id: "g4",
       name: "Vintage Floral",
-      url: "https://picsum.photos/seed/floral/500/500",
+      imageUrl: "https://picsum.photos/seed/floral/500/500",
     },
   ],
   "g-art": [
     {
       id: "g3",
       name: "Cyberpunk City",
-      url: "https://picsum.photos/seed/city/500/500",
+      imageUrl: "https://picsum.photos/seed/city/500/500",
     },
     {
       id: "g5",
       name: "Minimalist Mountain",
-      url: "https://picsum.photos/seed/mountain/500/500",
+      imageUrl: "https://picsum.photos/seed/mountain/500/500",
     },
     {
       id: "g6",
       name: "Cosmic Cat",
-      url: "https://picsum.photos/seed/cat/500/500",
+      imageUrl: "https://picsum.photos/seed/cat/500/500",
     },
   ],
 };

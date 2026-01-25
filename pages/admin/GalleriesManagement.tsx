@@ -1,201 +1,223 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useAdmin } from "../../context/AdminContext";
-import { TrashIcon, PlusIcon } from "../../components/Icons";
+import { PlusIcon, TrashIcon, UploadIcon } from "../../components/Icons";
 import { useToast } from "../../hooks/useToast";
 import Spinner from "../../components/Spinner";
+import { useUnsavedChanges } from "../../context/UnsavedChangesContext";
 
 const GalleriesManagement: React.FC = () => {
   const {
     galleries,
-    addGallery,
-    deleteGallery,
     galleryImages,
     fetchGalleryImages,
     addGalleryImage,
-    deleteGalleryImage: delImg,
+    deleteGalleryImage,
+    addGallery,
+    deleteGallery,
   } = useAdmin();
+  const [isLoading, setIsLoading] = useState(true);
   const [newGalleryName, setNewGalleryName] = useState("");
-  const [selectedGalleryId, setSelectedGalleryId] = useState<string | null>(
-    null,
-  );
-  const [newImageName, setNewImageName] = useState("");
-  const [newImageUrl, setNewImageUrl] = useState<string | null>(null);
+  const [selectedGallery, setSelectedGallery] = useState<string | null>(null);
+  const { addToast } = useToast();
+  const { setHasUnsavedChanges } = useUnsavedChanges();
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const folderInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (galleries.length > 0 && !selectedGalleryId) {
-      setSelectedGalleryId(galleries[0].id);
-    }
-    if (galleries.length === 0) {
-      setSelectedGalleryId(null);
-    }
-  }, [galleries, selectedGalleryId]);
+    setHasUnsavedChanges(false);
+  }, []);
 
-  useEffect(() => {
-    if (selectedGalleryId) {
-      fetchGalleryImages(selectedGalleryId);
-    }
-  }, [selectedGalleryId, fetchGalleryImages]);
-
-  const handleAddGallery = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (newGalleryName) {
-      await addGallery({ name: newGalleryName });
+  const handleAddGallery = async () => {
+    if (newGalleryName.trim()) {
+      await addGallery({ name: newGalleryName.trim() });
       setNewGalleryName("");
+      addToast("Gallery created successfully!", "success");
     }
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setNewImageUrl(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+  const handleDeleteGallery = async (galleryId: string) => {
+    if (
+      window.confirm(
+        "Are you sure you want to delete this gallery? This action cannot be undone.",
+      )
+    ) {
+      await deleteGallery(galleryId);
+      if (selectedGallery === galleryId) {
+        setSelectedGallery(null);
+      }
+      addToast("Gallery deleted.", "success");
     }
   };
 
-  const handleAddImage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (newImageName && newImageUrl && selectedGalleryId) {
-      await addGalleryImage(selectedGalleryId, {
-        name: newImageName,
-        url: newImageUrl,
-      });
-      setNewImageName("");
-      setNewImageUrl(null);
+  useEffect(() => {
+    const init = async () => {
+      if (galleries.length > 0 && !selectedGallery) {
+        setSelectedGallery(galleries[0].id);
+      }
+      setIsLoading(false);
+    };
+    init();
+  }, [galleries, selectedGallery]);
+
+  useEffect(() => {
+    if (selectedGallery) {
+      fetchGalleryImages(selectedGallery);
     }
+  }, [selectedGallery]);
+
+  const handleFileSelected = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!selectedGallery) return;
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    addToast(`Uploading ${files.length} image(s)...`, "info");
+
+    for (const file of Array.from(files)) {
+      if (file.type.startsWith("image/")) {
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+          const url = e.target?.result as string;
+          await addGalleryImage(selectedGallery, { name: file.name, url });
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    addToast(`Finished processing ${files.length} files.`, "success");
+    // Reset the input value to allow re-uploading the same file/folder
+    event.target.value = "";
   };
 
-  const currentImages = selectedGalleryId
-    ? galleryImages[selectedGalleryId] || []
-    : [];
+  if (isLoading) {
+    return <Spinner />;
+  }
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-7xl mx-auto">
       <h1 className="text-3xl font-bold text-white mb-8">
         Galleries Management
       </h1>
 
-      <div className="bg-slate-800 p-6 rounded-lg border border-slate-700 mb-8">
-        <h2 className="text-xl font-semibold text-white mb-4">Galleries</h2>
-        <form onSubmit={handleAddGallery} className="flex gap-2 mb-4">
-          <input
-            type="text"
-            value={newGalleryName}
-            onChange={(e) => setNewGalleryName(e.target.value)}
-            placeholder="New Gallery Name"
-            className="flex-grow min-w-0 p-2 bg-slate-700 border border-slate-600 rounded-md text-white"
-          />
-          <button
-            type="submit"
-            className="bg-sky-500 text-white p-2 rounded-lg flex items-center justify-center hover:bg-sky-600 shrink-0"
-          >
-            <PlusIcon className="w-5 h-5" />
-          </button>
-        </form>
-        <div className="space-y-2">
-          {galleries.map((gallery) => (
-            <div
-              key={gallery.id}
-              onClick={() => setSelectedGalleryId(gallery.id)}
-              className={`flex justify-between items-center p-3 rounded-md cursor-pointer transition-colors ${selectedGalleryId === gallery.id ? "bg-sky-600" : "bg-slate-700 hover:bg-slate-600"}`}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        {/* Galleries List & Creation */}
+        <div className="md:col-span-1 bg-slate-800 p-6 rounded-lg border border-slate-700 self-start">
+          <h2 className="text-xl font-semibold text-white mb-4">Galleries</h2>
+          <div className="flex gap-2 mb-4">
+            <input
+              type="text"
+              value={newGalleryName}
+              onChange={(e) => setNewGalleryName(e.target.value)}
+              placeholder="New gallery name"
+              className="flex-grow p-2 bg-slate-700 border border-slate-600 rounded-md text-white"
+            />
+            <button
+              onClick={handleAddGallery}
+              className="bg-sky-500 text-white p-2 rounded-md hover:bg-sky-600"
             >
-              <span className="text-white truncate">{gallery.name}</span>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  deleteGallery(gallery.id);
-                }}
-                className="text-gray-400 hover:text-red-500"
+              <PlusIcon />
+            </button>
+          </div>
+          <div className="space-y-2">
+            {galleries.map((gallery) => (
+              <div
+                key={gallery.id}
+                onClick={() => setSelectedGallery(gallery.id)}
+                className={`flex justify-between items-center p-3 rounded-md cursor-pointer transition-colors ${
+                  selectedGallery === gallery.id
+                    ? "bg-sky-600 text-white"
+                    : "bg-slate-700 hover:bg-slate-600 text-gray-300"
+                }`}
               >
-                <TrashIcon className="w-5 h-5" />
-              </button>
-            </div>
-          ))}
+                <span>{gallery.name}</span>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteGallery(gallery.id);
+                  }}
+                  className="text-red-400 hover:text-red-300"
+                >
+                  <TrashIcon />
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
 
-      {/* Image Management for Selected Gallery */}
-      <div className="lg:col-span-2">
-        {selectedGalleryId ? (
-          <div className="bg-slate-800 p-6 rounded-lg border border-slate-700">
-            <h2 className="text-xl font-semibold text-white mb-4">
-              Images in "
-              {galleries.find((g) => g.id === selectedGalleryId)?.name}"
-            </h2>
-            <form
-              onSubmit={handleAddImage}
-              className="grid grid-cols-1 md:grid-cols-[1fr,auto,auto] gap-4 mb-6 items-end"
-            >
-              <input
-                type="text"
-                value={newImageName}
-                onChange={(e) => setNewImageName(e.target.value)}
-                placeholder="Image Name"
-                className="w-full p-2 bg-slate-700 border border-slate-600 rounded-md text-white"
-              />
-              <div className="flex items-center gap-2">
-                {newImageUrl && (
-                  <img
-                    src={newImageUrl}
-                    className="w-10 h-10 rounded object-cover"
-                  />
-                )}
-                <label className="cursor-pointer bg-slate-600 hover:bg-slate-500 text-white font-bold py-2 px-4 rounded-lg w-full text-center">
-                  <span>Upload</span>
+        {/* Selected Gallery Content */}
+        <div className="md:col-span-2 bg-slate-800 p-6 rounded-lg border border-slate-700">
+          {selectedGallery && galleries.find((g) => g.id === selectedGallery) ? (
+            <>
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-semibold text-white">
+                  {galleries.find((g) => g.id === selectedGallery)?.name}
+                </h2>
+                <div className="flex gap-2">
                   <input
                     type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileSelected}
                     className="hidden"
+                    multiple
                     accept="image/*"
-                    onChange={handleImageUpload}
                   />
-                </label>
-              </div>
-              <button
-                type="submit"
-                className="bg-sky-500 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center hover:bg-sky-600 w-full md:w-auto shrink-0"
-              >
-                <PlusIcon className="w-5 h-5 mr-2" />
-                Add
-              </button>
-            </form>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-              {currentImages.map((image) => (
-                <div key={image.id} className="relative group aspect-square">
-                  <img
-                    src={image.url}
-                    alt={image.name}
-                    className="w-full h-full object-cover rounded-lg"
+                  <input
+                    type="file"
+                    ref={folderInputRef}
+                    onChange={handleFileSelected}
+                    className="hidden"
+                    multiple
+                    webkitdirectory="true"
                   />
-                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-2 text-white">
-                    <p className="text-xs font-semibold truncate">
-                      {image.name}
-                    </p>
-                    <button
-                      onClick={() => delImg(selectedGalleryId, image.id)}
-                      className="self-end text-gray-300 hover:text-red-500"
-                    >
-                      <TrashIcon className="w-5 h-5" />
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex items-center gap-2 bg-slate-600 hover:bg-slate-500 text-white font-bold py-2 px-4 rounded-lg"
+                  >
+                    <UploadIcon /> Add Image(s)
+                  </button>
+                  <button
+                    onClick={() => folderInputRef.current?.click()}
+                    className="flex items-center gap-2 bg-slate-600 hover:bg-slate-500 text-white font-bold py-2 px-4 rounded-lg"
+                  >
+                    <UploadIcon /> Add Folder
+                  </button>
                 </div>
-              ))}
-              {currentImages.length === 0 && (
-                <p className="text-gray-400 col-span-full text-center py-4">
-                  This gallery has no images. Add one above.
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                {(galleryImages[selectedGallery] || []).map((image) => (
+                  <div key={image.id} className="relative group">
+                    <img
+                      src={image.imageUrl}
+                      alt={image.name}
+                      className="w-full h-32 object-cover rounded-md bg-slate-700"
+                    />
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-2">
+                      <p className="text-white text-xs break-words">{image.name}</p>
+                      <button
+                        onClick={() => deleteGalleryImage(selectedGallery, image.id)}
+                        className="self-end p-1 bg-red-500/80 rounded-full text-white hover:bg-red-500"
+                      >
+                        <TrashIcon className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {(galleryImages[selectedGallery] || []).length === 0 && (
+                <p className="text-center text-gray-400 mt-8">
+                  This gallery is empty. Add some images to get started.
                 </p>
               )}
+            </>
+          ) : (
+            <div className="flex items-center justify-center h-full">
+              <p className="text-gray-400">
+                Select a gallery to view its images.
+              </p>
             </div>
-          </div>
-        ) : (
-          <div className="bg-slate-800 p-6 rounded-lg border border-slate-700 flex items-center justify-center h-full min-h-[20rem]">
-            <p className="text-gray-400">
-              Select a gallery on the left to manage its images, or create a new
-              one.
-            </p>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );

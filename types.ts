@@ -82,7 +82,7 @@ export interface AdminUser {
 
 export interface GalleryImage {
   id: string;
-  url: string;
+  imageUrl: string;
   name: string;
 }
 

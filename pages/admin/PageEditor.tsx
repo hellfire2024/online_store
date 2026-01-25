@@ -7,10 +7,13 @@ import { useUnsavedChanges } from "../../context/UnsavedChangesContext";
 import { useEditor, EditorContent, Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Image from "@tiptap/extension-image";
-import Link from "@tiptap/extension-link";
 
 // --- Toolbar Component ---
 const MenuBar: React.FC<{ editor: Editor | null }> = ({ editor }) => {
+  if (!editor) {
+    return null;
+  }
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const addImageFromFile = useCallback(() => {
@@ -20,12 +23,10 @@ const MenuBar: React.FC<{ editor: Editor | null }> = ({ editor }) => {
   const handleFileChange = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
       const file = event.target.files?.[0];
-      if (file && editor) {
+      if (file) {
         const reader = new FileReader();
-        reader.onload = (e) => {
-          const src = e.target?.result as string;
-          editor.chain().focus().setImage({ src }).run();
-        };
+        reader.onload = (e) =>
+          editor.chain().focus().setImage({ src: e.target?.result as string }).run();
         reader.readAsDataURL(file);
       }
     },
@@ -33,9 +34,7 @@ const MenuBar: React.FC<{ editor: Editor | null }> = ({ editor }) => {
   );
 
   const setLink = useCallback(() => {
-    if (!editor) return;
-    const previousUrl = editor.getAttributes("link").href;
-    const url = window.prompt("Enter URL", previousUrl);
+    const url = window.prompt("URL", editor.getAttributes("link").href);
     if (url === null) return;
     if (url === "") {
       editor.chain().focus().extendMarkRange("link").unsetLink().run();
@@ -43,10 +42,6 @@ const MenuBar: React.FC<{ editor: Editor | null }> = ({ editor }) => {
     }
     editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
   }, [editor]);
-
-  if (!editor) {
-    return null;
-  }
 
   const buttonClass = (isActive: boolean) =>
     `p-2 rounded-md transition-colors ${
@@ -118,23 +113,20 @@ const PageEditor: React.FC = () => {
   const { setHasUnsavedChanges } = useUnsavedChanges();
 
   // THIS IS THE CORRECT AND FINAL ARCHITECTURE.
-  // The editor is created ONLY ONCE with a stable configuration that is never redefined.
+  // The editor is created ONCE with a stable configuration that is never redefined.
   const editor = useEditor({
-    extensions: useMemo(() => [
-      StarterKit.configure({
-        // The Link extension is configured here. It is NOT added again below.
-        link: { autolink: false, openOnClick: false },
-      }),
+    extensions: [
+      StarterKit,
       Image,
-    ], []),
-    editorProps: useMemo(() => ({
+    ],
+    content: "", // IMPORTANT: Always initialize empty.
+    editorProps: {
       attributes: {
         class: "prose prose-invert max-w-none p-4 h-96 overflow-y-auto focus:outline-none",
       },
-    }), []),
-    content: "", // IMPORTANT: Always initialize empty.
+    },
     onUpdate: ({ editor }) => {
-      setPage((prev) => (prev ? { ...prev, content: editor.getHTML() } : null));
+      setPage(prev => prev ? { ...prev, content: editor.getHTML() } : null);
     },
   });
 
@@ -149,11 +141,11 @@ const PageEditor: React.FC = () => {
     if (editor) {
       let pageToLoad: Omit<Page, "id"> | Page;
       if (pageId) {
-        pageToLoad = pages.find((p) => p.id === pageId) || { title: "Not Found", path: "", content: "" };
+        pageToLoad = pages.find(p => p.id === pageId) || { title: "Not Found", path: "", content: "" };
       } else {
-        pageToLoad = { title: "", path: "", content: "<p>Start writing your page here...</p>" };
+        pageToLoad = { title: "", path: "", content: "<p>Start writing...</p>" };
       }
-
+      
       setPage(pageToLoad);
       setOriginalPage(pageToLoad);
 
@@ -167,11 +159,11 @@ const PageEditor: React.FC = () => {
     if (page) {
       if ("id" in page) {
         await updatePage(page);
-        addToast("Page updated successfully!", "success");
+        addToast("Page updated!", "success");
         setOriginalPage(JSON.parse(JSON.stringify(page)));
       } else {
         const newPage = await addPage(page);
-        addToast("Page created successfully!", "success");
+        addToast("Page created!", "success");
         navigate(`/admin/pages/edit/${newPage.id}`);
       }
     }
@@ -186,19 +178,8 @@ const PageEditor: React.FC = () => {
   const handlePreview = () => {
     if (page) {
       const previewHtml = `
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <meta charset="UTF-8">
-            <title>Preview: ${page.title}</title>
-            <style> body { font-family: sans-serif; max-width: 800px; margin: 2rem auto; } img { max-width: 100%; } </style>
-        </head>
-        <body>
-            <h1>${page.title}</h1>
-            <hr>
-            <div>${page.content}</div>
-        </body>
-        </html>
+        <!DOCTYPE html><html><head><title>Preview</title><style>body{font-family:sans-serif;max-width:800px;margin:2rem auto;}img{max-width:100%;}</style></head>
+        <body><h1>${page.title}</h1><hr><div>${page.content}</div></body></html>
       `;
       const blob = new Blob([previewHtml], { type: "text/html" });
       window.open(URL.createObjectURL(blob), "_blank");
@@ -206,7 +187,7 @@ const PageEditor: React.FC = () => {
   };
 
   if (!editor || !page) {
-    return <div className="text-white">Loading Editor...</div>;
+    return <div className="text-white">Loading...</div>;
   }
   
   return (
@@ -223,7 +204,7 @@ const PageEditor: React.FC = () => {
           onChange={handleChange}
           className="w-full p-3 bg-slate-800 border-2 border-slate-700 rounded-md text-white text-2xl font-bold focus:outline-none focus:ring-2 focus:ring-sky-500"
         />
-         <input
+        <input
           type="text"
           name="path"
           placeholder="/url-path"
