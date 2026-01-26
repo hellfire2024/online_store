@@ -64,12 +64,17 @@ const Header: React.FC = () => {
   return (
     <header className="bg-slate-900/80 backdrop-blur-md shadow-lg sticky top-0 z-40">
       <div className="container mx-auto px-4">
-        <div className="flex justify-between items-center py-4">
-          <Link to="/" className="text-2xl font-bold text-white tracking-wider">
-            {siteSettings?.logoText}
-            <span className="text-sky-400">{siteSettings?.logoTextAccent}</span>
+        <div className="relative flex justify-between items-center py-4">
+          <Link to="/" className="flex items-center gap-3 text-2xl font-bold text-white tracking-wider">
+            {siteSettings?.headerLogoUrl && (
+              <img src={siteSettings.headerLogoUrl} alt="Site Logo" className="h-8 w-auto" />
+            )}
+            <span>
+              {siteSettings?.logoText}
+              <span className="text-sky-400">{siteSettings?.logoTextAccent}</span>
+            </span>
           </Link>
-          <nav className="hidden md:flex items-center space-x-8">
+          <nav className="hidden md:flex items-center space-x-8 absolute left-1/2 transform -translate-x-1/2">
             {headerMenu?.items.map((item) => (
               <NavLink key={item.id} to={item.url} className={navLinkClass}>
                 {item.text}

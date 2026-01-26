@@ -73,14 +73,20 @@ const StaffManagement: React.FC = () => {
   const handleImageUpload = (file: File | null) => {
     setSelectedImageFile(file);
     if (newStaffMember) {
-      setNewStaffMember((prev) => ({ ...prev!, imageUrl: file ? URL.createObjectURL(file) : "" }));
+      setNewStaffMember((prev) => ({
+        ...prev!,
+        imageUrl: file ? URL.createObjectURL(file) : "",
+      }));
     } else if (editingStaff) {
-      setEditingStaff((prev) => ({ ...prev!, imageUrl: file ? URL.createObjectURL(file) : "" }));
+      setEditingStaff((prev) => ({
+        ...prev!,
+        imageUrl: file ? URL.createObjectURL(file) : "",
+      }));
     }
   };
 
   const handleSave = async () => {
-    let finalImageUrl = currentStaff?.imageUrl || '';
+    let finalImageUrl = currentStaff?.imageUrl || "";
 
     if (selectedImageFile) {
       // Simulate image upload - in a real app, this would be an API call
@@ -100,7 +106,7 @@ const StaffManagement: React.FC = () => {
     }
 
     const staffToSave = {
-      ...(newStaffMember || editingStaff) as Omit<StaffMember, "id">,
+      ...((newStaffMember || editingStaff) as Omit<StaffMember, "id">),
       imageUrl: finalImageUrl,
     };
 
@@ -193,20 +199,19 @@ const StaffManagement: React.FC = () => {
               <ImageUploadInput
                 label="Image"
                 imageUrl={currentStaff.imageUrl}
-                onImageUrlChange={(url) => {
-                  if (newStaffMember) {
-                    setNewStaffMember((prev) => ({ ...prev!, imageUrl: url }));
-                  } else if (editingStaff) {
-                    setEditingStaff((prev) => ({ ...prev!, imageUrl: url }));
-                  }
-                  setSelectedImageFile(null);
-                }}
+                onImageUrlChange={() => {}} // No longer directly setting URL
                 onFileSelect={(file) => {
                   setSelectedImageFile(file);
                   if (newStaffMember) {
-                    setNewStaffMember((prev) => ({ ...prev!, imageUrl: URL.createObjectURL(file) }));
+                    setNewStaffMember((prev) => ({
+                      ...prev!,
+                      imageUrl: URL.createObjectURL(file),
+                    }));
                   } else if (editingStaff) {
-                    setEditingStaff((prev) => ({ ...prev!, imageUrl: URL.createObjectURL(file) }));
+                    setEditingStaff((prev) => ({
+                      ...prev!,
+                      imageUrl: URL.createObjectURL(file),
+                    }));
                   }
                 }}
               />

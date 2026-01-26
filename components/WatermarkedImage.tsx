@@ -9,8 +9,6 @@ interface WatermarkedImageProps {
 }
 
 const WatermarkedImage: React.FC<WatermarkedImageProps> = ({ src, alt, isSelected, onClick }) => {
-  const watermarkText = 'CustomThreads';
-
   return (
     <div
       onClick={onClick}
@@ -19,11 +17,12 @@ const WatermarkedImage: React.FC<WatermarkedImageProps> = ({ src, alt, isSelecte
       style={{ backgroundImage: `url(${src})` }}
       title={alt}
     >
-      <div
-        className="absolute inset-0 flex items-center justify-center text-white text-2xl font-bold opacity-20 pointer-events-none select-none transform -rotate-45"
-        style={{ textShadow: '0 0 5px black' }}
-      >
-        {watermarkText}
+      <div className="absolute inset-0 pointer-events-none select-none">
+        <div className="absolute inset-0 flex flex-col items-center justify-around opacity-15" style={{ transform: 'rotate(-45deg)' }}>
+          <div className="text-white font-bold whitespace-nowrap" style={{ textShadow: '0 0 5px black', fontSize: '12px' }}>CustomThreads</div>
+          <div className="text-white font-bold whitespace-nowrap" style={{ textShadow: '0 0 5px black', fontSize: '12px' }}>CustomThreads</div>
+          <div className="text-white font-bold whitespace-nowrap" style={{ textShadow: '0 0 5px black', fontSize: '12px' }}>CustomThreads</div>
+        </div>
       </div>
       <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-30 transition-opacity"></div>
     </div>

@@ -10,27 +10,31 @@ import * as mockApi from "../services/mockApi";
 
 // Create a default, empty state that matches the SiteSettings type.
 const defaultSettings: SiteSettings = {
-  logoText: "",
-  logoTextAccent: "",
-  headerLogoUrl: "",
-  heroTitle: "",
-  heroSubtitle: "",
-  heroBackgroundImageUrl: "",
+  logoText: "Custom",
+  logoTextAccent: "Threads",
+  headerLogoUrl: "", // Re-adding with a default empty string
+  siteTitle: "Custom Threads Online Store",
+  faviconUrl: "/favicon.svg", // Default favicon
+  footerConfig: {
+    columns: [
+      { id: "left", items: [] },
+      { id: "center", items: [] },
+      { id: "right", items: [] },
+    ],
+  },
   footerSocialLinks: [],
   footerContactEmail: "",
   footerContactPhone: "",
   footerContactAddress: "",
-  aboutPageContent: "",
   paymentProvider: "none",
   paymentApiKeys: { stripe: "", paypal: "", square: "", authorizeNet: "" },
   shippingProvider: "none",
   shippingFlatRate: 0,
   shippingApiKeys: { fedex: "", ups: "", usps: "" },
-  footerQuickLinks: [],
   siteBackgroundColor: "",
   siteTextColor: "",
   siteAccentColor: "",
-  siteBackgroundImageUrl: "",
+  siteBackgroundImageUrl: "https://picsum.photos/seed/hero/1200/800",
   siteBackgroundOpacity: 100,
 };
 
@@ -38,6 +42,7 @@ interface SiteSettingsContextType {
   siteSettings: SiteSettings;
   isLoading: boolean;
   updateSiteSettings: (newSettings: Partial<SiteSettings>) => Promise<void>;
+  uploadFavicon: (file: File) => Promise<string>;
 }
 
 const SiteSettingsContext = createContext<SiteSettingsContextType | undefined>(
@@ -70,9 +75,22 @@ export const SiteSettingsProvider: React.FC<{ children: ReactNode }> = ({
     setSiteSettings(updatedSettings);
   };
 
+  const uploadFavicon = async (file: File): Promise<string> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64data = reader.result as string;
+        // In a real app, you would upload this to a server and get a URL
+        // For now, we'll use the data URL directly
+        resolve(base64data);
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
   return (
     <SiteSettingsContext.Provider
-      value={{ siteSettings, isLoading, updateSiteSettings }}
+      value={{ siteSettings, isLoading, updateSiteSettings, uploadFavicon }}
     >
       {children}
     </SiteSettingsContext.Provider>

@@ -70,10 +70,6 @@ const AdminSidebar: React.FC = () => {
           <h3 className="px-3 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
             Site Content
           </h3>
-          <PromptedNavLink to="/admin/homepage" className={getNavLinkClass}>
-            <HomepageIcon className="w-6 h-6 mr-3" />
-            Homepage
-          </PromptedNavLink>
           <PromptedNavLink to="/admin/pages" className={getNavLinkClass}>
             <PagesIcon className="w-6 h-6 mr-3" />
             Pages

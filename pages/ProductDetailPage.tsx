@@ -109,9 +109,25 @@ const ProductDetailPage: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
         <div className="relative w-full aspect-square bg-slate-700 rounded-lg flex items-center justify-center border border-slate-600">
           <img src={product.imageUrl} alt={product.name} className="max-w-full max-h-full object-contain" />
+          <div className="absolute inset-0 pointer-events-none select-none">
+            <div className="absolute inset-0 flex flex-col items-center justify-around opacity-15" style={{ transform: 'rotate(-45deg)' }}>
+              <div className="text-white font-bold whitespace-nowrap" style={{ textShadow: '0 0 5px black', fontSize: '18px' }}>CustomThreads</div>
+              <div className="text-white font-bold whitespace-nowrap" style={{ textShadow: '0 0 5px black', fontSize: '18px' }}>CustomThreads</div>
+              <div className="text-white font-bold whitespace-nowrap" style={{ textShadow: '0 0 5px black', fontSize: '18px' }}>CustomThreads</div>
+              <div className="text-white font-bold whitespace-nowrap" style={{ textShadow: '0 0 5px black', fontSize: '18px' }}>CustomThreads</div>
+              <div className="text-white font-bold whitespace-nowrap" style={{ textShadow: '0 0 5px black', fontSize: '18px' }}>CustomThreads</div>
+            </div>
+          </div>
           {(selectedGalleryImage || uploadedImage) && (
             <div className="absolute top-1/4 left-1/4 w-1/2 h-1/2 bg-contain bg-no-repeat bg-center"
-                 style={{ backgroundImage: `url(${selectedGalleryImage?.url || uploadedImage})` }}>
+                 style={{ backgroundImage: `url(${selectedGalleryImage?.imageUrl || uploadedImage})` }}>
+              <div className="absolute inset-0 pointer-events-none select-none">
+                <div className="absolute inset-0 flex flex-col items-center justify-around opacity-15" style={{ transform: 'rotate(-45deg)' }}>
+                  <div className="text-white font-bold whitespace-nowrap" style={{ textShadow: '0 0 5px black', fontSize: '12px' }}>CustomThreads</div>
+                  <div className="text-white font-bold whitespace-nowrap" style={{ textShadow: '0 0 5px black', fontSize: '12px' }}>CustomThreads</div>
+                  <div className="text-white font-bold whitespace-nowrap" style={{ textShadow: '0 0 5px black', fontSize: '12px' }}>CustomThreads</div>
+                </div>
+              </div>
             </div>
           )}
         </div>

@@ -125,11 +125,75 @@ export interface Menu {
   items: MenuItem[];
 }
 
+export type FooterItemType = 'contactInfo' | 'socialLinks' | 'menu';
+
+export interface FooterItem {
+  id: string; // Unique ID for DnD, e.g., 'contactInfo', 'socialLinks', 'menu_123'
+  type: FooterItemType;
+  menuId?: string; // Only if type is 'menu'
+  title: string; // Display name, e.g., "Contact Information", "Follow Us", "Quick Links"
+}
+
+export interface FooterColumn {
+  id: 'left' | 'center' | 'right';
+  items: FooterItem[];
+}
+
+// Page content type definitions
+export interface HomePageContent {
+  heroTitle: string;
+  heroSubtitle: string;
+  heroBackgroundImageUrl: string;
+}
+
+export interface AboutPageContent {
+  aboutPageContent: string;
+}
+
+  export type ContactFieldType = 'firstName' | 'lastName' | 'fullName' | 'email' | 'phone' | 'address' | 'subject' | 'message' | 'text' | 'textarea' | 'select' | 'checkbox';
+
+  export interface ConditionalRule {
+    fieldId: string; // ID of field to check
+    operator: 'equals' | 'notEquals' | 'contains' | 'notEmpty';
+    value: string;
+  }
+
+export interface ContactFormField {
+  id: string;
+  type: ContactFieldType;
+  label: string;
+  placeholder: string;
+  required: boolean;
+  enabled: boolean;
+    options?: string[]; // For select fields
+    conditionalRules?: ConditionalRule[]; // Show field only if rules match
+  validation?: {
+    pattern?: string;
+    minLength?: number;
+    maxLength?: number;
+  };
+}
+
+export interface ContactPageContent {
+  pageTitle: string;
+  pageSubtitle: string;
+  formFields: ContactFormField[];
+  targetEmail: string; // Where form submissions go
+  subjectTemplate: string; // Email subject template, e.g., "Contact Form: {subject}"
+  successMessage: string;
+}
+
+export interface CustomPageContent {
+  content: string;
+}
+
 export interface Page {
   id: string;
-  path: string; // e.g., /privacy-policy
   title: string;
-  content: string; // Can contain HTML
+  path: string;
+  pageType?: "home" | "about" | "contact" | "custom";
+  contentData?: HomePageContent | AboutPageContent | ContactPageContent | CustomPageContent; // Structured content
+  content?: string; // Fallback for simple rich text (e.g., custom pages)
 }
 
 export type PaymentProvider =
@@ -143,11 +207,12 @@ export type ShippingProvider = "none" | "flatRate" | "fedex" | "ups" | "usps";
 export interface SiteSettings {
   logoText: string;
   logoTextAccent: string;
-  headerLogoUrl: string;
-  heroTitle: string;
-  heroSubtitle: string;
-  heroBackgroundImageUrl: string;
-  aboutPageContent: string;
+  headerLogoUrl?: string; // Re-adding the optional logo URL
+  siteTitle: string;
+  faviconUrl?: string;
+  footerConfig?: {
+    columns: FooterColumn[];
+  };
 
   footerSocialLinks: MenuItem[];
   footerContactEmail: string;

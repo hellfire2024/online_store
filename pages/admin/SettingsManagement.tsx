@@ -1,24 +1,94 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useSiteSettings } from "../../context/SiteSettingsContext";
 import { usePages } from "../../context/PagesContext";
 import { useToast } from "../../hooks/useToast";
-import { SiteSettings, Menu, MenuItem, Page } from "../../types";
+import { SiteSettings, Menu, MenuItem, Page, FooterItem, FooterColumn } from "../../types";
 import { useUnsavedChanges } from "../../context/UnsavedChangesContext";
 import { PlusIcon, TrashIcon } from "../../components/Icons";
 import MenuEditor from "../../components/admin/MenuEditor"; // Correctly import the isolated component
-import { DragEndEvent } from "@dnd-kit/core";
-import { arrayMove } from "@dnd-kit/sortable";
+import ImageUploadInput from "../../components/admin/ImageUploadInput";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragOverlay,
+  DragStartEvent,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  useSortable,
+  arrayMove,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
-type SettingsTab = "general" | "footer" | "menus" | "payment" | "shipping";
+
+type SettingsTab = "general" | "contact" | "footer" | "menus" | "payment" | "shipping";
+
+// --- Draggable Item Component ---
+const DraggableItem: React.FC<{ item: FooterItem, isOverlay?: boolean }> = ({ item, isOverlay }) => {
+  return (
+    <div className={`p-2 bg-slate-600 rounded-md text-white border border-slate-500 ${isOverlay ? 'shadow-lg' : ''}`}>
+      {item.title}
+    </div>
+  );
+};
+
+
+// --- Sortable Item Component ---
+const SortableItem: React.FC<{ item: FooterItem }> = ({ item }) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: item.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+      <DraggableItem item={item} />
+    </div>
+  );
+};
+
+
+// --- Droppable Column Component ---
+const DroppableColumn: React.FC<{ column: FooterColumn, children: React.ReactNode }> = ({ column, children }) => {
+  const { setNodeRef } = useSortable({ id: column.id });
+
+  return (
+    <div ref={setNodeRef} className="bg-slate-900 p-4 rounded-lg min-h-[200px] flex flex-col gap-2">
+      <h3 className="text-lg font-semibold text-white capitalize mb-2">{column.id}</h3>
+      <SortableContext items={column.items.map(i => i.id)} strategy={verticalListSortingStrategy}>
+        {children}
+      </SortableContext>
+    </div>
+  );
+};
+
 
 const SettingsManagement: React.FC = () => {
-  const { siteSettings, updateSiteSettings } = useSiteSettings();
+  const { siteSettings, updateSiteSettings, uploadFavicon } = useSiteSettings();
   const { pages, menus, updateMenu } = usePages();
 
   const [settings, setSettings] = useState<Partial<SiteSettings>>(siteSettings);
   const [activeTab, setActiveTab] = useState<SettingsTab>("general");
   const { addToast } = useToast();
   const { setHasUnsavedChanges } = useUnsavedChanges();
+  const [selectedFaviconFile, setSelectedFaviconFile] = useState<File | null>(null);
+  const [selectedLogoFile, setSelectedLogoFile] = useState<File | null>(null);
+  const [activeDragItem, setActiveDragItem] = useState<FooterItem | null>(null);
 
   // --- State for Menu Editor ---
   const [selectedMenuId, setSelectedMenuId] = useState<string | null>(null);
@@ -61,9 +131,140 @@ const SettingsManagement: React.FC = () => {
     }
   }, [selectedMenuId, menus]);
 
+
+  const availableFooterItems = useMemo((): FooterItem[] => {
+    const defaultItems: FooterItem[] = [
+      { id: 'contactInfo', type: 'contactInfo', title: 'Contact Info' },
+      { id: 'socialLinks', type: 'socialLinks', title: 'Social Links' },
+    ];
+    const menuItems: FooterItem[] = menus.map(menu => ({
+      id: `menu_${menu.id}`,
+      type: 'menu',
+      menuId: menu.id,
+      title: `Menu: ${menu.name}`,
+    }));
+    return [...defaultItems, ...menuItems];
+  }, [menus]);
+
+
+  const handleDragStart = (event: DragStartEvent) => {
+    const { active } = event;
+    const item = availableFooterItems.find(i => i.id === active.id) || 
+                 settings.footerConfig?.columns.flatMap(c => c.items).find(i => i.id === active.id);
+    setActiveDragItem(item || null);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveDragItem(null);
+
+    if (!over) return;
+
+    const activeId = active.id.toString();
+    const overId = over.id.toString();
+
+    setSettings(prev => {
+      if (!prev || !prev.footerConfig) return prev;
+
+      const newColumns = [...prev.footerConfig.columns];
+
+      const activeContainer = findContainer(activeId, newColumns) || 'available';
+      const overContainer = findContainer(overId, newColumns) || findColumn(overId, newColumns)?.id;
+
+      if (!activeContainer || !overContainer) return prev;
+
+      let activeItem = findItem(activeId, newColumns) || availableFooterItems.find(i => i.id === activeId);
+      if (!activeItem) return prev;
+
+
+      // Moving an item
+      if (activeContainer !== overContainer) {
+        // Remove from old container
+        if (activeContainer !== 'available') {
+          const oldColumn = newColumns.find(c => c.id === activeContainer);
+          if(oldColumn) oldColumn.items = oldColumn.items.filter(i => i.id !== activeId);
+        }
+
+        // Add to new container
+        if (overContainer !== 'available') {
+           const newColumn = newColumns.find(c => c.id === overContainer);
+           if (newColumn) {
+             const overIndex = newColumn.items.findIndex(i => i.id === overId);
+             if (overIndex !== -1) {
+                newColumn.items.splice(overIndex, 0, activeItem!);
+             } else {
+                newColumn.items.push(activeItem!);
+             }
+           }
+        }
+      } else {
+        // Sorting within the same container
+        const column = newColumns.find(c => c.id === activeContainer);
+        if (column) {
+          const oldIndex = column.items.findIndex(i => i.id === activeId);
+          const newIndex = column.items.findIndex(i => i.id === overId);
+          if (oldIndex !== -1 && newIndex !== -1) {
+            column.items = arrayMove(column.items, oldIndex, newIndex);
+          }
+        }
+      }
+
+      return { ...prev, footerConfig: { columns: newColumns } };
+    });
+  };
+
+  const findContainer = (id: string, columns: FooterColumn[]) => {
+    if (availableFooterItems.some(i => i.id === id)) return 'available';
+    return columns.find(c => c.items.some(i => i.id === id))?.id;
+  };
+
+  const findColumn = (id: string, columns: FooterColumn[]) => {
+    return columns.find(c => c.id === id);
+  }
+
+  const findItem = (id: string, columns: FooterColumn[]) => {
+     return columns.flatMap(c => c.items).find(i => i.id === id);
+  }
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    })
+  );
+
+
   const handleSaveSettings = async () => {
-    await updateSiteSettings(settings);
+    let finalSettings = { ...settings };
+
+    if (selectedFaviconFile) {
+      try {
+        const faviconUrl = await uploadFavicon(selectedFaviconFile);
+        finalSettings.faviconUrl = faviconUrl;
+        addToast("Favicon uploaded successfully!", "success");
+      } catch (error) {
+        addToast("Favicon upload failed!", "error");
+        return;
+      }
+    }
+
+    if (selectedLogoFile) {
+      try {
+        // We can reuse the uploadFavicon logic for any image upload
+        const logoUrl = await uploadFavicon(selectedLogoFile);
+        finalSettings.headerLogoUrl = logoUrl;
+        addToast("Header logo uploaded successfully!", "success");
+      } catch (error) {
+        addToast("Header logo upload failed!", "error");
+        return;
+      }
+    }
+
+    await updateSiteSettings(finalSettings);
     addToast("Settings updated successfully!", "success");
+    setSelectedFaviconFile(null);
+    setSelectedLogoFile(null);
   };
 
   const handleInputChange = (
@@ -152,20 +353,6 @@ const SettingsManagement: React.FC = () => {
     }
   };
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (currentMenu && over && active.id !== over.id) {
-      const oldIndex = currentMenu.items.findIndex(
-        (item) => item.id === active.id,
-      );
-      const newIndex = currentMenu.items.findIndex(
-        (item) => item.id === over.id,
-      );
-      const newItems = arrayMove(currentMenu.items, oldIndex, newIndex);
-      setCurrentMenu({ ...currentMenu, items: newItems });
-    }
-  };
-
   const inputClasses =
     "w-full p-2 bg-slate-700 border border-slate-600 rounded-md text-white";
   const buttonClasses =
@@ -191,6 +378,7 @@ const SettingsManagement: React.FC = () => {
 
       <div className="flex border-b border-slate-700">
         <TabButton tab="general" label="General" />
+        <TabButton tab="contact" label="Contact & Social" />
         <TabButton tab="footer" label="Footer" />
         <TabButton tab="menus" label="Menus" />
         <TabButton tab="payment" label="Payment" />
@@ -200,47 +388,89 @@ const SettingsManagement: React.FC = () => {
       <div className="bg-slate-800 p-6 rounded-b-lg border border-t-0 border-slate-700 min-h-[40rem]">
         {activeTab === "general" && (
           <div className="space-y-6">
-            <h2 className="text-xl font-semibold text-white">
-              General Site Info
+            <h2 className="text-2xl font-semibold text-white mb-4">
+              General Site Information
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">
-                  Logo Text
-                </label>
-                <input
-                  type="text"
-                  name="logoText"
-                  value={settings.logoText || ""}
-                  onChange={handleInputChange}
-                  className={inputClasses}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">
-                  Logo Accent Text
-                </label>
-                <input
-                  type="text"
-                  name="logoTextAccent"
-                  value={settings.logoTextAccent || ""}
-                  onChange={handleInputChange}
-                  className={inputClasses}
-                />
-              </div>
-            </div>
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">
-                About Page Content (HTML)
+              <label
+                htmlFor="siteTitle"
+                className="block text-gray-300 text-sm font-bold mb-1"
+              >
+                Site Title (Browser Tab)
               </label>
-              <textarea
-                name="aboutPageContent"
-                value={settings.aboutPageContent || ""}
+              <input
+                type="text"
+                id="siteTitle"
+                name="siteTitle"
+                value={settings.siteTitle || ""}
                 onChange={handleInputChange}
                 className={inputClasses}
-                rows={8}
-              ></textarea>
+                placeholder="Your Site Title"
+              />
             </div>
+            <ImageUploadInput
+              label="Favicon (Browser Tab Icon)"
+              imageUrl={settings.faviconUrl || ""}
+              onImageUrlChange={(url) =>
+                setSettings((prev) => ({ ...prev!, faviconUrl: url }))
+              }
+              onFileSelect={(file) => {
+                setSelectedFaviconFile(file);
+                setSettings((prev) => ({
+                  ...prev!,
+                  faviconUrl: URL.createObjectURL(file),
+                }));
+              }}
+            />
+            <div>
+              <label
+                htmlFor="logoText"
+                className="block text-gray-300 text-sm font-bold mb-1"
+              >
+                Header Logo Text
+              </label>
+              <input
+                type="text"
+                id="logoText"
+                name="logoText"
+                value={settings.logoText || ""}
+                onChange={handleInputChange}
+                className={inputClasses}
+                placeholder="Your Brand Name"
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="logoTextAccent"
+                className="block text-gray-300 text-sm font-bold mb-1"
+              >
+                Header Logo Accent Text
+              </label>
+              <input
+                type="text"
+                id="logoTextAccent"
+                name="logoTextAccent"
+                value={settings.logoTextAccent || ""}
+                onChange={handleInputChange}
+                className={inputClasses}
+                placeholder="Accent (e.g., Shop, Store)"
+              />
+            </div>
+            <ImageUploadInput
+              label="Header Logo"
+              imageUrl={settings.headerLogoUrl || ""}
+              onImageUrlChange={(url) =>
+                setSettings((prev) => ({ ...prev!, headerLogoUrl: url }))
+              }
+              onFileSelect={(file) => {
+                setSelectedLogoFile(file);
+                setSettings((prev) => ({
+                  ...prev!,
+                  headerLogoUrl: URL.createObjectURL(file),
+                }));
+              }}
+            />
+
             <div className="flex justify-end">
               <button
                 onClick={handleSaveSettings}
@@ -253,64 +483,78 @@ const SettingsManagement: React.FC = () => {
           </div>
         )}
 
-        {activeTab === "footer" && (
+        {activeTab === "contact" && (
           <div className="space-y-6">
-            <h2 className="text-xl font-semibold text-white">Footer Content</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <h2 className="text-xl font-semibold text-white">Contact Information</h2>
+            <div className="p-4 border border-slate-700 rounded-md space-y-4">
               <div>
-                <h3 className="text-lg text-gray-300 mb-2">Contact Info</h3>
-                <div className="space-y-2">
+                <label htmlFor="footerContactEmail" className="block text-sm font-medium text-gray-400 mb-1">Contact Email</label>
+                <input
+                  type="email"
+                  id="footerContactEmail"
+                  name="footerContactEmail"
+                  value={settings.footerContactEmail || ""}
+                  onChange={handleInputChange}
+                  placeholder="support@example.com"
+                  className={inputClasses}
+                />
+              </div>
+              <div>
+                <label htmlFor="footerContactPhone" className="block text-sm font-medium text-gray-400 mb-1">Contact Phone</label>
+                <input
+                  type="tel"
+                  id="footerContactPhone"
+                  name="footerContactPhone"
+                  value={settings.footerContactPhone || ""}
+                  onChange={handleInputChange}
+                  placeholder="(123) 456-7890"
+                  className={inputClasses}
+                />
+              </div>
+              <div>
+                <label htmlFor="footerContactAddress" className="block text-sm font-medium text-gray-400 mb-1">Address</label>
+                <input
+                  type="text"
+                  id="footerContactAddress"
+                  name="footerContactAddress"
+                  value={settings.footerContactAddress || ""}
+                  onChange={handleInputChange}
+                  placeholder="123 Example St, City, State"
+                  className={inputClasses}
+                />
+              </div>
+            </div>
+
+            <h2 className="text-xl font-semibold text-white pt-4">Social Links</h2>
+            <div className="p-4 border border-slate-700 rounded-md">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
+                <label className="block text-sm font-medium text-gray-400">Link Text</label>
+                <label className="block text-sm font-medium text-gray-400">Link URL</label>
+              </div>
+              {settings.footerSocialLinks?.map((link, index) => (
+                <div key={link.id} className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
                   <input
-                    type="email"
-                    name="footerContactEmail"
-                    value={settings.footerContactEmail || ""}
-                    onChange={handleInputChange}
-                    placeholder="Contact Email"
-                    className={inputClasses}
-                  />
-                  <input
-                    type="tel"
-                    name="footerContactPhone"
-                    value={settings.footerContactPhone || ""}
-                    onChange={handleInputChange}
-                    placeholder="Contact Phone"
+                    type="text"
+                    aria-label="Link Text"
+                    value={link.text}
+                    onChange={(e) =>
+                      handleSocialLinkChange(link.id, "text", e.target.value)
+                    }
+                    placeholder="e.g., Facebook"
                     className={inputClasses}
                   />
                   <input
                     type="text"
-                    name="footerContactAddress"
-                    value={settings.footerContactAddress || ""}
-                    onChange={handleInputChange}
-                    placeholder="Address"
+                    aria-label="Link URL"
+                    value={link.url}
+                    onChange={(e) =>
+                      handleSocialLinkChange(link.id, "url", e.target.value)
+                    }
+                    placeholder="https://facebook.com/..."
                     className={inputClasses}
                   />
                 </div>
-              </div>
-              <div>
-                <h3 className="text-lg text-gray-300 mb-2">Social Links</h3>
-                {settings.footerSocialLinks?.map((link) => (
-                  <div key={link.id} className="flex gap-2 mb-2">
-                    <input
-                      type="text"
-                      value={link.text}
-                      onChange={(e) =>
-                        handleSocialLinkChange(link.id, "text", e.target.value)
-                      }
-                      placeholder="Name"
-                      className={inputClasses}
-                    />
-                    <input
-                      type="text"
-                      value={link.url}
-                      onChange={(e) =>
-                        handleSocialLinkChange(link.id, "url", e.target.value)
-                      }
-                      placeholder="URL"
-                      className={inputClasses}
-                    />
-                  </div>
-                ))}
-              </div>
+              ))}
             </div>
             <div className="flex justify-end">
               <button
@@ -318,10 +562,55 @@ const SettingsManagement: React.FC = () => {
                 className={buttonClasses}
                 disabled={!hasSettingsUnsavedChanges}
               >
-                Save Footer Settings
+                Save Contact Settings
               </button>
             </div>
           </div>
+        )}
+
+        {activeTab === "footer" && (
+           <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+          >
+            <div className="grid grid-cols-4 gap-4">
+              {/* Available Items */}
+              <div className="col-span-1">
+                <h2 className="text-xl font-semibold text-white mb-2">Available Items</h2>
+                <div className="space-y-2 p-4 bg-slate-900 rounded-lg">
+                  <SortableContext items={availableFooterItems.map(i => i.id)} strategy={verticalListSortingStrategy}>
+                    {availableFooterItems
+                       .filter(item => !findItem(item.id, settings.footerConfig?.columns || []))
+                       .map(item => <SortableItem key={item.id} item={item} />)
+                    }
+                  </SortableContext>
+                </div>
+              </div>
+
+              {/* Footer Columns */}
+              <div className="col-span-3 grid grid-cols-3 gap-4">
+                {settings.footerConfig?.columns.map(column => (
+                  <DroppableColumn key={column.id} column={column}>
+                    {column.items.map(item => <SortableItem key={item.id} item={item} />)}
+                  </DroppableColumn>
+                ))}
+              </div>
+            </div>
+             <DragOverlay>
+              {activeDragItem ? <DraggableItem item={activeDragItem} isOverlay /> : null}
+            </DragOverlay>
+            <div className="flex justify-end mt-8">
+              <button
+                onClick={handleSaveSettings}
+                className={buttonClasses}
+                disabled={!hasSettingsUnsavedChanges}
+              >
+                Save Footer Layout
+              </button>
+            </div>
+          </DndContext>
         )}
 
         {activeTab === "menus" && (

@@ -30,6 +30,7 @@ const PagesManagement: React.FC = () => {
           <thead className="bg-slate-900">
             <tr>
               <th className="p-4">Title</th>
+              <th className="p-4">Type</th>
               <th className="p-4">Path</th>
               <th className="p-4">Actions</th>
             </tr>
@@ -37,19 +38,35 @@ const PagesManagement: React.FC = () => {
           <tbody>
             {pages.map((page) => (
               <tr key={page.id} className="border-t border-slate-700">
-                <td className="p-4">{page.title}</td>
+                <td className="p-4 text-white">{page.title}</td>
+                <td className="p-4">
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    page.pageType === 'home' ? 'bg-sky-900 text-sky-300' :
+                    page.pageType === 'about' ? 'bg-purple-900 text-purple-300' :
+                    page.pageType === 'contact' ? 'bg-green-900 text-green-300' :
+                    'bg-slate-700 text-gray-300'
+                  }`}>
+                    {page.pageType || 'custom'}
+                  </span>
+                </td>
                 <td className="p-4 text-gray-400">{page.path}</td>
                 <td className="p-4">
                   <div className="flex items-center gap-2">
                     <Link
                       to={`/admin/pages/edit/${page.id}`}
                       className="text-gray-400 hover:text-sky-400 p-2"
+                      title="Edit page"
                     >
                       <EditIcon className="w-5 h-5" />
                     </Link>
                     <button
-                      onClick={() => deletePage(page.id)}
+                      onClick={() => {
+                        if (confirm(`Delete "${page.title}"? You can recreate it later if needed.`)) {
+                          deletePage(page.id);
+                        }
+                      }}
                       className="text-gray-400 hover:text-red-500 p-2"
+                      title="Delete page"
                     >
                       <TrashIcon className="w-5 h-5" />
                     </button>

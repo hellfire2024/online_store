@@ -1,4 +1,4 @@
-import React, { useState, useEffect, ReactNode, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
 import { CustomerAuthProvider } from "./context/CustomerAuthContext";
 import { CartProvider } from "./context/CartContext";
@@ -31,6 +31,8 @@ import CustomerAccountPage from "./pages/CustomerAccountPage";
 import CustomerAddressesPage from "./pages/CustomerAddressesPage";
 import CustomerOrdersPage from "./pages/CustomerOrdersPage";
 import AdminLoginModal from "./components/admin/AdminLoginModal";
+import SiteEffectHandler from "./components/SiteEffectHandler";
+import TestHeroRenderingPage from "./pages/TestHeroRenderingPage";
 
 const AdminProtectedRoute: React.FC<{ children: React.ReactNode }> = ({
   children,
@@ -73,15 +75,21 @@ const App: React.FC = () => {
       <CustomerAuthProvider>
         <UnsavedChangesProvider>
           <SiteSettingsProvider>
+            <SiteEffectHandler />
             <ProductProvider>
               <GalleryProvider>
                 <StaffProvider>
                   <ReviewsProvider>
                     <ServicesProvider>
-                      <PagesProvider>
-                        <ToastProvider>
+                      <ToastProvider>
+                        <PagesProvider>
                           <CartProvider>
-                            <HashRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+                            <HashRouter
+                              future={{
+                                v7_startTransition: true,
+                                v7_relativeSplatPath: true,
+                              }}
+                            >
                               <div className="flex flex-col min-h-screen">
                                 <AdminLoginModal
                                   isOpen={isAdminLoginOpen}
@@ -90,6 +98,10 @@ const App: React.FC = () => {
                                 <Header />
                                 <main className="flex-grow container mx-auto px-4 py-8">
                                   <Routes>
+                                    <Route
+                                      path="/test-hero"
+                                      element={<TestHeroRenderingPage />}
+                                    />
                                     <Route path="/" element={<HomePage />} />
                                     <Route
                                       path="/about"
@@ -154,8 +166,8 @@ const App: React.FC = () => {
                               </div>
                             </HashRouter>
                           </CartProvider>
-                        </ToastProvider>
-                      </PagesProvider>
+                        </PagesProvider>
+                      </ToastProvider>
                     </ServicesProvider>
                   </ReviewsProvider>
                 </StaffProvider>

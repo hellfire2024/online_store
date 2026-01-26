@@ -227,10 +227,15 @@ let mockSiteSettings: SiteSettings = {
   logoText: "Custom",
   logoTextAccent: "Threads",
   headerLogoUrl: "",
-  heroTitle: "Your Vision, Our Fabric",
-  heroSubtitle:
-    "Create one-of-a-kind products with your own designs. High-quality printing on premium materials.",
-  heroBackgroundImageUrl: "https://picsum.photos/seed/hero/1200/800",
+  siteTitle: "Custom Threads Online Store",
+  faviconUrl: "/favicon.svg",
+  footerConfig: {
+    columns: [
+      { id: "left", items: [] },
+      { id: "center", items: [] },
+      { id: "right", items: [] },
+    ],
+  },
   footerSocialLinks: [
     { id: "fsl1", text: "Facebook", url: "#" },
     { id: "fsl2", text: "Instagram", url: "#" },
@@ -239,7 +244,6 @@ let mockSiteSettings: SiteSettings = {
   footerContactEmail: "support@customthreads.com",
   footerContactPhone: "(123) 456-7890",
   footerContactAddress: "123 Design Lane, Creativity City",
-  aboutPageContent: `<h1>About Us</h1><p>Welcome to Custom Threads, where creativity meets quality. We were founded on a simple idea: everyone should be able to wear their imagination. Whether you're an artist, a small business owner, or just someone with a brilliant idea, our platform is designed to bring your vision to life.</p><p>Our mission is to provide high-quality, customizable products that you can be proud of. We use state-of-the-art printing technology and source only the best materials to ensure your designs look fantastic and last long. From t-shirts and hoodies to mugs and tote bags, we offer a wide range of canvases for your creativity.</p><p>We believe in the power of self-expression and are committed to making the custom design process as easy and enjoyable as possible. Thank you for choosing Custom Threads to be a part of your creative journey.</p>`,
   paymentProvider: "none",
   paymentApiKeys: {
     stripe: "",
@@ -254,11 +258,10 @@ let mockSiteSettings: SiteSettings = {
     ups: "",
     usps: "",
   },
-  footerQuickLinks: [], // This will be populated from menus
   siteBackgroundColor: "#0f172a", // slate-900
   siteTextColor: "#d1d5db", // gray-300
   siteAccentColor: "#38bdf8", // sky-400
-  siteBackgroundImageUrl: "",
+  siteBackgroundImageUrl: "https://picsum.photos/seed/hero/1200/800",
   siteBackgroundOpacity: 100,
 };
 

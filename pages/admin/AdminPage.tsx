@@ -5,7 +5,6 @@ import AdminSidebar from "../../components/admin/AdminSidebar";
 import Dashboard from "./Dashboard";
 import ProductManagement from "./ProductManagement";
 import GalleriesManagement from "./GalleriesManagement";
-import HomepageContentManagement from "./HomepageContentManagement";
 import StaffManagement from "./StaffManagement";
 import ReviewsManagement from "./ReviewsManagement";
 import SettingsManagement from "./SettingsManagement";
@@ -35,7 +34,6 @@ const AdminPage: React.FC = () => {
           <Route path="/" element={<Dashboard />} />
           <Route path="/products" element={<ProductManagement />} />
           <Route path="/galleries" element={<GalleriesManagement />} />
-          <Route path="/homepage" element={<HomepageContentManagement />} />
           <Route path="/staff" element={<StaffManagement />} />
           <Route path="/reviews" element={<ReviewsManagement />} />
           <Route path="/services" element={<ServicesManagement />} />

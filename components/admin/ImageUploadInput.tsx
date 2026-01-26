@@ -1,4 +1,4 @@
-import React, { useState, ChangeEvent } from 'react';
+import React, { useState, ChangeEvent } from "react";
 
 interface ImageUploadInputProps {
   label: string;
@@ -13,13 +13,20 @@ const ImageUploadInput: React.FC<ImageUploadInputProps> = ({
   onImageUrlChange,
   onFileSelect,
 }) => {
-  const [previewUrl, setPreviewUrl] = useState<string | null>(imageUrl);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [imageError, setImageError] = useState(false);
+
+  React.useEffect(() => {
+    setPreviewUrl(imageUrl || null);
+    setImageError(false);
+  }, [imageUrl]);
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       onFileSelect(file);
       setPreviewUrl(URL.createObjectURL(file));
+      setImageError(false);
     }
   };
 
@@ -27,6 +34,7 @@ const ImageUploadInput: React.FC<ImageUploadInputProps> = ({
     const url = e.target.value;
     onImageUrlChange(url);
     setPreviewUrl(url);
+    setImageError(false);
   };
 
   return (
@@ -35,17 +43,22 @@ const ImageUploadInput: React.FC<ImageUploadInputProps> = ({
         {label}
       </label>
       {previewUrl && (
-        <div className="mb-2">
-          <img src={previewUrl} alt="Preview" className="w-32 h-32 object-cover rounded-md" />
+        <div className="mb-2 p-2 bg-slate-700 rounded-md">
+          {!imageError ? (
+            <img
+              src={previewUrl}
+              alt="Preview"
+              className="w-32 h-32 object-contain rounded-md"
+              style={{ backgroundColor: 'white' }}
+              onError={() => setImageError(true)}
+            />
+          ) : (
+            <div className="w-32 h-32 flex items-center justify-center bg-slate-600 rounded-md text-gray-400 text-xs text-center p-2">
+              Image unavailable<br/><span className="text-red-400 break-all">{previewUrl}</span>
+            </div>
+          )}
         </div>
       )}
-      <input
-        type="text"
-        placeholder="Image URL"
-        value={imageUrl}
-        onChange={handleUrlChange}
-        className="w-full p-2 bg-slate-700 border border-slate-600 rounded-md text-white mb-2"
-      />
       <input
         type="file"
         accept="image/*"
