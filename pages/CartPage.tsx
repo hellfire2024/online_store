@@ -15,11 +15,25 @@ const TrashIcon: React.FC = () => (
 
 const CartItemRow: React.FC<{ item: CartItem }> = ({ item }) => {
     const { updateQuantity, removeFromCart } = useCart();
-    const optionDelta = item.selectedOptionId
-      ? item.product.options?.find((o) => o.id === item.selectedOptionId)?.priceDelta || 0
-      : 0;
-    const finalPrice = item.product.price + optionDelta;
-    const selectedOption = item.product.options?.find((o) => o.id === item.selectedOptionId);
+    
+    // Calculate total price delta from all selected options
+    let optionsDelta = 0;
+    const selectedOptionDetails: { listName: string; optionName: string }[] = [];
+    
+    if (item.selectedOptions && item.product.optionLists) {
+      item.product.optionLists.forEach((list) => {
+        const selectedOptionId = item.selectedOptions?.[list.id];
+        if (selectedOptionId) {
+          const option = list.options.find((o) => o.id === selectedOptionId);
+          if (option) {
+            optionsDelta += option.priceDelta;
+            selectedOptionDetails.push({ listName: list.name, optionName: option.name });
+          }
+        }
+      });
+    }
+    
+    const finalPrice = item.product.price + optionsDelta;
 
     return (
         <div className="flex items-center py-5 border-b border-slate-700">
@@ -27,8 +41,14 @@ const CartItemRow: React.FC<{ item: CartItem }> = ({ item }) => {
             <div className="flex-grow ml-4">
                 <h3 className="font-semibold text-white">{item.product.name}</h3>
                 <p className="text-sm text-gray-400">${finalPrice.toFixed(2)}</p>
-                {selectedOption && (
-                    <p className="text-xs text-sky-400">Option: {selectedOption.name}</p>
+                {selectedOptionDetails.length > 0 && (
+                    <div className="mt-1 space-y-0.5">
+                        {selectedOptionDetails.map((detail, idx) => (
+                            <p key={idx} className="text-xs text-sky-400">
+                                {detail.listName}: {detail.optionName}
+                            </p>
+                        ))}
+                    </div>
                 )}
                 {item.customization && (
                     <div className="text-sm text-sky-400 mt-1">
@@ -41,11 +61,11 @@ const CartItemRow: React.FC<{ item: CartItem }> = ({ item }) => {
                     type="number"
                     min="1"
                     value={item.quantity}
-                    onChange={(e) => updateQuantity(item.product.id, parseInt(e.target.value), item.selectedOptionId)}
+                    onChange={(e) => updateQuantity(item.product.id, parseInt(e.target.value), item.selectedOptions)}
                     className="w-16 p-1 bg-slate-700 border border-slate-600 rounded-md text-center text-white"
                 />
                 <p className="w-20 text-right font-semibold text-white">${(finalPrice * item.quantity).toFixed(2)}</p>
-                <button onClick={() => removeFromCart(item.product.id, item.selectedOptionId)} className="text-gray-500 hover:text-red-500 transition-colors">
+                <button onClick={() => removeFromCart(item.product.id, item.selectedOptions)} className="text-gray-500 hover:text-red-500 transition-colors">
                     <TrashIcon />
                 </button>
             </div>
@@ -73,7 +93,7 @@ const CartPage: React.FC = () => {
       <h1 className="text-3xl font-bold text-white mb-6">Your Shopping Cart</h1>
       <div>
         {cartItems.map((item, idx) => (
-          <CartItemRow key={`${item.product.id}-${item.selectedOptionId || 'none'}-${idx}`} item={item} />
+          <CartItemRow key={`${item.product.id}-${JSON.stringify(item.selectedOptions) || 'none'}-${idx}`} item={item} />
         ))}
       </div>
       <div className="mt-6 flex justify-end">

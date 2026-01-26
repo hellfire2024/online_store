@@ -9,12 +9,20 @@ export interface Product {
   galleryId?: string; // Link to a specific gallery
   enableAIIdeas?: boolean; // Enable AI design ideas for this product
   lowStockThreshold?: number; // Trigger alerts when inventory <= threshold
-  options?: ProductOption[]; // Per-product purchasable options
+  optionLists?: ProductOptionList[]; // Multiple option lists (e.g., Size, Color, Material)
+}
+
+export interface ProductOptionList {
+  id: string;
+  name: string; // e.g., "Size", "Color", "Material"
+  required: boolean; // Whether customer must select an option from this list
+  order: number; // Sort order for UI
+  options: ProductOption[]; // The actual options in this list
 }
 
 export interface ProductOption {
   id: string;
-  name: string;
+  name: string; // e.g., "Small", "Red", "Cotton"
   priceDelta: number; // Additional price over base product
   order: number; // Sort order for UI
 }
@@ -26,7 +34,7 @@ export interface CartItem {
     type: "gallery" | "upload";
     value: string; // URL for gallery, data URL for upload
   };
-  selectedOptionId?: string; // Selected product option (if any)
+  selectedOptions?: { [listId: string]: string }; // Map of option list ID to selected option ID
 }
 
 // ===== CUSTOMER TYPES =====
@@ -257,3 +265,4 @@ export interface SiteSettings {
   siteBackgroundImageUrl: string;
   siteBackgroundOpacity: number;
   maxReviewsDisplayed: number; // How many approved reviews to show on site
+}

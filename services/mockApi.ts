@@ -22,9 +22,31 @@ let mockProducts: Product[] = [
     customizable: true,
     galleryId: "g-patterns",
     lowStockThreshold: 20,
-    options: [
-      { id: "opt-tee-standard", name: "Standard", priceDelta: 0, order: 1 },
-      { id: "opt-tee-premium", name: "Premium (+$5)", priceDelta: 5, order: 2 },
+    optionLists: [
+      {
+        id: "list-size",
+        name: "Size",
+        required: true,
+        order: 1,
+        options: [
+          { id: "opt-xs", name: "XS", priceDelta: 0, order: 1 },
+          { id: "opt-s", name: "S", priceDelta: 0, order: 2 },
+          { id: "opt-m", name: "M", priceDelta: 0, order: 3 },
+          { id: "opt-l", name: "L", priceDelta: 0, order: 4 },
+          { id: "opt-xl", name: "XL", priceDelta: 2, order: 5 },
+          { id: "opt-xxl", name: "XXL", priceDelta: 3, order: 6 },
+        ],
+      },
+      {
+        id: "list-quality",
+        name: "Quality",
+        required: false,
+        order: 2,
+        options: [
+          { id: "opt-tee-standard", name: "Standard", priceDelta: 0, order: 1 },
+          { id: "opt-tee-premium", name: "Premium", priceDelta: 5, order: 2 },
+        ],
+      },
     ],
   },
   {
@@ -37,9 +59,17 @@ let mockProducts: Product[] = [
     customizable: true,
     galleryId: "g-art",
     lowStockThreshold: 30,
-    options: [
-      { id: "opt-mug-11oz", name: "11oz", priceDelta: 0, order: 1 },
-      { id: "opt-mug-15oz", name: "15oz (+$3)", priceDelta: 3, order: 2 },
+    optionLists: [
+      {
+        id: "list-size-mug",
+        name: "Size",
+        required: true,
+        order: 1,
+        options: [
+          { id: "opt-mug-11oz", name: "11oz", priceDelta: 0, order: 1 },
+          { id: "opt-mug-15oz", name: "15oz", priceDelta: 3, order: 2 },
+        ],
+      },
     ],
   },
   {
@@ -53,9 +83,17 @@ let mockProducts: Product[] = [
     customizable: true,
     galleryId: "g-patterns",
     lowStockThreshold: 10,
-    options: [
-      { id: "opt-tote-standard", name: "Standard", priceDelta: 0, order: 1 },
-      { id: "opt-tote-zip", name: "With Zipper (+$4)", priceDelta: 4, order: 2 },
+    optionLists: [
+      {
+        id: "list-style-tote",
+        name: "Style",
+        required: true,
+        order: 1,
+        options: [
+          { id: "opt-tote-standard", name: "Standard", priceDelta: 0, order: 1 },
+          { id: "opt-tote-zip", name: "With Zipper", priceDelta: 4, order: 2 },
+        ],
+      },
     ],
   },
   {
@@ -68,9 +106,17 @@ let mockProducts: Product[] = [
     customizable: true,
     galleryId: "g-art",
     lowStockThreshold: 15,
-    options: [
-      { id: "opt-cap-flat", name: "Flat Brim", priceDelta: 0, order: 1 },
-      { id: "opt-cap-curve", name: "Curved Brim", priceDelta: 2, order: 2 },
+    optionLists: [
+      {
+        id: "list-style-cap",
+        name: "Brim Style",
+        required: true,
+        order: 1,
+        options: [
+          { id: "opt-cap-flat", name: "Flat Brim", priceDelta: 0, order: 1 },
+          { id: "opt-cap-curve", name: "Curved Brim", priceDelta: 2, order: 2 },
+        ],
+      },
     ],
   },
   {
@@ -83,10 +129,40 @@ let mockProducts: Product[] = [
     customizable: true,
     galleryId: "g-patterns",
     lowStockThreshold: 12,
-    options: [
-      { id: "opt-hoodie-standard", name: "Standard", priceDelta: 0, order: 1 },
-      { id: "opt-hoodie-zip", name: "Zip-Up (+$6)", priceDelta: 6, order: 2 },
-      { id: "opt-hoodie-heavy", name: "Heavyweight (+$10)", priceDelta: 10, order: 3 },
+    optionLists: [
+      {
+        id: "list-size-hoodie",
+        name: "Size",
+        required: true,
+        order: 1,
+        options: [
+          { id: "opt-s", name: "S", priceDelta: 0, order: 1 },
+          { id: "opt-m", name: "M", priceDelta: 0, order: 2 },
+          { id: "opt-l", name: "L", priceDelta: 0, order: 3 },
+          { id: "opt-xl", name: "XL", priceDelta: 3, order: 4 },
+          { id: "opt-xxl", name: "XXL", priceDelta: 5, order: 5 },
+        ],
+      },
+      {
+        id: "list-style-hoodie",
+        name: "Style",
+        required: true,
+        order: 2,
+        options: [
+          { id: "opt-hoodie-pullover", name: "Pullover", priceDelta: 0, order: 1 },
+          { id: "opt-hoodie-zip", name: "Zip-Up", priceDelta: 6, order: 2 },
+        ],
+      },
+      {
+        id: "list-weight-hoodie",
+        name: "Weight",
+        required: false,
+        order: 3,
+        options: [
+          { id: "opt-hoodie-standard", name: "Standard", priceDelta: 0, order: 1 },
+          { id: "opt-hoodie-heavy", name: "Heavyweight", priceDelta: 10, order: 2 },
+        ],
+      },
     ],
   },
   {
@@ -99,9 +175,19 @@ let mockProducts: Product[] = [
     customizable: true,
     galleryId: "g-art",
     lowStockThreshold: 25,
-    options: [
-      { id: "opt-bottle-20oz", name: "20oz", priceDelta: 0, order: 1 },
-      { id: "opt-bottle-32oz", name: "32oz (+$5)", priceDelta: 5, order: 2 },
+    optionLists: [
+      {
+        id: "list-size-bottle",
+        name: "Size",
+        required: true,
+        order: 1,
+        options: [
+          { id: "opt-bottle-20oz", name: "20oz", priceDelta: 0, order: 1 },
+          { id: "opt-bottle-32oz", name: "32oz", priceDelta: 5, order: 2 },
+        ],
+      },
+    ],
+  },
     ],
   },
 ];

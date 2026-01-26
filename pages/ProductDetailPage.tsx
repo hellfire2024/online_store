@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Product, GalleryImage, ProductOption } from '../types';
+import { Product, GalleryImage, ProductOptionList } from '../types';
 import { useProducts } from '../context/ProductContext';
 import { useGalleries } from '../context/GalleryContext';
 import { getDesignIdeas } from '../services/geminiService';
@@ -22,7 +22,7 @@ const ProductDetailPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState<CustomizationTab>('gallery');
-  const [selectedOptionId, setSelectedOptionId] = useState<string | undefined>(undefined);
+  const [selectedOptions, setSelectedOptions] = useState<{ [listId: string]: string }>({});
   
   const [selectedGalleryImage, setSelectedGalleryImage] = useState<GalleryImage | null>(null);
   
@@ -37,9 +37,18 @@ const ProductDetailPage: React.FC = () => {
       const foundProduct = products.find(p => p.id === id);
       if (foundProduct) {
         setProduct(foundProduct);
-        if (!selectedOptionId && foundProduct.options?.length) {
-          const sortedOptions = [...foundProduct.options].sort((a, b) => a.order - b.order);
-          setSelectedOptionId(sortedOptions[0]?.id);
+        // Initialize selected options with first option from each list
+        if (foundProduct.optionLists?.length) {
+          const initialSelections: { [listId: string]: string } = {};
+          foundProduct.optionLists
+            .sort((a, b) => a.order - b.order)
+            .forEach((list) => {
+              const sortedOptions = [...list.options].sort((a, b) => a.order - b.order);
+              if (sortedOptions.length > 0) {
+                initialSelections[list.id] = sortedOptions[0].id;
+              }
+            });
+          setSelectedOptions(initialSelections);
         }
         if (foundProduct.galleryId) {
           fetchGalleryImages(foundProduct.galleryId);
@@ -66,9 +75,23 @@ const ProductDetailPage: React.FC = () => {
 
   const handleAddToCart = () => {
     if (!product) return;
-    const optionDelta = selectedOptionId
-      ? product.options?.find((o) => o.id === selectedOptionId)?.priceDelta || 0
-      : 0;
+    
+    // Calculate total price delta from all selected options
+    let totalPriceDelta = 0;
+    if (product.optionLists) {
+      product.optionLists.forEach((list) => {
+        const selectedOptionId = selectedOptions[list.id];
+        if (selectedOptionId) {
+          const option = list.options.find((o) => o.id === selectedOptionId);
+          if (option) {
+            totalPriceDelta += option.priceDelta;
+          }
+        } else if (list.required) {
+          alert(`Please select an option for ${list.name}`);
+          return;
+        }
+      });
+    }
     
     let customization;
     if (selectedGalleryImage) {
@@ -86,7 +109,7 @@ const ProductDetailPage: React.FC = () => {
       product,
       quantity,
       customization,
-      selectedOptionId,
+      selectedOptions,
     });
   };
 
@@ -113,9 +136,19 @@ const ProductDetailPage: React.FC = () => {
     </button>
   );
 
-  const sortedOptions: ProductOption[] = [...(product.options || [])].sort((a, b) => a.order - b.order);
-  const selectedOption = sortedOptions.find((o) => o.id === selectedOptionId);
-  const displayPrice = (product.price + (selectedOption?.priceDelta || 0)).toFixed(2);
+  // Calculate display price including all selected options
+  let displayPrice = product.price;
+  if (product.optionLists) {
+    product.optionLists.forEach((list) => {
+      const selectedOptionId = selectedOptions[list.id];
+      if (selectedOptionId) {
+        const option = list.options.find((o) => o.id === selectedOptionId);
+        if (option) {
+          displayPrice += option.priceDelta;
+        }
+      }
+    });
+  }
 
   return (
     <div className="bg-slate-800 p-8 rounded-lg shadow-2xl border border-slate-700">
@@ -147,23 +180,36 @@ const ProductDetailPage: React.FC = () => {
 
         <div>
           <h1 className="text-4xl font-bold text-white mb-2">{product.name}</h1>
-          <p className="text-3xl text-sky-400 font-light mb-4">${displayPrice}</p>
+          <p className="text-3xl text-sky-400 font-light mb-4">${displayPrice.toFixed(2)}</p>
           <p className="text-gray-300 mb-6 leading-relaxed">{product.description}</p>
 
-          {sortedOptions.length > 0 && (
-            <div className="mb-6">
-              <h3 className="text-xl font-semibold text-white mb-2">Options</h3>
-              <select
-                className="w-full p-3 bg-slate-700 border border-slate-600 rounded-md text-white"
-                value={selectedOptionId}
-                onChange={(e) => setSelectedOptionId(e.target.value)}
-              >
-                {sortedOptions.map((opt) => (
-                  <option key={opt.id} value={opt.id}>
-                    {opt.name} {opt.priceDelta !== 0 ? `(+$${opt.priceDelta.toFixed(2)})` : ""}
-                  </option>
-                ))}
-              </select>
+          {product.optionLists && product.optionLists.length > 0 && (
+            <div className="mb-6 space-y-4">
+              <h3 className="text-xl font-semibold text-white mb-2">Product Options</h3>
+              {[...product.optionLists]
+                .sort((a, b) => a.order - b.order)
+                .map((list) => {
+                  const sortedOptions = [...list.options].sort((a, b) => a.order - b.order);
+                  return (
+                    <div key={list.id}>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        {list.name} {list.required && <span className="text-red-400">*</span>}
+                      </label>
+                      <select
+                        className="w-full p-3 bg-slate-700 border border-slate-600 rounded-md text-white"
+                        value={selectedOptions[list.id] || ''}
+                        onChange={(e) => setSelectedOptions({ ...selectedOptions, [list.id]: e.target.value })}
+                      >
+                        {!list.required && <option value="">None</option>}
+                        {sortedOptions.map((opt) => (
+                          <option key={opt.id} value={opt.id}>
+                            {opt.name} {opt.priceDelta !== 0 ? `(+$${opt.priceDelta.toFixed(2)})` : ""}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  );
+                })}
             </div>
           )}
 

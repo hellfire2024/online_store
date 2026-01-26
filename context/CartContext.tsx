@@ -6,8 +6,8 @@ import { useToast } from '../hooks/useToast';
 interface CartContextType {
   cartItems: CartItem[];
   addToCart: (item: CartItem) => void;
-  removeFromCart: (productId: string, selectedOptionId?: string) => void;
-  updateQuantity: (productId: string, quantity: number, selectedOptionId?: string) => void;
+  removeFromCart: (productId: string, selectedOptions?: { [listId: string]: string }) => void;
+  updateQuantity: (productId: string, quantity: number, selectedOptions?: { [listId: string]: string }) => void;
   clearCart: () => void;
   itemCount: number;
   totalPrice: number;
@@ -21,11 +21,15 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const addToCart = (newItem: CartItem) => {
     setCartItems(prevItems => {
-      const existingItem = prevItems.find(item => item.product.id === newItem.product.id && item.selectedOptionId === newItem.selectedOptionId);
+      const existingItem = prevItems.find(item => 
+        item.product.id === newItem.product.id && 
+        JSON.stringify(item.selectedOptions) === JSON.stringify(newItem.selectedOptions)
+      );
       if (existingItem) {
         addToast(`${newItem.product.name} updated in cart.`, 'success');
         return prevItems.map(item =>
-          item.product.id === newItem.product.id && item.selectedOptionId === newItem.selectedOptionId
+          item.product.id === newItem.product.id && 
+          JSON.stringify(item.selectedOptions) === JSON.stringify(newItem.selectedOptions)
             ? newItem
             : item
         );
@@ -36,19 +40,21 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     });
   };
 
-  const removeFromCart = (productId: string, selectedOptionId?: string) => {
+  const removeFromCart = (productId: string, selectedOptions?: { [listId: string]: string }) => {
     setCartItems(prevItems =>
       prevItems.filter(item =>
-        !(item.product.id === productId && item.selectedOptionId === selectedOptionId)
+        !(item.product.id === productId && 
+          JSON.stringify(item.selectedOptions) === JSON.stringify(selectedOptions))
       )
     );
     addToast('Item removed from cart.', 'info');
   };
 
-  const updateQuantity = (productId: string, quantity: number, selectedOptionId?: string) => {
+  const updateQuantity = (productId: string, quantity: number, selectedOptions?: { [listId: string]: string }) => {
     setCartItems(prevItems =>
       prevItems.map(item =>
-        item.product.id === productId && item.selectedOptionId === selectedOptionId
+        item.product.id === productId && 
+        JSON.stringify(item.selectedOptions) === JSON.stringify(selectedOptions)
           ? { ...item, quantity: Math.max(1, quantity) }
           : item
       )
@@ -61,10 +67,19 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const itemCount = cartItems.reduce((count, item) => count + item.quantity, 0);
   const totalPrice = cartItems.reduce((total, item) => {
-    const optionDelta = item.selectedOptionId
-      ? item.product.options?.find((o) => o.id === item.selectedOptionId)?.priceDelta || 0
-      : 0;
-    return total + (item.product.price + optionDelta) * item.quantity;
+    let optionsDelta = 0;
+    if (item.selectedOptions && item.product.optionLists) {
+      item.product.optionLists.forEach((list) => {
+        const selectedOptionId = item.selectedOptions?.[list.id];
+        if (selectedOptionId) {
+          const option = list.options.find((o) => o.id === selectedOptionId);
+          if (option) {
+            optionsDelta += option.priceDelta;
+          }
+        }
+      });
+    }
+    return total + (item.product.price + optionsDelta) * item.quantity;
   }, 0);
 
   return (

@@ -4,7 +4,7 @@ import { useGalleries } from "../../context/GalleryContext";
 import { PlusIcon, EditIcon, TrashIcon } from "../../components/Icons";
 import { useToast } from "../../hooks/useToast";
 import Spinner from "../../components/Spinner";
-import { Product, ProductOption } from "../../types";
+import { Product, ProductOption, ProductOptionList } from "../../types";
 import { useUnsavedChanges } from "../../context/UnsavedChangesContext";
 import {
   DndContext,
@@ -23,6 +23,129 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+
+interface SortableOptionListProps {
+  optionList: ProductOptionList;
+  onChangeName: (value: string) => void;
+  onToggleRequired: () => void;
+  onDelete: () => void;
+  onAddOption: () => void;
+  onOptionChange: (optionId: string, field: "name" | "priceDelta", value: string) => void;
+  onDeleteOption: (optionId: string) => void;
+  onDragEndOption: (event: DragEndEvent) => void;
+}
+
+const SortableOptionList: React.FC<SortableOptionListProps> = ({
+  optionList,
+  onChangeName,
+  onToggleRequired,
+  onDelete,
+  onAddOption,
+  onOptionChange,
+  onDeleteOption,
+  onDragEndOption,
+}) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: optionList.id });
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  const sortedOptions = [...optionList.options].sort((a, b) => a.order - b.order);
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="p-4 border border-slate-600 rounded-lg bg-slate-700/80 mb-3"
+    >
+      <div className="flex items-center gap-3 mb-3">
+        <button
+          type="button"
+          className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-white text-xl"
+          {...attributes}
+          {...listeners}
+        >
+          ⋮⋮
+        </button>
+        <input
+          type="text"
+          value={optionList.name}
+          onChange={(e) => onChangeName(e.target.value)}
+          className="flex-1 p-2 bg-slate-800 border border-slate-600 rounded text-white font-semibold"
+          placeholder="Option list name (e.g., Size, Color)"
+        />
+        <label className="flex items-center gap-2 text-sm text-gray-300">
+          <input
+            type="checkbox"
+            checked={optionList.required}
+            onChange={onToggleRequired}
+            className="rounded border-gray-300 text-sky-600 focus:ring-sky-500"
+          />
+          Required
+        </label>
+        <button
+          type="button"
+          onClick={onDelete}
+          className="text-xs px-3 py-2 bg-red-700/60 border border-red-600 rounded text-red-100 hover:bg-red-700"
+        >
+          Delete List
+        </button>
+      </div>
+
+      <div className="ml-8 space-y-2">
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={onDragEndOption}
+        >
+          <SortableContext
+            items={sortedOptions.map((o) => o.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            {sortedOptions.map((opt) => (
+              <SortableOption
+                key={opt.id}
+                option={opt}
+                onChangeName={(value) => onOptionChange(opt.id, "name", value)}
+                onChangePriceDelta={(value) => onOptionChange(opt.id, "priceDelta", value)}
+                onDelete={() => onDeleteOption(opt.id)}
+              />
+            ))}
+          </SortableContext>
+        </DndContext>
+
+        {sortedOptions.length === 0 && (
+          <p className="text-sm text-gray-400 italic p-2">No options in this list yet</p>
+        )}
+
+        <button
+          type="button"
+          onClick={onAddOption}
+          className="text-xs px-3 py-1 bg-slate-800 border border-slate-600 rounded text-sky-300 hover:bg-slate-700"
+        >
+          + Add Option
+        </button>
+      </div>
+    </div>
+  );
+};
 
 interface SortableOptionProps {
   option: ProductOption;
@@ -166,7 +289,7 @@ const ProductManagement: React.FC = () => {
       inventory: 0,
       customizable: false,
       lowStockThreshold: 0,
-      options: [],
+      optionLists: [],
     };
     setNewProduct(newProd);
     setOriginalProduct(newProd);
@@ -238,56 +361,132 @@ const ProductManagement: React.FC = () => {
 
   const handleAddOption = () => {
     setProductState((prev) => {
-      const options = [...(prev.options || [])];
-      options.push({
-        id: `opt-${Date.now()}`,
-        name: "New Option",
-        priceDelta: 0,
-        order: options.length + 1,
+      const optionLists = [...(prev.optionLists || [])];
+      optionLists.push({
+        id: `list-${Date.now()}`,
+        name: "New Option List",
+        required: false,
+        order: optionLists.length + 1,
+        options: [],
       });
-      return { ...prev, options } as Product;
+      return { ...prev, optionLists } as Product;
+    });
+  };
+
+  const handleOptionListChange = (
+    listId: string,
+    field: "name" | "required",
+    value: string | boolean,
+  ) => {
+    setProductState((prev) => {
+      const optionLists = (prev.optionLists || []).map((list) =>
+        list.id === listId ? { ...list, [field]: value } : list,
+      );
+      return { ...prev, optionLists } as Product;
+    });
+  };
+
+  const handleDeleteOptionList = (listId: string) => {
+    setProductState((prev) => {
+      const optionLists = (prev.optionLists || []).filter((l) => l.id !== listId);
+      const reordered = optionLists.map((list, idx) => ({ ...list, order: idx + 1 }));
+      return { ...prev, optionLists: reordered } as Product;
+    });
+  };
+
+  const handleAddOptionToList = (listId: string) => {
+    setProductState((prev) => {
+      const optionLists = (prev.optionLists || []).map((list) => {
+        if (list.id === listId) {
+          const options = [...list.options];
+          options.push({
+            id: `opt-${Date.now()}`,
+            name: "New Option",
+            priceDelta: 0,
+            order: options.length + 1,
+          });
+          return { ...list, options };
+        }
+        return list;
+      });
+      return { ...prev, optionLists } as Product;
     });
   };
 
   const handleOptionChange = (
+    listId: string,
     optionId: string,
     field: "name" | "priceDelta",
     value: string,
   ) => {
     setProductState((prev) => {
-      const options = (prev.options || []).map((opt) =>
-        opt.id === optionId
-          ? {
-              ...opt,
-              [field]: field === "priceDelta" ? parseFloat(value) || 0 : value,
-            }
-          : opt,
-      );
-      return { ...prev, options } as Product;
+      const optionLists = (prev.optionLists || []).map((list) => {
+        if (list.id === listId) {
+          const options = list.options.map((opt) =>
+            opt.id === optionId
+              ? {
+                  ...opt,
+                  [field]: field === "priceDelta" ? parseFloat(value) || 0 : value,
+                }
+              : opt,
+          );
+          return { ...list, options };
+        }
+        return list;
+      });
+      return { ...prev, optionLists } as Product;
     });
   };
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleDragEndList = (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
     setProductState((prev) => {
-      const options = [...(prev.options || [])].sort((a, b) => a.order - b.order);
-      const oldIndex = options.findIndex((o) => o.id === active.id);
-      const newIndex = options.findIndex((o) => o.id === over.id);
-      const reordered = arrayMove(options, oldIndex, newIndex).map((opt, idx) => ({
-        ...opt,
+      const optionLists = [...(prev.optionLists || [])].sort((a, b) => a.order - b.order);
+      const oldIndex = optionLists.findIndex((l) => l.id === active.id);
+      const newIndex = optionLists.findIndex((l) => l.id === over.id);
+      const reordered = arrayMove(optionLists, oldIndex, newIndex).map((list, idx) => ({
+        ...list,
         order: idx + 1,
       }));
-      return { ...prev, options: reordered } as Product;
+      return { ...prev, optionLists: reordered } as Product;
     });
   };
 
-  const handleDeleteOption = (optionId: string) => {
+  const handleDragEndOption = (listId: string, event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
     setProductState((prev) => {
-      const options = (prev.options || []).filter((o) => o.id !== optionId);
-      const reordered = options.map((opt, idx) => ({ ...opt, order: idx + 1 }));
-      return { ...prev, options: reordered } as Product;
+      const optionLists = (prev.optionLists || []).map((list) => {
+        if (list.id === listId) {
+          const options = [...list.options].sort((a, b) => a.order - b.order);
+          const oldIndex = options.findIndex((o) => o.id === active.id);
+          const newIndex = options.findIndex((o) => o.id === over.id);
+          const reordered = arrayMove(options, oldIndex, newIndex).map((opt, idx) => ({
+            ...opt,
+            order: idx + 1,
+          }));
+          return { ...list, options: reordered };
+        }
+        return list;
+      });
+      return { ...prev, optionLists } as Product;
+    });
+  };
+
+  const handleDeleteOption = (listId: string, optionId: string) => {
+    setProductState((prev) => {
+      const optionLists = (prev.optionLists || []).map((list) => {
+        if (list.id === listId) {
+          const options = list.options.filter((o) => o.id !== optionId);
+          const reordered = options.map((opt, idx) => ({ ...opt, order: idx + 1 }));
+          return { ...list, options: reordered };
+        }
+        return list;
+      });
+      return { ...prev, optionLists } as Product;
     });
   };
 
@@ -634,40 +833,47 @@ const ProductManagement: React.FC = () => {
 
               <div className="mt-4">
                 <div className="flex justify-between items-center mb-2">
-                  <label className="block text-sm font-semibold text-gray-300">Product Options</label>
+                  <label className="block text-sm font-semibold text-gray-300">Product Option Lists</label>
                   <button
                     type="button"
                     onClick={handleAddOption}
                     className="text-xs px-3 py-1 bg-slate-700 border border-slate-600 rounded text-sky-300 hover:bg-slate-600"
                   >
-                    + Add Option
+                    + Add Option List
                   </button>
                 </div>
-                {currentProduct.options?.length ? (
+                <p className="text-xs text-gray-400 mb-3">
+                  Create separate lists for different option types (e.g., Size, Color, Material). Drag to reorder.
+                </p>
+                {currentProduct.optionLists?.length ? (
                   <DndContext
                     sensors={sensors}
                     collisionDetection={closestCenter}
-                    onDragEnd={handleDragEnd}
+                    onDragEnd={handleDragEndList}
                   >
                     <SortableContext
-                      items={[...currentProduct.options].sort((a, b) => a.order - b.order).map((o) => o.id)}
+                      items={[...currentProduct.optionLists].sort((a, b) => a.order - b.order).map((l) => l.id)}
                       strategy={verticalListSortingStrategy}
                     >
                       <div className="space-y-2">
-                        {[...currentProduct.options].sort((a, b) => a.order - b.order).map((opt) => (
-                          <SortableOption
-                            key={opt.id}
-                            option={opt}
-                            onChangeName={(value) => handleOptionChange(opt.id, "name", value)}
-                            onChangePriceDelta={(value) => handleOptionChange(opt.id, "priceDelta", value)}
-                            onDelete={() => handleDeleteOption(opt.id)}
+                        {[...currentProduct.optionLists].sort((a, b) => a.order - b.order).map((list) => (
+                          <SortableOptionList
+                            key={list.id}
+                            optionList={list}
+                            onChangeName={(value) => handleOptionListChange(list.id, "name", value)}
+                            onToggleRequired={() => handleOptionListChange(list.id, "required", !list.required)}
+                            onDelete={() => handleDeleteOptionList(list.id)}
+                            onAddOption={() => handleAddOptionToList(list.id)}
+                            onOptionChange={(optionId, field, value) => handleOptionChange(list.id, optionId, field, value)}
+                            onDeleteOption={(optionId) => handleDeleteOption(list.id, optionId)}
+                            onDragEndOption={(event) => handleDragEndOption(list.id, event)}
                           />
                         ))}
                       </div>
                     </SortableContext>
                   </DndContext>
                 ) : (
-                  <p className="text-sm text-gray-400">No options yet. Add sizes, materials, or bundles.</p>
+                  <p className="text-sm text-gray-400">No option lists yet. Add separate lists for sizes, colors, materials, etc.</p>
                 )}
               </div>
             </div>
