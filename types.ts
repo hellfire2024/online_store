@@ -8,6 +8,15 @@ export interface Product {
   customizable: boolean;
   galleryId?: string; // Link to a specific gallery
   enableAIIdeas?: boolean; // Enable AI design ideas for this product
+  lowStockThreshold?: number; // Trigger alerts when inventory <= threshold
+  options?: ProductOption[]; // Per-product purchasable options
+}
+
+export interface ProductOption {
+  id: string;
+  name: string;
+  priceDelta: number; // Additional price over base product
+  order: number; // Sort order for UI
 }
 
 export interface CartItem {
@@ -17,6 +26,7 @@ export interface CartItem {
     type: "gallery" | "upload";
     value: string; // URL for gallery, data URL for upload
   };
+  selectedOptionId?: string; // Selected product option (if any)
 }
 
 // ===== CUSTOMER TYPES =====

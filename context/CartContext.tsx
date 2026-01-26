@@ -6,8 +6,8 @@ import { useToast } from '../hooks/useToast';
 interface CartContextType {
   cartItems: CartItem[];
   addToCart: (item: CartItem) => void;
-  removeFromCart: (productId: string) => void;
-  updateQuantity: (productId: string, quantity: number) => void;
+  removeFromCart: (productId: string, selectedOptionId?: string) => void;
+  updateQuantity: (productId: string, quantity: number, selectedOptionId?: string) => void;
   clearCart: () => void;
   itemCount: number;
   totalPrice: number;
@@ -21,12 +21,14 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const addToCart = (newItem: CartItem) => {
     setCartItems(prevItems => {
-      const existingItem = prevItems.find(item => item.product.id === newItem.product.id);
+      const existingItem = prevItems.find(item => item.product.id === newItem.product.id && item.selectedOptionId === newItem.selectedOptionId);
       if (existingItem) {
-        // For simplicity, we replace the item if it's added again with new customization.
-        // A real app might handle this differently (e.g., as a separate line item).
         addToast(`${newItem.product.name} updated in cart.`, 'success');
-        return prevItems.map(item => item.product.id === newItem.product.id ? newItem : item);
+        return prevItems.map(item =>
+          item.product.id === newItem.product.id && item.selectedOptionId === newItem.selectedOptionId
+            ? newItem
+            : item
+        );
       } else {
         addToast(`${newItem.product.name} added to cart.`, 'success');
         return [...prevItems, newItem];
@@ -34,15 +36,21 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     });
   };
 
-  const removeFromCart = (productId: string) => {
-    setCartItems(prevItems => prevItems.filter(item => item.product.id !== productId));
+  const removeFromCart = (productId: string, selectedOptionId?: string) => {
+    setCartItems(prevItems =>
+      prevItems.filter(item =>
+        !(item.product.id === productId && item.selectedOptionId === selectedOptionId)
+      )
+    );
     addToast('Item removed from cart.', 'info');
   };
 
-  const updateQuantity = (productId: string, quantity: number) => {
+  const updateQuantity = (productId: string, quantity: number, selectedOptionId?: string) => {
     setCartItems(prevItems =>
       prevItems.map(item =>
-        item.product.id === productId ? { ...item, quantity: Math.max(1, quantity) } : item
+        item.product.id === productId && item.selectedOptionId === selectedOptionId
+          ? { ...item, quantity: Math.max(1, quantity) }
+          : item
       )
     );
   };
@@ -52,7 +60,12 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }
 
   const itemCount = cartItems.reduce((count, item) => count + item.quantity, 0);
-  const totalPrice = cartItems.reduce((total, item) => total + item.product.price * item.quantity, 0);
+  const totalPrice = cartItems.reduce((total, item) => {
+    const optionDelta = item.selectedOptionId
+      ? item.product.options?.find((o) => o.id === item.selectedOptionId)?.priceDelta || 0
+      : 0;
+    return total + (item.product.price + optionDelta) * item.quantity;
+  }, 0);
 
   return (
     <CartContext.Provider value={{ cartItems, addToCart, removeFromCart, updateQuantity, clearCart, itemCount, totalPrice }}>

@@ -15,13 +15,21 @@ const TrashIcon: React.FC = () => (
 
 const CartItemRow: React.FC<{ item: CartItem }> = ({ item }) => {
     const { updateQuantity, removeFromCart } = useCart();
+    const optionDelta = item.selectedOptionId
+      ? item.product.options?.find((o) => o.id === item.selectedOptionId)?.priceDelta || 0
+      : 0;
+    const finalPrice = item.product.price + optionDelta;
+    const selectedOption = item.product.options?.find((o) => o.id === item.selectedOptionId);
 
     return (
         <div className="flex items-center py-5 border-b border-slate-700">
             <img src={item.product.imageUrl} alt={item.product.name} className="w-24 h-24 object-cover rounded-md" />
             <div className="flex-grow ml-4">
                 <h3 className="font-semibold text-white">{item.product.name}</h3>
-                <p className="text-sm text-gray-400">${item.product.price.toFixed(2)}</p>
+                <p className="text-sm text-gray-400">${finalPrice.toFixed(2)}</p>
+                {selectedOption && (
+                    <p className="text-xs text-sky-400">Option: {selectedOption.name}</p>
+                )}
                 {item.customization && (
                     <div className="text-sm text-sky-400 mt-1">
                         Customization: {item.customization.type === 'gallery' ? 'Gallery Design' : 'Uploaded Design'}
@@ -33,11 +41,11 @@ const CartItemRow: React.FC<{ item: CartItem }> = ({ item }) => {
                     type="number"
                     min="1"
                     value={item.quantity}
-                    onChange={(e) => updateQuantity(item.product.id, parseInt(e.target.value))}
+                    onChange={(e) => updateQuantity(item.product.id, parseInt(e.target.value), item.selectedOptionId)}
                     className="w-16 p-1 bg-slate-700 border border-slate-600 rounded-md text-center text-white"
                 />
-                <p className="w-20 text-right font-semibold text-white">${(item.product.price * item.quantity).toFixed(2)}</p>
-                <button onClick={() => removeFromCart(item.product.id)} className="text-gray-500 hover:text-red-500 transition-colors">
+                <p className="w-20 text-right font-semibold text-white">${(finalPrice * item.quantity).toFixed(2)}</p>
+                <button onClick={() => removeFromCart(item.product.id, item.selectedOptionId)} className="text-gray-500 hover:text-red-500 transition-colors">
                     <TrashIcon />
                 </button>
             </div>
@@ -64,8 +72,8 @@ const CartPage: React.FC = () => {
     <div className="bg-slate-800 p-8 rounded-lg shadow-2xl border border-slate-700">
       <h1 className="text-3xl font-bold text-white mb-6">Your Shopping Cart</h1>
       <div>
-        {cartItems.map(item => (
-          <CartItemRow key={item.product.id} item={item} />
+        {cartItems.map((item, idx) => (
+          <CartItemRow key={`${item.product.id}-${item.selectedOptionId || 'none'}-${idx}`} item={item} />
         ))}
       </div>
       <div className="mt-6 flex justify-end">

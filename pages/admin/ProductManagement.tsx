@@ -29,6 +29,21 @@ const ProductManagement: React.FC = () => {
     isModalOpen &&
     JSON.stringify(currentProduct) !== JSON.stringify(originalProduct);
 
+  const setProductState = (
+    updater: (p: Product | Omit<Product, "id">) => Product | Omit<Product, "id">
+  ) => {
+    if (newProduct) {
+      setNewProduct((prev) => (prev ? (updater(prev) as Omit<Product, "id">) : prev));
+    } else if (editingProduct) {
+      setEditingProduct((prev) => (prev ? (updater(prev) as Product) : prev));
+    }
+  };
+
+  const lowStockProducts = products.filter(
+    (p) => (p.lowStockThreshold ?? 0) > 0 && p.inventory <= (p.lowStockThreshold ?? 0)
+  );
+  const outOfStockProducts = products.filter((p) => p.inventory <= 0);
+
   useEffect(() => {
     setHasUnsavedChanges(hasUnsavedChanges);
     // Cleanup function to reset on unmount
@@ -56,6 +71,8 @@ const ProductManagement: React.FC = () => {
       imageUrl: "",
       inventory: 0,
       customizable: false,
+      lowStockThreshold: 0,
+      options: [],
     };
     setNewProduct(newProd);
     setOriginalProduct(newProd);
@@ -125,6 +142,58 @@ const ProductManagement: React.FC = () => {
     }
   };
 
+  const handleAddOption = () => {
+    setProductState((prev) => {
+      const options = [...(prev.options || [])];
+      options.push({
+        id: `opt-${Date.now()}`,
+        name: "New Option",
+        priceDelta: 0,
+        order: options.length + 1,
+      });
+      return { ...prev, options } as Product;
+    });
+  };
+
+  const handleOptionChange = (
+    optionId: string,
+    field: "name" | "priceDelta",
+    value: string,
+  ) => {
+    setProductState((prev) => {
+      const options = (prev.options || []).map((opt) =>
+        opt.id === optionId
+          ? {
+              ...opt,
+              [field]: field === "priceDelta" ? parseFloat(value) || 0 : value,
+            }
+          : opt,
+      );
+      return { ...prev, options } as Product;
+    });
+  };
+
+  const handleMoveOption = (optionId: string, direction: "up" | "down") => {
+    setProductState((prev) => {
+      const options = [...(prev.options || [])].sort((a, b) => a.order - b.order);
+      const index = options.findIndex((o) => o.id === optionId);
+      if (index === -1) return prev;
+      const swapWith = direction === "up" ? index - 1 : index + 1;
+      if (swapWith < 0 || swapWith >= options.length) return prev;
+      [options[index], options[swapWith]] = [options[swapWith], options[index]];
+      const reordered = options.map((opt, idx) => ({ ...opt, order: idx + 1 }));
+      return { ...prev, options: reordered } as Product;
+    });
+  };
+
+  const handleDeleteOption = (optionId: string) => {
+    setProductState((prev) => {
+      const options = (prev.options || []).filter((o) => o.id !== optionId);
+      const reordered = options.map((opt, idx) => ({ ...opt, order: idx + 1 }));
+      return { ...prev, options: reordered } as Product;
+    });
+  };
+
   const handleSave = () => {
     const productToSave = newProduct || editingProduct;
     
@@ -176,6 +245,24 @@ const ProductManagement: React.FC = () => {
         </button>
       </div>
 
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+        <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
+          <p className="text-sm text-gray-400 mb-1">Low Stock</p>
+          <p className="text-2xl font-bold text-yellow-300">{lowStockProducts.length}</p>
+          <p className="text-xs text-gray-500">Inventory at or below threshold</p>
+        </div>
+        <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
+          <p className="text-sm text-gray-400 mb-1">Out of Stock</p>
+          <p className="text-2xl font-bold text-red-300">{outOfStockProducts.length}</p>
+          <p className="text-xs text-gray-500">Needs immediate attention</p>
+        </div>
+        <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
+          <p className="text-sm text-gray-400 mb-1">Total Products</p>
+          <p className="text-2xl font-bold text-sky-300">{products.length}</p>
+          <p className="text-xs text-gray-500">Catalog items</p>
+        </div>
+      </div>
+
       <div className="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
         <table className="w-full text-left">
           <thead className="bg-slate-900">
@@ -183,40 +270,58 @@ const ProductManagement: React.FC = () => {
               <th className="p-4">Product</th>
               <th className="p-4">Price</th>
               <th className="p-4">Inventory</th>
+              <th className="p-4">Status</th>
               <th className="p-4">Actions</th>
             </tr>
           </thead>
           <tbody>
-            {products.map((product) => (
-              <tr key={product.id} className="border-t border-slate-700">
-                <td className="p-4 flex items-center gap-4">
-                  <img
-                    src={product.imageUrl}
-                    alt={product.name}
-                    className="w-16 h-16 object-cover rounded-md bg-slate-700"
-                  />
-                  <span>{product.name}</span>
-                </td>
-                <td className="p-4">${product.price.toFixed(2)}</td>
-                <td className="p-4">{product.inventory}</td>
-                <td className="p-4">
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleEdit(product)}
-                      className="text-sky-400 hover:text-sky-300 p-2"
+            {products.map((product) => {
+              const isOut = product.inventory <= 0;
+              const isLow = (product.lowStockThreshold ?? 0) > 0 && product.inventory <= (product.lowStockThreshold ?? 0) && !isOut;
+              return (
+                <tr key={product.id} className="border-t border-slate-700">
+                  <td className="p-4 flex items-center gap-4">
+                    <img
+                      src={product.imageUrl}
+                      alt={product.name}
+                      className="w-16 h-16 object-cover rounded-md bg-slate-700"
+                    />
+                    <span>{product.name}</span>
+                  </td>
+                  <td className="p-4">${product.price.toFixed(2)}</td>
+                  <td className="p-4">{product.inventory}</td>
+                  <td className="p-4">
+                    <span
+                      className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                        isOut
+                          ? "bg-red-900 text-red-200"
+                          : isLow
+                          ? "bg-yellow-900 text-yellow-200"
+                          : "bg-green-900 text-green-200"
+                      }`}
                     >
-                      <EditIcon />
-                    </button>
-                    <button
-                      onClick={() => deleteProduct(product.id)}
-                      className="text-red-400 hover:text-red-300 p-2"
-                    >
-                      <TrashIcon />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
+                      {isOut ? "Out of stock" : isLow ? "Low stock" : "Healthy"}
+                    </span>
+                  </td>
+                  <td className="p-4">
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleEdit(product)}
+                        className="text-sky-400 hover:text-sky-300 p-2"
+                      >
+                        <EditIcon />
+                      </button>
+                      <button
+                        onClick={() => deleteProduct(product.id)}
+                        className="text-red-400 hover:text-red-300 p-2"
+                      >
+                        <TrashIcon />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -286,6 +391,21 @@ const ProductManagement: React.FC = () => {
                     className="w-full p-2 bg-slate-700 border border-slate-600 rounded-md text-white"
                   />
                 </div>
+              </div>
+              <div>
+                <label htmlFor="lowStockThreshold" className="block text-sm font-semibold text-gray-300 mb-1">
+                  Low Stock Threshold
+                </label>
+                <input
+                  id="lowStockThreshold"
+                  type="number"
+                  name="lowStockThreshold"
+                  placeholder="e.g., 10"
+                  value={currentProduct.lowStockThreshold ?? 0}
+                  onChange={handleChange}
+                  className="w-full p-2 bg-slate-700 border border-slate-600 rounded-md text-white"
+                />
+                <p className="text-xs text-gray-400 mt-1">Alerts when inventory drops to this level.</p>
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-300 mb-2">
@@ -358,6 +478,70 @@ const ProductManagement: React.FC = () => {
                   </div>
                 </div>
               )}
+
+              <div className="mt-4">
+                <div className="flex justify-between items-center mb-2">
+                  <label className="block text-sm font-semibold text-gray-300">Product Options</label>
+                  <button
+                    type="button"
+                    onClick={handleAddOption}
+                    className="text-xs px-3 py-1 bg-slate-700 border border-slate-600 rounded text-sky-300 hover:bg-slate-600"
+                  >
+                    + Add Option
+                  </button>
+                </div>
+                {currentProduct.options?.length ? (
+                  <div className="space-y-2">
+                    {[...currentProduct.options].sort((a, b) => a.order - b.order).map((opt) => (
+                      <div key={opt.id} className="p-3 border border-slate-600 rounded-lg bg-slate-700/60">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-2 items-center">
+                          <input
+                            type="text"
+                            value={opt.name}
+                            onChange={(e) => handleOptionChange(opt.id, "name", e.target.value)}
+                            className="w-full p-2 bg-slate-800 border border-slate-600 rounded text-white"
+                            placeholder="Option name"
+                          />
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={opt.priceDelta}
+                            onChange={(e) => handleOptionChange(opt.id, "priceDelta", e.target.value)}
+                            className="w-full p-2 bg-slate-800 border border-slate-600 rounded text-white"
+                            placeholder="Price delta"
+                          />
+                          <div className="flex justify-end gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleMoveOption(opt.id, "up")}
+                              className="text-xs px-2 py-1 bg-slate-800 border border-slate-600 rounded text-gray-300 hover:text-white"
+                            >
+                              ↑
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleMoveOption(opt.id, "down")}
+                              className="text-xs px-2 py-1 bg-slate-800 border border-slate-600 rounded text-gray-300 hover:text-white"
+                            >
+                              ↓
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteOption(opt.id)}
+                              className="text-xs px-2 py-1 bg-red-700/60 border border-red-600 rounded text-red-100 hover:bg-red-700"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-400">No options yet. Add sizes, materials, or bundles.</p>
+                )}
+              </div>
+
               <div className="flex items-center">
                 <input
                   type="checkbox"

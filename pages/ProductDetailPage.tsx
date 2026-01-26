@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Product, GalleryImage } from '../types';
+import { Product, GalleryImage, ProductOption } from '../types';
 import { useProducts } from '../context/ProductContext';
 import { useGalleries } from '../context/GalleryContext';
 import { getDesignIdeas } from '../services/geminiService';
@@ -22,6 +22,7 @@ const ProductDetailPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState<CustomizationTab>('gallery');
+  const [selectedOptionId, setSelectedOptionId] = useState<string | undefined>(undefined);
   
   const [selectedGalleryImage, setSelectedGalleryImage] = useState<GalleryImage | null>(null);
   
@@ -36,6 +37,8 @@ const ProductDetailPage: React.FC = () => {
       const foundProduct = products.find(p => p.id === id);
       if (foundProduct) {
         setProduct(foundProduct);
+        const sortedOptions = [...(foundProduct.options || [])].sort((a, b) => a.order - b.order);
+        setSelectedOptionId(sortedOptions[0]?.id);
         if (foundProduct.galleryId) {
           fetchGalleryImages(foundProduct.galleryId);
         }
@@ -61,6 +64,9 @@ const ProductDetailPage: React.FC = () => {
 
   const handleAddToCart = () => {
     if (!product) return;
+    const optionDelta = selectedOptionId
+      ? product.options?.find((o) => o.id === selectedOptionId)?.priceDelta || 0
+      : 0;
     
     let customization;
     if (selectedGalleryImage) {
@@ -78,6 +84,7 @@ const ProductDetailPage: React.FC = () => {
       product,
       quantity,
       customization,
+      selectedOptionId,
     });
   };
 
@@ -103,6 +110,10 @@ const ProductDetailPage: React.FC = () => {
       {label}
     </button>
   );
+
+  const sortedOptions: ProductOption[] = [...(product.options || [])].sort((a, b) => a.order - b.order);
+  const selectedOption = sortedOptions.find((o) => o.id === selectedOptionId);
+  const displayPrice = (product.price + (selectedOption?.priceDelta || 0)).toFixed(2);
 
   return (
     <div className="bg-slate-800 p-8 rounded-lg shadow-2xl border border-slate-700">
@@ -134,8 +145,25 @@ const ProductDetailPage: React.FC = () => {
 
         <div>
           <h1 className="text-4xl font-bold text-white mb-2">{product.name}</h1>
-          <p className="text-3xl text-sky-400 font-light mb-4">${product.price.toFixed(2)}</p>
+          <p className="text-3xl text-sky-400 font-light mb-4">${displayPrice}</p>
           <p className="text-gray-300 mb-6 leading-relaxed">{product.description}</p>
+
+          {sortedOptions.length > 0 && (
+            <div className="mb-6">
+              <h3 className="text-xl font-semibold text-white mb-2">Options</h3>
+              <select
+                className="w-full p-3 bg-slate-700 border border-slate-600 rounded-md text-white"
+                value={selectedOptionId}
+                onChange={(e) => setSelectedOptionId(e.target.value)}
+              >
+                {sortedOptions.map((opt) => (
+                  <option key={opt.id} value={opt.id}>
+                    {opt.name} {opt.priceDelta !== 0 ? `(+$${opt.priceDelta.toFixed(2)})` : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {product.customizable && (
             <div className="mb-6">
