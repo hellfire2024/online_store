@@ -5,6 +5,7 @@ import { useToast } from "../../hooks/useToast";
 import Spinner from "../../components/Spinner";
 import { StaffMember } from "../../types";
 import { useUnsavedChanges } from "../../context/UnsavedChangesContext";
+import ImageUploadInput from "../../components/admin/ImageUploadInput";
 
 const StaffManagement: React.FC = () => {
   const { staff, isLoading, addStaff, updateStaff, deleteStaff } = useStaff();
@@ -16,6 +17,7 @@ const StaffManagement: React.FC = () => {
   const [originalStaff, setOriginalStaff] = useState<
     StaffMember | Omit<StaffMember, "id"> | null
   >(null);
+  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
   const { addToast } = useToast();
   const { setHasUnsavedChanges } = useUnsavedChanges();
 
@@ -68,16 +70,50 @@ const StaffManagement: React.FC = () => {
     }
   };
 
-  const handleSave = () => {
+  const handleImageUpload = (file: File | null) => {
+    setSelectedImageFile(file);
     if (newStaffMember) {
-      addStaff(newStaffMember);
+      setNewStaffMember((prev) => ({ ...prev!, imageUrl: file ? URL.createObjectURL(file) : "" }));
+    } else if (editingStaff) {
+      setEditingStaff((prev) => ({ ...prev!, imageUrl: file ? URL.createObjectURL(file) : "" }));
+    }
+  };
+
+  const handleSave = async () => {
+    let finalImageUrl = currentStaff?.imageUrl || '';
+
+    if (selectedImageFile) {
+      // Simulate image upload - in a real app, this would be an API call
+      try {
+        // Replace with actual image upload service call
+        finalImageUrl = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(selectedImageFile);
+        });
+        addToast("Image uploaded successfully!", "success");
+      } catch (error) {
+        addToast("Image upload failed!", "error");
+        console.error("Image upload error:", error);
+        return; // Stop save if upload fails
+      }
+    }
+
+    const staffToSave = {
+      ...(newStaffMember || editingStaff) as Omit<StaffMember, "id">,
+      imageUrl: finalImageUrl,
+    };
+
+    if (newStaffMember) {
+      addStaff(staffToSave as Omit<StaffMember, "id">);
       addToast("Staff member added!", "success");
     } else if (editingStaff) {
-      updateStaff(editingStaff);
+      updateStaff(staffToSave as StaffMember);
       addToast("Staff member updated!", "success");
     }
     setNewStaffMember(null);
     setEditingStaff(null);
+    setSelectedImageFile(null);
   };
 
   if (isLoading) {
@@ -154,13 +190,25 @@ const StaffManagement: React.FC = () => {
                 onChange={handleChange}
                 className="w-full p-2 bg-slate-700 border border-slate-600 rounded-md text-white"
               />
-              <input
-                type="text"
-                name="imageUrl"
-                placeholder="Image URL"
-                value={currentStaff.imageUrl}
-                onChange={handleChange}
-                className="w-full p-2 bg-slate-700 border border-slate-600 rounded-md text-white"
+              <ImageUploadInput
+                label="Image"
+                imageUrl={currentStaff.imageUrl}
+                onImageUrlChange={(url) => {
+                  if (newStaffMember) {
+                    setNewStaffMember((prev) => ({ ...prev!, imageUrl: url }));
+                  } else if (editingStaff) {
+                    setEditingStaff((prev) => ({ ...prev!, imageUrl: url }));
+                  }
+                  setSelectedImageFile(null);
+                }}
+                onFileSelect={(file) => {
+                  setSelectedImageFile(file);
+                  if (newStaffMember) {
+                    setNewStaffMember((prev) => ({ ...prev!, imageUrl: URL.createObjectURL(file) }));
+                  } else if (editingStaff) {
+                    setEditingStaff((prev) => ({ ...prev!, imageUrl: URL.createObjectURL(file) }));
+                  }
+                }}
               />
             </div>
             <div className="flex justify-end gap-4 mt-8">
