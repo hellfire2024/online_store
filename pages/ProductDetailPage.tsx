@@ -37,8 +37,10 @@ const ProductDetailPage: React.FC = () => {
       const foundProduct = products.find(p => p.id === id);
       if (foundProduct) {
         setProduct(foundProduct);
-        const sortedOptions = [...(foundProduct.options || [])].sort((a, b) => a.order - b.order);
-        setSelectedOptionId(sortedOptions[0]?.id);
+        if (!selectedOptionId && foundProduct.options?.length) {
+          const sortedOptions = [...foundProduct.options].sort((a, b) => a.order - b.order);
+          setSelectedOptionId(sortedOptions[0]?.id);
+        }
         if (foundProduct.galleryId) {
           fetchGalleryImages(foundProduct.galleryId);
         }
@@ -47,7 +49,7 @@ const ProductDetailPage: React.FC = () => {
       }
       setLoading(false);
     }
-  }, [id, products, navigate, fetchGalleryImages]);
+  }, [id, products, navigate, fetchGalleryImages, selectedOptionId]);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {

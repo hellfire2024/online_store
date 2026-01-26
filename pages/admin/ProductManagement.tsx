@@ -4,8 +4,95 @@ import { useGalleries } from "../../context/GalleryContext";
 import { PlusIcon, EditIcon, TrashIcon } from "../../components/Icons";
 import { useToast } from "../../hooks/useToast";
 import Spinner from "../../components/Spinner";
-import { Product } from "../../types";
+import { Product, ProductOption } from "../../types";
 import { useUnsavedChanges } from "../../context/UnsavedChangesContext";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+
+interface SortableOptionProps {
+  option: ProductOption;
+  onChangeName: (value: string) => void;
+  onChangePriceDelta: (value: string) => void;
+  onDelete: () => void;
+}
+
+const SortableOption: React.FC<SortableOptionProps> = ({
+  option,
+  onChangeName,
+  onChangePriceDelta,
+  onDelete,
+}) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: option.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="p-3 border border-slate-600 rounded-lg bg-slate-700/60"
+    >
+      <div className="grid grid-cols-1 md:grid-cols-[auto_1fr_1fr_auto] gap-2 items-center">
+        <button
+          type="button"
+          className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-white p-2"
+          {...attributes}
+          {...listeners}
+        >
+          ⋮⋮
+        </button>
+        <input
+          type="text"
+          value={option.name}
+          onChange={(e) => onChangeName(e.target.value)}
+          className="w-full p-2 bg-slate-800 border border-slate-600 rounded text-white"
+          placeholder="Option name"
+        />
+        <input
+          type="number"
+          step="0.01"
+          value={option.priceDelta}
+          onChange={(e) => onChangePriceDelta(e.target.value)}
+          className="w-full p-2 bg-slate-800 border border-slate-600 rounded text-white"
+          placeholder="Price delta"
+        />
+        <button
+          type="button"
+          onClick={onDelete}
+          className="text-xs px-3 py-2 bg-red-700/60 border border-red-600 rounded text-red-100 hover:bg-red-700"
+        >
+          ✕
+        </button>
+      </div>
+    </div>
+  );
+};
 
 const ProductManagement: React.FC = () => {
   const { products, isLoading, addProduct, updateProduct, deleteProduct } =
@@ -22,6 +109,13 @@ const ProductManagement: React.FC = () => {
   const [showImageSelector, setShowImageSelector] = useState(false);
   const { addToast } = useToast();
   const { setHasUnsavedChanges } = useUnsavedChanges();
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   const isModalOpen = !!newProduct || !!editingProduct;
   const currentProduct = newProduct || editingProduct;
@@ -173,15 +267,18 @@ const ProductManagement: React.FC = () => {
     });
   };
 
-  const handleMoveOption = (optionId: string, direction: "up" | "down") => {
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
     setProductState((prev) => {
       const options = [...(prev.options || [])].sort((a, b) => a.order - b.order);
-      const index = options.findIndex((o) => o.id === optionId);
-      if (index === -1) return prev;
-      const swapWith = direction === "up" ? index - 1 : index + 1;
-      if (swapWith < 0 || swapWith >= options.length) return prev;
-      [options[index], options[swapWith]] = [options[swapWith], options[index]];
-      const reordered = options.map((opt, idx) => ({ ...opt, order: idx + 1 }));
+      const oldIndex = options.findIndex((o) => o.id === active.id);
+      const newIndex = options.findIndex((o) => o.id === over.id);
+      const reordered = arrayMove(options, oldIndex, newIndex).map((opt, idx) => ({
+        ...opt,
+        order: idx + 1,
+      }));
       return { ...prev, options: reordered } as Product;
     });
   };
@@ -327,8 +424,8 @@ const ProductManagement: React.FC = () => {
       </div>
 
       {isModalOpen && currentProduct && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center">
-          <div className="bg-slate-800 rounded-lg shadow-2xl p-8 w-full max-w-lg border border-slate-700">
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-slate-800 rounded-lg shadow-2xl p-8 w-full max-w-4xl border border-slate-700 my-8 max-h-[90vh] overflow-y-auto">
             <h2 className="text-2xl font-bold text-white mb-6">
               {editingProduct ? "Edit Product" : "Add New Product"}
             </h2>
@@ -479,69 +576,6 @@ const ProductManagement: React.FC = () => {
                 </div>
               )}
 
-              <div className="mt-4">
-                <div className="flex justify-between items-center mb-2">
-                  <label className="block text-sm font-semibold text-gray-300">Product Options</label>
-                  <button
-                    type="button"
-                    onClick={handleAddOption}
-                    className="text-xs px-3 py-1 bg-slate-700 border border-slate-600 rounded text-sky-300 hover:bg-slate-600"
-                  >
-                    + Add Option
-                  </button>
-                </div>
-                {currentProduct.options?.length ? (
-                  <div className="space-y-2">
-                    {[...currentProduct.options].sort((a, b) => a.order - b.order).map((opt) => (
-                      <div key={opt.id} className="p-3 border border-slate-600 rounded-lg bg-slate-700/60">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-2 items-center">
-                          <input
-                            type="text"
-                            value={opt.name}
-                            onChange={(e) => handleOptionChange(opt.id, "name", e.target.value)}
-                            className="w-full p-2 bg-slate-800 border border-slate-600 rounded text-white"
-                            placeholder="Option name"
-                          />
-                          <input
-                            type="number"
-                            step="0.01"
-                            value={opt.priceDelta}
-                            onChange={(e) => handleOptionChange(opt.id, "priceDelta", e.target.value)}
-                            className="w-full p-2 bg-slate-800 border border-slate-600 rounded text-white"
-                            placeholder="Price delta"
-                          />
-                          <div className="flex justify-end gap-2">
-                            <button
-                              type="button"
-                              onClick={() => handleMoveOption(opt.id, "up")}
-                              className="text-xs px-2 py-1 bg-slate-800 border border-slate-600 rounded text-gray-300 hover:text-white"
-                            >
-                              ↑
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleMoveOption(opt.id, "down")}
-                              className="text-xs px-2 py-1 bg-slate-800 border border-slate-600 rounded text-gray-300 hover:text-white"
-                            >
-                              ↓
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteOption(opt.id)}
-                              className="text-xs px-2 py-1 bg-red-700/60 border border-red-600 rounded text-red-100 hover:bg-red-700"
-                            >
-                              ✕
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-gray-400">No options yet. Add sizes, materials, or bundles.</p>
-                )}
-              </div>
-
               <div className="flex items-center">
                 <input
                   type="checkbox"
@@ -597,6 +631,45 @@ const ProductManagement: React.FC = () => {
                   </div>
                 </>
               )}
+
+              <div className="mt-4">
+                <div className="flex justify-between items-center mb-2">
+                  <label className="block text-sm font-semibold text-gray-300">Product Options</label>
+                  <button
+                    type="button"
+                    onClick={handleAddOption}
+                    className="text-xs px-3 py-1 bg-slate-700 border border-slate-600 rounded text-sky-300 hover:bg-slate-600"
+                  >
+                    + Add Option
+                  </button>
+                </div>
+                {currentProduct.options?.length ? (
+                  <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleDragEnd}
+                  >
+                    <SortableContext
+                      items={[...currentProduct.options].sort((a, b) => a.order - b.order).map((o) => o.id)}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      <div className="space-y-2">
+                        {[...currentProduct.options].sort((a, b) => a.order - b.order).map((opt) => (
+                          <SortableOption
+                            key={opt.id}
+                            option={opt}
+                            onChangeName={(value) => handleOptionChange(opt.id, "name", value)}
+                            onChangePriceDelta={(value) => handleOptionChange(opt.id, "priceDelta", value)}
+                            onDelete={() => handleDeleteOption(opt.id)}
+                          />
+                        ))}
+                      </div>
+                    </SortableContext>
+                  </DndContext>
+                ) : (
+                  <p className="text-sm text-gray-400">No options yet. Add sizes, materials, or bundles.</p>
+                )}
+              </div>
             </div>
             <div className="flex justify-end gap-4 mt-8">
               <button
