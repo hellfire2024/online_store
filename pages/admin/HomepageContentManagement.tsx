@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { useAdmin } from "../../context/AdminContext";
+import { useSiteSettings } from "../../context/SiteSettingsContext";
 import { useToast } from "../../hooks/useToast";
 import { useUnsavedChanges } from "../../context/UnsavedChangesContext";
 
 const HomepageContentManagement: React.FC = () => {
-  const { siteSettings, updateSiteSettings } = useAdmin();
+  const { siteSettings, updateSiteSettings } = useSiteSettings();
   const [content, setContent] = useState(siteSettings);
   const { addToast } = useToast();
   const { setHasUnsavedChanges } = useUnsavedChanges();

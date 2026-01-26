@@ -1,9 +1,9 @@
 
 import React from 'react';
-import { useAdmin } from '../context/AdminContext';
+import { useSiteSettings } from '../context/SiteSettingsContext';
 
 const AboutPage: React.FC = () => {
-  const { siteSettings } = useAdmin();
+  const { siteSettings } = useSiteSettings();
 
   return (
     <div className="bg-slate-800 p-8 md:p-12 rounded-lg shadow-2xl max-w-4xl mx-auto border border-slate-700">

@@ -1,17 +1,16 @@
 
 import React from 'react';
-import { useAdmin } from '../context/AdminContext';
+import { useProducts } from '../context/ProductContext';
 import ProductCard from '../components/ProductCard';
 import Spinner from '../components/Spinner';
 
 const StorePage: React.FC = () => {
-  const { products } = useAdmin();
-  const loading = products.length === 0;
+  const { products, isLoading } = useProducts();
 
   return (
     <div>
       <h1 className="text-5xl font-bold text-white text-center mb-12">Our Products</h1>
-      {loading ? (
+      {isLoading ? (
         <div className="mt-16">
           <Spinner />
         </div>

@@ -1,23 +1,23 @@
-import React, { useState } from "react";
-import { useAdmin } from "../../context/AdminContext";
+import React, { useState, useEffect } from "react";
+import { useServices } from "../../context/ServicesContext";
+import { PlusIcon, EditIcon, TrashIcon } from "../../components/Icons";
 import Spinner from "../../components/Spinner";
 import { Service } from "../../types";
-import { EditIcon, TrashIcon, PlusIcon } from "../../components/Icons";
+import { useUnsavedChanges } from "../../context/UnsavedChangesContext";
 
 const ServicesManagement: React.FC = () => {
-  const { services, addService, updateService, deleteService } = useAdmin();
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingService, setEditingService] = useState<Partial<Service> | null>(
+  const { services, isLoading, addService, updateService, deleteService } =
+    useServices();
+  const [newService, setNewService] = useState<Omit<Service, "id"> | null>(
     null,
   );
+  const [editingService, setEditingService] = useState<Service | null>(null);
 
   const openModal = (service?: Service) => {
     setEditingService(service || { title: "", description: "", icon: "shirt" });
-    setIsModalOpen(true);
   };
 
   const closeModal = () => {
-    setIsModalOpen(false);
     setEditingService(null);
   };
 
@@ -25,9 +25,9 @@ const ServicesManagement: React.FC = () => {
     if (!editingService) return;
 
     if (editingService.id) {
-      await updateService(editingService as Service);
+      await updateService(editingService);
     } else {
-      await addService(editingService as Omit<Service, "id">);
+      await addService(editingService);
     }
     closeModal();
   };
@@ -41,6 +41,10 @@ const ServicesManagement: React.FC = () => {
 
   const inputClasses =
     "w-full p-2 bg-slate-700 border border-slate-600 rounded-md text-white";
+
+  if (isLoading) {
+    return <Spinner />;
+  }
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -99,7 +103,7 @@ const ServicesManagement: React.FC = () => {
         </div>
       </div>
 
-      {isModalOpen && editingService && (
+      {editingService && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center">
           <div className="bg-slate-800 rounded-lg shadow-2xl p-8 w-full max-w-lg border border-slate-700">
             <h2 className="text-2xl font-bold text-white mb-6">

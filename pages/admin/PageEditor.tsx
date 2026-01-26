@@ -1,6 +1,12 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import React, {
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  useRef,
+} from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useAdmin } from "../../context/AdminContext";
+import { usePages } from "../../context/PagesContext";
 import { Page } from "../../types";
 import { useToast } from "../../hooks/useToast";
 import { useUnsavedChanges } from "../../context/UnsavedChangesContext";
@@ -26,11 +32,15 @@ const MenuBar: React.FC<{ editor: Editor | null }> = ({ editor }) => {
       if (file) {
         const reader = new FileReader();
         reader.onload = (e) =>
-          editor.chain().focus().setImage({ src: e.target?.result as string }).run();
+          editor
+            .chain()
+            .focus()
+            .setImage({ src: e.target?.result as string })
+            .run();
         reader.readAsDataURL(file);
       }
     },
-    [editor]
+    [editor],
   );
 
   const setLink = useCallback(() => {
@@ -45,7 +55,9 @@ const MenuBar: React.FC<{ editor: Editor | null }> = ({ editor }) => {
 
   const buttonClass = (isActive: boolean) =>
     `p-2 rounded-md transition-colors ${
-      isActive ? "bg-slate-700 text-sky-400" : "text-gray-400 hover:bg-slate-700"
+      isActive
+        ? "bg-slate-700 text-sky-400"
+        : "text-gray-400 hover:bg-slate-700"
     }`;
 
   return (
@@ -106,31 +118,32 @@ const MenuBar: React.FC<{ editor: Editor | null }> = ({ editor }) => {
 const PageEditor: React.FC = () => {
   const { pageId } = useParams<{ pageId: string }>();
   const navigate = useNavigate();
-  const { pages, addPage, updatePage } = useAdmin();
+  const { pages, addPage, updatePage } = usePages();
   const { addToast } = useToast();
   const [page, setPage] = useState<Omit<Page, "id"> | Page | null>(null);
-  const [originalPage, setOriginalPage] = useState<Omit<Page, "id"> | Page | null>(null);
+  const [originalPage, setOriginalPage] = useState<
+    Omit<Page, "id"> | Page | null
+  >(null);
   const { setHasUnsavedChanges } = useUnsavedChanges();
 
   // THIS IS THE CORRECT AND FINAL ARCHITECTURE.
   // The editor is created ONCE with a stable configuration that is never redefined.
   const editor = useEditor({
-    extensions: [
-      StarterKit,
-      Image,
-    ],
+    extensions: [StarterKit, Image],
     content: "", // IMPORTANT: Always initialize empty.
     editorProps: {
       attributes: {
-        class: "prose prose-invert max-w-none p-4 h-96 overflow-y-auto focus:outline-none",
+        class:
+          "prose prose-invert max-w-none p-4 h-96 overflow-y-auto focus:outline-none",
       },
     },
     onUpdate: ({ editor }) => {
-      setPage(prev => prev ? { ...prev, content: editor.getHTML() } : null);
+      setPage((prev) => (prev ? { ...prev, content: editor.getHTML() } : null));
     },
   });
 
-  const hasUnsavedChanges = JSON.stringify(page) !== JSON.stringify(originalPage);
+  const hasUnsavedChanges =
+    JSON.stringify(page) !== JSON.stringify(originalPage);
 
   useEffect(() => {
     setHasUnsavedChanges(hasUnsavedChanges);
@@ -141,11 +154,19 @@ const PageEditor: React.FC = () => {
     if (editor) {
       let pageToLoad: Omit<Page, "id"> | Page;
       if (pageId) {
-        pageToLoad = pages.find(p => p.id === pageId) || { title: "Not Found", path: "", content: "" };
+        pageToLoad = pages.find((p) => p.id === pageId) || {
+          title: "Not Found",
+          path: "",
+          content: "",
+        };
       } else {
-        pageToLoad = { title: "", path: "", content: "<p>Start writing...</p>" };
+        pageToLoad = {
+          title: "",
+          path: "",
+          content: "<p>Start writing...</p>",
+        };
       }
-      
+
       setPage(pageToLoad);
       setOriginalPage(pageToLoad);
 
@@ -174,22 +195,22 @@ const PageEditor: React.FC = () => {
       setPage({ ...page, [e.target.name]: e.target.value });
     }
   };
-  
+
   const handlePreview = () => {
     if (page) {
-      const previewHtml = `
-        <!DOCTYPE html><html><head><title>Preview</title><style>body{font-family:sans-serif;max-width:800px;margin:2rem auto;}img{max-width:100%;}</style></head>
-        <body><h1>${page.title}</h1><hr><div>${page.content}</div></body></html>
-      `;
-      const blob = new Blob([previewHtml], { type: "text/html" });
-      window.open(URL.createObjectURL(blob), "_blank");
+      navigate('/admin/pages/preview', {
+        state: {
+          title: page.title,
+          content: page.content,
+        },
+      });
     }
   };
 
   if (!editor || !page) {
     return <div className="text-white">Loading...</div>;
   }
-  
+
   return (
     <div className="max-w-4xl mx-auto">
       <h1 className="text-3xl font-bold text-white mb-8">
@@ -212,18 +233,23 @@ const PageEditor: React.FC = () => {
           onChange={handleChange}
           className="w-full p-2 bg-slate-800 border-2 border-slate-700 rounded-md text-white"
         />
-        
+
         <div className="bg-slate-900 border-2 border-slate-700 rounded-md">
           <MenuBar editor={editor} />
           <EditorContent editor={editor} />
         </div>
       </div>
       <div className="flex justify-end mt-8 gap-4">
-        <button onClick={handlePreview} className="bg-slate-600 text-white font-bold py-2 px-8 rounded-lg">Preview</button>
-        <button 
-            onClick={handleSave} 
-            className="bg-sky-500 text-white font-bold py-2 px-8 rounded-lg disabled:opacity-50"
-            disabled={!hasUnsavedChanges}
+        <button
+          onClick={handlePreview}
+          className="bg-slate-600 text-white font-bold py-2 px-8 rounded-lg"
+        >
+          Preview
+        </button>
+        <button
+          onClick={handleSave}
+          className="bg-sky-500 text-white font-bold py-2 px-8 rounded-lg disabled:opacity-50"
+          disabled={!hasUnsavedChanges}
         >
           Save Page
         </button>

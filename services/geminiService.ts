@@ -44,10 +44,7 @@ const API_KEY = "YOUR_GEMINI_API_KEY"; // <-- PASTE YOUR API KEY HERE
 let model: GenerativeModel | null = null;
 
 if (!API_KEY || API_KEY === "YOUR_GEMINI_API_KEY") {
-  console.warn(
-    "Gemini API key not found or is a placeholder. AI features will be disabled. " +
-    "Please add your key to `services/geminiService.ts` to enable AI design ideas."
-  );
+  // API key not configured - AI features will be disabled silently
 } else {
   const genAI = new GoogleGenerativeAI(API_KEY);
   model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });

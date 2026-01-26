@@ -2,7 +2,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Product, GalleryImage } from '../types';
-import { useAdmin } from '../context/AdminContext';
+import { useProducts } from '../context/ProductContext';
+import { useGalleries } from '../context/GalleryContext';
 import { getDesignIdeas } from '../services/geminiService';
 import { useCart } from '../context/CartContext';
 import Spinner from '../components/Spinner';
@@ -13,7 +14,8 @@ type CustomizationTab = 'gallery' | 'upload' | 'ideas';
 const ProductDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { products, galleryImages, fetchGalleryImages: fetchImagesForGallery } = useAdmin();
+  const { products } = useProducts();
+  const { galleryImages, fetchGalleryImages } = useGalleries();
   const { addToCart } = useCart();
 
   const [product, setProduct] = useState<Product | null>(null);
@@ -35,14 +37,14 @@ const ProductDetailPage: React.FC = () => {
       if (foundProduct) {
         setProduct(foundProduct);
         if (foundProduct.galleryId) {
-          fetchImagesForGallery(foundProduct.galleryId);
+          fetchGalleryImages(foundProduct.galleryId);
         }
       } else {
         navigate('/store');
       }
       setLoading(false);
     }
-  }, [id, products, navigate, fetchImagesForGallery]);
+  }, [id, products, navigate, fetchGalleryImages]);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -62,7 +64,7 @@ const ProductDetailPage: React.FC = () => {
     
     let customization;
     if (selectedGalleryImage) {
-        customization = { type: 'gallery' as const, value: selectedGalleryImage.url };
+        customization = { type: 'gallery' as const, value: selectedGalleryImage.imageUrl };
     } else if (uploadedImage) {
         customization = { type: 'upload' as const, value: uploadedImage };
     }
@@ -125,7 +127,7 @@ const ProductDetailPage: React.FC = () => {
               <div className="flex space-x-2 border-b border-slate-700">
                 <TabButton tab="gallery" label="Choose from Gallery" />
                 <TabButton tab="upload" label="Upload Your Own" />
-                <TabButton tab="ideas" label="Get AI Ideas" />
+                {product.enableAIIdeas && <TabButton tab="ideas" label="Get AI Ideas" />}
               </div>
               
               <div className="p-4 bg-slate-700 rounded-b-md">
@@ -134,7 +136,7 @@ const ProductDetailPage: React.FC = () => {
                     {currentGalleryImages.length > 0 ? currentGalleryImages.map(img => (
                       <WatermarkedImage 
                         key={img.id} 
-                        src={img.url} 
+                        src={img.imageUrl} 
                         alt={img.name}
                         isSelected={selectedGalleryImage?.id === img.id}
                         onClick={() => { setSelectedGalleryImage(img); setUploadedImage(null); }}

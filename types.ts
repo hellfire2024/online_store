@@ -7,6 +7,7 @@ export interface Product {
   inventory: number;
   customizable: boolean;
   galleryId?: string; // Link to a specific gallery
+  enableAIIdeas?: boolean; // Enable AI design ideas for this product
 }
 
 export interface CartItem {

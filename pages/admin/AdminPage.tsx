@@ -12,7 +12,6 @@ import SettingsManagement from "./SettingsManagement";
 import ServicesManagement from "./ServicesManagement";
 import PagesManagement from "./PagesManagement";
 import PageEditor from "./PageEditor";
-import NavigationManagement from "./NavigationManagement";
 
 const AdminPage: React.FC = () => {
   const { isAdminAuthenticated } = useAdmin();
@@ -44,7 +43,6 @@ const AdminPage: React.FC = () => {
           <Route path="/pages" element={<PagesManagement />} />
           <Route path="/pages/edit/:pageId" element={<PageEditor />} />
           <Route path="/pages/new" element={<PageEditor />} />
-          <Route path="/navigation" element={<NavigationManagement />} />
         </Routes>
       </main>
     </div>

@@ -2,7 +2,8 @@ import React from "react";
 import { Link, NavLink } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { useCustomerAuth } from "../context/CustomerAuthContext";
-import { useAdmin } from "../context/AdminContext";
+import { useSiteSettings } from "../context/SiteSettingsContext";
+import { usePages } from "../context/PagesContext";
 
 const CartIcon: React.FC = () => (
   <svg
@@ -42,7 +43,18 @@ const UserIcon: React.FC = () => (
 const Header: React.FC = () => {
   const { itemCount } = useCart();
   const { customer, logout } = useCustomerAuth();
-  const { siteSettings, menus } = useAdmin();
+  const { siteSettings, isLoading: settingsLoading } = useSiteSettings();
+  const { menus, isLoading: pagesLoading } = usePages();
+
+  // THIS IS THE CORRECT AND FINAL FIX.
+  // We will not attempt to render anything until all data is loaded and verified.
+  if (settingsLoading || pagesLoading || !siteSettings || !menus) {
+    return (
+      <header className="bg-slate-900/80 backdrop-blur-md shadow-lg sticky top-0 z-40">
+        <div className="container mx-auto px-4 h-[72px]" />
+      </header>
+    );
+  }
 
   const headerMenu = menus.find((m) => m.id === "menu_header");
 

@@ -1,38 +1,67 @@
 import React, { useState, useEffect } from "react";
-import { useAdmin } from "../../context/AdminContext";
+import { useSiteSettings } from "../../context/SiteSettingsContext";
+import { usePages } from "../../context/PagesContext";
 import { useToast } from "../../hooks/useToast";
-import {
-  SiteSettings,
-  PaymentProvider,
-  MenuItem,
-  ShippingProvider,
-} from "../../types";
-import { PlusIcon, TrashIcon } from "../../components/Icons";
+import { SiteSettings, Menu, MenuItem, Page } from "../../types";
 import { useUnsavedChanges } from "../../context/UnsavedChangesContext";
+import { PlusIcon, TrashIcon } from "../../components/Icons";
+import MenuEditor from "../../components/admin/MenuEditor"; // Correctly import the isolated component
+import { DragEndEvent } from "@dnd-kit/core";
+import { arrayMove } from "@dnd-kit/sortable";
 
-type SettingsTab = "general" | "footer" | "pages" | "payment" | "shipping";
+type SettingsTab = "general" | "footer" | "menus" | "payment" | "shipping";
 
 const SettingsManagement: React.FC = () => {
-  const { siteSettings, updateSiteSettings } = useAdmin();
+  const { siteSettings, updateSiteSettings } = useSiteSettings();
+  const { pages, menus, updateMenu } = usePages();
+
   const [settings, setSettings] = useState<Partial<SiteSettings>>(siteSettings);
   const [activeTab, setActiveTab] = useState<SettingsTab>("general");
   const { addToast } = useToast();
   const { setHasUnsavedChanges } = useUnsavedChanges();
 
-  const hasUnsavedChanges =
+  // --- State for Menu Editor ---
+  const [selectedMenuId, setSelectedMenuId] = useState<string | null>(null);
+  const [currentMenu, setCurrentMenu] = useState<Menu | null>(null);
+  const [originalMenu, setOriginalMenu] = useState<Menu | null>(null);
+
+  const hasSettingsUnsavedChanges =
     JSON.stringify(settings) !== JSON.stringify(siteSettings);
+  const hasMenuUnsavedChanges =
+    JSON.stringify(currentMenu) !== JSON.stringify(originalMenu);
 
   useEffect(() => {
-    setHasUnsavedChanges(hasUnsavedChanges);
-  }, [hasUnsavedChanges, setHasUnsavedChanges]);
+    setHasUnsavedChanges(hasSettingsUnsavedChanges || hasMenuUnsavedChanges);
+  }, [hasSettingsUnsavedChanges, hasMenuUnsavedChanges, setHasUnsavedChanges]);
 
   useEffect(() => {
-    if (!hasUnsavedChanges) {
+    if (!hasSettingsUnsavedChanges) {
       setSettings(siteSettings);
     }
   }, [siteSettings]);
 
-  const handleSave = async () => {
+  // --- Effects for Menu Editor ---
+  useEffect(() => {
+    if (activeTab === "menus" && menus.length > 0 && !selectedMenuId) {
+      setSelectedMenuId(menus[0].id);
+    }
+  }, [activeTab, menus, selectedMenuId]);
+
+  useEffect(() => {
+    if (selectedMenuId) {
+      const foundMenu = menus.find((m) => m.id === selectedMenuId);
+      if (foundMenu) {
+        const deepCopy = JSON.parse(JSON.stringify(foundMenu));
+        setCurrentMenu(deepCopy);
+        setOriginalMenu(deepCopy);
+      } else {
+        setCurrentMenu(null);
+        setOriginalMenu(null);
+      }
+    }
+  }, [selectedMenuId, menus]);
+
+  const handleSaveSettings = async () => {
     await updateSiteSettings(settings);
     addToast("Settings updated successfully!", "success");
   };
@@ -61,35 +90,80 @@ const SettingsManagement: React.FC = () => {
     }));
   };
 
-  const handleLinkChange = (
-    section: "footerQuickLinks" | "footerSocialLinks",
+  const handleSocialLinkChange = (
     id: string,
     field: "text" | "url",
     value: string,
   ) => {
-    const updatedLinks = settings[section]?.map((link) =>
+    const updatedLinks = settings.footerSocialLinks?.map((link) =>
       link.id === id ? { ...link, [field]: value } : link,
     );
-    setSettings((prev) => ({ ...prev, [section]: updatedLinks }));
+    setSettings((prev) => ({ ...prev, footerSocialLinks: updatedLinks }));
   };
 
-  const addFooterLink = () => {
-    const newLink: MenuItem = {
-      id: `fl_${Date.now()}`,
+  // --- Handlers for Menu Editor ---
+  const handleMenuSelection = (menuId: string) => {
+    if (hasMenuUnsavedChanges) {
+      if (
+        window.confirm(
+          "You have unsaved changes. Are you sure you want to discard them?",
+        )
+      ) {
+        setSelectedMenuId(menuId);
+      }
+    } else {
+      setSelectedMenuId(menuId);
+    }
+  };
+
+  const handleMenuItemChange = (
+    itemId: string,
+    field: "text" | "url",
+    value: string,
+  ) => {
+    if (!currentMenu) return;
+    const updatedItems = currentMenu.items.map((item) =>
+      item.id === itemId ? { ...item, [field]: value } : item,
+    );
+    setCurrentMenu({ ...currentMenu, items: updatedItems });
+  };
+
+  const addMenuItem = () => {
+    if (!currentMenu) return;
+    const newItem: MenuItem = {
+      id: `item_${Date.now()}`,
       text: "New Link",
       url: "/",
     };
-    setSettings((prev) => ({
-      ...prev,
-      footerQuickLinks: [...(prev.footerQuickLinks || []), newLink],
-    }));
+    setCurrentMenu({ ...currentMenu, items: [...currentMenu.items, newItem] });
   };
 
-  const deleteFooterLink = (id: string) => {
-    setSettings((prev) => ({
-      ...prev,
-      footerQuickLinks: prev.footerQuickLinks?.filter((link) => link.id !== id),
-    }));
+  const deleteMenuItem = (itemId: string) => {
+    if (!currentMenu) return;
+    const updatedItems = currentMenu.items.filter((item) => item.id !== itemId);
+    setCurrentMenu({ ...currentMenu, items: updatedItems });
+  };
+
+  const handleSaveMenu = async () => {
+    if (currentMenu) {
+      await updateMenu(currentMenu);
+      setOriginalMenu(JSON.parse(JSON.stringify(currentMenu)));
+      addToast(`Menu "${currentMenu.name}" updated successfully!`, "success");
+    }
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (currentMenu && over && active.id !== over.id) {
+      const oldIndex = currentMenu.items.findIndex(
+        (item) => item.id === active.id,
+      );
+      const newIndex = currentMenu.items.findIndex(
+        (item) => item.id === over.id,
+      );
+      const newItems = arrayMove(currentMenu.items, oldIndex, newIndex);
+      setCurrentMenu({ ...currentMenu, items: newItems });
+    }
   };
 
   const inputClasses =
@@ -118,12 +192,12 @@ const SettingsManagement: React.FC = () => {
       <div className="flex border-b border-slate-700">
         <TabButton tab="general" label="General" />
         <TabButton tab="footer" label="Footer" />
-        <TabButton tab="pages" label="Menus" />
+        <TabButton tab="menus" label="Menus" />
         <TabButton tab="payment" label="Payment" />
         <TabButton tab="shipping" label="Shipping" />
       </div>
 
-      <div className="bg-slate-800 p-6 rounded-b-lg border border-t-0 border-slate-700">
+      <div className="bg-slate-800 p-6 rounded-b-lg border border-t-0 border-slate-700 min-h-[40rem]">
         {activeTab === "general" && (
           <div className="space-y-6">
             <h2 className="text-xl font-semibold text-white">
@@ -168,7 +242,11 @@ const SettingsManagement: React.FC = () => {
               ></textarea>
             </div>
             <div className="flex justify-end">
-              <button onClick={handleSave} className={buttonClasses}>
+              <button
+                onClick={handleSaveSettings}
+                className={buttonClasses}
+                disabled={!hasSettingsUnsavedChanges}
+              >
                 Save General Settings
               </button>
             </div>
@@ -216,26 +294,16 @@ const SettingsManagement: React.FC = () => {
                       type="text"
                       value={link.text}
                       onChange={(e) =>
-                        handleLinkChange(
-                          "footerSocialLinks",
-                          link.id,
-                          "text",
-                          e.target.value,
-                        )
+                        handleSocialLinkChange(link.id, "text", e.target.value)
                       }
-                      placeholder="Name (e.g., Facebook)"
+                      placeholder="Name"
                       className={inputClasses}
                     />
                     <input
                       type="text"
                       value={link.url}
                       onChange={(e) =>
-                        handleLinkChange(
-                          "footerSocialLinks",
-                          link.id,
-                          "url",
-                          e.target.value,
-                        )
+                        handleSocialLinkChange(link.id, "url", e.target.value)
                       }
                       placeholder="URL"
                       className={inputClasses}
@@ -245,75 +313,30 @@ const SettingsManagement: React.FC = () => {
               </div>
             </div>
             <div className="flex justify-end">
-              <button onClick={handleSave} className={buttonClasses}>
+              <button
+                onClick={handleSaveSettings}
+                className={buttonClasses}
+                disabled={!hasSettingsUnsavedChanges}
+              >
                 Save Footer Settings
               </button>
             </div>
           </div>
         )}
 
-        {activeTab === "pages" && (
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-xl font-semibold text-white mb-1">
-                Footer Quick Links Menu
-              </h2>
-              <p className="text-sm text-gray-400 mb-4">
-                Add, remove, or reorder links in the footer.
-              </p>
-              <div className="space-y-2">
-                {settings.footerQuickLinks?.map((link) => (
-                  <div key={link.id} className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      value={link.text}
-                      onChange={(e) =>
-                        handleLinkChange(
-                          "footerQuickLinks",
-                          link.id,
-                          "text",
-                          e.target.value,
-                        )
-                      }
-                      placeholder="Link Text"
-                      className={inputClasses}
-                    />
-                    <input
-                      type="text"
-                      value={link.url}
-                      onChange={(e) =>
-                        handleLinkChange(
-                          "footerQuickLinks",
-                          link.id,
-                          "url",
-                          e.target.value,
-                        )
-                      }
-                      placeholder="URL (e.g., /contact)"
-                      className={inputClasses}
-                    />
-                    <button
-                      onClick={() => deleteFooterLink(link.id)}
-                      className="p-2 bg-red-500 text-white rounded-md hover:bg-red-600"
-                    >
-                      <TrashIcon className="w-5 h-5" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-              <button
-                onClick={addFooterLink}
-                className="mt-4 flex items-center text-sky-400 hover:text-sky-300"
-              >
-                <PlusIcon className="w-5 h-5 mr-2" /> Add Link
-              </button>
-            </div>
-            <div className="flex justify-end">
-              <button onClick={handleSave} className={buttonClasses}>
-                Save Menu Settings
-              </button>
-            </div>
-          </div>
+        {activeTab === "menus" && (
+          <MenuEditor
+            menus={menus}
+            pages={pages}
+            selectedMenuId={selectedMenuId}
+            currentMenu={currentMenu}
+            handleMenuSelection={handleMenuSelection}
+            handleMenuItemChange={handleMenuItemChange}
+            deleteMenuItem={deleteMenuItem}
+            addMenuItem={addMenuItem}
+            handleSaveMenu={handleSaveMenu}
+            hasMenuUnsavedChanges={hasMenuUnsavedChanges}
+          />
         )}
 
         {activeTab === "payment" && (
@@ -461,7 +484,7 @@ const SettingsManagement: React.FC = () => {
                   <span className="text-yellow-400">Not Connected</span>
                 )}
               </div>
-              <button onClick={handleSave} className={buttonClasses}>
+              <button onClick={handleSaveSettings} className={buttonClasses}>
                 Save & Connect
               </button>
             </div>
@@ -532,7 +555,11 @@ const SettingsManagement: React.FC = () => {
               </div>
             )}
             <div className="flex justify-end">
-              <button onClick={handleSave} className={buttonClasses}>
+              <button
+                onClick={handleSaveSettings}
+                className={buttonClasses}
+                disabled={!hasSettingsUnsavedChanges}
+              >
                 Save Shipping Settings
               </button>
             </div>

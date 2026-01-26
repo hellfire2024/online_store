@@ -1,14 +1,17 @@
-
 import React, { useState, useEffect } from 'react';
-import { useAdmin } from '../../context/AdminContext';
+import { useGalleries } from '../../context/GalleryContext';
 import { TrashIcon, PlusIcon } from '../../components/Icons';
+import { useToast } from '../../hooks/useToast';
 
 const GalleriesManagement: React.FC = () => {
-    const { galleries, addGallery, deleteGallery, galleryImages, fetchGalleryImages, addGalleryImage, deleteGalleryImage: delImg } = useAdmin();
+    const { galleries, galleryImages, addGallery, deleteGallery, fetchGalleryImages, addGalleryImage, deleteGalleryImage: delImg } = useGalleries();
+    const { addToast } = useToast();
     const [newGalleryName, setNewGalleryName] = useState('');
     const [selectedGalleryId, setSelectedGalleryId] = useState<string | null>(null);
     const [newImageName, setNewImageName] = useState('');
     const [newImageUrl, setNewImageUrl] = useState('');
+    const [galleryError, setGalleryError] = useState('');
+    const [imageError, setImageError] = useState('');
 
     useEffect(() => {
         if (galleries.length > 0 && !selectedGalleryId) {
@@ -25,20 +28,63 @@ const GalleriesManagement: React.FC = () => {
         }
     }, [selectedGalleryId, fetchGalleryImages]);
 
-    const handleAddGallery = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (newGalleryName) {
-            await addGallery({ name: newGalleryName });
-            setNewGalleryName('');
+    const handleAddGallery = async () => {
+        console.log("handleAddGallery triggered"); // Debugging line
+        setGalleryError(''); // Clear previous errors
+        
+        const trimmedName = newGalleryName.trim();
+        
+        if (!trimmedName) {
+            setGalleryError('Gallery name is required');
+            addToast("Gallery name is required", "error");
+            return;
+        }
+        
+        try {
+            await addGallery({ name: trimmedName });
+            addToast("Gallery added!", "success");
+            setNewGalleryName(''); // Clear input after successful add
+            setGalleryError(''); // Clear any lingering error
+        } catch (error) {
+            console.error("Failed to add gallery:", error);
+            addToast("Failed to add gallery.", "error");
+            setGalleryError("Failed to add gallery.");
         }
     };
 
     const handleAddImage = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (newImageName && newImageUrl && selectedGalleryId) {
-            await addGalleryImage(selectedGalleryId, { name: newImageName, url: newImageUrl });
+        setImageError('');
+        
+        const trimmedImageName = newImageName.trim();
+        const trimmedImageUrl = newImageUrl.trim();
+        
+        if (!trimmedImageName) {
+            setImageError('Image name is required');
+            addToast("Image name is required", "error");
+            return;
+        }
+        if (!trimmedImageUrl) {
+            setImageError('Image URL is required');
+            addToast("Image URL is required", "error");
+            return;
+        }
+        if (!selectedGalleryId) {
+            setImageError('Please select a gallery first');
+            addToast("Please select a gallery first", "error");
+            return;
+        }
+        
+        try {
+            await addGalleryImage(selectedGalleryId, { name: trimmedImageName, imageUrl: trimmedImageUrl });
+            addToast("Image added!", "success");
             setNewImageName('');
             setNewImageUrl('');
+            setImageError('');
+        } catch (error) {
+            console.error("Failed to add image:", error);
+            addToast("Failed to add image.", "error");
+            setImageError("Failed to add image.");
         }
     };
 
@@ -52,10 +98,13 @@ const GalleriesManagement: React.FC = () => {
                 {/* Gallery List */}
                 <div className="lg:col-span-1 bg-slate-800 p-6 rounded-lg border border-slate-700 self-start">
                     <h2 className="text-xl font-semibold text-white mb-4">Galleries</h2>
-                    <form onSubmit={handleAddGallery} className="flex gap-2 mb-4">
-                        <input type="text" value={newGalleryName} onChange={e => setNewGalleryName(e.target.value)} placeholder="New Gallery Name" className="flex-grow p-2 bg-slate-700 border border-slate-600 rounded-md text-white" />
-                        <button type="submit" className="bg-sky-500 text-white p-2 rounded-lg flex items-center justify-center hover:bg-sky-600"><PlusIcon className="w-5 h-5" /></button>
-                    </form>
+                    <div className="mb-4">
+                        <div className="flex gap-2 mb-2">
+                            <input type="text" name="newGalleryName" value={newGalleryName} onChange={e => { setNewGalleryName(e.target.value); setGalleryError(''); }} placeholder="New Gallery Name" className="flex-grow p-2 bg-slate-700 border border-slate-600 rounded-md text-white" />
+                            <button type="button" onClick={handleAddGallery} className="bg-sky-500 text-white p-2 rounded-lg flex items-center justify-center hover:bg-sky-600"><PlusIcon className="w-5 h-5" /></button>
+                        </div>
+                        {galleryError && <p className="text-red-400 text-sm">{galleryError}</p>}
+                    </div>
                     <div className="space-y-2">
                         {galleries.map(gallery => (
                             <div key={gallery.id} onClick={() => setSelectedGalleryId(gallery.id)} className={`flex justify-between items-center p-3 rounded-md cursor-pointer transition-colors ${selectedGalleryId === gallery.id ? 'bg-sky-600' : 'bg-slate-700 hover:bg-slate-600'}`}>
@@ -81,7 +130,7 @@ const GalleriesManagement: React.FC = () => {
                             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                                 {currentImages.map(image => (
                                     <div key={image.id} className="relative group">
-                                        <img src={image.url} alt={image.name} className="w-full h-32 object-cover rounded-lg" />
+                                        <img src={image.imageUrl} alt={image.name} className="w-full h-32 object-cover rounded-lg" />
                                         <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-2 text-white">
                                             <p className="text-xs font-semibold truncate">{image.name}</p>
                                             <button onClick={() => delImg(selectedGalleryId, image.id)} className="self-end text-gray-300 hover:text-red-500"><TrashIcon className="w-5 h-5" /></button>
