@@ -102,8 +102,13 @@ export interface StaffMember {
 export interface Review {
   id: string;
   author: string;
+  email?: string;
   text: string;
   rating: number;
+  status: "pending" | "approved" | "rejected" | "archived";
+  createdAt: string;
+  approvedAt?: string;
+  rejectionReason?: string;
 }
 
 export interface Service {
@@ -241,4 +246,4 @@ export interface SiteSettings {
   siteAccentColor: string;
   siteBackgroundImageUrl: string;
   siteBackgroundOpacity: number;
-}
+  maxReviewsDisplayed: number; // How many approved reviews to show on site

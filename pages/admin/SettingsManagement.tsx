@@ -471,6 +471,29 @@ const SettingsManagement: React.FC = () => {
               }}
             />
 
+            <div className="border-t border-slate-700 pt-6">
+              <h3 className="text-lg font-semibold text-white mb-4">Review Settings</h3>
+              <div>
+                <label
+                  htmlFor="maxReviewsDisplayed"
+                  className="block text-gray-300 text-sm font-bold mb-1"
+                >
+                  Maximum Reviews to Display on Homepage
+                </label>
+                <input
+                  type="number"
+                  id="maxReviewsDisplayed"
+                  name="maxReviewsDisplayed"
+                  min="1"
+                  max="50"
+                  value={settings.maxReviewsDisplayed || 5}
+                  onChange={handleInputChange}
+                  className={inputClasses}
+                />
+                <p className="text-xs text-gray-400 mt-1">Shows the most recent approved reviews up to this limit</p>
+              </div>
+            </div>
+
             <div className="flex justify-end">
               <button
                 onClick={handleSaveSettings}

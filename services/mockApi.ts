@@ -142,20 +142,41 @@ let mockReviews: Review[] = [
   {
     id: "r1",
     author: "Chris P.",
+    email: "chris@example.com",
     text: "The quality of the t-shirt I ordered was amazing! The print was crisp and has held up after multiple washes.",
     rating: 5,
+    status: "approved",
+    createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+    approvedAt: new Date(Date.now() - 28 * 24 * 60 * 60 * 1000).toISOString(),
   },
   {
     id: "r2",
     author: "Samantha B.",
+    email: "samantha@example.com",
     text: "My custom mug is my new favorite. The design process was so easy and it arrived quickly.",
     rating: 5,
+    status: "approved",
+    createdAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
+    approvedAt: new Date(Date.now() - 19 * 24 * 60 * 60 * 1000).toISOString(),
   },
   {
     id: "r3",
     author: "Mike T.",
+    email: "mike@example.com",
     text: "Great service and a fantastic product. The hoodie is super comfortable.",
     rating: 4,
+    status: "approved",
+    createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+    approvedAt: new Date(Date.now() - 9 * 24 * 60 * 60 * 1000).toISOString(),
+  },
+  {
+    id: "r4",
+    author: "Sarah L.",
+    email: "sarah@example.com",
+    text: "Excellent quality and fast shipping!",
+    rating: 5,
+    status: "pending",
+    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
   },
 ];
 
@@ -263,6 +284,7 @@ let mockSiteSettings: SiteSettings = {
   siteAccentColor: "#38bdf8", // sky-400
   siteBackgroundImageUrl: "https://picsum.photos/seed/hero/1200/800",
   siteBackgroundOpacity: 100,
+  maxReviewsDisplayed: 5,
 };
 
 const apiDelay = 200;
