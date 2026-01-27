@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
 import { CustomerAuthProvider } from "./context/CustomerAuthContext";
 import { CartProvider } from "./context/CartContext";
@@ -55,12 +55,13 @@ const useAdminKeyListener = (callback: () => void) => {
     const handler = (e: KeyboardEvent) => {
       if (e.key.toLowerCase() === "a" && e.altKey && e.shiftKey) {
         e.preventDefault();
+        e.stopPropagation();
         callback();
       }
     };
-    window.addEventListener("keydown", handler);
+    window.addEventListener("keydown", handler, { capture: true });
     return () => {
-      window.removeEventListener("keydown", handler);
+      window.removeEventListener("keydown", handler, { capture: true });
     };
   }, [callback]);
 };
@@ -68,7 +69,11 @@ const useAdminKeyListener = (callback: () => void) => {
 const App: React.FC = () => {
   const [isAdminLoginOpen, setIsAdminLoginOpen] = useState(false);
 
-  useAdminKeyListener(() => setIsAdminLoginOpen(true));
+  const handleOpenAdminLogin = useCallback(() => {
+    setIsAdminLoginOpen(true);
+  }, []);
+
+  useAdminKeyListener(handleOpenAdminLogin);
 
   return (
     <AdminProvider>

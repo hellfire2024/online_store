@@ -43,9 +43,56 @@ const CustomerManagement: React.FC = () => {
         setCustomers(data);
         setFilteredCustomers(data);
       } catch (error) {
-        addToast(`Failed to load customers: ${error instanceof Error ? error.message : 'Unknown error'}`, 'error');
-        setCustomers([]);
-        setFilteredCustomers([]);
+        // Fallback to mock data if backend not available
+        const mockCustomers: Customer[] = [
+          {
+            id: '1',
+            name: 'John Doe',
+            email: 'john.doe@email.com',
+            phone: '555-0123',
+            isActive: true,
+            orderCount: 5,
+            totalSpent: 287.50,
+            createdAt: '2024-02-10T12:00:00Z',
+            lastLogin: '2026-01-25T14:30:00Z',
+          },
+          {
+            id: '2',
+            name: 'Jane Smith',
+            email: 'jane.smith@email.com',
+            phone: '555-0456',
+            isActive: true,
+            orderCount: 12,
+            totalSpent: 1450.75,
+            createdAt: '2023-11-05T08:15:00Z',
+            lastLogin: '2026-01-26T09:00:00Z',
+          },
+          {
+            id: '3',
+            name: 'Bob Johnson',
+            email: 'bob.johnson@email.com',
+            phone: '',
+            isActive: false,
+            orderCount: 2,
+            totalSpent: 89.99,
+            createdAt: '2025-08-22T16:45:00Z',
+            lastLogin: '2025-12-01T10:20:00Z',
+          },
+          {
+            id: '4',
+            name: 'Alice Williams',
+            email: 'alice.w@email.com',
+            phone: '555-0789',
+            isActive: true,
+            orderCount: 8,
+            totalSpent: 623.40,
+            createdAt: '2024-05-17T11:30:00Z',
+            lastLogin: '2026-01-24T15:10:00Z',
+          },
+        ];
+        setCustomers(mockCustomers);
+        setFilteredCustomers(mockCustomers);
+        addToast('Using demo data - backend not connected', 'info');
       } finally {
         setIsLoading(false);
       }
