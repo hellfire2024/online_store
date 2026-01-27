@@ -31,6 +31,13 @@ const defaultSettings: SiteSettings = {
   shippingProvider: "none",
   shippingFlatRate: 0,
   shippingApiKeys: { fedex: "", ups: "", usps: "" },
+  // Default tax configuration
+  taxConfig: {
+    enableTaxCollection: true,
+    defaultTaxRate: 0,
+    taxIncludedInPrice: false,
+    rules: [],
+  },
   siteBackgroundColor: "",
   siteTextColor: "",
   siteAccentColor: "",

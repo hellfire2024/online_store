@@ -51,15 +51,37 @@ export interface CustomerAddress {
   isDefault: boolean;
 }
 
+export interface TaxRule {
+  id: string;
+  name: string;
+  states: string[]; // US state codes (e.g., ['CA', 'NY', 'TX'])
+  taxRate: number; // Percentage (e.g., 8.5 for 8.5%)
+  productCategories?: string[]; // Optional: if empty, applies to all products
+  exemptedProductIds?: string[]; // Specific products exempt from this rule
+  enabled: boolean;
+  priority: number; // Higher priority rules override lower ones
+}
+
+export interface TaxConfig {
+  enableTaxCollection: boolean;
+  defaultTaxRate: number; // Fallback if no state rules match
+  rules: TaxRule[];
+  taxIncludedInPrice: boolean; // If true, tax is included in product price; if false, added at checkout
+}
+
 export interface CustomerOrder {
   id: string;
   orderNumber: string;
   date: string;
+  subtotal: number;
+  shippingCost: number;
+  taxAmount: number;
   total: number;
   status: "pending" | "processing" | "shipped" | "delivered" | "cancelled";
   shippingAddress: CustomerAddress;
   items: CartItem[];
   trackingNumber?: string;
+  appliedTaxRate?: number; // The tax rate applied at time of order
 }
 
 export interface Customer {
@@ -257,6 +279,9 @@ export interface SiteSettings {
     ups: string;
     usps: string;
   };
+
+  // Tax Management
+  taxConfig: TaxConfig;
 
   // Theme Management
   siteBackgroundColor: string;

@@ -18,12 +18,16 @@ import AdminSecurity from "./AdminSecurity";
 import OrderManagement from "./OrderManagement";
 import { usePermissions } from "../../hooks/usePermissions";
 
-const PermissionRoute: React.FC<{ requiredPermission: string; children: React.ReactNode }> = ({
-  requiredPermission,
-  children,
-}) => {
+const PermissionRoute: React.FC<{
+  requiredPermission: string;
+  children: React.ReactNode;
+}> = ({ requiredPermission, children }) => {
   const { can } = usePermissions();
-  return can(requiredPermission) ? <>{children}</> : <Navigate to="/admin" replace />;
+  return can(requiredPermission) ? (
+    <>{children}</>
+  ) : (
+    <Navigate to="/admin" replace />
+  );
 };
 
 const AdminPage: React.FC = () => {

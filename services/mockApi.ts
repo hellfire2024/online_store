@@ -394,6 +394,12 @@ let mockSiteSettings: SiteSettings = {
     ups: "",
     usps: "",
   },
+  taxConfig: {
+    enableTaxCollection: true,
+    defaultTaxRate: 0,
+    taxIncludedInPrice: false,
+    rules: [],
+  },
   siteBackgroundColor: "#0f172a", // slate-900
   siteTextColor: "#d1d5db", // gray-300
   siteAccentColor: "#38bdf8", // sky-400

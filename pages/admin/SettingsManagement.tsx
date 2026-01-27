@@ -2,10 +2,11 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useSiteSettings } from "../../context/SiteSettingsContext";
 import { usePages } from "../../context/PagesContext";
 import { useToast } from "../../hooks/useToast";
-import { SiteSettings, Menu, MenuItem, FooterItem, FooterColumn } from "../../types";
+import { SiteSettings, Menu, MenuItem, FooterItem, FooterColumn, TaxRule } from "../../types";
 import { useUnsavedChanges } from "../../context/UnsavedChangesContext";
 import MenuEditor from "../../components/admin/MenuEditor"; // Correctly import the isolated component
 import ImageUploadInput from "../../components/admin/ImageUploadInput";
+import { US_STATES } from "../../services/taxService";
 import {
   DndContext,
   closestCenter,
@@ -25,7 +26,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 
 
-type SettingsTab = "general" | "contact" | "footer" | "menus" | "payment" | "shipping";
+type SettingsTab = "general" | "contact" | "footer" | "menus" | "payment" | "shipping" | "tax";
 
 // --- Draggable Item Component ---
 const DraggableItem: React.FC<{ item: FooterItem, isOverlay?: boolean }> = ({ item, isOverlay }) => {
@@ -93,6 +94,20 @@ const SettingsManagement: React.FC = () => {
   const [selectedMenuId, setSelectedMenuId] = useState<string | null>(null);
   const [currentMenu, setCurrentMenu] = useState<Menu | null>(null);
   const [originalMenu, setOriginalMenu] = useState<Menu | null>(null);
+
+  // --- State for Tax Management ---
+  const [taxRules, setTaxRules] = useState<TaxRule[]>(siteSettings.taxConfig?.rules || []);
+  const [enableTax, setEnableTax] = useState(siteSettings.taxConfig?.enableTaxCollection ?? true);
+  const [defaultTaxRate, setDefaultTaxRate] = useState(siteSettings.taxConfig?.defaultTaxRate ?? 0);
+  const [editingTaxId, setEditingTaxId] = useState<string | null>(null);
+  const [taxFormData, setTaxFormData] = useState<Partial<TaxRule>>({
+    name: '',
+    states: [],
+    taxRate: 0,
+    exemptedProductIds: [],
+    enabled: true,
+    priority: 0,
+  });
 
   const hasSettingsUnsavedChanges =
     JSON.stringify(settings) !== JSON.stringify(siteSettings);
@@ -382,6 +397,7 @@ const SettingsManagement: React.FC = () => {
         <TabButton tab="menus" label="Menus" />
         <TabButton tab="payment" label="Payment" />
         <TabButton tab="shipping" label="Shipping" />
+        <TabButton tab="tax" label="Tax Rules" />
       </div>
 
       <div className="bg-slate-800 p-6 rounded-b-lg border border-t-0 border-slate-700 min-h-160">
@@ -872,6 +888,283 @@ const SettingsManagement: React.FC = () => {
                 disabled={!hasSettingsUnsavedChanges}
               >
                 Save Shipping Settings
+              </button>
+            </div>
+          </div>
+        )}
+
+        {activeTab === "tax" && (
+          <div className="space-y-6">
+            <h2 className="text-2xl font-semibold text-white mb-4">Tax Configuration</h2>
+            
+            {/* Global Settings */}
+            <div className="bg-slate-700 p-6 rounded-lg border border-slate-600">
+              <h3 className="text-xl font-semibold text-white mb-4">Global Settings</h3>
+              
+              <div className="space-y-4">
+                <label className="flex items-center space-x-3">
+                  <input
+                    type="checkbox"
+                    checked={enableTax}
+                    onChange={(e) => setEnableTax(e.target.checked)}
+                    className="w-4 h-4"
+                  />
+                  <span className="text-white">Enable Tax Collection</span>
+                </label>
+
+                <div>
+                  <label className="block text-white mb-2">Default Tax Rate (%)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.01"
+                    value={defaultTaxRate}
+                    onChange={(e) => setDefaultTaxRate(parseFloat(e.target.value))}
+                    className={inputClasses}
+                  />
+                  <p className="text-sm text-gray-400 mt-1">
+                    Used when no state-specific rule matches
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => {
+                    const updatedSettings = {
+                      ...settings,
+                      taxConfig: {
+                        enableTaxCollection: enableTax,
+                        defaultTaxRate,
+                        taxIncludedInPrice: settings.taxConfig?.taxIncludedInPrice ?? false,
+                        rules: taxRules,
+                      },
+                    };
+                    setSettings(updatedSettings);
+                    updateSiteSettings(updatedSettings);
+                    addToast('Tax settings saved', 'success');
+                  }}
+                  className={buttonClasses}
+                >
+                  Save Global Settings
+                </button>
+              </div>
+            </div>
+
+            {/* Add/Edit Rule Form */}
+            <div className="bg-slate-700 p-6 rounded-lg border border-slate-600">
+              <h3 className="text-xl font-semibold text-white mb-4">
+                {editingTaxId ? 'Edit Tax Rule' : 'Add New Tax Rule'}
+              </h3>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-white mb-2">Rule Name</label>
+                  <input
+                    type="text"
+                    placeholder="e.g., California Sales Tax"
+                    value={taxFormData.name || ''}
+                    onChange={(e) => setTaxFormData({ ...taxFormData, name: e.target.value })}
+                    className={inputClasses}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-white mb-2">Tax Rate (%)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.01"
+                    value={taxFormData.taxRate || 0}
+                    onChange={(e) => setTaxFormData({ ...taxFormData, taxRate: parseFloat(e.target.value) })}
+                    className={inputClasses}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-white mb-2">Priority (higher = applies first)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={taxFormData.priority || 0}
+                    onChange={(e) => setTaxFormData({ ...taxFormData, priority: parseInt(e.target.value) })}
+                    className={inputClasses}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-white mb-2">States (click to select)</label>
+                  <div className="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto bg-slate-600 p-4 rounded-md border border-slate-500">
+                    {US_STATES.map((state) => (
+                      <button
+                        key={state}
+                        type="button"
+                        onClick={() => {
+                          const newStates = taxFormData.states || [];
+                          if (newStates.includes(state)) {
+                            setTaxFormData({
+                              ...taxFormData,
+                              states: newStates.filter((s) => s !== state),
+                            });
+                          } else {
+                            setTaxFormData({
+                              ...taxFormData,
+                              states: [...newStates, state],
+                            });
+                          }
+                        }}
+                        className={`p-2 rounded-md font-semibold transition-colors ${
+                          (taxFormData.states || []).includes(state)
+                            ? 'bg-sky-500 text-white'
+                            : 'bg-slate-500 text-gray-300 hover:bg-slate-400'
+                        }`}
+                      >
+                        {state}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-sm text-gray-400 mt-2">
+                    Selected: {(taxFormData.states || []).join(', ') || 'None'}
+                  </p>
+                </div>
+
+                <label className="flex items-center space-x-3">
+                  <input
+                    type="checkbox"
+                    checked={taxFormData.enabled !== false}
+                    onChange={(e) => setTaxFormData({ ...taxFormData, enabled: e.target.checked })}
+                    className="w-4 h-4"
+                  />
+                  <span className="text-white">Enabled</span>
+                </label>
+
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => {
+                      if (!taxFormData.name || (taxFormData.states || []).length === 0) {
+                        addToast('Rule name and at least one state are required', 'error');
+                        return;
+                      }
+
+                      const newRule: TaxRule = {
+                        id: editingTaxId || Date.now().toString(),
+                        name: taxFormData.name || '',
+                        states: taxFormData.states || [],
+                        taxRate: taxFormData.taxRate || 0,
+                        exemptedProductIds: taxFormData.exemptedProductIds || [],
+                        enabled: taxFormData.enabled !== false,
+                        priority: taxFormData.priority || 0,
+                      };
+
+                      if (editingTaxId) {
+                        setTaxRules(taxRules.map((r) => (r.id === editingTaxId ? newRule : r)));
+                        setEditingTaxId(null);
+                        addToast('Tax rule updated', 'success');
+                      } else {
+                        setTaxRules([...taxRules, newRule]);
+                        addToast('Tax rule added', 'success');
+                      }
+
+                      setTaxFormData({
+                        name: '',
+                        states: [],
+                        taxRate: 0,
+                        exemptedProductIds: [],
+                        enabled: true,
+                        priority: 0,
+                      });
+                    }}
+                    className={buttonClasses}
+                  >
+                    {editingTaxId ? 'Update Rule' : 'Add Rule'}
+                  </button>
+                  {editingTaxId && (
+                    <button
+                      onClick={() => {
+                        setEditingTaxId(null);
+                        setTaxFormData({
+                          name: '',
+                          states: [],
+                          taxRate: 0,
+                          exemptedProductIds: [],
+                          enabled: true,
+                          priority: 0,
+                        });
+                      }}
+                      className="flex-1 bg-gray-600 text-white font-bold py-2 rounded-lg hover:bg-gray-700 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Tax Rules List */}
+            <div className="bg-slate-700 p-6 rounded-lg border border-slate-600">
+              <h3 className="text-xl font-semibold text-white mb-4">Tax Rules</h3>
+              
+              {taxRules.length === 0 ? (
+                <p className="text-gray-400">No tax rules configured yet.</p>
+              ) : (
+                <div className="space-y-4">
+                  {taxRules.map((rule) => (
+                    <div key={rule.id} className="bg-slate-600 p-4 rounded-lg border border-slate-500">
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <h4 className="text-white font-semibold">{rule.name}</h4>
+                          <p className="text-gray-400 text-sm">
+                            Rate: {rule.taxRate}% | Priority: {rule.priority} | Status:{' '}
+                            <span className={rule.enabled ? 'text-green-400' : 'text-red-400'}>
+                              {rule.enabled ? 'Enabled' : 'Disabled'}
+                            </span>
+                          </p>
+                        </div>
+                        <div className="space-x-2">
+                          <button
+                            onClick={() => {
+                              setTaxFormData(rule);
+                              setEditingTaxId(rule.id);
+                            }}
+                            className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => {
+                              setTaxRules(taxRules.filter((r) => r.id !== rule.id));
+                              addToast('Tax rule deleted', 'success');
+                            }}
+                            className="px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-sm"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                      <p className="text-gray-300 text-sm">States: {rule.states.join(', ')}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <button
+                onClick={() => {
+                  const updatedSettings = {
+                    ...settings,
+                    taxConfig: {
+                      enableTaxCollection: enableTax,
+                      defaultTaxRate,
+                      taxIncludedInPrice: settings.taxConfig?.taxIncludedInPrice ?? false,
+                      rules: taxRules,
+                    },
+                  };
+                  setSettings(updatedSettings);
+                  updateSiteSettings(updatedSettings);
+                  addToast('All tax settings saved', 'success');
+                }}
+                className={`mt-4 ${buttonClasses}`}
+              >
+                Save All Tax Rules
               </button>
             </div>
           </div>
