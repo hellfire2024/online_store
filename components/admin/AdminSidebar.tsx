@@ -80,6 +80,14 @@ const AdminSidebar: React.FC = () => {
           <h3 className="px-3 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
             Management
           </h3>
+          <PromptedNavLink to="/admin/users" className={getNavLinkClass}>
+            <StaffIcon className="w-6 h-6 mr-3" />
+            Admin Users
+          </PromptedNavLink>
+          <PromptedNavLink to="/admin/customers" className={getNavLinkClass}>
+            <StaffIcon className="w-6 h-6 mr-3" />
+            Customers
+          </PromptedNavLink>
           <PromptedNavLink to="/admin/staff" className={getNavLinkClass}>
             <StaffIcon className="w-6 h-6 mr-3" />
             Staff

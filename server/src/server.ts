@@ -10,6 +10,7 @@ import { testConnection } from './db/connection.js';
 // Import routes
 import productRoutes from './routes/products.js';
 import customerRoutes from './routes/customers.js';
+import adminUserRoutes from './routes/admin-users.js';
 import orderRoutes from './routes/orders.js';
 import galleryRoutes from './routes/galleries.js';
 import pageRoutes from './routes/pages.js';
@@ -73,6 +74,7 @@ app.get('/health', (req: Request, res: Response) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/customers', customerRoutes);
+app.use('/api/admin-users', adminUserRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/galleries', galleryRoutes);
 app.use('/api/pages', pageRoutes);

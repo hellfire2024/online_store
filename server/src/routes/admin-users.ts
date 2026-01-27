@@ -1,0 +1,215 @@
+import { Router, Request, Response } from 'express';
+import { body, validationResult } from 'express-validator';
+import bcrypt from 'bcryptjs';
+import { pool, withTransaction } from '../db/connection.js';
+import { RowDataPacket, ResultSetHeader } from 'mysql2';
+import { v4 as uuidv4 } from 'uuid';
+
+const router = Router();
+
+// Get all admin users
+router.get('/', async (req: Request, res: Response) => {
+  try {
+    const [rows] = await pool.query<RowDataPacket[]>(
+      `SELECT id, username, email, role, is_active as isActive, 
+              created_at as createdAt, last_login as lastLogin
+       FROM admins ORDER BY created_at DESC`
+    );
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching admin users:', error);
+    res.status(500).json({ error: 'Failed to fetch admin users' });
+  }
+});
+
+// Get single admin user
+router.get('/:id', async (req: Request, res: Response) => {
+  try {
+    const [rows] = await pool.query<RowDataPacket[]>(
+      `SELECT id, username, email, role, permissions, is_active as isActive,
+              created_at as createdAt, last_login as lastLogin
+       FROM admins WHERE id = ?`,
+      [req.params.id]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Admin user not found' });
+    }
+
+    const user = rows[0];
+    user.permissions = JSON.parse(user.permissions || '[]');
+    res.json(user);
+  } catch (error) {
+    console.error('Error fetching admin user:', error);
+    res.status(500).json({ error: 'Failed to fetch admin user' });
+  }
+});
+
+// Create admin user
+router.post(
+  '/',
+  [
+    body('username').trim().isLength({ min: 3 }).withMessage('Username must be at least 3 characters'),
+    body('email').isEmail().normalizeEmail(),
+    body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+    body('role').isIn(['super_admin', 'admin', 'manager']).withMessage('Invalid role'),
+  ],
+  async (req: Request, res: Response) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    try {
+      const { username, email, password, role } = req.body;
+
+      // Check if username exists
+      const [existing] = await pool.query<RowDataPacket[]>(
+        'SELECT id FROM admins WHERE username = ? OR email = ?',
+        [username, email]
+      );
+
+      if (existing.length > 0) {
+        return res.status(400).json({ error: 'Username or email already in use' });
+      }
+
+      const id = uuidv4();
+      const passwordHash = await bcrypt.hash(password, parseInt(process.env.BCRYPT_ROUNDS || '10'));
+
+      await pool.query(
+        `INSERT INTO admins (id, username, email, password_hash, role, permissions, is_active)
+         VALUES (?, ?, ?, ?, ?, ?, TRUE)`,
+        [id, username, email, passwordHash, role, JSON.stringify([])]
+      );
+
+      res.status(201).json({
+        id,
+        username,
+        email,
+        role,
+        isActive: true,
+        createdAt: new Date().toISOString(),
+      });
+    } catch (error) {
+      console.error('Error creating admin user:', error);
+      res.status(500).json({ error: 'Failed to create admin user' });
+    }
+  }
+);
+
+// Update admin user
+router.put('/:id', async (req: Request, res: Response) => {
+  try {
+    const { username, email, password, role, isActive, permissions } = req.body;
+    
+    const updates: string[] = [];
+    const values: any[] = [];
+
+    if (username !== undefined) {
+      updates.push('username = ?');
+      values.push(username);
+    }
+    if (email !== undefined) {
+      updates.push('email = ?');
+      values.push(email);
+    }
+    if (password) {
+      const passwordHash = await bcrypt.hash(password, parseInt(process.env.BCRYPT_ROUNDS || '10'));
+      updates.push('password_hash = ?');
+      values.push(passwordHash);
+    }
+    if (role !== undefined) {
+      updates.push('role = ?');
+      values.push(role);
+    }
+    if (isActive !== undefined) {
+      updates.push('is_active = ?');
+      values.push(isActive);
+    }
+    if (permissions !== undefined) {
+      updates.push('permissions = ?');
+      values.push(JSON.stringify(permissions));
+    }
+
+    if (updates.length === 0) {
+      return res.status(400).json({ error: 'No fields to update' });
+    }
+
+    values.push(req.params.id);
+
+    const [result] = await pool.query<ResultSetHeader>(
+      `UPDATE admins SET ${updates.join(', ')} WHERE id = ?`,
+      values
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Admin user not found' });
+    }
+
+    // Return updated user
+    const [rows] = await pool.query<RowDataPacket[]>(
+      `SELECT id, username, email, role, is_active as isActive, created_at as createdAt
+       FROM admins WHERE id = ?`,
+      [req.params.id]
+    );
+
+    res.json(rows[0]);
+  } catch (error) {
+    console.error('Error updating admin user:', error);
+    res.status(500).json({ error: 'Failed to update admin user' });
+  }
+});
+
+// Delete admin user
+router.delete('/:id', async (req: Request, res: Response) => {
+  try {
+    // Prevent deleting the only super admin
+    const [superAdmins] = await pool.query<RowDataPacket[]>(
+      "SELECT COUNT(*) as count FROM admins WHERE role = 'super_admin'"
+    );
+
+    if (superAdmins[0].count <= 1) {
+      return res.status(400).json({ error: 'Cannot delete the last super admin user' });
+    }
+
+    const [result] = await pool.query<ResultSetHeader>(
+      'DELETE FROM admins WHERE id = ?',
+      [req.params.id]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Admin user not found' });
+    }
+
+    res.status(204).send();
+  } catch (error) {
+    console.error('Error deleting admin user:', error);
+    res.status(500).json({ error: 'Failed to delete admin user' });
+  }
+});
+
+// Toggle admin user active status
+router.patch('/:id/toggle-active', async (req: Request, res: Response) => {
+  try {
+    const [result] = await pool.query<ResultSetHeader>(
+      `UPDATE admins SET is_active = !is_active WHERE id = ?`,
+      [req.params.id]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Admin user not found' });
+    }
+
+    const [rows] = await pool.query<RowDataPacket[]>(
+      'SELECT id, is_active as isActive FROM admins WHERE id = ?',
+      [req.params.id]
+    );
+
+    res.json(rows[0]);
+  } catch (error) {
+    console.error('Error toggling admin user status:', error);
+    res.status(500).json({ error: 'Failed to toggle admin user status' });
+  }
+});
+
+export default router;

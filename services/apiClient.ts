@@ -97,7 +97,45 @@ class ApiClient {
     }),
   };
 
-  // Auth
+  // Admin Users
+  adminUsers = {
+    getAll: () => this.request<any[]>('/admin-users'),
+    getById: (id: string) => this.request<any>(`/admin-users/${id}`),
+    create: (data: any) => this.request<any>('/admin-users', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+    update: (id: string, data: any) => this.request<any>(`/admin-users/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+    delete: (id: string) => this.request<void>(`/admin-users/${id}`, {
+      method: 'DELETE',
+    }),
+    toggleActive: (id: string) => this.request<any>(`/admin-users/${id}/toggle-active`, {
+      method: 'PATCH',
+    }),
+  };
+
+  // Customers
+  customers = {
+    getAll: () => this.request<any[]>('/customers'),
+    getById: (id: string) => this.request<any>(`/customers/${id}`),
+    create: (data: any) => this.request<any>('/customers', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+    update: (id: string, data: any) => this.request<any>(`/customers/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+    delete: (id: string) => this.request<void>(`/customers/${id}`, {
+      method: 'DELETE',
+    }),
+    toggleActive: (id: string) => this.request<any>(`/customers/${id}/toggle-active`, {
+      method: 'PATCH',
+    }),
+  };
   auth = {
     adminLogin: (username: string, password: string) => 
       this.request<{ token: string; admin: any }>('/auth/admin/login', {
@@ -139,7 +177,6 @@ class ApiClient {
   reviews = this.createCrud('reviews');
   staff = this.createCrud('staff');
   services = this.createCrud('services');
-  customers = this.createCrud('customers');
   orders = this.createCrud('orders');
 }
 
