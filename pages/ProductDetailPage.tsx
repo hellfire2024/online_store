@@ -160,8 +160,8 @@ const ProductDetailPage: React.FC = () => {
             className={`relative w-full h-32 rounded-lg cursor-pointer overflow-hidden border-4 ${selectedGalleryImage?.id === img.id ? 'border-sky-500' : 'border-slate-600'}`}
           >
             <img src={img.imageUrl} alt={img.name} className="w-full h-full object-cover pointer-events-none" />
-            <div className="absolute inset-0 pointer-events-none select-none opacity-10 flex items-center justify-center">
-              <div className="text-white font-bold text-2xl whitespace-nowrap" style={{ textShadow: '2px 2px 4px black' }}>CustomThreads</div>
+            <div className="absolute inset-0 pointer-events-none select-none opacity-30 flex items-center justify-center" style={{ transform: 'rotate(-45deg)' }}>
+              <div className="text-white font-bold text-3xl whitespace-nowrap" style={{ textShadow: '2px 2px 8px black' }}>CustomThreads</div>
             </div>
           </div>
         ))}
@@ -169,12 +169,9 @@ const ProductDetailPage: React.FC = () => {
     );
   }, [currentGalleryImages, selectedGalleryImage]);
 
-  if (loading || !product) {
-    return <div className="mt-16"><Spinner /></div>;
-  }
-
   // Calculate display price including all selected options - memoized
   const displayPrice = useMemo(() => {
+    if (!product) return 0;
     let price = product.price;
     if (product.optionLists) {
       product.optionLists.forEach((list) => {
@@ -188,7 +185,11 @@ const ProductDetailPage: React.FC = () => {
       });
     }
     return price;
-  }, [product.price, product.optionLists, selectedOptions]);
+  }, [product, selectedOptions]);
+
+  if (loading || !product) {
+    return <div className="mt-16"><Spinner /></div>;
+  }
 
   return (
     <div className="bg-slate-800 p-8 rounded-lg shadow-2xl border border-slate-700">
@@ -204,14 +205,14 @@ const ProductDetailPage: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
         <div className="relative w-full aspect-square bg-slate-700 rounded-lg flex items-center justify-center border border-slate-600">
           <img src={product.imageUrl} alt={product.name} className="max-w-full max-h-full object-contain" />
-          <div className="absolute inset-0 pointer-events-none select-none opacity-10 flex items-center justify-center" style={{ transform: 'rotate(-45deg)' }}>
-            <div className="text-white font-bold text-2xl whitespace-nowrap" style={{ textShadow: '0 0 5px black' }}>CustomThreads</div>
+          <div className="absolute inset-0 pointer-events-none select-none opacity-30 flex items-center justify-center" style={{ transform: 'rotate(-45deg)' }}>
+            <div className="text-white font-bold text-4xl whitespace-nowrap" style={{ textShadow: '2px 2px 8px black' }}>CustomThreads</div>
           </div>
           {(selectedGalleryImage || uploadedImage) && (
             <div className="absolute top-1/4 left-1/4 w-1/2 h-1/2 bg-contain bg-no-repeat bg-center"
                  style={{ backgroundImage: `url(${selectedGalleryImage?.imageUrl || uploadedImage})` }}>
-              <div className="absolute inset-0 pointer-events-none select-none opacity-10 flex items-center justify-center" style={{ transform: 'rotate(-45deg)' }}>
-                <div className="text-white font-bold text-xs whitespace-nowrap" style={{ textShadow: '0 0 5px black' }}>CustomThreads</div>
+              <div className="absolute inset-0 pointer-events-none select-none opacity-30 flex items-center justify-center" style={{ transform: 'rotate(-45deg)' }}>
+                <div className="text-white font-bold text-2xl whitespace-nowrap" style={{ textShadow: '2px 2px 8px black' }}>CustomThreads</div>
               </div>
             </div>
           )}

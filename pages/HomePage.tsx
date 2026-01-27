@@ -5,14 +5,17 @@ import { useReviews } from "../context/ReviewsContext";
 import { usePages } from "../context/PagesContext";
 import { useSiteSettings } from "../context/SiteSettingsContext";
 import { useCustomerAuth } from "../context/CustomerAuthContext";
+import { useServices } from "../context/ServicesContext";
 import { HomePageContent } from "../types";
 import Spinner from "../components/Spinner";
 import { useToast } from "../hooks/useToast";
+import * as Icons from "../components/Icons";
 
 const HomePage: React.FC = () => {
   const { products, isLoading: productsLoading } = useProducts();
   const { reviews, isLoading: reviewsLoading, addReview } = useReviews();
   const { pages, isLoading: pagesLoading } = usePages();
+  const { services, isLoading: servicesLoading } = useServices();
   const { siteSettings } = useSiteSettings();
   const { addToast } = useToast();
     const { isAuthenticated } = useCustomerAuth();
@@ -21,7 +24,7 @@ const HomePage: React.FC = () => {
 
   const homePage = pages.find((page) => page.pageType === "home");
 
-  if (productsLoading || reviewsLoading || pagesLoading || !homePage) {
+  if (productsLoading || reviewsLoading || pagesLoading || servicesLoading || !homePage) {
     return (
       <div className="flex justify-center items-center min-h-[60vh]">
         <Spinner />
@@ -99,6 +102,29 @@ const HomePage: React.FC = () => {
           ))}
         </div>
       </div>
+
+      {/* Services Offered */}
+      {services.length > 0 && (
+        <div>
+          <h2 className="text-3xl font-bold text-white text-center mb-8">
+            Services We Offer
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            {services.map((service) => {
+              const IconComponent = (Icons as any)[service.icon] || Icons.LayersIcon;
+              return (
+                <div key={service.id} className="bg-slate-800 p-6 rounded-lg border border-slate-700 text-center">
+                  <div className="flex justify-center mb-4">
+                    <IconComponent className="w-12 h-12 text-sky-400" />
+                  </div>
+                  <h3 className="text-xl font-bold text-white mb-2">{service.title}</h3>
+                  <p className="text-gray-300">{service.description}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Featured Reviews */}
       <div>

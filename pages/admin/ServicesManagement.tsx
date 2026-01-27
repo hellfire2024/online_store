@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useServices } from "../../context/ServicesContext";
-import { PlusIcon, EditIcon, TrashIcon } from "../../components/Icons";
+import { PlusIcon, EditIcon, TrashIcon, DashboardIcon, ProductIcon, GalleryIcon, ContentIcon, StarIcon, UsersIcon, MessageSquareIcon, SettingsIcon, LayersIcon, CoffeeIcon, AwardIcon, FileTextIcon, UploadIcon } from "../../components/Icons";
 import Spinner from "../../components/Spinner";
 import { Service } from "../../types";
 import { useUnsavedChanges } from "../../context/UnsavedChangesContext";
@@ -126,14 +126,41 @@ const ServicesManagement: React.FC = () => {
                 className={inputClasses}
                 rows={3}
               ></textarea>
-              <input
-                type="text"
-                name="icon"
-                value={editingService.icon}
-                onChange={handleChange}
-                placeholder="Icon Name (e.g., 'shirt')"
-                className={inputClasses}
-              />
+              <div>
+                <label className="block text-gray-300 text-sm font-bold mb-2">Icon</label>
+                <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto p-2 bg-slate-900 rounded-lg">
+                  {[
+                    { name: "DashboardIcon", Icon: DashboardIcon, label: "Dashboard" },
+                    { name: "ProductIcon", Icon: ProductIcon, label: "Product" },
+                    { name: "GalleryIcon", Icon: GalleryIcon, label: "Gallery" },
+                    { name: "ContentIcon", Icon: ContentIcon, label: "Document" },
+                    { name: "StarIcon", Icon: StarIcon, label: "Star" },
+                    { name: "UsersIcon", Icon: UsersIcon, label: "Users" },
+                    { name: "MessageSquareIcon", Icon: MessageSquareIcon, label: "Message" },
+                    { name: "SettingsIcon", Icon: SettingsIcon, label: "Settings" },
+                    { name: "LayersIcon", Icon: LayersIcon, label: "Layers" },
+                    { name: "CoffeeIcon", Icon: CoffeeIcon, label: "Coffee" },
+                    { name: "AwardIcon", Icon: AwardIcon, label: "Award" },
+                    { name: "FileTextIcon", Icon: FileTextIcon, label: "File" },
+                    { name: "EditIcon", Icon: EditIcon, label: "Edit" },
+                    { name: "UploadIcon", Icon: UploadIcon, label: "Upload" },
+                  ].map((iconData) => (
+                    <button
+                      key={iconData.name}
+                      type="button"
+                      onClick={() => setEditingService(prev => prev ? { ...prev, icon: iconData.name } : null)}
+                      className={`flex items-center gap-2 p-3 rounded-lg border-2 transition-all ${
+                        editingService.icon === iconData.name
+                          ? 'border-sky-500 bg-sky-500/20'
+                          : 'border-slate-600 bg-slate-700 hover:border-slate-500'
+                      }`}
+                    >
+                      <iconData.Icon className="w-5 h-5 text-white" />
+                      <span className="text-sm text-white">{iconData.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
             <div className="mt-8 flex justify-end space-x-4">
               <button

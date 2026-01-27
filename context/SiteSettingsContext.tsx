@@ -36,6 +36,7 @@ const defaultSettings: SiteSettings = {
   siteAccentColor: "",
   siteBackgroundImageUrl: "https://picsum.photos/seed/hero/1200/800",
   siteBackgroundOpacity: 100,
+  maxReviewsDisplayed: 10,
 };
 
 interface SiteSettingsContextType {
