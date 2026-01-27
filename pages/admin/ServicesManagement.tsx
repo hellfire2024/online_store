@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useServices } from "../../context/ServicesContext";
 import { PlusIcon, EditIcon, TrashIcon, DashboardIcon, ProductIcon, GalleryIcon, ContentIcon, StarIcon, UsersIcon, MessageSquareIcon, SettingsIcon, LayersIcon, CoffeeIcon, AwardIcon, FileTextIcon, UploadIcon } from "../../components/Icons";
 import Spinner from "../../components/Spinner";
+import Pagination from "../../components/Pagination";
 import { Service } from "../../types";
 import { useUnsavedChanges } from "../../context/UnsavedChangesContext";
 
@@ -12,6 +13,8 @@ const ServicesManagement: React.FC = () => {
     null,
   );
   const [editingService, setEditingService] = useState<Service | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const openModal = (service?: Service) => {
     setEditingService(service || { title: "", description: "", icon: "shirt" });
@@ -41,6 +44,11 @@ const ServicesManagement: React.FC = () => {
 
   const inputClasses =
     "w-full p-2 bg-slate-700 border border-slate-600 rounded-md text-white";
+
+  // Pagination logic
+  const paginatedServices = itemsPerPage === -1 
+    ? services 
+    : services.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   if (isLoading) {
     return <Spinner />;
@@ -75,33 +83,59 @@ const ServicesManagement: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {services.map((service) => (
-                <tr key={service.id} className="border-t border-slate-700">
-                  <td className="p-4">{service.title}</td>
-                  <td className="p-4 max-w-md truncate">
-                    {service.description}
-                  </td>
-                  <td className="p-4">{service.icon}</td>
-                  <td className="p-4">
-                    <button
-                      onClick={() => openModal(service)}
-                      className="text-gray-400 hover:text-sky-400 mr-4"
-                    >
-                      <EditIcon className="w-5 h-5" />
-                    </button>
-                    <button
-                      onClick={() => deleteService(service.id)}
-                      className="text-gray-400 hover:text-red-500"
-                    >
-                      <TrashIcon className="w-5 h-5" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {paginatedServices.map((service) => {
+                const iconMap: Record<string, React.FC<{ className?: string }>> = {
+                  DashboardIcon, ProductIcon, GalleryIcon, ContentIcon, StarIcon,
+                  UsersIcon, MessageSquareIcon, SettingsIcon, LayersIcon,
+                  CoffeeIcon, AwardIcon, FileTextIcon, EditIcon, UploadIcon
+                };
+                const ServiceIcon = iconMap[service.icon] || LayersIcon;
+                
+                return (
+                  <tr key={service.id} className="border-t border-slate-700">
+                    <td className="p-4">{service.title}</td>
+                    <td className="p-4 max-w-md truncate">
+                      {service.description}
+                    </td>
+                    <td className="p-4">
+                      <ServiceIcon className="w-6 h-6 text-sky-400" />
+                    </td>
+                    <td className="p-4">
+                      <button
+                        onClick={() => openModal(service)}
+                        className="text-gray-400 hover:text-sky-400 mr-4"
+                      >
+                        <EditIcon className="w-5 h-5" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (window.confirm(`Are you sure you want to delete "${service.title}"? This action cannot be undone.`)) {
+                            deleteService(service.id);
+                          }
+                        }}
+                        className="text-gray-400 hover:text-red-500"
+                      >
+                        <TrashIcon className="w-5 h-5" />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
       </div>
+
+      <Pagination
+        currentPage={currentPage}
+        totalItems={services.length}
+        itemsPerPage={itemsPerPage}
+        onPageChange={setCurrentPage}
+        onItemsPerPageChange={(value) => {
+          setItemsPerPage(value);
+          setCurrentPage(1);
+        }}
+      />
 
       {editingService && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center">

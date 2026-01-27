@@ -4,6 +4,7 @@ import { useGalleries } from "../../context/GalleryContext";
 import { PlusIcon, EditIcon, TrashIcon } from "../../components/Icons";
 import { useToast } from "../../hooks/useToast";
 import Spinner from "../../components/Spinner";
+import Pagination from "../../components/Pagination";
 import { Product, ProductOption, ProductOptionList } from "../../types";
 import { useUnsavedChanges } from "../../context/UnsavedChangesContext";
 import {
@@ -208,9 +209,10 @@ const SortableOption: React.FC<SortableOptionProps> = ({
         <button
           type="button"
           onClick={onDelete}
-          className="text-xs px-3 py-2 bg-red-700/60 border border-red-600 rounded text-red-100 hover:bg-red-700"
+          className="text-red-400 hover:text-red-300 p-2"
+          title="Delete option"
         >
-          ✕
+          <TrashIcon className="w-5 h-5" />
         </button>
       </div>
     </div>
@@ -232,6 +234,8 @@ const ProductManagement: React.FC = () => {
   const [showImageSelector, setShowImageSelector] = useState(false);
   const { addToast } = useToast();
   const { setHasUnsavedChanges } = useUnsavedChanges();
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -571,7 +575,7 @@ const ProductManagement: React.FC = () => {
             </tr>
           </thead>
           <tbody>
-            {products.map((product) => {
+            {(itemsPerPage === -1 ? products : products.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)).map((product) => {
               const isOut = product.inventory <= 0;
               const isLow = (product.lowStockThreshold ?? 0) > 0 && product.inventory <= (product.lowStockThreshold ?? 0) && !isOut;
               return (
@@ -608,7 +612,11 @@ const ProductManagement: React.FC = () => {
                         <EditIcon />
                       </button>
                       <button
-                        onClick={() => deleteProduct(product.id)}
+                        onClick={() => {
+                          if (window.confirm(`Are you sure you want to delete "${product.name}"? This action cannot be undone.`)) {
+                            deleteProduct(product.id);
+                          }
+                        }}
                         className="text-red-400 hover:text-red-300 p-2"
                       >
                         <TrashIcon />
@@ -621,6 +629,14 @@ const ProductManagement: React.FC = () => {
           </tbody>
         </table>
       </div>
+
+      <Pagination
+        currentPage={currentPage}
+        totalItems={products.length}
+        itemsPerPage={itemsPerPage}
+        onPageChange={setCurrentPage}
+        onItemsPerPageChange={setItemsPerPage}
+      />
 
       {isModalOpen && currentProduct && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 overflow-y-auto">

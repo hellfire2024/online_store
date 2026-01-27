@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useGalleries } from '../../context/GalleryContext';
 import { TrashIcon, PlusIcon } from '../../components/Icons';
 import { useToast } from '../../hooks/useToast';
+import Pagination from '../../components/Pagination';
 
 const GalleriesManagement: React.FC = () => {
     const { galleries, galleryImages, addGallery, deleteGallery, fetchGalleryImages, addGalleryImage, deleteGalleryImage: delImg } = useGalleries();
@@ -12,6 +13,8 @@ const GalleriesManagement: React.FC = () => {
     const [newImageUrl, setNewImageUrl] = useState('');
     const [galleryError, setGalleryError] = useState('');
     const [imageError, setImageError] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(20);
 
     useEffect(() => {
         if (galleries.length > 0 && !selectedGalleryId) {
@@ -109,7 +112,7 @@ const GalleriesManagement: React.FC = () => {
                         {galleries.map(gallery => (
                             <div key={gallery.id} onClick={() => setSelectedGalleryId(gallery.id)} className={`flex justify-between items-center p-3 rounded-md cursor-pointer transition-colors ${selectedGalleryId === gallery.id ? 'bg-sky-600' : 'bg-slate-700 hover:bg-slate-600'}`}>
                                 <span className="text-white truncate">{gallery.name}</span>
-                                <button onClick={(e) => { e.stopPropagation(); deleteGallery(gallery.id); }} className="text-gray-400 hover:text-red-500"><TrashIcon className="w-5 h-5" /></button>
+                                <button onClick={(e) => { e.stopPropagation(); if (window.confirm(`Are you sure you want to delete "${gallery.name}"? This action cannot be undone.`)) { deleteGallery(gallery.id); } }} className="text-gray-400 hover:text-red-500"><TrashIcon className="w-5 h-5" /></button>
                             </div>
                         ))}
                     </div>
@@ -127,8 +130,15 @@ const GalleriesManagement: React.FC = () => {
                                     <PlusIcon className="w-5 h-5 mr-2" />Add
                                 </button>
                             </form>
-                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                                {currentImages.map(image => (
+                            {(() => {
+                              const paginatedImages = itemsPerPage === -1 
+                                ? currentImages 
+                                : currentImages.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+                              
+                              return (
+                                <>
+                                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                    {paginatedImages.map(image => (
                                     <div key={image.id} className="relative group">
                                         <img src={image.imageUrl} alt={image.name} className="w-full h-32 object-cover rounded-lg" />
                                         <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-2 text-white">
@@ -136,9 +146,24 @@ const GalleriesManagement: React.FC = () => {
                                             <button onClick={() => delImg(selectedGalleryId, image.id)} className="self-end text-gray-300 hover:text-red-500"><TrashIcon className="w-5 h-5" /></button>
                                         </div>
                                     </div>
-                                ))}
-                                {currentImages.length === 0 && <p className="text-gray-400 col-span-full text-center py-4">This gallery has no images. Add one above.</p>}
-                            </div>
+                                    ))}
+                                    {paginatedImages.length === 0 && <p className="text-gray-400 col-span-full text-center py-4">This gallery has no images. Add one above.</p>}
+                                  </div>
+                                  {currentImages.length > 0 && (
+                                    <Pagination
+                                      currentPage={currentPage}
+                                      totalItems={currentImages.length}
+                                      itemsPerPage={itemsPerPage}
+                                      onPageChange={setCurrentPage}
+                                      onItemsPerPageChange={(value) => {
+                                        setItemsPerPage(value);
+                                        setCurrentPage(1);
+                                      }}
+                                    />
+                                  )}
+                                </>
+                              );
+                            })()}
                         </div>
                     ) : (
                         <div className="bg-slate-800 p-6 rounded-lg border border-slate-700 flex items-center justify-center h-full min-h-[20rem]">

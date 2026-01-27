@@ -5,6 +5,7 @@ import { PlusIcon, TrashIcon, UploadIcon } from "../../components/Icons";
 import { useToast } from "../../hooks/useToast";
 import Spinner from "../../components/Spinner";
 import { useUnsavedChanges } from "../../context/UnsavedChangesContext";
+import Pagination from "../../components/Pagination";
 
 const GalleriesManagement: React.FC = () => {
   const {
@@ -19,6 +20,8 @@ const GalleriesManagement: React.FC = () => {
   } = useGalleries();
   const [newGalleryName, setNewGalleryName] = useState("");
   const [selectedGallery, setSelectedGallery] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(20);
   const { addToast } = useToast();
   const { setHasUnsavedChanges } = useUnsavedChanges();
 
@@ -187,8 +190,16 @@ const GalleriesManagement: React.FC = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                {(galleryImages[selectedGallery] || []).map((image) => (
+              {(() => {
+                const images = galleryImages[selectedGallery] || [];
+                const paginatedImages = itemsPerPage === -1 
+                  ? images 
+                  : images.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+                
+                return (
+                  <>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                      {paginatedImages.map((image) => (
                   <div key={image.id} className="relative group">
                     <img
                       src={image.imageUrl}
@@ -200,22 +211,39 @@ const GalleriesManagement: React.FC = () => {
                         {image.name}
                       </p>
                       <button
-                        onClick={() =>
-                          deleteGalleryImage(selectedGallery, image.id)
-                        }
+                        onClick={() => {
+                          if (window.confirm(`Are you sure you want to delete "${image.name}"? This action cannot be undone.`)) {
+                            deleteGalleryImage(selectedGallery, image.id);
+                          }
+                        }}
                         className="self-end p-1 bg-red-500/80 rounded-full text-white hover:bg-red-500"
                       >
                         <TrashIcon className="w-4 h-4" />
                       </button>
                     </div>
                   </div>
-                ))}
-              </div>
-              {(galleryImages[selectedGallery] || []).length === 0 && (
-                <p className="text-center text-gray-400 mt-8">
-                  This gallery is empty. Add some images to get started.
-                </p>
-              )}
+                      ))}
+                    </div>
+                    {images.length > 0 && (
+                      <Pagination
+                        currentPage={currentPage}
+                        totalItems={images.length}
+                        itemsPerPage={itemsPerPage}
+                        onPageChange={setCurrentPage}
+                        onItemsPerPageChange={(value) => {
+                          setItemsPerPage(value);
+                          setCurrentPage(1);
+                        }}
+                      />
+                    )}
+                    {images.length === 0 && (
+                      <p className="text-center text-gray-400 mt-8">
+                        This gallery is empty. Add some images to get started.
+                      </p>
+                    )}
+                  </>
+                );
+              })()}
             </>
           ) : (
             <div className="flex items-center justify-center h-full">

@@ -215,12 +215,15 @@ const HomePage: React.FC = () => {
                 key={review.id}
                 className="bg-slate-800 p-6 rounded-lg border border-slate-700"
               >
-                <div className="flex justify-between items-start mb-2">
-                  <div>
+                <div className="flex justify-between items-start gap-4 mb-2">
+                  <div className="flex-1 min-w-0">
                     <p className="text-gray-300">"{review.text}"</p>
                     <p className="mt-4 font-semibold text-white">- {review.author}</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {new Date(review.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </p>
                   </div>
-                  <div className="flex text-yellow-400">
+                  <div className="flex text-yellow-400 flex-shrink-0">
                     {[...Array(review.rating)].map((_, i) => (
                       <span key={i}>⭐</span>
                     ))}

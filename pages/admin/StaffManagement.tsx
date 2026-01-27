@@ -3,6 +3,7 @@ import { useStaff } from "../../context/StaffContext";
 import { PlusIcon, EditIcon, TrashIcon } from "../../components/Icons";
 import { useToast } from "../../hooks/useToast";
 import Spinner from "../../components/Spinner";
+import Pagination from "../../components/Pagination";
 import { StaffMember } from "../../types";
 import { useUnsavedChanges } from "../../context/UnsavedChangesContext";
 import ImageUploadInput from "../../components/admin/ImageUploadInput";
@@ -18,6 +19,8 @@ const StaffManagement: React.FC = () => {
     StaffMember | Omit<StaffMember, "id"> | null
   >(null);
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const { addToast } = useToast();
   const { setHasUnsavedChanges } = useUnsavedChanges();
 
@@ -122,6 +125,11 @@ const StaffManagement: React.FC = () => {
     setSelectedImageFile(null);
   };
 
+  // Pagination logic
+  const paginatedStaff = itemsPerPage === -1 
+    ? staff 
+    : staff.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
   if (isLoading) {
     return <Spinner />;
   }
@@ -139,7 +147,7 @@ const StaffManagement: React.FC = () => {
       </div>
 
       <div className="bg-slate-800 rounded-lg border border-slate-700">
-        {staff.map((staffMember, index) => (
+        {paginatedStaff.map((staffMember, index) => (
           <div
             key={staffMember.id}
             className={`flex items-center justify-between p-4 ${index > 0 ? "border-t border-slate-700" : ""}`}
@@ -163,7 +171,11 @@ const StaffManagement: React.FC = () => {
                 <EditIcon />
               </button>
               <button
-                onClick={() => deleteStaff(staffMember.id)}
+                onClick={() => {
+                  if (window.confirm(`Are you sure you want to delete "${staffMember.name}"? This action cannot be undone.`)) {
+                    deleteStaff(staffMember.id);
+                  }
+                }}
                 className="text-red-400 hover:text-red-300 p-2"
               >
                 <TrashIcon />
@@ -172,6 +184,17 @@ const StaffManagement: React.FC = () => {
           </div>
         ))}
       </div>
+
+      <Pagination
+        currentPage={currentPage}
+        totalItems={staff.length}
+        itemsPerPage={itemsPerPage}
+        onPageChange={setCurrentPage}
+        onItemsPerPageChange={(value) => {
+          setItemsPerPage(value);
+          setCurrentPage(1);
+        }}
+      />
 
       {isModalOpen && currentStaff && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center">

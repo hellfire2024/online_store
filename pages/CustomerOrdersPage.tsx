@@ -1,12 +1,15 @@
 import React, { useEffect, useState } from "react";
 import { useCustomerAuth } from "../context/CustomerAuthContext";
 import { CustomerOrder } from "../types";
+import Pagination from "../components/Pagination";
 
 const CustomerOrdersPage: React.FC = () => {
   const { customer, fetchOrders, getOrder } = useCustomerAuth();
   const [selectedOrder, setSelectedOrder] = useState<CustomerOrder | null>(
     null,
   );
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   useEffect(() => {
     fetchOrders();
@@ -48,8 +51,15 @@ const CustomerOrdersPage: React.FC = () => {
           </p>
         </div>
       ) : (
-        <div className="space-y-4">
-          {customer.orders.map((order) => (
+        <>
+          {(() => {
+            const paginatedOrders = itemsPerPage === -1 
+              ? customer.orders 
+              : customer.orders.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+            
+            return (
+              <div className="space-y-4">
+                {paginatedOrders.map((order) => (
             <div
               key={order.id}
               className="bg-slate-800 p-6 rounded-lg border border-slate-700 cursor-pointer hover:border-sky-500 transition"
@@ -138,8 +148,21 @@ const CustomerOrdersPage: React.FC = () => {
                 </div>
               )}
             </div>
-          ))}
-        </div>
+                ))}
+              </div>
+            );
+          })()}
+          <Pagination
+            currentPage={currentPage}
+            totalItems={customer.orders.length}
+            itemsPerPage={itemsPerPage}
+            onPageChange={setCurrentPage}
+            onItemsPerPageChange={(value) => {
+              setItemsPerPage(value);
+              setCurrentPage(1);
+            }}
+          />
+        </>
       )}
     </div>
   );

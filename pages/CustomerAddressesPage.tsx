@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useCustomerAuth } from "../context/CustomerAuthContext";
 import { useToast } from "../hooks/useToast";
 import { CustomerAddress } from "../types";
+import Pagination from "../components/Pagination";
 
 const CustomerAddressesPage: React.FC = () => {
   const {
@@ -14,6 +15,8 @@ const CustomerAddressesPage: React.FC = () => {
   const { addToast } = useToast();
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const [formData, setFormData] = useState<Omit<CustomerAddress, "id">>({
     type: "shipping",
     fullName: "",
@@ -178,7 +181,13 @@ const CustomerAddressesPage: React.FC = () => {
             </p>
           </div>
         ) : (
-          customer.addresses.map((address) => (
+          <>
+            {(() => {
+              const paginatedAddresses = itemsPerPage === -1 
+                ? customer.addresses 
+                : customer.addresses.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+              
+              return paginatedAddresses.map((address) => (
             <div
               key={address.id}
               className="bg-slate-800 p-6 rounded-lg border border-slate-700"
@@ -226,7 +235,19 @@ const CustomerAddressesPage: React.FC = () => {
                 </button>
               )}
             </div>
-          ))
+              ));
+            })()}
+            <Pagination
+              currentPage={currentPage}
+              totalItems={customer.addresses.length}
+              itemsPerPage={itemsPerPage}
+              onPageChange={setCurrentPage}
+              onItemsPerPageChange={(value) => {
+                setItemsPerPage(value);
+                setCurrentPage(1);
+              }}
+            />
+          </>
         )}
       </div>
     </div>

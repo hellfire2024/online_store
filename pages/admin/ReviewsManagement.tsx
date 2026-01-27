@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useReviews } from "../../context/ReviewsContext";
 import { useSiteSettings } from "../../context/SiteSettingsContext";
 import { EditIcon, TrashIcon, StarIcon } from "../../components/Icons";
+import Pagination from "../../components/Pagination";
 import { Review } from "../../types";
 import { useUnsavedChanges } from "../../context/UnsavedChangesContext";
 
@@ -13,6 +14,8 @@ const ReviewsManagement: React.FC = () => {
   const [originalReview, setOriginalReview] = useState<Review | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   useEffect(() => {
     if (editingReview) {
@@ -75,6 +78,11 @@ const ReviewsManagement: React.FC = () => {
     (review) => filterStatus === "all" || review.status === filterStatus
   );
 
+  // Pagination logic
+  const paginatedReviews = itemsPerPage === -1 
+    ? filteredReviews 
+    : filteredReviews.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
   const inputClasses =
     "w-full p-2 bg-slate-700 border border-slate-600 rounded-md text-white";
 
@@ -119,24 +127,25 @@ const ReviewsManagement: React.FC = () => {
         </div>
       </div>
 
-      <div className="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
-        <table className="w-full text-left text-sm">
+      <div className="bg-slate-800 rounded-lg border border-slate-700 overflow-x-auto">
+        <table className="w-full text-left text-sm min-w-[1000px]">
           <thead className="bg-slate-900">
             <tr>
-              <th className="p-4">Author</th>
-              <th className="p-4">Email</th>
+              <th className="p-4 w-32">Author</th>
+              <th className="p-4 w-40">Email</th>
               <th className="p-4">Review</th>
-              <th className="p-4">Rating</th>
-              <th className="p-4">Status</th>
-              <th className="p-4">Actions</th>
+              <th className="p-4 w-32">Rating</th>
+              <th className="p-4 w-32 whitespace-nowrap">Date Submitted</th>
+              <th className="p-4 w-28">Status</th>
+              <th className="p-4 w-40">Actions</th>
             </tr>
           </thead>
           <tbody>
-            {filteredReviews.map((review) => (
+            {paginatedReviews.map((review) => (
               <tr key={review.id} className="border-t border-slate-700">
                 <td className="p-4 font-medium">{review.author}</td>
-                <td className="p-4 text-xs text-gray-400">{review.email || "-"}</td>
-                <td className="p-4 max-w-xs truncate text-gray-300">{review.text}</td>
+                <td className="p-4 text-xs text-gray-400 break-all">{review.email || "-"}</td>
+                <td className="p-4 text-gray-300">{review.text}</td>
                 <td className="p-4">
                   <div className="flex">
                     {[...Array(review.rating)].map((_, i) => (
@@ -147,8 +156,11 @@ const ReviewsManagement: React.FC = () => {
                     ))}
                   </div>
                 </td>
+                <td className="p-4 text-gray-400 whitespace-nowrap">
+                  {new Date(review.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                </td>
                 <td className="p-4">
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
                     review.status === "pending" ? "bg-yellow-900 text-yellow-300" :
                     review.status === "approved" ? "bg-green-900 text-green-300" :
                     review.status === "rejected" ? "bg-red-900 text-red-300" :
@@ -158,26 +170,26 @@ const ReviewsManagement: React.FC = () => {
                   </span>
                 </td>
                 <td className="p-4">
-                  <div className="flex gap-2">
-                    {review.status === "pending" && (
-                      <>
-                        <button
-                          onClick={() => handleApprove(review)}
-                          className="text-green-400 hover:text-green-300 text-xs font-medium"
-                          title="Approve"
-                        >
-                          ✓ Approve
-                        </button>
-                        <button
-                          onClick={() => openModal(review)}
-                          className="text-red-400 hover:text-red-300 text-xs font-medium"
-                          title="Reject"
-                        >
-                          ✗ Reject
-                        </button>
-                      </>
+                  <div className="flex flex-col gap-1 whitespace-nowrap">
+                    {review.status !== "approved" && (
+                      <button
+                        onClick={() => handleApprove(review)}
+                        className="text-green-400 hover:text-green-300 text-xs font-medium"
+                        title="Approve"
+                      >
+                        ✓ Approve
+                      </button>
                     )}
-                    {review.status === "approved" && (
+                    {review.status !== "rejected" && (
+                      <button
+                        onClick={() => openModal(review)}
+                        className="text-red-400 hover:text-red-300 text-xs font-medium"
+                        title="Reject"
+                      >
+                        ✗ Reject
+                      </button>
+                    )}
+                    {review.status !== "archived" && (
                       <button
                         onClick={() => handleArchive(review)}
                         className="text-gray-400 hover:text-gray-300 text-xs font-medium"
@@ -190,9 +202,9 @@ const ReviewsManagement: React.FC = () => {
                 </td>
               </tr>
             ))}
-            {filteredReviews.length === 0 && (
+            {paginatedReviews.length === 0 && (
               <tr>
-                <td colSpan={6} className="p-8 text-center text-gray-400">
+                <td colSpan={7} className="p-8 text-center text-gray-400">
                   No {filterStatus === "all" ? "reviews" : `${filterStatus} reviews`} found
                 </td>
               </tr>
@@ -201,8 +213,19 @@ const ReviewsManagement: React.FC = () => {
         </table>
       </div>
 
+      <Pagination
+        currentPage={currentPage}
+        totalItems={filteredReviews.length}
+        itemsPerPage={itemsPerPage}
+        onPageChange={setCurrentPage}
+        onItemsPerPageChange={(value) => {
+          setItemsPerPage(value);
+          setCurrentPage(1);
+        }}
+      />
+
       {/* Rejection Modal */}
-      {isModalOpen && editingReview?.status === "pending" && (
+      {isModalOpen && editingReview && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-slate-800 p-6 rounded-lg border border-slate-700 max-w-md w-full">
             <h2 className="text-xl font-bold text-white mb-4">Reject Review</h2>

@@ -1,12 +1,19 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { usePages } from "../../context/PagesContext";
 import { PlusIcon, EditIcon, TrashIcon } from "../../components/Icons";
 import Spinner from "../../components/Spinner";
+import Pagination from "../../components/Pagination";
 
 const PagesManagement: React.FC = () => {
   const { pages, isLoading, deletePage } = usePages();
   const navigate = useNavigate();
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  const paginatedPages = itemsPerPage === -1 
+    ? pages 
+    : pages.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   if (isLoading) {
     return <Spinner />;
@@ -36,7 +43,7 @@ const PagesManagement: React.FC = () => {
             </tr>
           </thead>
           <tbody>
-            {pages.map((page) => (
+            {paginatedPages.map((page) => (
               <tr key={page.id} className="border-t border-slate-700">
                 <td className="p-4 text-white">{page.title}</td>
                 <td className="p-4">
@@ -77,6 +84,17 @@ const PagesManagement: React.FC = () => {
           </tbody>
         </table>
       </div>
+
+      <Pagination
+        currentPage={currentPage}
+        totalItems={pages.length}
+        itemsPerPage={itemsPerPage}
+        onPageChange={setCurrentPage}
+        onItemsPerPageChange={(value) => {
+          setItemsPerPage(value);
+          setCurrentPage(1);
+        }}
+      />
     </div>
   );
 };
