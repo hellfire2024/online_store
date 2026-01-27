@@ -6,7 +6,6 @@ import React, {
   useEffect,
 } from "react";
 import { AdminUser, Customer } from "../types";
-import * as mockApi from "../services/mockApi";
 import Spinner from "../components/Spinner";
 
 interface AdminContextType {

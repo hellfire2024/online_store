@@ -223,7 +223,7 @@ const HomePage: React.FC = () => {
                       {new Date(review.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                     </p>
                   </div>
-                  <div className="flex text-yellow-400 flex-shrink-0">
+                  <div className="flex text-yellow-400 shrink-0">
                     {[...Array(review.rating)].map((_, i) => (
                       <span key={i}>⭐</span>
                     ))}

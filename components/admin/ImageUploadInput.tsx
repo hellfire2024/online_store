@@ -10,7 +10,6 @@ interface ImageUploadInputProps {
 const ImageUploadInput: React.FC<ImageUploadInputProps> = ({
   label,
   imageUrl,
-  onImageUrlChange,
   onFileSelect,
 }) => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -30,12 +29,6 @@ const ImageUploadInput: React.FC<ImageUploadInputProps> = ({
     }
   };
 
-  const handleUrlChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const url = e.target.value;
-    onImageUrlChange(url);
-    setPreviewUrl(url);
-    setImageError(false);
-  };
 
   return (
     <div className="space-y-2">

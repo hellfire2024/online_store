@@ -92,7 +92,7 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
     }
   }, []);
 
-  const register = async (name: string, email: string, password: string) => {
+  const register = async (name: string, email: string, _password: string) => {
     setIsLoading(true);
     try {
       // In a real app, this would be an API call
@@ -123,7 +123,7 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
     }
   };
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, _password: string) => {
     setIsLoading(true);
     try {
       // In a real app, this would be an API call with authentication
@@ -290,7 +290,7 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
     }
   };
 
-  const resetPassword = async (token: string, newPassword: string) => {
+  const resetPassword = async (_token: string, _newPassword: string) => {
     try {
       // In a real app, this would validate the token and update the password
       return { success: true };
@@ -300,8 +300,8 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
   };
 
   const changePassword = async (
-    currentPassword: string,
-    newPassword: string,
+    _currentPassword: string,
+    _newPassword: string,
   ) => {
     if (!customer) return { success: false, error: "Not authenticated" };
 

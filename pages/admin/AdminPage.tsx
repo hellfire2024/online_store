@@ -43,7 +43,7 @@ const AdminPage: React.FC = () => {
   return (
     <div className="flex h-screen bg-slate-900 text-gray-300">
       <AdminSidebar />
-      <main className="flex-grow p-8 overflow-auto">
+      <main className="grow p-8 overflow-auto">
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route

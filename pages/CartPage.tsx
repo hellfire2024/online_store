@@ -38,7 +38,7 @@ const CartItemRow: React.FC<{ item: CartItem }> = ({ item }) => {
     return (
         <div className="flex items-center py-5 border-b border-slate-700">
             <img src={item.product.imageUrl} alt={item.product.name} className="w-24 h-24 object-cover rounded-md" />
-            <div className="flex-grow ml-4">
+            <div className="grow ml-4">
                 <h3 className="font-semibold text-white">{item.product.name}</h3>
                 <p className="text-sm text-gray-400">${finalPrice.toFixed(2)}</p>
                 {selectedOptionDetails.length > 0 && (

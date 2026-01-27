@@ -1,18 +1,14 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useServices } from "../../context/ServicesContext";
 import { PlusIcon, EditIcon, TrashIcon, DashboardIcon, ProductIcon, GalleryIcon, ContentIcon, StarIcon, UsersIcon, MessageSquareIcon, SettingsIcon, LayersIcon, CoffeeIcon, AwardIcon, FileTextIcon, UploadIcon } from "../../components/Icons";
 import Spinner from "../../components/Spinner";
 import Pagination from "../../components/Pagination";
 import { Service } from "../../types";
-import { useUnsavedChanges } from "../../context/UnsavedChangesContext";
 
 const ServicesManagement: React.FC = () => {
   const { services, isLoading, addService, updateService, deleteService } =
     useServices();
-  const [newService, setNewService] = useState<Omit<Service, "id"> | null>(
-    null,
-  );
-  const [editingService, setEditingService] = useState<Service | null>(null);
+  const [editingService, setEditingService] = useState<Service | Omit<Service, "id"> | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
@@ -27,10 +23,10 @@ const ServicesManagement: React.FC = () => {
   const handleSave = async () => {
     if (!editingService) return;
 
-    if (editingService.id) {
-      await updateService(editingService);
+    if ('id' in editingService && editingService.id) {
+      await updateService(editingService as Service);
     } else {
-      await addService(editingService);
+      await addService(editingService as Omit<Service, 'id'>);
     }
     closeModal();
   };
@@ -141,7 +137,7 @@ const ServicesManagement: React.FC = () => {
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center">
           <div className="bg-slate-800 rounded-lg shadow-2xl p-8 w-full max-w-lg border border-slate-700">
             <h2 className="text-2xl font-bold text-white mb-6">
-              {editingService.id ? "Edit" : "Add"} Service
+              {('id' in editingService ? 'Edit' : 'Add')} Service
             </h2>
             <div className="space-y-4">
               <input

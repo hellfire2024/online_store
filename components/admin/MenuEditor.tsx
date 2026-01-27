@@ -94,7 +94,7 @@ const SortableMenuItem: React.FC<SortableMenuItemProps> = ({
         >
           <DragHandleIcon className="w-6 h-6" />
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center flex-grow">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center grow">
           <div className="md:col-span-5">
             <input
               type="text"

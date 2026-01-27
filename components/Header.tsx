@@ -51,7 +51,7 @@ const Header: React.FC = () => {
   if (settingsLoading || pagesLoading || !siteSettings || !menus) {
     return (
       <header className="bg-slate-900/80 backdrop-blur-md shadow-lg sticky top-0 z-40">
-        <div className="container mx-auto px-4 h-[72px]" />
+        <div className="container mx-auto px-4 h-18" />
       </header>
     );
   }

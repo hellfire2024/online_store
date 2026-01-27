@@ -5,7 +5,7 @@ import React, {
   ReactNode,
   useEffect,
 } from "react";
-import { Page, Menu, HomePageContent, AboutPageContent, ContactPageContent } from "../types";
+import { Page, Menu, HomePageContent, AboutPageContent } from "../types";
 import * as mockApi from "../services/mockApi";
 import { useSiteSettings } from "./SiteSettingsContext";
 import { useToast } from "../hooks/useToast";
@@ -135,7 +135,6 @@ export const PagesProvider: React.FC<{ children: ReactNode }> = ({
   };
 
   const deletePage = async (pageId: string) => {
-    const pageToDelete = pages.find((p) => p.id === pageId);
     // Allow deletion - pages can be recreated from the Page Editor
     await mockApi.deletePage(pageId);
     setPages((prev) => prev.filter((p) => p.id !== pageId));

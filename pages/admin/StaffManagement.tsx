@@ -73,21 +73,6 @@ const StaffManagement: React.FC = () => {
     }
   };
 
-  const handleImageUpload = (file: File | null) => {
-    setSelectedImageFile(file);
-    if (newStaffMember) {
-      setNewStaffMember((prev) => ({
-        ...prev!,
-        imageUrl: file ? URL.createObjectURL(file) : "",
-      }));
-    } else if (editingStaff) {
-      setEditingStaff((prev) => ({
-        ...prev!,
-        imageUrl: file ? URL.createObjectURL(file) : "",
-      }));
-    }
-  };
-
   const handleSave = async () => {
     let finalImageUrl = currentStaff?.imageUrl || "";
 

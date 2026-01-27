@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { NavLink } from "react-router-dom";
 import PromptedNavLink from "./PromptedNavLink";
 import {
   DashboardIcon,
@@ -8,9 +7,7 @@ import {
   UsersIcon as StaffIcon,
   MessageSquareIcon as ReviewsIcon,
   LayersIcon as ServicesIcon,
-  ContentIcon as HomepageIcon,
   FileTextIcon as PagesIcon,
-  MenuIcon as NavigationIcon,
   SettingsIcon,
   LogoutIcon,
 } from "../Icons";
@@ -59,7 +56,7 @@ const AdminSidebar: React.FC = () => {
 
   return (
     <aside 
-      className="w-64 flex-shrink-0 bg-slate-800 p-4 flex flex-col border-r border-slate-700 overflow-y-auto h-screen scrollbar-thin scrollbar-track-slate-800 scrollbar-thumb-slate-700 hover:scrollbar-thumb-slate-600"
+      className="w-64 shrink-0 bg-slate-800 p-4 flex flex-col border-r border-slate-700 overflow-y-auto h-screen scrollbar-thin scrollbar-track-slate-800 scrollbar-thumb-slate-700 hover:scrollbar-thumb-slate-600"
       style={{
         scrollbarWidth: 'thin',
         scrollbarColor: '#475569 #1e293b',
@@ -176,18 +173,18 @@ const AdminSidebar: React.FC = () => {
       <div className="pt-4 mt-auto border-t border-slate-700 -mx-4 px-4">
         {can('settings') && (
           <PromptedNavLink to="/admin/settings" className={getNavLinkClass}>
-            <SettingsIcon className="w-6 h-6 mr-3 flex-shrink-0" />
+            <SettingsIcon className="w-6 h-6 mr-3 shrink-0" />
             <span className="truncate">Settings</span>
           </PromptedNavLink>
         )}
         {can('security') && (
           <PromptedNavLink to="/admin/security" className={getNavLinkClass}>
-            <SettingsIcon className="w-6 h-6 mr-3 flex-shrink-0" />
+            <SettingsIcon className="w-6 h-6 mr-3 shrink-0" />
             <span className="truncate">Security</span>
           </PromptedNavLink>
         )}
         <button onClick={handleLogout} className={`${linkClass} justify-start overflow-hidden`}>
-          <LogoutIcon className="w-6 h-6 mr-3 flex-shrink-0" />
+          <LogoutIcon className="w-6 h-6 mr-3 shrink-0" />
           <span className="truncate">Logout</span>
         </button>
       </div>

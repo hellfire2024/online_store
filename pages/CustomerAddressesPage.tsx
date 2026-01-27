@@ -8,13 +8,11 @@ const CustomerAddressesPage: React.FC = () => {
   const {
     customer,
     addAddress,
-    updateAddress,
     deleteAddress,
     setDefaultAddress,
   } = useCustomerAuth();
   const { addToast } = useToast();
   const [isAdding, setIsAdding] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [formData, setFormData] = useState<Omit<CustomerAddress, "id">>({
@@ -61,13 +59,6 @@ const CustomerAddressesPage: React.FC = () => {
     }
   };
 
-  const handleUpdateAddress = async (addressId: string) => {
-    const result = await updateAddress({ id: addressId, ...formData });
-    if (result.success) {
-      addToast("Address updated successfully", "success");
-      setEditingId(null);
-    }
-  };
 
   const handleDeleteAddress = async (addressId: string) => {
     const result = await deleteAddress(addressId);
@@ -202,12 +193,6 @@ const CustomerAddressesPage: React.FC = () => {
                   </p>
                 </div>
                 <div className="space-x-2">
-                  <button
-                    onClick={() => setEditingId(address.id)}
-                    className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-white rounded text-sm"
-                  >
-                    Edit
-                  </button>
                   <button
                     onClick={() => handleDeleteAddress(address.id)}
                     className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-sm"

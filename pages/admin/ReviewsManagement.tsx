@@ -1,27 +1,20 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useReviews } from "../../context/ReviewsContext";
 import { useSiteSettings } from "../../context/SiteSettingsContext";
-import { EditIcon, TrashIcon, StarIcon } from "../../components/Icons";
+import { StarIcon } from "../../components/Icons";
 import Pagination from "../../components/Pagination";
 import { Review } from "../../types";
-import { useUnsavedChanges } from "../../context/UnsavedChangesContext";
 
 const ReviewsManagement: React.FC = () => {
-  const { reviews, isLoading, updateReview, deleteReview } = useReviews();
+  const { reviews, updateReview } = useReviews();
   const { siteSettings, updateSiteSettings } = useSiteSettings();
   const [filterStatus, setFilterStatus] = useState<"pending" | "approved" | "rejected" | "archived" | "all">("pending");
   const [editingReview, setEditingReview] = useState<Review | null>(null);
-  const [originalReview, setOriginalReview] = useState<Review | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
-  useEffect(() => {
-    if (editingReview) {
-      setOriginalReview(editingReview);
-    }
-  }, [editingReview]);
 
   const openModal = (review?: Review) => {
     setEditingReview(review || ({ author: "", email: "", text: "", rating: 5, status: "pending", createdAt: new Date().toISOString() } as Review));
@@ -128,7 +121,7 @@ const ReviewsManagement: React.FC = () => {
       </div>
 
       <div className="bg-slate-800 rounded-lg border border-slate-700 overflow-x-auto">
-        <table className="w-full text-left text-sm min-w-[1000px]">
+        <table className="w-full text-left text-sm min-w-250">
           <thead className="bg-slate-900">
             <tr>
               <th className="p-4 w-32">Author</th>

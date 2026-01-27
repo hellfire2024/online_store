@@ -2,9 +2,8 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useSiteSettings } from "../../context/SiteSettingsContext";
 import { usePages } from "../../context/PagesContext";
 import { useToast } from "../../hooks/useToast";
-import { SiteSettings, Menu, MenuItem, Page, FooterItem, FooterColumn } from "../../types";
+import { SiteSettings, Menu, MenuItem, FooterItem, FooterColumn } from "../../types";
 import { useUnsavedChanges } from "../../context/UnsavedChangesContext";
-import { PlusIcon, TrashIcon } from "../../components/Icons";
 import MenuEditor from "../../components/admin/MenuEditor"; // Correctly import the isolated component
 import ImageUploadInput from "../../components/admin/ImageUploadInput";
 import {
@@ -68,7 +67,7 @@ const DroppableColumn: React.FC<{ column: FooterColumn, children: React.ReactNod
   const { setNodeRef } = useSortable({ id: column.id });
 
   return (
-    <div ref={setNodeRef} className="bg-slate-900 p-4 rounded-lg min-h-[200px] flex flex-col gap-2">
+    <div ref={setNodeRef} className="bg-slate-900 p-4 rounded-lg min-h-50 flex flex-col gap-2">
       <h3 className="text-lg font-semibold text-white capitalize mb-2">{column.id}</h3>
       <SortableContext items={column.items.map(i => i.id)} strategy={verticalListSortingStrategy}>
         {children}
@@ -385,7 +384,7 @@ const SettingsManagement: React.FC = () => {
         <TabButton tab="shipping" label="Shipping" />
       </div>
 
-      <div className="bg-slate-800 p-6 rounded-b-lg border border-t-0 border-slate-700 min-h-[40rem]">
+      <div className="bg-slate-800 p-6 rounded-b-lg border border-t-0 border-slate-700 min-h-160">
         {activeTab === "general" && (
           <div className="space-y-6">
             <h2 className="text-2xl font-semibold text-white mb-4">
@@ -554,7 +553,7 @@ const SettingsManagement: React.FC = () => {
                 <label className="block text-sm font-medium text-gray-400">Link Text</label>
                 <label className="block text-sm font-medium text-gray-400">Link URL</label>
               </div>
-              {settings.footerSocialLinks?.map((link, index) => (
+              {settings.footerSocialLinks?.map((link) => (
                 <div key={link.id} className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
                   <input
                     type="text"

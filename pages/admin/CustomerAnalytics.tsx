@@ -56,7 +56,6 @@ const CustomerAnalytics: React.FC = () => {
   const vipCount = customers.filter(c => c.totalSpent >= 1000).length;
   const atRiskCount = customers.filter(c => c.lastOrderDate && ((Date.now() - new Date(c.lastOrderDate).getTime())/(1000*60*60*24) > 180)).length;
   const inactiveCount = customers.filter(c => !c.isActive).length;
-  const pct = (n: number) => totalCustomers ? Math.round((n / totalCustomers) * 100) : 0;
 
   const exportSummaryCSV = () => {
     const headers = ['Metric','Value'];

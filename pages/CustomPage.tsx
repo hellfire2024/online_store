@@ -1,10 +1,10 @@
 
 import React from 'react';
 import { useLocation } from 'react-router-dom';
-import { useAdmin } from '../context/AdminContext';
+import { usePages } from '../context/PagesContext';
 
 const CustomPage: React.FC = () => {
-  const { pages } = useAdmin();
+  const { pages } = usePages();
   const location = useLocation();
   
   const page = pages.find(p => p.path === location.pathname);
@@ -24,7 +24,7 @@ const CustomPage: React.FC = () => {
       {/* In a real app, this HTML should be sanitized on a server before being rendered to prevent XSS attacks. */}
       <div 
         className="prose prose-invert prose-lg max-w-none"
-        dangerouslySetInnerHTML={{ __html: page.content }}
+        dangerouslySetInnerHTML={{ __html: page.content ?? (typeof page.contentData === 'object' && page.contentData && 'content' in page.contentData ? (page.contentData as any).content : '') }}
       />
     </div>
   );

@@ -1,13 +1,12 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Product, GalleryImage, ProductOptionList } from '../types';
+import { Product, GalleryImage } from '../types';
 import { useProducts } from '../context/ProductContext';
 import { useGalleries } from '../context/GalleryContext';
 import { getDesignIdeas } from '../services/geminiService';
 import { useCart } from '../context/CartContext';
 import Spinner from '../components/Spinner';
-import WatermarkedImage from '../components/WatermarkedImage';
 
 type CustomizationTab = 'gallery' | 'upload' | 'ideas';
 
@@ -262,7 +261,7 @@ const ProductDetailPage: React.FC = () => {
                 {product.enableAIIdeas && <TabButton tab="ideas" label="Get AI Ideas" activeTab={activeTab} setActiveTab={setActiveTab} />}
               </div>
               
-              <div className="p-4 bg-slate-700 rounded-lg min-h-[300px]">
+              <div className="p-4 bg-slate-700 rounded-lg min-h-75">
                 <div style={{ display: activeTab === 'gallery' ? 'block' : 'none' }}>
                   {GalleryGrid}
                 </div>

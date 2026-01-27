@@ -1,5 +1,5 @@
 // API Client for Custom Threads Online Store
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3001/api';
 
 class ApiClient {
   private baseUrl: string;
@@ -24,10 +24,24 @@ class ApiClient {
     endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
-    const headers: HeadersInit = {
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      ...options.headers,
     };
+
+    const optHeaders = options.headers as any;
+    if (optHeaders instanceof Headers) {
+      optHeaders.forEach((value: string, key: string) => {
+        headers[key] = value;
+      });
+    } else if (Array.isArray(optHeaders)) {
+      for (const [key, value] of optHeaders) {
+        headers[String(key)] = String(value);
+      }
+    } else if (optHeaders && typeof optHeaders === 'object') {
+      for (const [key, value] of Object.entries(optHeaders)) {
+        headers[String(key)] = String(value);
+      }
+    }
 
     if (this.token) {
       headers['Authorization'] = `Bearer ${this.token}`;

@@ -5,7 +5,7 @@ import { RowDataPacket } from 'mysql2';
 const router = Router();
 
 // Get settings
-router.get('/', async (req: Request, res: Response) => {
+router.get('/', async (_req: Request, res: Response) => {
   try {
     const [rows] = await pool.query<RowDataPacket[]>(
       'SELECT settings FROM site_settings WHERE id = 1'
@@ -15,9 +15,9 @@ router.get('/', async (req: Request, res: Response) => {
       return res.json({});
     }
     
-    res.json(rows[0].settings);
+    return res.json(rows[0].settings);
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch settings' });
+    return res.status(500).json({ error: 'Failed to fetch settings' });
   }
 });
 
@@ -29,9 +29,9 @@ router.put('/', async (req: Request, res: Response) => {
        ON DUPLICATE KEY UPDATE settings = ?`,
       [JSON.stringify(req.body), JSON.stringify(req.body)]
     );
-    res.json(req.body);
+    return res.json(req.body);
   } catch (error) {
-    res.status(500).json({ error: 'Failed to update settings' });
+    return res.status(500).json({ error: 'Failed to update settings' });
   }
 });
 

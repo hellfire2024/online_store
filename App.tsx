@@ -102,7 +102,7 @@ const App: React.FC = () => {
                                   onClose={() => setIsAdminLoginOpen(false)}
                                 />
                                 <Header />
-                                <main className="flex-grow container mx-auto px-4 py-8">
+                                <main className="grow container mx-auto px-4 py-8">
                                   <Routes>
                                     <Route
                                       path="/test-hero"

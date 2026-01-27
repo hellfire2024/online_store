@@ -1,9 +1,10 @@
 import { Router, Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+import jwt, { type Secret, type SignOptions } from 'jsonwebtoken';
 import { body, validationResult } from 'express-validator';
 import { pool } from '../db/connection.js';
 import { RowDataPacket } from 'mysql2';
+import crypto from 'crypto';
 
 const router = Router();
 
@@ -43,13 +44,16 @@ router.post(
       await pool.query('UPDATE admins SET last_login = NOW() WHERE id = ?', [admin.id]);
 
       // Generate JWT
+      const secret: Secret = process.env.JWT_SECRET || 'dev-secret';
+      const expiresIn = (process.env.JWT_EXPIRES_IN || '7d') as SignOptions['expiresIn'];
+      const options: SignOptions = { expiresIn };
       const token = jwt.sign(
         { id: admin.id, username: admin.username, role: admin.role, type: 'admin' },
-        process.env.JWT_SECRET!,
-        { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+        secret,
+        options,
       );
 
-      res.json({
+      return res.json({
         token,
         admin: {
           id: admin.id,
@@ -60,7 +64,7 @@ router.post(
       });
     } catch (error) {
       console.error('Login error:', error);
-      res.status(500).json({ error: 'Login failed' });
+      return res.status(500).json({ error: 'Login failed' });
     }
   }
 );
@@ -104,19 +108,18 @@ router.post(
       );
 
       // Generate JWT
-      const token = jwt.sign(
-        { id, email, type: 'customer' },
-        process.env.JWT_SECRET!,
-        { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
-      );
+      const secret: Secret = process.env.JWT_SECRET || 'dev-secret';
+      const expiresIn = (process.env.JWT_EXPIRES_IN || '7d') as SignOptions['expiresIn'];
+      const options: SignOptions = { expiresIn };
+      const token = jwt.sign({ id, email, type: 'customer' }, secret, options);
 
-      res.status(201).json({
+      return res.status(201).json({
         token,
         customer: { id, name, email },
       });
     } catch (error) {
       console.error('Registration error:', error);
-      res.status(500).json({ error: 'Registration failed' });
+      return res.status(500).json({ error: 'Registration failed' });
     }
   }
 );
@@ -157,13 +160,16 @@ router.post(
       await pool.query('UPDATE customers SET last_login = NOW() WHERE id = ?', [customer.id]);
 
       // Generate JWT
+      const secret: Secret = process.env.JWT_SECRET || 'dev-secret';
+      const expiresIn = (process.env.JWT_EXPIRES_IN || '7d') as SignOptions['expiresIn'];
+      const options: SignOptions = { expiresIn };
       const token = jwt.sign(
         { id: customer.id, email: customer.email, type: 'customer' },
-        process.env.JWT_SECRET!,
-        { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+        secret,
+        options,
       );
 
-      res.json({
+      return res.json({
         token,
         customer: {
           id: customer.id,
@@ -173,7 +179,7 @@ router.post(
       });
     } catch (error) {
       console.error('Login error:', error);
-      res.status(500).json({ error: 'Login failed' });
+      return res.status(500).json({ error: 'Login failed' });
     }
   }
 );

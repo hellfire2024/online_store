@@ -19,11 +19,13 @@ import staffRoutes from './routes/staff.js';
 import serviceRoutes from './routes/services.js';
 import settingsRoutes from './routes/settings.js';
 import authRoutes from './routes/auth.js';
+import demoRoutes from './demoRoutes.js';
 
 dotenv.config();
 
 const app: Express = express();
 const PORT = process.env.PORT || 3001;
+const DEMO_MODE = process.env.DEMO_MODE === '1' || process.env.DEMO_MODE === 'true' || !!process.env.SKIP_DB_CHECK;
 
 // ============================================
 // MIDDLEWARE
@@ -66,30 +68,34 @@ app.use('/api/', limiter);
 // ROUTES
 // ============================================
 
-app.get('/health', (req: Request, res: Response) => {
+app.get('/health', (_req: Request, res: Response) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
 // API routes
-app.use('/api/auth', authRoutes);
-app.use('/api/products', productRoutes);
-app.use('/api/customers', customerRoutes);
-app.use('/api/admin-users', adminUserRoutes);
-app.use('/api/orders', orderRoutes);
-app.use('/api/galleries', galleryRoutes);
-app.use('/api/pages', pageRoutes);
-app.use('/api/reviews', reviewRoutes);
-app.use('/api/staff', staffRoutes);
-app.use('/api/services', serviceRoutes);
-app.use('/api/settings', settingsRoutes);
+if (DEMO_MODE) {
+  app.use('/api', demoRoutes);
+} else {
+  app.use('/api/auth', authRoutes);
+  app.use('/api/products', productRoutes);
+  app.use('/api/customers', customerRoutes);
+  app.use('/api/admin-users', adminUserRoutes);
+  app.use('/api/orders', orderRoutes);
+  app.use('/api/galleries', galleryRoutes);
+  app.use('/api/pages', pageRoutes);
+  app.use('/api/reviews', reviewRoutes);
+  app.use('/api/staff', staffRoutes);
+  app.use('/api/services', serviceRoutes);
+  app.use('/api/settings', settingsRoutes);
+}
 
 // 404 handler
-app.use((req: Request, res: Response) => {
+app.use((_req: Request, res: Response) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
 // Global error handler
-app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   console.error('Error:', err);
   res.status(500).json({
     error: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error',
@@ -102,14 +108,19 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
 
 async function startServer() {
   try {
-    // Test database connection
-    await testConnection();
+    // Test database connection unless explicitly skipped (useful for demos)
+    if (!DEMO_MODE) {
+      await testConnection();
+    }
 
     // Start listening
     app.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
       console.log(`🔗 API URL: http://localhost:${PORT}/api`);
+      if (DEMO_MODE) {
+        console.log('⚠️  DEMO_MODE enabled: serving mock data, database checks skipped.');
+      }
     });
   } catch (error) {
     console.error('Failed to start server:', error);

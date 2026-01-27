@@ -1,24 +1,24 @@
 import { Router, Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import bcrypt from 'bcryptjs';
-import { pool, withTransaction } from '../db/connection.js';
+import { pool } from '../db/connection.js';
 import { RowDataPacket, ResultSetHeader } from 'mysql2';
 import { v4 as uuidv4 } from 'uuid';
 
 const router = Router();
 
 // Get all admin users
-router.get('/', async (req: Request, res: Response) => {
+router.get('/', async (_req: Request, res: Response) => {
   try {
     const [rows] = await pool.query<RowDataPacket[]>(
       `SELECT id, username, email, role, is_active as isActive, 
               created_at as createdAt, last_login as lastLogin
        FROM admins ORDER BY created_at DESC`
     );
-    res.json(rows);
+    return res.json(rows);
   } catch (error) {
     console.error('Error fetching admin users:', error);
-    res.status(500).json({ error: 'Failed to fetch admin users' });
+    return res.status(500).json({ error: 'Failed to fetch admin users' });
   }
 });
 
@@ -38,10 +38,10 @@ router.get('/:id', async (req: Request, res: Response) => {
 
     const user = rows[0];
     user.permissions = JSON.parse(user.permissions || '[]');
-    res.json(user);
+    return res.json(user);
   } catch (error) {
     console.error('Error fetching admin user:', error);
-    res.status(500).json({ error: 'Failed to fetch admin user' });
+    return res.status(500).json({ error: 'Failed to fetch admin user' });
   }
 });
 
@@ -82,7 +82,7 @@ router.post(
         [id, username, email, passwordHash, role, JSON.stringify([])]
       );
 
-      res.status(201).json({
+      return res.status(201).json({
         id,
         username,
         email,
@@ -92,7 +92,7 @@ router.post(
       });
     } catch (error) {
       console.error('Error creating admin user:', error);
-      res.status(500).json({ error: 'Failed to create admin user' });
+      return res.status(500).json({ error: 'Failed to create admin user' });
     }
   }
 );
@@ -153,10 +153,10 @@ router.put('/:id', async (req: Request, res: Response) => {
       [req.params.id]
     );
 
-    res.json(rows[0]);
+    return res.json(rows[0]);
   } catch (error) {
     console.error('Error updating admin user:', error);
-    res.status(500).json({ error: 'Failed to update admin user' });
+    return res.status(500).json({ error: 'Failed to update admin user' });
   }
 });
 
@@ -181,10 +181,10 @@ router.delete('/:id', async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Admin user not found' });
     }
 
-    res.status(204).send();
+    return res.status(204).send();
   } catch (error) {
     console.error('Error deleting admin user:', error);
-    res.status(500).json({ error: 'Failed to delete admin user' });
+    return res.status(500).json({ error: 'Failed to delete admin user' });
   }
 });
 
@@ -205,10 +205,10 @@ router.patch('/:id/toggle-active', async (req: Request, res: Response) => {
       [req.params.id]
     );
 
-    res.json(rows[0]);
+    return res.json(rows[0]);
   } catch (error) {
     console.error('Error toggling admin user status:', error);
-    res.status(500).json({ error: 'Failed to toggle admin user status' });
+    return res.status(500).json({ error: 'Failed to toggle admin user status' });
   }
 });
 

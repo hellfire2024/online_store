@@ -5,13 +5,13 @@ import * as ProductModel from '../models/Product.js';
 const router = Router();
 
 // Get all products
-router.get('/', async (req: Request, res: Response) => {
+router.get('/', async (_req: Request, res: Response) => {
   try {
     const products = await ProductModel.findAll();
-    res.json(products);
+    return res.json(products);
   } catch (error) {
     console.error('Error fetching products:', error);
-    res.status(500).json({ error: 'Failed to fetch products' });
+    return res.status(500).json({ error: 'Failed to fetch products' });
   }
 });
 
@@ -22,10 +22,10 @@ router.get('/:id', async (req: Request, res: Response) => {
     if (!product) {
       return res.status(404).json({ error: 'Product not found' });
     }
-    res.json(product);
+    return res.json(product);
   } catch (error) {
     console.error('Error fetching product:', error);
-    res.status(500).json({ error: 'Failed to fetch product' });
+    return res.status(500).json({ error: 'Failed to fetch product' });
   }
 });
 
@@ -45,10 +45,10 @@ router.post(
 
     try {
       const product = await ProductModel.create(req.body);
-      res.status(201).json(product);
+      return res.status(201).json(product);
     } catch (error) {
       console.error('Error creating product:', error);
-      res.status(500).json({ error: 'Failed to create product' });
+      return res.status(500).json({ error: 'Failed to create product' });
     }
   }
 );
@@ -60,10 +60,10 @@ router.put('/:id', async (req: Request, res: Response) => {
     if (!product) {
       return res.status(404).json({ error: 'Product not found' });
     }
-    res.json(product);
+    return res.json(product);
   } catch (error) {
     console.error('Error updating product:', error);
-    res.status(500).json({ error: 'Failed to update product' });
+    return res.status(500).json({ error: 'Failed to update product' });
   }
 });
 
@@ -74,10 +74,10 @@ router.delete('/:id', async (req: Request, res: Response) => {
     if (!success) {
       return res.status(404).json({ error: 'Product not found' });
     }
-    res.status(204).send();
+    return res.status(204).send();
   } catch (error) {
     console.error('Error deleting product:', error);
-    res.status(500).json({ error: 'Failed to delete product' });
+    return res.status(500).json({ error: 'Failed to delete product' });
   }
 });
 

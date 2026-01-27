@@ -1,13 +1,13 @@
 import { Router, Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
-import { pool, withTransaction } from '../db/connection.js';
+import { pool } from '../db/connection.js';
 import { RowDataPacket, ResultSetHeader } from 'mysql2';
 import { v4 as uuidv4 } from 'uuid';
 
 const router = Router();
 
 // Get all customers
-router.get('/', async (req: Request, res: Response) => {
+router.get('/', async (_req: Request, res: Response) => {
   try {
     const [rows] = await pool.query<RowDataPacket[]>(
       `SELECT c.id, c.name, c.email, c.phone, c.is_active as isActive,
@@ -19,10 +19,10 @@ router.get('/', async (req: Request, res: Response) => {
        GROUP BY c.id
        ORDER BY c.created_at DESC`
     );
-    res.json(rows);
+    return res.json(rows);
   } catch (error) {
     console.error('Error fetching customers:', error);
-    res.status(500).json({ error: 'Failed to fetch customers' });
+    return res.status(500).json({ error: 'Failed to fetch customers' });
   }
 });
 
@@ -52,10 +52,10 @@ router.get('/:id', async (req: Request, res: Response) => {
 
     customer.addresses = addresses;
 
-    res.json(customer);
+    return res.json(customer);
   } catch (error) {
     console.error('Error fetching customer:', error);
-    res.status(500).json({ error: 'Failed to fetch customer' });
+    return res.status(500).json({ error: 'Failed to fetch customer' });
   }
 });
 
@@ -101,7 +101,7 @@ router.post(
         ]
       );
 
-      res.status(201).json({
+      return res.status(201).json({
         id,
         name,
         email,
@@ -113,7 +113,7 @@ router.post(
       });
     } catch (error) {
       console.error('Error creating customer:', error);
-      res.status(500).json({ error: 'Failed to create customer' });
+      return res.status(500).json({ error: 'Failed to create customer' });
     }
   }
 );
@@ -168,10 +168,10 @@ router.put('/:id', async (req: Request, res: Response) => {
       [req.params.id]
     );
 
-    res.json(rows[0]);
+    return res.json(rows[0]);
   } catch (error) {
     console.error('Error updating customer:', error);
-    res.status(500).json({ error: 'Failed to update customer' });
+    return res.status(500).json({ error: 'Failed to update customer' });
   }
 });
 
@@ -187,10 +187,10 @@ router.delete('/:id', async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Customer not found' });
     }
 
-    res.status(204).send();
+    return res.status(204).send();
   } catch (error) {
     console.error('Error deleting customer:', error);
-    res.status(500).json({ error: 'Failed to delete customer' });
+    return res.status(500).json({ error: 'Failed to delete customer' });
   }
 });
 
@@ -211,10 +211,10 @@ router.patch('/:id/toggle-active', async (req: Request, res: Response) => {
       [req.params.id]
     );
 
-    res.json(rows[0]);
+    return res.json(rows[0]);
   } catch (error) {
     console.error('Error toggling customer status:', error);
-    res.status(500).json({ error: 'Failed to toggle customer status' });
+    return res.status(500).json({ error: 'Failed to toggle customer status' });
   }
 });
 

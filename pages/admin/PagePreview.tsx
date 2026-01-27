@@ -1,6 +1,6 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Page, HomePageContent, AboutPageContent, ContactPageContent, ContactFormField } from '../../types';
+import { Page, HomePageContent, AboutPageContent, ContactPageContent } from '../../types';
 
 interface PreviewState {
   page: Omit<Page, 'id'> | Page;
@@ -32,7 +32,7 @@ const PagePreview: React.FC = () => {
     if (page.pageType === 'home') {
       const homeContent = page.contentData as HomePageContent;
       return (
-        <div className="relative min-h-[500px] flex items-center justify-center rounded-lg overflow-hidden">
+        <div className="relative min-h-125 flex items-center justify-center rounded-lg overflow-hidden">
           {homeContent.heroBackgroundImageUrl && (
             <div 
               className="absolute inset-0 bg-cover bg-center"

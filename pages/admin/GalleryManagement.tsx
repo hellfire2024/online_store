@@ -12,7 +12,6 @@ const GalleriesManagement: React.FC = () => {
     const [newImageName, setNewImageName] = useState('');
     const [newImageUrl, setNewImageUrl] = useState('');
     const [galleryError, setGalleryError] = useState('');
-    const [imageError, setImageError] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(20);
 
@@ -57,23 +56,20 @@ const GalleriesManagement: React.FC = () => {
 
     const handleAddImage = async (e: React.FormEvent) => {
         e.preventDefault();
-        setImageError('');
+        
         
         const trimmedImageName = newImageName.trim();
         const trimmedImageUrl = newImageUrl.trim();
         
         if (!trimmedImageName) {
-            setImageError('Image name is required');
             addToast("Image name is required", "error");
             return;
         }
         if (!trimmedImageUrl) {
-            setImageError('Image URL is required');
             addToast("Image URL is required", "error");
             return;
         }
         if (!selectedGalleryId) {
-            setImageError('Please select a gallery first');
             addToast("Please select a gallery first", "error");
             return;
         }
@@ -83,11 +79,11 @@ const GalleriesManagement: React.FC = () => {
             addToast("Image added!", "success");
             setNewImageName('');
             setNewImageUrl('');
-            setImageError('');
+            
         } catch (error) {
             console.error("Failed to add image:", error);
             addToast("Failed to add image.", "error");
-            setImageError("Failed to add image.");
+            
         }
     };
 
@@ -103,7 +99,7 @@ const GalleriesManagement: React.FC = () => {
                     <h2 className="text-xl font-semibold text-white mb-4">Galleries</h2>
                     <div className="mb-4">
                         <div className="flex gap-2 mb-2">
-                            <input type="text" name="newGalleryName" value={newGalleryName} onChange={e => { setNewGalleryName(e.target.value); setGalleryError(''); }} placeholder="New Gallery Name" className="flex-grow p-2 bg-slate-700 border border-slate-600 rounded-md text-white" />
+                            <input type="text" name="newGalleryName" value={newGalleryName} onChange={e => { setNewGalleryName(e.target.value); setGalleryError(''); }} placeholder="New Gallery Name" className="grow p-2 bg-slate-700 border border-slate-600 rounded-md text-white" />
                             <button type="button" onClick={handleAddGallery} className="bg-sky-500 text-white p-2 rounded-lg flex items-center justify-center hover:bg-sky-600"><PlusIcon className="w-5 h-5" /></button>
                         </div>
                         {galleryError && <p className="text-red-400 text-sm">{galleryError}</p>}
@@ -124,8 +120,8 @@ const GalleriesManagement: React.FC = () => {
                         <div className="bg-slate-800 p-6 rounded-lg border border-slate-700">
                             <h2 className="text-xl font-semibold text-white mb-4">Images in "{galleries.find(g => g.id === selectedGalleryId)?.name}"</h2>
                              <form onSubmit={handleAddImage} className="flex flex-col md:flex-row gap-4 mb-6 items-center">
-                                <input type="text" value={newImageName} onChange={(e) => setNewImageName(e.target.value)} placeholder="Image Name" className="flex-grow w-full p-2 bg-slate-700 border border-slate-600 rounded-md text-white" />
-                                <input type="text" value={newImageUrl} onChange={(e) => setNewImageUrl(e.target.value)} placeholder="Image URL" className="flex-grow w-full p-2 bg-slate-700 border border-slate-600 rounded-md text-white" />
+                                <input type="text" value={newImageName} onChange={(e) => setNewImageName(e.target.value)} placeholder="Image Name" className="grow w-full p-2 bg-slate-700 border border-slate-600 rounded-md text-white" />
+                                <input type="text" value={newImageUrl} onChange={(e) => setNewImageUrl(e.target.value)} placeholder="Image URL" className="grow w-full p-2 bg-slate-700 border border-slate-600 rounded-md text-white" />
                                 <button type="submit" className="bg-sky-500 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center hover:bg-sky-600 w-full md:w-auto">
                                     <PlusIcon className="w-5 h-5 mr-2" />Add
                                 </button>
@@ -166,7 +162,7 @@ const GalleriesManagement: React.FC = () => {
                             })()}
                         </div>
                     ) : (
-                        <div className="bg-slate-800 p-6 rounded-lg border border-slate-700 flex items-center justify-center h-full min-h-[20rem]">
+                        <div className="bg-slate-800 p-6 rounded-lg border border-slate-700 flex items-center justify-center h-full min-h-80">
                             <p className="text-gray-400">Select a gallery on the left to manage its images, or create a new one.</p>
                         </div>
                     )}

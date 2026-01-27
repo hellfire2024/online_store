@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useGalleries } from "../../context/GalleryContext";
-import { GalleryImage } from "../../types";
 import { PlusIcon, TrashIcon, UploadIcon } from "../../components/Icons";
 import { useToast } from "../../hooks/useToast";
 import Spinner from "../../components/Spinner";
@@ -30,6 +29,14 @@ const GalleriesManagement: React.FC = () => {
 
   useEffect(() => {
     setHasUnsavedChanges(false);
+  }, []);
+
+  useEffect(() => {
+    if (folderInputRef.current) {
+      try {
+        folderInputRef.current.setAttribute('webkitdirectory', '');
+      } catch {}
+    }
   }, []);
 
   const handleAddGallery = async () => {
@@ -82,8 +89,8 @@ const GalleriesManagement: React.FC = () => {
       if (file.type.startsWith("image/")) {
         const reader = new FileReader();
         reader.onload = async (e) => {
-          const url = e.target?.result as string;
-          await addGalleryImage(selectedGallery, { name: file.name, url });
+          const imageUrl = e.target?.result as string;
+          await addGalleryImage(selectedGallery, { name: file.name, imageUrl });
         };
         reader.readAsDataURL(file);
       }
@@ -114,7 +121,7 @@ const GalleriesManagement: React.FC = () => {
               value={newGalleryName}
               onChange={(e) => setNewGalleryName(e.target.value)}
               placeholder="New gallery name"
-              className="flex-grow p-2 bg-slate-700 border border-slate-600 rounded-md text-white"
+              className="grow p-2 bg-slate-700 border border-slate-600 rounded-md text-white"
             />
             <button
               onClick={handleAddGallery}
@@ -173,7 +180,6 @@ const GalleriesManagement: React.FC = () => {
                     onChange={handleFileSelected}
                     className="hidden"
                     multiple
-                    webkitdirectory="true"
                   />
                   <button
                     onClick={() => fileInputRef.current?.click()}
@@ -207,7 +213,7 @@ const GalleriesManagement: React.FC = () => {
                       className="w-full h-32 object-cover rounded-md bg-slate-700"
                     />
                     <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-2">
-                      <p className="text-white text-xs break-words">
+                      <p className="text-white text-xs wrap-break-word">
                         {image.name}
                       </p>
                       <button
