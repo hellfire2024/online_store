@@ -13,7 +13,7 @@ const WatermarkedImage: React.FC<WatermarkedImageProps> = ({ src, alt, isSelecte
     <div
       onClick={onClick}
       onContextMenu={(e) => e.preventDefault()}
-      className={`relative w-full h-32 bg-cover bg-center rounded-lg cursor-pointer overflow-hidden group border-4 transition-all ${isSelected ? 'border-sky-500' : 'border-transparent hover:border-slate-500'}`}
+      className={`relative w-full h-32 bg-cover bg-center rounded-lg cursor-pointer overflow-hidden border-4 ${isSelected ? 'border-sky-500' : 'border-transparent'}`}
       style={{ backgroundImage: `url(${src})` }}
       title={alt}
     >
@@ -24,7 +24,6 @@ const WatermarkedImage: React.FC<WatermarkedImageProps> = ({ src, alt, isSelecte
           <div className="text-white font-bold whitespace-nowrap" style={{ textShadow: '0 0 5px black', fontSize: '12px' }}>CustomThreads</div>
         </div>
       </div>
-      <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-30 transition-opacity"></div>
     </div>
   );
 };

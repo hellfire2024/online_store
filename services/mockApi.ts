@@ -187,9 +187,7 @@ let mockProducts: Product[] = [
         ],
       },
     ],
-  },
-    ],
-  },
+  }
 ];
 
 let mockGalleries: Gallery[] = [

@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Product, GalleryImage, ProductOptionList } from '../types';
 import { useProducts } from '../context/ProductContext';
@@ -10,6 +10,25 @@ import Spinner from '../components/Spinner';
 import WatermarkedImage from '../components/WatermarkedImage';
 
 type CustomizationTab = 'gallery' | 'upload' | 'ideas';
+
+// TabButton component declared outside to prevent recreation on every render
+const TabButton = ({ tab, label, activeTab, setActiveTab }: { 
+  tab: CustomizationTab, 
+  label: string, 
+  activeTab: CustomizationTab,
+  setActiveTab: (tab: CustomizationTab) => void 
+}) => (
+  <button
+    onClick={() => setActiveTab(tab)}
+    className={`flex-1 px-4 py-2.5 text-sm font-medium rounded-md ${
+      activeTab === tab 
+        ? 'bg-slate-600 text-white' 
+        : 'bg-transparent text-gray-400 hover:text-gray-200'
+    }`}
+  >
+    {label}
+  </button>
+);
 
 const ProductDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -37,8 +56,8 @@ const ProductDetailPage: React.FC = () => {
       const foundProduct = products.find(p => p.id === id);
       if (foundProduct) {
         setProduct(foundProduct);
-        // Initialize selected options with first option from each list
-        if (foundProduct.optionLists?.length) {
+        // Initialize selected options with first option from each list only if not already set
+        if (foundProduct.optionLists?.length && Object.keys(selectedOptions).length === 0) {
           const initialSelections: { [listId: string]: string } = {};
           foundProduct.optionLists
             .sort((a, b) => a.order - b.order)
@@ -58,7 +77,7 @@ const ProductDetailPage: React.FC = () => {
       }
       setLoading(false);
     }
-  }, [id, products, navigate, fetchGalleryImages, selectedOptionId]);
+  }, [id, products, navigate, fetchGalleryImages, selectedOptions]);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -121,58 +140,78 @@ const ProductDetailPage: React.FC = () => {
     setIdeasLoading(false);
   }, [product]);
 
+  // Memoize gallery images to prevent recalculation on every render
+  const currentGalleryImages = useMemo(() => 
+    product?.galleryId ? galleryImages[product.galleryId] || [] : []
+  , [product?.galleryId, galleryImages]);
+
+  // Memoize the entire gallery grid to prevent re-renders
+  const GalleryGrid = useMemo(() => {
+    if (currentGalleryImages.length === 0) {
+      return <p className="col-span-3 text-center text-gray-400">No designs available for this product.</p>;
+    }
+    
+    return (
+      <div className="grid grid-cols-3 gap-2">
+        {currentGalleryImages.map(img => (
+          <div
+            key={img.id}
+            onClick={() => { setSelectedGalleryImage(img); setUploadedImage(null); }}
+            className={`relative w-full h-32 rounded-lg cursor-pointer overflow-hidden border-4 ${selectedGalleryImage?.id === img.id ? 'border-sky-500' : 'border-slate-600'}`}
+          >
+            <img src={img.imageUrl} alt={img.name} className="w-full h-full object-cover pointer-events-none" />
+            <div className="absolute inset-0 pointer-events-none select-none opacity-10 flex items-center justify-center">
+              <div className="text-white font-bold text-2xl whitespace-nowrap" style={{ textShadow: '2px 2px 4px black' }}>CustomThreads</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }, [currentGalleryImages, selectedGalleryImage]);
+
   if (loading || !product) {
     return <div className="mt-16"><Spinner /></div>;
   }
 
-  const currentGalleryImages = product.galleryId ? galleryImages[product.galleryId] || [] : [];
-
-  const TabButton = ({ tab, label }: { tab: CustomizationTab, label: string }) => (
-    <button
-      onClick={() => setActiveTab(tab)}
-      className={`px-4 py-2 text-sm font-medium rounded-t-md transition-colors ${activeTab === tab ? 'bg-slate-700 text-white' : 'bg-transparent text-gray-400 hover:bg-slate-800 hover:text-white'}`}
-    >
-      {label}
-    </button>
-  );
-
-  // Calculate display price including all selected options
-  let displayPrice = product.price;
-  if (product.optionLists) {
-    product.optionLists.forEach((list) => {
-      const selectedOptionId = selectedOptions[list.id];
-      if (selectedOptionId) {
-        const option = list.options.find((o) => o.id === selectedOptionId);
-        if (option) {
-          displayPrice += option.priceDelta;
+  // Calculate display price including all selected options - memoized
+  const displayPrice = useMemo(() => {
+    let price = product.price;
+    if (product.optionLists) {
+      product.optionLists.forEach((list) => {
+        const selectedOptionId = selectedOptions[list.id];
+        if (selectedOptionId) {
+          const option = list.options.find((o) => o.id === selectedOptionId);
+          if (option) {
+            price += option.priceDelta;
+          }
         }
-      }
-    });
-  }
+      });
+    }
+    return price;
+  }, [product.price, product.optionLists, selectedOptions]);
 
   return (
     <div className="bg-slate-800 p-8 rounded-lg shadow-2xl border border-slate-700">
+      <button
+        onClick={() => navigate('/store')}
+        className="mb-4 text-gray-400 hover:text-white flex items-center gap-2 text-sm"
+      >
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+        </svg>
+        Back to Store
+      </button>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
         <div className="relative w-full aspect-square bg-slate-700 rounded-lg flex items-center justify-center border border-slate-600">
           <img src={product.imageUrl} alt={product.name} className="max-w-full max-h-full object-contain" />
-          <div className="absolute inset-0 pointer-events-none select-none">
-            <div className="absolute inset-0 flex flex-col items-center justify-around opacity-15" style={{ transform: 'rotate(-45deg)' }}>
-              <div className="text-white font-bold whitespace-nowrap" style={{ textShadow: '0 0 5px black', fontSize: '18px' }}>CustomThreads</div>
-              <div className="text-white font-bold whitespace-nowrap" style={{ textShadow: '0 0 5px black', fontSize: '18px' }}>CustomThreads</div>
-              <div className="text-white font-bold whitespace-nowrap" style={{ textShadow: '0 0 5px black', fontSize: '18px' }}>CustomThreads</div>
-              <div className="text-white font-bold whitespace-nowrap" style={{ textShadow: '0 0 5px black', fontSize: '18px' }}>CustomThreads</div>
-              <div className="text-white font-bold whitespace-nowrap" style={{ textShadow: '0 0 5px black', fontSize: '18px' }}>CustomThreads</div>
-            </div>
+          <div className="absolute inset-0 pointer-events-none select-none opacity-10 flex items-center justify-center" style={{ transform: 'rotate(-45deg)' }}>
+            <div className="text-white font-bold text-2xl whitespace-nowrap" style={{ textShadow: '0 0 5px black' }}>CustomThreads</div>
           </div>
           {(selectedGalleryImage || uploadedImage) && (
             <div className="absolute top-1/4 left-1/4 w-1/2 h-1/2 bg-contain bg-no-repeat bg-center"
                  style={{ backgroundImage: `url(${selectedGalleryImage?.imageUrl || uploadedImage})` }}>
-              <div className="absolute inset-0 pointer-events-none select-none">
-                <div className="absolute inset-0 flex flex-col items-center justify-around opacity-15" style={{ transform: 'rotate(-45deg)' }}>
-                  <div className="text-white font-bold whitespace-nowrap" style={{ textShadow: '0 0 5px black', fontSize: '12px' }}>CustomThreads</div>
-                  <div className="text-white font-bold whitespace-nowrap" style={{ textShadow: '0 0 5px black', fontSize: '12px' }}>CustomThreads</div>
-                  <div className="text-white font-bold whitespace-nowrap" style={{ textShadow: '0 0 5px black', fontSize: '12px' }}>CustomThreads</div>
-                </div>
+              <div className="absolute inset-0 pointer-events-none select-none opacity-10 flex items-center justify-center" style={{ transform: 'rotate(-45deg)' }}>
+                <div className="text-white font-bold text-xs whitespace-nowrap" style={{ textShadow: '0 0 5px black' }}>CustomThreads</div>
               </div>
             </div>
           )}
@@ -216,39 +255,30 @@ const ProductDetailPage: React.FC = () => {
           {product.customizable && (
             <div className="mb-6">
               <h3 className="text-xl font-semibold text-white mb-3">Customize Your Design</h3>
-              <div className="flex space-x-2 border-b border-slate-700">
-                <TabButton tab="gallery" label="Choose from Gallery" />
-                <TabButton tab="upload" label="Upload Your Own" />
-                {product.enableAIIdeas && <TabButton tab="ideas" label="Get AI Ideas" />}
+              <div className="flex gap-1 bg-slate-800 rounded-lg p-1 mb-4">
+                <TabButton tab="gallery" label="Choose from Gallery" activeTab={activeTab} setActiveTab={setActiveTab} />
+                <TabButton tab="upload" label="Upload Your Own" activeTab={activeTab} setActiveTab={setActiveTab} />
+                {product.enableAIIdeas && <TabButton tab="ideas" label="Get AI Ideas" activeTab={activeTab} setActiveTab={setActiveTab} />}
               </div>
               
-              <div className="p-4 bg-slate-700 rounded-b-md">
-                {activeTab === 'gallery' && (
-                  <div className="grid grid-cols-3 gap-2">
-                    {currentGalleryImages.length > 0 ? currentGalleryImages.map(img => (
-                      <WatermarkedImage 
-                        key={img.id} 
-                        src={img.imageUrl} 
-                        alt={img.name}
-                        isSelected={selectedGalleryImage?.id === img.id}
-                        onClick={() => { setSelectedGalleryImage(img); setUploadedImage(null); }}
-                      />
-                    )) : <p className="col-span-3 text-center text-gray-400">No designs available for this product.</p>}
-                  </div>
-                )}
+              <div className="p-4 bg-slate-700 rounded-lg min-h-[300px]">
+                <div style={{ display: activeTab === 'gallery' ? 'block' : 'none' }}>
+                  {GalleryGrid}
+                </div>
 
-                {activeTab === 'upload' && (
+                <div style={{ display: activeTab === 'upload' ? 'block' : 'none' }}>
                   <div>
-                    <label className="w-full flex flex-col items-center px-4 py-6 bg-slate-600 text-sky-300 rounded-lg shadow-sm tracking-wide uppercase border-2 border-dashed border-slate-500 cursor-pointer hover:bg-slate-500 hover:text-white hover:border-sky-400">
-                      <svg className="w-8 h-8" fill="currentColor" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M16.88 9.1A4 4 0 0 1 16 17H5a5 5 0 0 1-1-9.9V7a3 3 0 0 1 4.52-2.59A4.98 4.98 0 0 1 17 8c0 .38-.04.74-.12 1.1zM11 11h3l-4 4-4-4h3V7h2v4z" /></svg>
-                      <span className="mt-2 text-base leading-normal">{uploadedFileName || 'Select a file'}</span>
+                    <label className="block w-full px-6 py-8 bg-slate-600 text-sky-300 rounded-lg border-2 border-dashed border-slate-500 cursor-pointer text-center">
+                      <svg className="w-10 h-10 mb-3 mx-auto" fill="currentColor" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M16.88 9.1A4 4 0 0 1 16 17H5a5 5 0 0 1-1-9.9V7a3 3 0 0 1 4.52-2.59A4.98 4.98 0 0 1 17 8c0 .38-.04.74-.12 1.1zM11 11h3l-4 4-4-4h3V7h2v4z" /></svg>
+                      <div className="text-base font-medium">{uploadedFileName || 'Click to select a file'}</div>
+                      <div className="text-xs text-gray-400 mt-1">PNG, JPG, GIF up to 10MB</div>
                       <input type='file' className="hidden" accept="image/*" onChange={handleImageUpload} />
                     </label>
-                    {uploadedImage && <p className="text-sm text-green-400 mt-2 text-center">Image ready for preview.</p>}
+                    {uploadedImage && <p className="text-sm text-green-400 mt-3 text-center font-medium">✓ Image ready for preview</p>}
                   </div>
-                )}
+                </div>
 
-                {activeTab === 'ideas' && (
+                <div style={{ display: activeTab === 'ideas' ? 'block' : 'none' }}>
                   <div>
                     <button onClick={handleFetchIdeas} disabled={ideasLoading} className="w-full mb-4 bg-slate-800 text-white font-bold py-2 px-4 rounded-lg hover:bg-slate-900 disabled:bg-slate-600 disabled:cursor-not-allowed">
                       {ideasLoading ? 'Generating...' : `Get AI Ideas for ${product.name}`}
@@ -260,7 +290,7 @@ const ProductDetailPage: React.FC = () => {
                       </ul>
                     )}
                   </div>
-                )}
+                </div>
               </div>
             </div>
           )}
