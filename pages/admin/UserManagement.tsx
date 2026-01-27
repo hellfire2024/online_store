@@ -3,12 +3,17 @@ import { EditIcon, TrashIcon } from '../../components/Icons';
 import { useToast } from '../../hooks/useToast';
 import Pagination from '../../components/Pagination';
 import { apiClient } from '../../services/apiClient';
+import { loadRoles, findRoleLabel, permissionsList } from '../../services/rolesConfig';
 
 interface AdminUser {
   id: string;
+  firstName: string;
+  lastName: string;
   username: string;
   email: string;
-  role: 'super_admin' | 'admin' | 'manager';
+  phone: string;
+  role: string;
+  permissions: string[];
   isActive: boolean;
   createdAt: string;
   lastLogin?: string;
@@ -24,10 +29,13 @@ const UserManagement: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
   const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
     username: '',
     email: '',
+    phone: '',
     password: '',
-    role: 'manager' as 'super_admin' | 'admin' | 'manager',
+    role: 'manager' as string,
   });
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const { addToast } = useToast();
@@ -45,27 +53,39 @@ const UserManagement: React.FC = () => {
         const mockUsers: AdminUser[] = [
           {
             id: '1',
+            firstName: 'John',
+            lastName: 'Admin',
             username: 'admin',
             email: 'admin@customthreads.com',
+            phone: '555-123-4567',
             role: 'super_admin',
+            permissions: ['all'],
             isActive: true,
             createdAt: '2024-01-15T10:30:00Z',
             lastLogin: '2026-01-26T08:00:00Z',
           },
           {
             id: '2',
+            firstName: 'Sarah',
+            lastName: 'Manager',
             username: 'manager1',
             email: 'manager@customthreads.com',
+            phone: '555-234-5678',
             role: 'manager',
+            permissions: ['products', 'orders', 'customers'],
             isActive: true,
             createdAt: '2024-03-20T14:15:00Z',
             lastLogin: '2026-01-25T16:45:00Z',
           },
           {
             id: '3',
+            firstName: 'Michael',
+            lastName: 'Staff',
             username: 'staff_admin',
             email: 'staff@customthreads.com',
+            phone: '555-345-6789',
             role: 'admin',
+            permissions: ['products', 'gallery', 'pages'],
             isActive: false,
             createdAt: '2024-06-10T09:00:00Z',
             lastLogin: '2025-12-20T11:30:00Z',
@@ -97,18 +117,24 @@ const UserManagement: React.FC = () => {
     if (user) {
       setEditingUser(user);
       setFormData({
+        firstName: user.firstName,
+        lastName: user.lastName,
         username: user.username,
         email: user.email,
+        phone: user.phone,
         password: '',
         role: user.role,
       });
     } else {
       setEditingUser(null);
       setFormData({
+        firstName: '',
+        lastName: '',
         username: '',
         email: '',
+        phone: '',
         password: '',
-        role: 'manager',
+        role: 'manager' as string,
       });
     }
     setIsModalOpen(true);
@@ -118,21 +144,31 @@ const UserManagement: React.FC = () => {
     setIsModalOpen(false);
     setEditingUser(null);
     setFormData({
+      firstName: '',
+      lastName: '',
       username: '',
       email: '',
+      phone: '',
       password: '',
-      role: 'manager' as 'super_admin' | 'admin' | 'manager',
+      role: 'manager' as string,
     });
   };
 
   const handleSave = async () => {
-    if (!formData.username.trim() || !formData.email.trim()) {
-      addToast('Username and email are required', 'error');
+    if (!formData.firstName.trim() || !formData.lastName.trim() || !formData.username.trim() || !formData.email.trim()) {
+      addToast('First name, last name, username and email are required', 'error');
       return;
     }
 
     if (!editingUser && !formData.password) {
       addToast('Password is required for new users', 'error');
+      return;
+    }
+
+    // Validate phone format
+    const phonePattern = /^\d{3}-\d{3}-\d{4}$/;
+    if (formData.phone && !phonePattern.test(formData.phone)) {
+      addToast('Phone must be in format: 555-123-4567', 'error');
       return;
     }
 
@@ -217,6 +253,8 @@ const UserManagement: React.FC = () => {
     }
   };
 
+  const roleOptions = loadRoles();
+
   if (isLoading) {
     return <div className="flex items-center justify-center h-64">Loading admin users...</div>;
   }
@@ -253,8 +291,10 @@ const UserManagement: React.FC = () => {
             <table className="w-full">
               <thead>
                 <tr className="bg-slate-700">
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">Name</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">Username</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">Email</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">Phone</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">Role</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">Status</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">Last Login</th>
@@ -264,11 +304,13 @@ const UserManagement: React.FC = () => {
               <tbody>
                 {paginatedUsers.map((user) => (
                   <tr key={user.id} className="border-t border-slate-700 hover:bg-slate-700/50">
-                    <td className="px-6 py-4 text-white">{user.username}</td>
+                    <td className="px-6 py-4 text-white font-medium">{user.firstName} {user.lastName}</td>
+                    <td className="px-6 py-4 text-gray-300">{user.username}</td>
                     <td className="px-6 py-4 text-gray-300">{user.email}</td>
+                    <td className="px-6 py-4 text-gray-300">{user.phone}</td>
                     <td className="px-6 py-4">
                       <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getRoleColor(user.role)}`}>
-                        {user.role.replace('_', ' ')}
+                        {findRoleLabel(roleOptions, user.role)}
                       </span>
                     </td>
                     <td className="px-6 py-4">
@@ -319,14 +361,38 @@ const UserManagement: React.FC = () => {
       {/* Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-slate-800 p-6 rounded-lg max-w-md w-full">
+          <div className="bg-slate-800 p-6 rounded-lg max-w-2xl w-full">
             <h2 className="text-xl font-bold text-white mb-4">
               {editingUser ? 'Edit Admin User' : 'Add New Admin User'}
             </h2>
 
-            <div className="space-y-4">
+            <div className="space-y-4 max-h-[70vh] overflow-y-auto">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">First Name *</label>
+                  <input
+                    type="text"
+                    value={formData.firstName}
+                    onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                    placeholder="Enter first name"
+                    className="w-full px-4 py-2 rounded bg-slate-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Last Name *</label>
+                  <input
+                    type="text"
+                    value={formData.lastName}
+                    onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                    placeholder="Enter last name"
+                    className="w-full px-4 py-2 rounded bg-slate-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                  />
+                </div>
+              </div>
+
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Username</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Username *</label>
                 <input
                   type="text"
                   value={formData.username}
@@ -337,7 +403,7 @@ const UserManagement: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Email</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Email *</label>
                 <input
                   type="email"
                   value={formData.email}
@@ -347,9 +413,21 @@ const UserManagement: React.FC = () => {
                 />
               </div>
 
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Phone</label>
+                <input
+                  type="tel"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  placeholder="555-123-4567"
+                  className="w-full px-4 py-2 rounded bg-slate-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                />
+                <p className="text-xs text-gray-400 mt-1">Format: XXX-XXX-XXXX</p>
+              </div>
+
               {!editingUser && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Password</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Password *</label>
                   <input
                     type="password"
                     value={formData.password}
@@ -374,16 +452,36 @@ const UserManagement: React.FC = () => {
               )}
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Role</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Role *</label>
                 <select
                   value={formData.role}
-                  onChange={(e) => setFormData({ ...formData, role: e.target.value as 'super_admin' | 'admin' | 'manager' })}
+                  onChange={(e) => setFormData({ ...formData, role: e.target.value })}
                   className="w-full px-4 py-2 rounded bg-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
                 >
-                  <option value="manager">Manager</option>
-                  <option value="admin">Admin</option>
-                  <option value="super_admin">Super Admin</option>
+                  {roleOptions.map(r => (
+                    <option key={r.key} value={r.key}>{r.label}</option>
+                  ))}
                 </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Role Permissions (read-only)</label>
+                <div className="p-4 bg-slate-700/50 rounded">
+                  {(() => {
+                    const currentRole = roleOptions.find(r => r.key === formData.role);
+                    const perms = currentRole ? (currentRole.permissions.includes('*') ? permissionsList : currentRole.permissions) : [];
+                    return perms.length === 0 ? (
+                      <p className="text-gray-400 text-sm">No permissions assigned to this role.</p>
+                    ) : (
+                      <div className="flex flex-wrap gap-2">
+                        {perms.map(p => (
+                          <span key={p} className="px-2 py-1 bg-slate-600 text-white rounded text-xs capitalize">{p}</span>
+                        ))}
+                      </div>
+                    );
+                  })()}
+                </div>
+                <p className="text-xs text-gray-400 mt-2">Permissions are set by role. Edit roles in Admin → Security.</p>
               </div>
             </div>
 

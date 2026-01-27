@@ -30,6 +30,7 @@ import CustomPage from "./pages/CustomPage";
 import CustomerAccountPage from "./pages/CustomerAccountPage";
 import CustomerAddressesPage from "./pages/CustomerAddressesPage";
 import CustomerOrdersPage from "./pages/CustomerOrdersPage";
+import SupportTicketsPage from "./pages/SupportTicketsPage";
 import AdminLoginModal from "./components/admin/AdminLoginModal";
 import SiteEffectHandler from "./components/SiteEffectHandler";
 import TestHeroRenderingPage from "./pages/TestHeroRenderingPage";
@@ -159,6 +160,10 @@ const App: React.FC = () => {
                                     <Route
                                       path="/account/orders"
                                       element={<CustomerOrdersPage />}
+                                    />
+                                    <Route
+                                      path="/support"
+                                      element={<SupportTicketsPage />}
                                     />
                                     <Route
                                       path="/admin/pages/preview"

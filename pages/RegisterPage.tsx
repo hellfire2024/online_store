@@ -4,8 +4,10 @@ import { useNavigate, Link } from "react-router-dom";
 import { useToast } from "../hooks/useToast";
 
 const RegisterPage: React.FC = () => {
-  const [name, setName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [agreeToTerms, setAgreeToTerms] = useState(false);
@@ -17,6 +19,11 @@ const RegisterPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!firstName.trim() || !lastName.trim()) {
+      addToast("First and last name are required", "error");
+      return;
+    }
 
     if (!agreeToTerms) {
       addToast("You must agree to the terms and conditions", "error");
@@ -33,8 +40,14 @@ const RegisterPage: React.FC = () => {
       return;
     }
 
+    const phonePattern = /^(\d{3}-\d{3}-\d{4})?$/;
+    if (phone && !phonePattern.test(phone)) {
+      addToast("Phone must be in format: 555-123-4567", "error");
+      return;
+    }
+
     setIsLoading(true);
-    const result = await register(name, email, password);
+    const result = await register(`${firstName} ${lastName}`, email, password);
 
     if (result.success) {
       addToast("Account created successfully! Welcome!", "success");
@@ -49,27 +62,46 @@ const RegisterPage: React.FC = () => {
     "mt-1 block w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md shadow-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500";
 
   return (
-    <div className="max-w-md mx-auto mt-10 bg-slate-800 p-8 rounded-lg shadow-2xl border border-slate-700">
+    <div className="max-w-2xl mx-auto mt-10 bg-slate-800 p-8 rounded-lg shadow-2xl border border-slate-700">
       <h1 className="text-3xl font-bold text-white text-center mb-6">
         Create Account
       </h1>
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div>
-          <label
-            htmlFor="name"
-            className="block text-sm font-medium text-gray-300"
-          >
-            Full Name
-          </label>
-          <input
-            type="text"
-            id="name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-            className={inputClasses}
-            placeholder="John Doe"
-          />
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label
+              htmlFor="firstName"
+              className="block text-sm font-medium text-gray-300"
+            >
+              First Name *
+            </label>
+            <input
+              type="text"
+              id="firstName"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              required
+              className={inputClasses}
+              placeholder="John"
+            />
+          </div>
+          <div>
+            <label
+              htmlFor="lastName"
+              className="block text-sm font-medium text-gray-300"
+            >
+              Last Name *
+            </label>
+            <input
+              type="text"
+              id="lastName"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              required
+              className={inputClasses}
+              placeholder="Doe"
+            />
+          </div>
         </div>
 
         <div>
@@ -77,7 +109,7 @@ const RegisterPage: React.FC = () => {
             htmlFor="email"
             className="block text-sm font-medium text-gray-300"
           >
-            Email Address
+            Email Address *
           </label>
           <input
             type="email"
@@ -92,10 +124,28 @@ const RegisterPage: React.FC = () => {
 
         <div>
           <label
+            htmlFor="phone"
+            className="block text-sm font-medium text-gray-300"
+          >
+            Phone (Optional)
+          </label>
+          <input
+            type="tel"
+            id="phone"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            className={inputClasses}
+            placeholder="555-123-4567"
+          />
+          <p className="mt-1 text-xs text-gray-400">Format: XXX-XXX-XXXX</p>
+        </div>
+
+        <div>
+          <label
             htmlFor="password"
             className="block text-sm font-medium text-gray-300"
           >
-            Password
+            Password *
           </label>
           <input
             type="password"
@@ -114,7 +164,7 @@ const RegisterPage: React.FC = () => {
             htmlFor="confirmPassword"
             className="block text-sm font-medium text-gray-300"
           >
-            Confirm Password
+            Confirm Password *
           </label>
           <input
             type="password"

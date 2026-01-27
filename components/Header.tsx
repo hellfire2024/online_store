@@ -80,6 +80,11 @@ const Header: React.FC = () => {
                 {item.text}
               </NavLink>
             ))}
+            {customer && (
+              <NavLink to="/support" className={navLinkClass}>
+                Support
+              </NavLink>
+            )}
           </nav>
           <div className="flex items-center space-x-5">
             {customer ? (
@@ -90,7 +95,7 @@ const Header: React.FC = () => {
                 >
                   <UserIcon />
                 </Link>
-                <div className="absolute right-0 mt-2 w-48 bg-slate-800 border border-slate-700 rounded-md shadow-lg py-1 z-50 hidden group-hover:block">
+                <div className="absolute -left-40 md:left-auto md:right-0 mt-2 w-48 bg-slate-800 border border-slate-700 rounded-md shadow-lg py-1 z-50 hidden group-hover:block">
                   <div className="px-4 py-2 text-sm text-gray-200 border-b border-slate-700">
                     {customer?.name}
                   </div>
