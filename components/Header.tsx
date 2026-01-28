@@ -41,10 +41,26 @@ const UserIcon: React.FC = () => (
 );
 
 const Header: React.FC = () => {
+  const [isProfileOpen, setIsProfileOpen] = React.useState(false);
   const { itemCount } = useCart();
   const { customer, logout } = useCustomerAuth();
   const { siteSettings, isLoading: settingsLoading } = useSiteSettings();
   const { menus, isLoading: pagesLoading } = usePages();
+  const profileRef = React.useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
+        setIsProfileOpen(false);
+      }
+    };
+
+    if (isProfileOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [isProfileOpen]);
 
   // THIS IS THE CORRECT AND FINAL FIX.
   // We will not attempt to render anything until all data is loaded and verified.
@@ -88,25 +104,29 @@ const Header: React.FC = () => {
           </nav>
           <div className="flex items-center space-x-5">
             {customer ? (
-              <div className="relative group">
-                <Link
-                  to="/account"
-                  className="flex items-center cursor-pointer text-gray-300 hover:text-white"
+              <div ref={profileRef} className="relative">
+                <button
+                  onClick={() => setIsProfileOpen(!isProfileOpen)}
+                  className="flex items-center cursor-pointer text-gray-300 hover:text-white transition-colors"
                 >
                   <UserIcon />
-                </Link>
-                <div className="absolute -left-40 md:left-auto md:right-0 mt-2 w-48 bg-slate-800 border border-slate-700 rounded-md shadow-lg py-1 z-50 hidden group-hover:block">
+                </button>
+                <div className={`absolute -left-40 md:left-auto md:right-0 mt-2 w-48 bg-slate-800 border border-slate-700 rounded-md shadow-lg py-1 z-50 ${isProfileOpen ? 'block' : 'hidden'}`}>
                   <div className="px-4 py-2 text-sm text-gray-200 border-b border-slate-700">
                     {customer?.name}
                   </div>
                   <Link
                     to="/account"
+                    onClick={() => setIsProfileOpen(false)}
                     className="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-slate-700 hover:text-white"
                   >
                     My Account
                   </Link>
                   <button
-                    onClick={logout}
+                    onClick={() => {
+                      setIsProfileOpen(false);
+                      logout();
+                    }}
                     className="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-slate-700 hover:text-white"
                   >
                     Logout
