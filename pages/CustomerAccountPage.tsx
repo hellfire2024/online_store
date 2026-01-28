@@ -196,18 +196,27 @@ const CustomerAccountPage: React.FC = () => {
         <h2 className="text-2xl font-bold text-white mb-6">Quick Actions</h2>
 
         <div className="space-y-3">
-          <button className="w-full px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-md text-left">
+          <button 
+            onClick={() => navigate("/account/addresses")}
+            className="w-full px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-md text-left transition-colors"
+          >
             → Manage Addresses
           </button>
-          <button className="w-full px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-md text-left">
+          <button 
+            onClick={() => navigate("/account/orders")}
+            className="w-full px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-md text-left transition-colors"
+          >
             → View Orders
           </button>
-          <button className="w-full px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-md text-left">
+          <button 
+            onClick={() => navigate("/account/change-password")}
+            className="w-full px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-md text-left transition-colors"
+          >
             → Change Password
           </button>
           <button
             onClick={handleLogout}
-            className="w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md text-left"
+            className="w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md text-left transition-colors"
           >
             → Logout
           </button>
