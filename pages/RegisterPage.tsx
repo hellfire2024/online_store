@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useCustomerAuth } from "../context/CustomerAuthContext";
 import { useNavigate, Link } from "react-router-dom";
 import { useToast } from "../hooks/useToast";
+import { validatePassword, getPasswordStrengthColor, getPasswordStrengthBgColor } from "../services/passwordValidator";
 
 const RegisterPage: React.FC = () => {
   const [firstName, setFirstName] = useState("");
@@ -35,8 +36,10 @@ const RegisterPage: React.FC = () => {
       return;
     }
 
-    if (password.length < 8) {
-      addToast("Password must be at least 8 characters", "error");
+    // Validate password with strict rules
+    const validation = validatePassword(password, undefined, [firstName, lastName, email]);
+    if (!validation.isValid) {
+      validation.errors.forEach(error => addToast(error, "error"));
       return;
     }
 
@@ -156,8 +159,35 @@ const RegisterPage: React.FC = () => {
             className={inputClasses}
             placeholder="••••••••"
           />
-          <p className="mt-1 text-xs text-gray-400">At least 8 characters</p>
-        </div>
+          {password && (
+            <div className="mt-3 space-y-2">
+              <div className={`p-3 rounded-md ${getPasswordStrengthBgColor(validatePassword(password, undefined, [firstName, lastName, email]).strength)}`}>
+                <p className={`text-sm font-medium ${getPasswordStrengthColor(validatePassword(password, undefined, [firstName, lastName, email]).strength)}`}>
+                  Password Strength: {validatePassword(password, undefined, [firstName, lastName, email]).strength.charAt(0).toUpperCase() + validatePassword(password, undefined, [firstName, lastName, email]).strength.slice(1)}
+                </p>
+              </div>
+              <div className="p-3 bg-slate-700 rounded-md border border-slate-600">
+                <p className="text-xs font-semibold text-gray-300 mb-2">Requirements:</p>
+                <ul className="text-xs text-gray-400 space-y-1">
+                  <li className={password.length >= 8 ? "text-green-400" : "text-gray-400"}>
+                    {password.length >= 8 ? "✓" : "✗"} At least 8 characters
+                  </li>
+                  <li className={/[A-Z]/.test(password) ? "text-green-400" : "text-gray-400"}>
+                    {/[A-Z]/.test(password) ? "✓" : "✗"} One uppercase letter
+                  </li>
+                  <li className={/[a-z]/.test(password) ? "text-green-400" : "text-gray-400"}>
+                    {/[a-z]/.test(password) ? "✓" : "✗"} One lowercase letter
+                  </li>
+                  <li className={/\d/.test(password) ? "text-green-400" : "text-gray-400"}>
+                    {/\d/.test(password) ? "✓" : "✗"} One number
+                  </li>
+                  <li className={/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password) ? "text-green-400" : "text-gray-400"}>
+                    {/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password) ? "✓" : "✗"} One special character (!@#$% etc)
+                  </li>
+                </ul>
+              </div>
+            </div>
+          )}
 
         <div>
           <label

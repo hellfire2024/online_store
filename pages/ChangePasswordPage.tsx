@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCustomerAuth } from "../context/CustomerAuthContext";
 import { useToast } from "../hooks/useToast";
+import { validatePassword, getPasswordStrengthColor, getPasswordStrengthBgColor } from "../services/passwordValidator";
 
 const ChangePasswordPage: React.FC = () => {
   const navigate = useNavigate();
@@ -39,10 +40,6 @@ const ChangePasswordPage: React.FC = () => {
       addToast("New password is required", "error");
       return false;
     }
-    if (newPassword.length < 8) {
-      addToast("New password must be at least 8 characters long", "error");
-      return false;
-    }
     if (newPassword !== confirmPassword) {
       addToast("New passwords do not match", "error");
       return false;
@@ -51,6 +48,14 @@ const ChangePasswordPage: React.FC = () => {
       addToast("New password must be different from current password", "error");
       return false;
     }
+
+    // Validate password with strict rules
+    const validation = validatePassword(newPassword);
+    if (!validation.isValid) {
+      validation.errors.forEach(error => addToast(error, "error"));
+      return false;
+    }
+
     return true;
   };
 
@@ -159,9 +164,33 @@ const ChangePasswordPage: React.FC = () => {
               </button>
             </div>
             {newPassword && (
-              <p className={`text-sm mt-1 ${newPassword.length >= 8 ? "text-green-400" : "text-yellow-400"}`}>
-                {newPassword.length >= 8 ? "✓ Password strength: Good" : `${8 - newPassword.length} more characters needed`}
-              </p>
+              <div className="mt-3 space-y-2">
+                <div className={`p-3 rounded-md ${getPasswordStrengthBgColor(validatePassword(newPassword).strength)}`}>
+                  <p className={`text-sm font-medium ${getPasswordStrengthColor(validatePassword(newPassword).strength)}`}>
+                    Password Strength: {validatePassword(newPassword).strength.charAt(0).toUpperCase() + validatePassword(newPassword).strength.slice(1)}
+                  </p>
+                </div>
+                <div className="p-3 bg-slate-700 rounded-md border border-slate-600">
+                  <p className="text-xs font-semibold text-gray-300 mb-2">Requirements:</p>
+                  <ul className="text-xs text-gray-400 space-y-1">
+                    <li className={newPassword.length >= 8 ? "text-green-400" : "text-gray-400"}>
+                      {newPassword.length >= 8 ? "✓" : "✗"} At least 8 characters
+                    </li>
+                    <li className={/[A-Z]/.test(newPassword) ? "text-green-400" : "text-gray-400"}>
+                      {/[A-Z]/.test(newPassword) ? "✓" : "✗"} One uppercase letter
+                    </li>
+                    <li className={/[a-z]/.test(newPassword) ? "text-green-400" : "text-gray-400"}>
+                      {/[a-z]/.test(newPassword) ? "✓" : "✗"} One lowercase letter
+                    </li>
+                    <li className={/\d/.test(newPassword) ? "text-green-400" : "text-gray-400"}>
+                      {/\d/.test(newPassword) ? "✓" : "✗"} One number
+                    </li>
+                    <li className={/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(newPassword) ? "text-green-400" : "text-gray-400"}>
+                      {/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(newPassword) ? "✓" : "✗"} One special character (!@#$% etc)
+                    </li>
+                  </ul>
+                </div>
+              </div>
             )}
           </div>
 
