@@ -184,4 +184,75 @@ router.post(
   }
 );
 
+// Customer change password
+router.post(
+  '/customer/change-password',
+  [
+    body('currentPassword').notEmpty(),
+    body('newPassword').isLength({ min: 8 }),
+  ],
+  async (req: Request, res: Response) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    try {
+      // Get customer ID from JWT token
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ error: 'No authorization token' });
+      }
+
+      const token = authHeader.substring(7);
+      const secret: Secret = process.env.JWT_SECRET || 'dev-secret';
+      
+      let customerId: string;
+      try {
+        const decoded = jwt.verify(token, secret) as any;
+        if (decoded.type !== 'customer') {
+          return res.status(403).json({ error: 'Invalid token type' });
+        }
+        customerId = decoded.id;
+      } catch (err) {
+        return res.status(401).json({ error: 'Invalid or expired token' });
+      }
+
+      const { currentPassword, newPassword } = req.body;
+
+      // Fetch the customer
+      const [rows] = await pool.query<RowDataPacket[]>(
+        'SELECT * FROM customers WHERE id = ? AND is_active = TRUE',
+        [customerId]
+      );
+
+      if (rows.length === 0) {
+        return res.status(404).json({ error: 'Customer not found' });
+      }
+
+      const customer = rows[0];
+
+      // Verify current password
+      const validPassword = await bcrypt.compare(currentPassword, customer.password_hash);
+      if (!validPassword) {
+        return res.status(401).json({ error: 'Current password is incorrect' });
+      }
+
+      // Hash new password
+      const newPasswordHash = await bcrypt.hash(newPassword, parseInt(process.env.BCRYPT_ROUNDS || '10'));
+
+      // Update password
+      await pool.query(
+        'UPDATE customers SET password_hash = ?, updated_at = NOW() WHERE id = ?',
+        [newPasswordHash, customerId]
+      );
+
+      return res.json({ success: true, message: 'Password changed successfully' });
+    } catch (error) {
+      console.error('Change password error:', error);
+      return res.status(500).json({ error: 'Failed to change password' });
+    }
+  }
+);
+
 export default router;
