@@ -10,6 +10,9 @@ import {
   FileTextIcon as PagesIcon,
   SettingsIcon,
   LogoutIcon,
+  ShoppingBagIcon,
+  LockIcon,
+  BarChartIcon,
 } from "../Icons";
 import { useAdmin } from "../../context/AdminContext";
 import { useNavigate } from "react-router-dom";
@@ -149,7 +152,7 @@ const AdminSidebar: React.FC = () => {
               )}
               {can('reports') && (
                 <PromptedNavLink to="/admin/customers/analytics" className={getNavLinkClass}>
-                  <StaffIcon className="w-6 h-6 mr-3" />
+                  <BarChartIcon className="w-6 h-6 mr-3" />
                   Customer Analytics
                 </PromptedNavLink>
               )}
@@ -161,7 +164,7 @@ const AdminSidebar: React.FC = () => {
               )}
               {can('orders') && (
                 <PromptedNavLink to="/admin/orders" className={getNavLinkClass}>
-                  <StaffIcon className="w-6 h-6 mr-3" />
+                  <ShoppingBagIcon className="w-6 h-6 mr-3" />
                   Orders
                 </PromptedNavLink>
               )}
@@ -179,7 +182,7 @@ const AdminSidebar: React.FC = () => {
         )}
         {can('security') && (
           <PromptedNavLink to="/admin/security" className={getNavLinkClass}>
-            <SettingsIcon className="w-6 h-6 mr-3 shrink-0" />
+            <LockIcon className="w-6 h-6 mr-3 shrink-0" />
             <span className="truncate">Security</span>
           </PromptedNavLink>
         )}

@@ -26,7 +26,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 
 
-type SettingsTab = "general" | "contact" | "footer" | "menus" | "payment" | "shipping" | "tax";
+type SettingsTab = "general" | "contact" | "footer" | "menus" | "payment" | "shipping" | "tax" | "orders";
 
 // --- Draggable Item Component ---
 const DraggableItem: React.FC<{ item: FooterItem, isOverlay?: boolean }> = ({ item, isOverlay }) => {
@@ -398,6 +398,7 @@ const SettingsManagement: React.FC = () => {
         <TabButton tab="payment" label="Payment" />
         <TabButton tab="shipping" label="Shipping" />
         <TabButton tab="tax" label="Tax Rules" />
+        <TabButton tab="orders" label="Orders" />
       </div>
 
       <div className="bg-slate-800 p-6 rounded-b-lg border border-t-0 border-slate-700 min-h-160">
@@ -913,7 +914,271 @@ const SettingsManagement: React.FC = () => {
                 </label>
 
                 <div>
-                  <label className="block text-white mb-2">Default Tax Rate (%)</label>
+                  <label className="block text-white mb-2">Tax Provider</label>
+                  <select
+                    value={settings.taxConfig?.provider || 'stripe'}
+                    onChange={(e) =>
+                      setSettings({
+                        ...settings,
+                        taxConfig: {
+                          ...settings.taxConfig!,
+                          provider: e.target.value as any,
+                        },
+                      })
+                    }
+                    className={inputClasses}
+                  >
+                    <option value="stripe">Stripe Tax (Recommended)</option>
+                    <option value="taxjar">TaxJar</option>
+                    <option value="avalara">Avalara AvaTax</option>
+                    <option value="taxcloud">TaxCloud</option>
+                    <option value="zamp">Zamp</option>
+                    <option value="anrok">Anrok</option>
+                    <option value="manual">Manual Rules</option>
+                  </select>
+                  <p className="text-sm text-gray-400 mt-1">
+                    Select your preferred tax calculation service
+                  </p>
+                </div>
+
+                {/* Stripe Tax Configuration */}
+                {settings.taxConfig?.provider === 'stripe' && (
+                  <div>
+                    <label className="block text-white mb-2">Stripe API Key</label>
+                    <input
+                      type="password"
+                      value={settings.taxConfig?.credentials?.stripeApiKey || ''}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          taxConfig: {
+                            ...settings.taxConfig!,
+                            credentials: {
+                              ...settings.taxConfig?.credentials,
+                              stripeApiKey: e.target.value,
+                            },
+                          },
+                        })
+                      }
+                      className={inputClasses}
+                      placeholder="sk_live_..."
+                    />
+                    <p className="text-sm text-gray-400 mt-1">
+                      Get your API key from <a href="https://dashboard.stripe.com/apikeys" target="_blank" rel="noopener noreferrer" className="text-sky-400 hover:underline">Stripe Dashboard</a>
+                    </p>
+                  </div>
+                )}
+
+                {/* TaxJar Configuration */}
+                {settings.taxConfig?.provider === 'taxjar' && (
+                  <div>
+                    <label className="block text-white mb-2">TaxJar API Key</label>
+                    <input
+                      type="password"
+                      value={settings.taxConfig?.credentials?.taxjarApiKey || ''}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          taxConfig: {
+                            ...settings.taxConfig!,
+                            credentials: {
+                              ...settings.taxConfig?.credentials,
+                              taxjarApiKey: e.target.value,
+                            },
+                          },
+                        })
+                      }
+                      className={inputClasses}
+                      placeholder="token_..."
+                    />
+                    <p className="text-sm text-gray-400 mt-1">
+                      Get your API key from <a href="https://app.taxjar.com/api_sign_up/basic" target="_blank" rel="noopener noreferrer" className="text-sky-400 hover:underline">TaxJar Dashboard</a>
+                    </p>
+                  </div>
+                )}
+
+                {/* Avalara Configuration */}
+                {settings.taxConfig?.provider === 'avalara' && (
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-white mb-2">Account ID</label>
+                      <input
+                        type="text"
+                        value={settings.taxConfig?.credentials?.avalaraAccountId || ''}
+                        onChange={(e) =>
+                          setSettings({
+                            ...settings,
+                            taxConfig: {
+                              ...settings.taxConfig!,
+                              credentials: {
+                                ...settings.taxConfig?.credentials,
+                                avalaraAccountId: e.target.value,
+                              },
+                            },
+                          })
+                        }
+                        className={inputClasses}
+                        placeholder="Your Account ID"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-white mb-2">License Key</label>
+                      <input
+                        type="password"
+                        value={settings.taxConfig?.credentials?.avalaraLicenseKey || ''}
+                        onChange={(e) =>
+                          setSettings({
+                            ...settings,
+                            taxConfig: {
+                              ...settings.taxConfig!,
+                              credentials: {
+                                ...settings.taxConfig?.credentials,
+                                avalaraLicenseKey: e.target.value,
+                              },
+                            },
+                          })
+                        }
+                        className={inputClasses}
+                        placeholder="Your License Key"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-white mb-2">Environment</label>
+                      <select
+                        value={settings.taxConfig?.credentials?.avalaraEnvironment || 'sandbox'}
+                        onChange={(e) =>
+                          setSettings({
+                            ...settings,
+                            taxConfig: {
+                              ...settings.taxConfig!,
+                              credentials: {
+                                ...settings.taxConfig?.credentials,
+                                avalaraEnvironment: e.target.value as 'sandbox' | 'production',
+                              },
+                            },
+                          })
+                        }
+                        className={inputClasses}
+                      >
+                        <option value="sandbox">Sandbox (Testing)</option>
+                        <option value="production">Production</option>
+                      </select>
+                    </div>
+                    <p className="text-sm text-gray-400 mt-1">
+                      Get credentials from <a href="https://developer.avalara.com/" target="_blank" rel="noopener noreferrer" className="text-sky-400 hover:underline">Avalara Dashboard</a>
+                    </p>
+                  </div>
+                )}
+
+                {/* TaxCloud Configuration */}
+                {settings.taxConfig?.provider === 'taxcloud' && (
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-white mb-2">API Key</label>
+                      <input
+                        type="password"
+                        value={settings.taxConfig?.credentials?.taxcloudApiKey || ''}
+                        onChange={(e) =>
+                          setSettings({
+                            ...settings,
+                            taxConfig: {
+                              ...settings.taxConfig!,
+                              credentials: {
+                                ...settings.taxConfig?.credentials,
+                                taxcloudApiKey: e.target.value,
+                              },
+                            },
+                          })
+                        }
+                        className={inputClasses}
+                        placeholder="Your API Key"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-white mb-2">User ID</label>
+                      <input
+                        type="text"
+                        value={settings.taxConfig?.credentials?.taxcloudUserId || ''}
+                        onChange={(e) =>
+                          setSettings({
+                            ...settings,
+                            taxConfig: {
+                              ...settings.taxConfig!,
+                              credentials: {
+                                ...settings.taxConfig?.credentials,
+                                taxcloudUserId: e.target.value,
+                              },
+                            },
+                          })
+                        }
+                        className={inputClasses}
+                        placeholder="Your User ID"
+                      />
+                    </div>
+                    <p className="text-sm text-gray-400 mt-1">
+                      Get credentials from <a href="https://taxcloud.net/account" target="_blank" rel="noopener noreferrer" className="text-sky-400 hover:underline">TaxCloud Account</a>
+                    </p>
+                  </div>
+                )}
+
+                {/* Zamp Configuration */}
+                {settings.taxConfig?.provider === 'zamp' && (
+                  <div>
+                    <label className="block text-white mb-2">Zamp API Key</label>
+                    <input
+                      type="password"
+                      value={settings.taxConfig?.credentials?.zampApiKey || ''}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          taxConfig: {
+                            ...settings.taxConfig!,
+                            credentials: {
+                              ...settings.taxConfig?.credentials,
+                              zampApiKey: e.target.value,
+                            },
+                          },
+                        })
+                      }
+                      className={inputClasses}
+                      placeholder="Your API Key"
+                    />
+                    <p className="text-sm text-gray-400 mt-1">
+                      Get your API key from <a href="https://www.zamp.com/" target="_blank" rel="noopener noreferrer" className="text-sky-400 hover:underline">Zamp Dashboard</a>
+                    </p>
+                  </div>
+                )}
+
+                {/* Anrok Configuration */}
+                {settings.taxConfig?.provider === 'anrok' && (
+                  <div>
+                    <label className="block text-white mb-2">Anrok API Key</label>
+                    <input
+                      type="password"
+                      value={settings.taxConfig?.credentials?.anrokApiKey || ''}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          taxConfig: {
+                            ...settings.taxConfig!,
+                            credentials: {
+                              ...settings.taxConfig?.credentials,
+                              anrokApiKey: e.target.value,
+                            },
+                          },
+                        })
+                      }
+                      className={inputClasses}
+                      placeholder="Your API Key"
+                    />
+                    <p className="text-sm text-gray-400 mt-1">
+                      Get your API key from <a href="https://www.anrok.com/" target="_blank" rel="noopener noreferrer" className="text-sky-400 hover:underline">Anrok Dashboard</a>
+                    </p>
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-white mb-2">Default Tax Rate (%) - Fallback</label>
                   <input
                     type="number"
                     min="0"
@@ -924,7 +1189,7 @@ const SettingsManagement: React.FC = () => {
                     className={inputClasses}
                   />
                   <p className="text-sm text-gray-400 mt-1">
-                    Used when no state-specific rule matches
+                    Used when API is unavailable or no rule matches
                   </p>
                 </div>
 
@@ -933,9 +1198,11 @@ const SettingsManagement: React.FC = () => {
                     const updatedSettings = {
                       ...settings,
                       taxConfig: {
+                        provider: settings.taxConfig?.provider || 'stripe',
                         enableTaxCollection: enableTax,
                         defaultTaxRate,
                         taxIncludedInPrice: settings.taxConfig?.taxIncludedInPrice ?? false,
+                        credentials: settings.taxConfig?.credentials,
                         rules: taxRules,
                       },
                     };
@@ -951,10 +1218,14 @@ const SettingsManagement: React.FC = () => {
             </div>
 
             {/* Add/Edit Rule Form */}
-            <div className="bg-slate-700 p-6 rounded-lg border border-slate-600">
-              <h3 className="text-xl font-semibold text-white mb-4">
-                {editingTaxId ? 'Edit Tax Rule' : 'Add New Tax Rule'}
-              </h3>
+            {settings.taxConfig?.provider === 'manual' && (
+              <div className="bg-slate-700 p-6 rounded-lg border border-slate-600">
+                <h3 className="text-xl font-semibold text-white mb-4">
+                  {editingTaxId ? 'Edit Tax Rule' : 'Add New Tax Rule'}
+                </h3>
+                <p className="text-sm text-gray-400 mb-4">
+                  Manual rules only apply when using Manual tax provider. Stripe Tax handles this automatically.
+                </p>
 
               <div className="space-y-4">
                 <div>
@@ -1099,10 +1370,12 @@ const SettingsManagement: React.FC = () => {
                 </div>
               </div>
             </div>
+            )}
 
             {/* Tax Rules List */}
+            {settings.taxConfig?.provider === 'manual' && (
             <div className="bg-slate-700 p-6 rounded-lg border border-slate-600">
-              <h3 className="text-xl font-semibold text-white mb-4">Tax Rules</h3>
+              <h3 className="text-xl font-semibold text-white mb-4">Manual Tax Rules</h3>
               
               {taxRules.length === 0 ? (
                 <p className="text-gray-400">No tax rules configured yet.</p>
@@ -1152,9 +1425,11 @@ const SettingsManagement: React.FC = () => {
                   const updatedSettings = {
                     ...settings,
                     taxConfig: {
+                      provider: settings.taxConfig?.provider || 'stripe',
                       enableTaxCollection: enableTax,
                       defaultTaxRate,
                       taxIncludedInPrice: settings.taxConfig?.taxIncludedInPrice ?? false,
+                      credentials: settings.taxConfig?.credentials,
                       rules: taxRules,
                     },
                   };
@@ -1166,6 +1441,83 @@ const SettingsManagement: React.FC = () => {
               >
                 Save All Tax Rules
               </button>
+            </div>
+            )}
+
+          </div>
+        )}
+
+        {activeTab === "orders" && (
+          <div className="space-y-6">
+            <h2 className="text-2xl font-semibold text-white mb-4">Order Configuration</h2>
+            
+            <div className="bg-slate-700 p-6 rounded-lg border border-slate-600">
+              <h3 className="text-xl font-semibold text-white mb-4">Order Number Format</h3>
+              
+              <div className="space-y-4">
+                <div>
+                  <label htmlFor="orderPrefix" className="block text-gray-300 text-sm font-bold mb-1">
+                    Order Prefix
+                  </label>
+                  <input
+                    type="text"
+                    id="orderPrefix"
+                    maxLength={10}
+                    value={settings.orderPrefix || "AGIS"}
+                    onChange={(e) =>
+                      setSettings((prev) => ({
+                        ...prev!,
+                        orderPrefix: e.target.value.toUpperCase(),
+                      }))
+                    }
+                    className={inputClasses}
+                    placeholder="e.g., AGIS, ORD, INV"
+                  />
+                  <p className="text-sm text-gray-400 mt-1">
+                    Maximum 10 characters. Used at the beginning of order numbers.
+                  </p>
+                </div>
+
+                <div>
+                  <label htmlFor="orderNumberLength" className="block text-gray-300 text-sm font-bold mb-1">
+                    Order Number Length
+                  </label>
+                  <input
+                    type="number"
+                    id="orderNumberLength"
+                    min={1}
+                    max={15}
+                    value={settings.orderNumberLength || 10}
+                    onChange={(e) =>
+                      setSettings((prev) => ({
+                        ...prev!,
+                        orderNumberLength: parseInt(e.target.value, 10),
+                      }))
+                    }
+                    className={inputClasses}
+                  />
+                  <p className="text-sm text-gray-400 mt-1">
+                    Number of digits used in order numbers (1-15). Currently: {(settings.orderPrefix || "AGIS")}-{String(12345).padStart(settings.orderNumberLength || 10, "0")}
+                  </p>
+                </div>
+
+                <div className="bg-slate-600 p-4 rounded-md border border-slate-500">
+                  <p className="text-white font-semibold mb-2">Preview:</p>
+                  <p className="text-gray-300">
+                    {(settings.orderPrefix || "AGIS")}-{String(Math.floor(Math.random() * Math.pow(10, settings.orderNumberLength || 10))).padStart(settings.orderNumberLength || 10, "0")}
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => {
+                    updateSiteSettings(settings);
+                    addToast('Order settings saved', 'success');
+                  }}
+                  className={`mt-4 ${buttonClasses}`}
+                >
+                  Save Order Settings
+                </button>
+              </div>
             </div>
           </div>
         )}

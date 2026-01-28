@@ -12,32 +12,108 @@ const CheckoutPage: React.FC = () => {
   const { addToast } = useToast();
   const navigate = useNavigate();
   const [shippingState, setShippingState] = useState('');
+  const [shippingZip, setShippingZip] = useState('');
+  const [isCalculatingTax, setIsCalculatingTax] = useState(false);
+  const [taxCalculation, setTaxCalculation] = useState({
+    subtotal: 0,
+    taxableAmount: 0,
+    taxRate: 0,
+    taxAmount: 0,
+    total: 0,
+  });
 
   if (itemCount === 0) {
     navigate('/cart');
     return null;
   }
 
-  // Calculate tax based on selected state
-  const taxCalculation = useMemo(() => {
-    if (!siteSettings || !siteSettings.taxConfig) {
-      const shippingCost = 5;
-      return {
-        subtotal: 0,
-        taxableAmount: 0,
-        taxRate: 0,
-        taxAmount: 0,
-        total: shippingCost,
-      };
-    }
-    const shippingCost = siteSettings.shippingFlatRate || 5;
-    return calculateTax(
-      cartItems,
-      shippingCost,
-      shippingState,
-      siteSettings.taxConfig,
-    );
-  }, [cartItems, shippingState, siteSettings]);
+  // Calculate tax when state/zip changes
+  useMemo(() => {
+    const calculateTaxAsync = async () => {
+      if (!siteSettings || !siteSettings.taxConfig || !shippingState) {
+        setTaxCalculation({
+          subtotal: 0,
+          taxableAmount: 0,
+          taxRate: 0,
+          taxAmount: 0,
+          total: siteSettings?.shippingFlatRate || 5,
+        });
+        return;
+      }
+
+      const shippingCost = siteSettings.shippingFlatRate || 5;
+      const provider = siteSettings.taxConfig.provider;
+      const credentials = siteSettings.taxConfig.credentials;
+
+      // Use API for supported providers (requires credentials)
+      if (
+        provider !== 'manual' &&
+        (provider === 'stripe' && credentials?.stripeApiKey) ||
+        (provider === 'taxjar' && credentials?.taxjarApiKey) ||
+        (provider === 'avalara' && credentials?.avalaraAccountId && credentials?.avalaraLicenseKey) ||
+        (provider === 'taxcloud' && credentials?.taxcloudApiKey && credentials?.taxcloudUserId) ||
+        (provider === 'zamp' && credentials?.zampApiKey) ||
+        (provider === 'anrok' && credentials?.anrokApiKey)
+      ) {
+        setIsCalculatingTax(true);
+        try {
+          const response = await fetch(`/api/tax/providers/${provider}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              cartItems,
+              shippingCost,
+              shippingState,
+              shippingZip,
+              ...(provider === 'stripe' && { stripeApiKey: credentials?.stripeApiKey }),
+              ...(provider === 'taxjar' && { apiKey: credentials?.taxjarApiKey }),
+              ...(provider === 'avalara' && {
+                accountId: credentials?.avalaraAccountId,
+                licenseKey: credentials?.avalaraLicenseKey,
+                environment: credentials?.avalaraEnvironment || 'sandbox',
+              }),
+              ...(provider === 'taxcloud' && {
+                apiKey: credentials?.taxcloudApiKey,
+                userId: credentials?.taxcloudUserId,
+              }),
+              ...(provider === 'zamp' && { apiKey: credentials?.zampApiKey }),
+              ...(provider === 'anrok' && { apiKey: credentials?.anrokApiKey }),
+            }),
+          });
+
+          if (!response.ok) {
+            throw new Error(`Tax API error: ${response.statusText}`);
+          }
+
+          const result = await response.json();
+          setTaxCalculation(result);
+        } catch (error) {
+          console.error(`${provider} tax calculation failed, falling back to manual:`, error);
+          const manualTax = calculateTax(
+            cartItems,
+            shippingCost,
+            shippingState,
+            siteSettings.taxConfig,
+          );
+          setTaxCalculation(manualTax);
+          addToast('Using fallback tax calculation', 'info');
+        } finally {
+          setIsCalculatingTax(false);
+        }
+      } else {
+        // Use manual tax rules
+        const manualTax = calculateTax(
+          cartItems,
+          shippingCost,
+          shippingState,
+          siteSettings.taxConfig,
+        );
+        setTaxCalculation(manualTax);
+      }
+    };
+
+    calculateTaxAsync();
+  }, [cartItems, shippingState, shippingZip, siteSettings, addToast]);
 
   const handlePlaceOrder = (e: React.FormEvent) => {
     e.preventDefault();
@@ -87,7 +163,14 @@ const CheckoutPage: React.FC = () => {
                     </option>
                   ))}
                 </select>
-                <input type="text" placeholder="ZIP Code" className={inputClasses} required />
+                <input 
+                  type="text" 
+                  placeholder="ZIP Code" 
+                  value={shippingZip}
+                  onChange={(e) => setShippingZip(e.target.value)}
+                  className={inputClasses} 
+                  required 
+                />
               </div>
             </div>
 
@@ -122,11 +205,25 @@ const CheckoutPage: React.FC = () => {
             {siteSettings.taxConfig.enableTaxCollection && shippingState && (
               <>
                 <div className="flex justify-between text-gray-400">
-                  <span>Tax ({taxCalculation.taxRate}%)</span>
-                  <span>${taxCalculation.taxAmount.toFixed(2)}</span>
+                  <span>{isCalculatingTax ? 'Calculating tax...' : `Tax (${taxCalculation.taxRate}%)`}</span>
+                  <span>{isCalculatingTax ? '...' : `$${taxCalculation.taxAmount.toFixed(2)}`}</span>
                 </div>
-                <div className="text-sm text-gray-500 mt-2">
-                  Based on: {shippingState}
+                <div className="text-xs text-gray-500 mt-2">
+                  {siteSettings.taxConfig.provider === "stripe" ? (
+                    <span>💳 Stripe Tax • {shippingState} {shippingZip}</span>
+                  ) : siteSettings.taxConfig.provider === "taxjar" ? (
+                    <span>📊 TaxJar • {shippingState} {shippingZip}</span>
+                  ) : siteSettings.taxConfig.provider === "avalara" ? (
+                    <span>🏛️ Avalara AvaTax • {shippingState} {shippingZip}</span>
+                  ) : siteSettings.taxConfig.provider === "taxcloud" ? (
+                    <span>☁️ TaxCloud • {shippingState} {shippingZip}</span>
+                  ) : siteSettings.taxConfig.provider === "zamp" ? (
+                    <span>⚡ Zamp • {shippingState} {shippingZip}</span>
+                  ) : siteSettings.taxConfig.provider === "anrok" ? (
+                    <span>🌍 Anrok • {shippingState} {shippingZip}</span>
+                  ) : (
+                    <span>Based on: {shippingState}</span>
+                  )}
                 </div>
               </>
             )}

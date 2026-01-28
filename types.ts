@@ -62,10 +62,37 @@ export interface TaxRule {
   priority: number; // Higher priority rules override lower ones
 }
 
+export type TaxProvider = "manual" | "stripe" | "taxjar" | "avalara" | "taxcloud" | "zamp" | "anrok";
+
+export interface TaxProviderCredentials {
+  // Stripe Tax
+  stripeApiKey?: string;
+  
+  // TaxJar
+  taxjarApiKey?: string;
+  
+  // Avalara AvaTax
+  avalaraAccountId?: string;
+  avalaraLicenseKey?: string;
+  avalaraEnvironment?: "sandbox" | "production";
+  
+  // TaxCloud
+  taxcloudApiKey?: string;
+  taxcloudUserId?: string;
+  
+  // Zamp
+  zampApiKey?: string;
+  
+  // Anrok
+  anrokApiKey?: string;
+}
+
 export interface TaxConfig {
   enableTaxCollection: boolean;
-  defaultTaxRate: number; // Fallback if no state rules match
-  rules: TaxRule[];
+  provider: TaxProvider; // Which tax provider to use
+  defaultTaxRate: number; // Fallback if no state rules match (for manual mode)
+  credentials?: TaxProviderCredentials; // API credentials for various providers
+  rules: TaxRule[]; // Manual fallback rules
   taxIncludedInPrice: boolean; // If true, tax is included in product price; if false, added at checkout
 }
 
@@ -282,6 +309,10 @@ export interface SiteSettings {
 
   // Tax Management
   taxConfig: TaxConfig;
+
+  // Order Configuration
+  orderPrefix?: string; // e.g., "AGIS"
+  orderNumberLength?: number; // e.g., 10 for AGIS-0000000001
 
   // Theme Management
   siteBackgroundColor: string;

@@ -34,7 +34,11 @@ const defaultSettings: SiteSettings = {
   // Default tax configuration
   taxConfig: {
     enableTaxCollection: true,
+    provider: "stripe",
     defaultTaxRate: 0,
+    credentials: {
+      stripeApiKey: "",
+    },
     taxIncludedInPrice: false,
     rules: [],
   },

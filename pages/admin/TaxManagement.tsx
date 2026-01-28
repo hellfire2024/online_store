@@ -74,9 +74,11 @@ const TaxManagement: React.FC = () => {
     await updateSiteSettings({
       ...siteSettings,
       taxConfig: {
+        provider: siteSettings.taxConfig.provider,
         enableTaxCollection: enableTax,
         defaultTaxRate: defaultRate,
         taxIncludedInPrice: siteSettings.taxConfig.taxIncludedInPrice,
+        credentials: siteSettings.taxConfig.credentials,
         rules,
       },
     });
