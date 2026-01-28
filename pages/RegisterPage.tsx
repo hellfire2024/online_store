@@ -5,18 +5,73 @@ import { useToast } from "../hooks/useToast";
 import { validatePassword, getPasswordStrengthColor, getPasswordStrengthBgColor } from "../services/passwordValidator";
 
 const RegisterPage: React.FC = () => {
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [agreeToTerms, setAgreeToTerms] = useState(false);
+  // Initialize from sessionStorage or default to empty
+  const [firstName, setFirstName] = useState(() => 
+    sessionStorage.getItem("register_firstName") || ""
+  );
+  const [lastName, setLastName] = useState(() =>
+    sessionStorage.getItem("register_lastName") || ""
+  );
+  const [email, setEmail] = useState(() =>
+    sessionStorage.getItem("register_email") || ""
+  );
+  const [phone, setPhone] = useState(() =>
+    sessionStorage.getItem("register_phone") || ""
+  );
+  const [password, setPassword] = useState(() =>
+    sessionStorage.getItem("register_password") || ""
+  );
+  const [confirmPassword, setConfirmPassword] = useState(() =>
+    sessionStorage.getItem("register_confirmPassword") || ""
+  );
+  const [agreeToTerms, setAgreeToTerms] = useState(() =>
+    sessionStorage.getItem("register_agreeToTerms") === "true"
+  );
   const [isLoading, setIsLoading] = useState(false);
 
   const { register } = useCustomerAuth();
   const navigate = useNavigate();
   const { addToast } = useToast();
+
+  // Save form data to sessionStorage whenever any field changes
+  React.useEffect(() => {
+    sessionStorage.setItem("register_firstName", firstName);
+  }, [firstName]);
+
+  React.useEffect(() => {
+    sessionStorage.setItem("register_lastName", lastName);
+  }, [lastName]);
+
+  React.useEffect(() => {
+    sessionStorage.setItem("register_email", email);
+  }, [email]);
+
+  React.useEffect(() => {
+    sessionStorage.setItem("register_phone", phone);
+  }, [phone]);
+
+  React.useEffect(() => {
+    sessionStorage.setItem("register_password", password);
+  }, [password]);
+
+  React.useEffect(() => {
+    sessionStorage.setItem("register_confirmPassword", confirmPassword);
+  }, [confirmPassword]);
+
+  React.useEffect(() => {
+    sessionStorage.setItem("register_agreeToTerms", agreeToTerms.toString());
+  }, [agreeToTerms]);
+
+  // Clear sessionStorage after successful registration
+  const clearFormData = () => {
+    sessionStorage.removeItem("register_firstName");
+    sessionStorage.removeItem("register_lastName");
+    sessionStorage.removeItem("register_email");
+    sessionStorage.removeItem("register_phone");
+    sessionStorage.removeItem("register_password");
+    sessionStorage.removeItem("register_confirmPassword");
+    sessionStorage.removeItem("register_agreeToTerms");
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,6 +108,7 @@ const RegisterPage: React.FC = () => {
     const result = await register(`${firstName} ${lastName}`, email, password);
 
     if (result.success) {
+      clearFormData();
       addToast("Account created successfully! Welcome!", "success");
       navigate("/account");
     } else {
