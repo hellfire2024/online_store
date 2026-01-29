@@ -255,4 +255,44 @@ router.post(
   }
 );
 
+// Customer request password reset
+router.post(
+  '/customer/request-password-reset',
+  [
+    body('email').isEmail().normalizeEmail(),
+  ],
+  async (req: Request, res: Response) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    try {
+      const { email } = req.body;
+
+      // Check if customer exists
+      const [rows] = await pool.query<RowDataPacket[]>(
+        'SELECT id FROM customers WHERE email = ? AND is_active = TRUE',
+        [email]
+      );
+
+      if (rows.length === 0) {
+        // Don't reveal if email exists (security best practice)
+        return res.json({ success: true, message: 'If an account with that email exists, a password reset link has been sent' });
+      }
+
+      // In a production app, you would:
+      // 1. Generate a unique reset token
+      // 2. Store it in the database with an expiration time
+      // 3. Send an email with a link containing the token
+      console.log(`Password reset requested for email: ${email}`);
+
+      return res.json({ success: true, message: 'Password reset email sent successfully' });
+    } catch (error) {
+      console.error('Password reset request error:', error);
+      return res.status(500).json({ error: 'Failed to process password reset request' });
+    }
+  }
+);
+
 export default router;
