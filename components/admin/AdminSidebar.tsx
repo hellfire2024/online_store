@@ -13,6 +13,7 @@ import {
   ShoppingBagIcon,
   LockIcon,
   BarChartIcon,
+  TicketIcon,
 } from "../Icons";
 import { useAdmin } from "../../context/AdminContext";
 import { useNavigate } from "react-router-dom";
@@ -168,6 +169,10 @@ const AdminSidebar: React.FC = () => {
                   Orders
                 </PromptedNavLink>
               )}
+              <PromptedNavLink to="/admin/tickets" className={getNavLinkClass}>
+                <TicketIcon className="w-6 h-6 mr-3" />
+                Support Tickets
+              </PromptedNavLink>
             </>
           )}
         </div>
