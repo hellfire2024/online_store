@@ -147,7 +147,7 @@ const SupportTicketsPage: React.FC = () => {
 
   if (!isAuthenticated) {
     return (
-      <div className="container mx-auto px-4 py-12 text-center">
+      <div className="max-w-6xl mx-auto p-6 py-12 text-center">
         <p className="text-gray-400 mb-4">Please log in to contact support</p>
         <button onClick={() => navigate('/login')} className="px-6 py-2 bg-sky-600 text-white rounded hover:bg-sky-700">
           Sign In
@@ -180,7 +180,7 @@ const SupportTicketsPage: React.FC = () => {
       </div>
 
       {activeTab === 'create' ? (
-        <form onSubmit={handleSubmit} className="bg-slate-800 p-6 rounded-lg max-w-2xl space-y-4">
+        <form onSubmit={handleSubmit} className="bg-slate-800 p-6 rounded-lg space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">Subject *</label>
             <input
