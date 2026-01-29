@@ -34,7 +34,6 @@ import ChangePasswordPage from "./pages/ChangePasswordPage";
 import TermsAndConditionsPage from "./pages/TermsAndConditionsPage";
 import SupportTicketsPage from "./pages/SupportTicketsPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
-import TicketsManagement from "./pages/admin/TicketsManagement";
 import AdminLoginModal from "./components/admin/AdminLoginModal";
 import SiteEffectHandler from "./components/SiteEffectHandler";
 import TestHeroRenderingPage from "./pages/TestHeroRenderingPage";
@@ -184,14 +183,6 @@ const App: React.FC = () => {
                                     <Route
                                       path="/admin/pages/preview"
                                       element={<PagePreview />}
-                                    />
-                                    <Route
-                                      path="/admin/tickets"
-                                      element={
-                                        <AdminProtectedRoute>
-                                          <TicketsManagement />
-                                        </AdminProtectedRoute>
-                                      }
                                     />
                                     <Route path="*" element={<CustomPage />} />
                                   </Routes>

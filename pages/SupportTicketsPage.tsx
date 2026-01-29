@@ -267,6 +267,18 @@ const SupportTicketsPage: React.FC = () => {
 
                     {selectedTicket?.id === ticket.id && (
                       <div className="mt-4 pt-4 border-t border-slate-600 space-y-4">
+                        <div className="flex justify-between items-center mb-3">
+                          <h4 className="font-semibold text-white">Conversation</h4>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedTicket(null);
+                            }}
+                            className="text-sm px-3 py-1 text-gray-400 hover:text-white hover:bg-slate-700 rounded transition-colors"
+                          >
+                            ← Back to List
+                          </button>
+                        </div>
                         <div className="space-y-3 max-h-96 overflow-y-auto">
                           {ticket.replies.map((reply, idx) => (
                             <div key={idx} className={`p-3 rounded ${reply.author === 'support' ? 'bg-sky-900/30' : 'bg-slate-700/50'}`}>

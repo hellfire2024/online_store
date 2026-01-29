@@ -138,7 +138,23 @@ const ReviewsManagement: React.FC = () => {
               <tr key={review.id} className="border-t border-slate-700">
                 <td className="p-4 font-medium">{review.author}</td>
                 <td className="p-4 text-xs text-gray-400 break-all">{review.email || "-"}</td>
-                <td className="p-4 text-gray-300">{review.text}</td>
+                <td className="p-4">
+                  <div className="text-gray-300 mb-2">{review.text}</div>
+                  {review.images && review.images.length > 0 && (
+                    <div className="flex gap-2 mt-2">
+                      {review.images.map((img, idx) => (
+                        <img
+                          key={idx}
+                          src={img}
+                          alt={`Review image ${idx + 1}`}
+                          className="w-16 h-16 object-cover rounded border border-slate-600 cursor-pointer hover:opacity-80"
+                          onClick={() => window.open(img, '_blank')}
+                          title="Click to view full size"
+                        />
+                      ))}
+                    </div>
+                  )}
+                </td>
                 <td className="p-4">
                   <div className="flex">
                     {[...Array(review.rating)].map((_, i) => (

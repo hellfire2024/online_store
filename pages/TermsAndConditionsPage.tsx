@@ -1,8 +1,10 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import { useSiteSettings } from "../context/SiteSettingsContext";
 
 const TermsAndConditionsPage: React.FC = () => {
   const navigate = useNavigate();
+  const { siteSettings } = useSiteSettings();
 
   return (
     <div className="min-h-screen bg-slate-900 text-white py-12 px-4">
@@ -18,6 +20,15 @@ const TermsAndConditionsPage: React.FC = () => {
         </div>
 
         <div className="bg-slate-800 p-8 rounded-lg border border-slate-700 space-y-6">
+          {siteSettings.termsAndConditionsContent ? (
+            <div className="prose prose-invert max-w-none text-gray-300">
+              <div 
+                dangerouslySetInnerHTML={{ __html: siteSettings.termsAndConditionsContent }}
+                className="space-y-4"
+              />
+            </div>
+          ) : (
+            <>
           <section>
             <h2 className="text-2xl font-semibold mb-3">1. Agreement to Terms</h2>
             <p className="text-gray-300">
@@ -147,6 +158,8 @@ const TermsAndConditionsPage: React.FC = () => {
               Last updated: January 28, 2026
             </p>
           </div>
+            </>
+          )}
         </div>
 
         <div className="mt-8 text-center">

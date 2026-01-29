@@ -176,6 +176,7 @@ export interface Review {
   createdAt: string;
   approvedAt?: string;
   rejectionReason?: string;
+  images?: string[]; // Array of image URLs (max 3)
 }
 
 export interface Service {
@@ -310,6 +311,24 @@ export interface SiteSettings {
   // Tax Management
   taxConfig: TaxConfig;
 
+  // Email Configuration
+  emailConfig: {
+    provider: 'smtp' | 'sendgrid' | 'mailgun' | 'none';
+    fromEmail: string;
+    fromName: string;
+    // SMTP specific
+    smtpHost?: string;
+    smtpPort?: number;
+    smtpSecure?: boolean; // TLS/SSL
+    smtpUsername?: string;
+    smtpPassword?: string; // Encrypted in database, only in form state
+    // SendGrid specific
+    sendgridApiKey?: string; // Encrypted in database
+    // Mailgun specific
+    mailgunDomain?: string;
+    mailgunApiKey?: string; // Encrypted in database
+  };
+
   // Order Configuration
   orderPrefix?: string; // e.g., "AGIS"
   orderNumberLength?: number; // e.g., 10 for AGIS-0000000001
@@ -321,4 +340,7 @@ export interface SiteSettings {
   siteBackgroundImageUrl: string;
   siteBackgroundOpacity: number;
   maxReviewsDisplayed: number; // How many approved reviews to show on site
+
+  // Terms and Conditions
+  termsAndConditionsContent: string;
 }

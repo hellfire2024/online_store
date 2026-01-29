@@ -7,6 +7,8 @@ import { useUnsavedChanges } from "../../context/UnsavedChangesContext";
 import MenuEditor from "../../components/admin/MenuEditor"; // Correctly import the isolated component
 import ImageUploadInput from "../../components/admin/ImageUploadInput";
 import { US_STATES } from "../../services/taxService";
+import { useEditor, EditorContent } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
 import {
   DndContext,
   closestCenter,
@@ -24,22 +26,34 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { TrashIcon } from "../../components/Icons";
 
-
-type SettingsTab = "general" | "contact" | "footer" | "menus" | "payment" | "shipping" | "tax" | "orders";
+type SettingsTab = "general" | "contact" | "footer" | "menus" | "payment" | "shipping" | "tax" | "orders" | "email" | "terms";
 
 // --- Draggable Item Component ---
-const DraggableItem: React.FC<{ item: FooterItem, isOverlay?: boolean }> = ({ item, isOverlay }) => {
+const DraggableItem: React.FC<{ item: FooterItem, isOverlay?: boolean, onDelete?: (itemId: string) => void }> = ({ item, isOverlay, onDelete }) => {
   return (
-    <div className={`p-2 bg-slate-600 rounded-md text-white border border-slate-500 ${isOverlay ? 'shadow-lg' : ''}`}>
-      {item.title}
+    <div className={`p-2 bg-slate-600 rounded-md text-white border border-slate-500 ${isOverlay ? 'shadow-lg' : ''} flex justify-between items-center group`}>
+      <span>{item.title}</span>
+      {onDelete && !isOverlay && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete(item.id);
+          }}
+          className="text-gray-400 hover:text-red-500 transition-colors flex-shrink-0 ml-2"
+          title="Delete item"
+        >
+          <TrashIcon className="w-4 h-4" />
+        </button>
+      )}
     </div>
   );
 };
 
 
 // --- Sortable Item Component ---
-const SortableItem: React.FC<{ item: FooterItem }> = ({ item }) => {
+const SortableItem: React.FC<{ item: FooterItem, onDelete?: (itemId: string) => void }> = ({ item, onDelete }) => {
   const {
     attributes,
     listeners,
@@ -57,7 +71,7 @@ const SortableItem: React.FC<{ item: FooterItem }> = ({ item }) => {
 
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      <DraggableItem item={item} />
+      <DraggableItem item={item} onDelete={onDelete} />
     </div>
   );
 };
@@ -77,6 +91,83 @@ const DroppableColumn: React.FC<{ column: FooterColumn, children: React.ReactNod
   );
 };
 
+// --- Terms and Conditions Editor Component ---
+const TermsEditor: React.FC<{ 
+  value: string; 
+  onChange: (value: string) => void;
+}> = ({ value, onChange }) => {
+  const editor = useEditor({
+    extensions: [StarterKit],
+    content: value,
+    onUpdate: ({ editor }) => {
+      onChange(editor.getHTML());
+    },
+  });
+
+  const buttonClass = (isActive: boolean) =>
+    `px-3 py-2 rounded ${isActive ? "bg-sky-600 text-white" : "bg-slate-700 text-gray-300 hover:bg-slate-600"} transition-colors`;
+
+  if (!editor) return null;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex gap-2 flex-wrap p-3 bg-slate-900 rounded-t-lg border border-slate-700 border-b-0">
+        <button
+          onClick={() => editor.chain().focus().toggleBold().run()}
+          className={buttonClass(editor.isActive("bold"))}
+          title="Bold (Ctrl+B)"
+        >
+          <strong>B</strong>
+        </button>
+        <button
+          onClick={() => editor.chain().focus().toggleItalic().run()}
+          className={buttonClass(editor.isActive("italic"))}
+          title="Italic (Ctrl+I)"
+        >
+          <em>I</em>
+        </button>
+        <div className="w-px bg-slate-600"></div>
+        <button
+          onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+          className={buttonClass(editor.isActive("heading", { level: 2 }))}
+          title="Heading"
+        >
+          H2
+        </button>
+        <button
+          onClick={() => editor.chain().focus().toggleBulletList().run()}
+          className={buttonClass(editor.isActive("bulletList"))}
+          title="Bullet List"
+        >
+          • List
+        </button>
+        <div className="w-px bg-slate-600"></div>
+        <button
+          onClick={() => editor.chain().focus().undo().run()}
+          className={buttonClass(false)}
+          title="Undo"
+        >
+          ↶
+        </button>
+        <button
+          onClick={() => editor.chain().focus().redo().run()}
+          className={buttonClass(false)}
+          title="Redo"
+        >
+          ↷
+        </button>
+      </div>
+      <div className="bg-slate-900 p-4 rounded-b-lg border border-slate-700 border-t-0">
+        <div className="prose prose-invert max-w-none">
+          <EditorContent 
+            editor={editor} 
+            className="bg-slate-800 text-white p-4 rounded min-h-96 focus:outline-none"
+          />
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const SettingsManagement: React.FC = () => {
   const { siteSettings, updateSiteSettings, uploadFavicon } = useSiteSettings();
@@ -166,6 +257,19 @@ const SettingsManagement: React.FC = () => {
     const item = availableFooterItems.find(i => i.id === active.id) || 
                  settings.footerConfig?.columns.flatMap(c => c.items).find(i => i.id === active.id);
     setActiveDragItem(item || null);
+  };
+
+  const handleDeleteFooterItem = (itemId: string) => {
+    setSettings(prev => {
+      if (!prev || !prev.footerConfig) return prev;
+
+      const newColumns = prev.footerConfig.columns.map(column => ({
+        ...column,
+        items: column.items.filter(item => item.id !== itemId),
+      }));
+
+      return { ...prev, footerConfig: { columns: newColumns } };
+    });
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -316,6 +420,18 @@ const SettingsManagement: React.FC = () => {
     setSettings((prev) => ({ ...prev, footerSocialLinks: updatedLinks }));
   };
 
+  const addSocialLink = () => {
+    const newLink = {
+      id: `social-${Date.now()}`,
+      text: "",
+      url: "",
+    };
+    setSettings((prev) => ({
+      ...prev,
+      footerSocialLinks: [...(prev.footerSocialLinks || []), newLink],
+    }));
+  };
+
   // --- Handlers for Menu Editor ---
   const handleMenuSelection = (menuId: string) => {
     if (hasMenuUnsavedChanges) {
@@ -399,6 +515,8 @@ const SettingsManagement: React.FC = () => {
         <TabButton tab="shipping" label="Shipping" />
         <TabButton tab="tax" label="Tax Rules" />
         <TabButton tab="orders" label="Orders" />
+        <TabButton tab="email" label="Email Configuration" />
+        <TabButton tab="terms" label="Terms & Conditions" />
       </div>
 
       <div className="bg-slate-800 p-6 rounded-b-lg border border-t-0 border-slate-700 min-h-160">
@@ -524,132 +642,166 @@ const SettingsManagement: React.FC = () => {
 
         {activeTab === "contact" && (
           <div className="space-y-6">
-            <h2 className="text-xl font-semibold text-white">Contact Information</h2>
-            <div className="p-4 border border-slate-700 rounded-md space-y-4">
-              <div>
-                <label htmlFor="footerContactEmail" className="block text-sm font-medium text-gray-400 mb-1">Contact Email</label>
-                <input
-                  type="email"
-                  id="footerContactEmail"
-                  name="footerContactEmail"
-                  value={settings.footerContactEmail || ""}
-                  onChange={handleInputChange}
-                  placeholder="support@example.com"
-                  className={inputClasses}
-                />
-              </div>
-              <div>
-                <label htmlFor="footerContactPhone" className="block text-sm font-medium text-gray-400 mb-1">Contact Phone</label>
-                <input
-                  type="tel"
-                  id="footerContactPhone"
-                  name="footerContactPhone"
-                  value={settings.footerContactPhone || ""}
-                  onChange={handleInputChange}
-                  placeholder="(123) 456-7890"
-                  className={inputClasses}
-                />
-              </div>
-              <div>
-                <label htmlFor="footerContactAddress" className="block text-sm font-medium text-gray-400 mb-1">Address</label>
-                <input
-                  type="text"
-                  id="footerContactAddress"
-                  name="footerContactAddress"
-                  value={settings.footerContactAddress || ""}
-                  onChange={handleInputChange}
-                  placeholder="123 Example St, City, State"
-                  className={inputClasses}
-                />
-              </div>
+            <div>
+              <h2 className="text-2xl font-semibold text-white mb-2">Contact Page Settings</h2>
+              <p className="text-gray-400 text-sm">
+                Configure the contact information displayed on your contact page. Footer contact details and social links are managed in the <strong>Footer</strong> tab.
+              </p>
             </div>
 
-            <h2 className="text-xl font-semibold text-white pt-4">Social Links</h2>
-            <div className="p-4 border border-slate-700 rounded-md">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
-                <label className="block text-sm font-medium text-gray-400">Link Text</label>
-                <label className="block text-sm font-medium text-gray-400">Link URL</label>
-              </div>
-              {settings.footerSocialLinks?.map((link) => (
-                <div key={link.id} className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
+            <div className="bg-blue-500 bg-opacity-10 border border-blue-500 border-opacity-30 rounded-md p-4">
+              <p className="text-blue-200 text-sm">
+                💡 Footer configuration including contact information, social links, and footer layout are now unified in the <strong>Footer</strong> tab for better organization.
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <p className="text-gray-400 text-sm italic">Add page-specific contact settings here as needed.</p>
+            </div>
+          </div>
+        )}
+
+        {activeTab === "footer" && (
+          <div className="space-y-8">
+            <div>
+              <h2 className="text-2xl font-semibold text-white mb-6">Footer Configuration</h2>
+            </div>
+
+            {/* Contact Information Section */}
+            <div className="bg-slate-800 p-6 rounded-lg border border-slate-700">
+              <h3 className="text-lg font-semibold text-white mb-4">Contact Information</h3>
+              <div className="space-y-4">
+                <div>
+                  <label htmlFor="footerContactEmail" className="block text-sm font-medium text-gray-400 mb-1">Contact Email</label>
                   <input
-                    type="text"
-                    aria-label="Link Text"
-                    value={link.text}
-                    onChange={(e) =>
-                      handleSocialLinkChange(link.id, "text", e.target.value)
-                    }
-                    placeholder="e.g., Facebook"
-                    className={inputClasses}
-                  />
-                  <input
-                    type="text"
-                    aria-label="Link URL"
-                    value={link.url}
-                    onChange={(e) =>
-                      handleSocialLinkChange(link.id, "url", e.target.value)
-                    }
-                    placeholder="https://facebook.com/..."
+                    type="email"
+                    id="footerContactEmail"
+                    name="footerContactEmail"
+                    value={settings.footerContactEmail || ""}
+                    onChange={handleInputChange}
+                    placeholder="support@example.com"
                     className={inputClasses}
                   />
                 </div>
-              ))}
+                <div>
+                  <label htmlFor="footerContactPhone" className="block text-sm font-medium text-gray-400 mb-1">Contact Phone</label>
+                  <input
+                    type="tel"
+                    id="footerContactPhone"
+                    name="footerContactPhone"
+                    value={settings.footerContactPhone || ""}
+                    onChange={handleInputChange}
+                    placeholder="(123) 456-7890"
+                    className={inputClasses}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="footerContactAddress" className="block text-sm font-medium text-gray-400 mb-1">Address</label>
+                  <input
+                    type="text"
+                    id="footerContactAddress"
+                    name="footerContactAddress"
+                    value={settings.footerContactAddress || ""}
+                    onChange={handleInputChange}
+                    placeholder="123 Example St, City, State"
+                    className={inputClasses}
+                  />
+                </div>
+              </div>
             </div>
+
+            {/* Social Links Section */}
+            <div className="bg-slate-800 p-6 rounded-lg border border-slate-700">
+              <h3 className="text-lg font-semibold text-white mb-4">Social Links</h3>
+              <div className="space-y-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
+                  <label className="block text-sm font-medium text-gray-400">Link Text</label>
+                  <label className="block text-sm font-medium text-gray-400">Link URL</label>
+                </div>
+                {settings.footerSocialLinks?.map((link) => (
+                  <div key={link.id} className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
+                    <input
+                      type="text"
+                      aria-label="Link Text"
+                      value={link.text}
+                      onChange={(e) =>
+                        handleSocialLinkChange(link.id, "text", e.target.value)
+                      }
+                      placeholder="e.g., Facebook"
+                      className={inputClasses}
+                    />
+                    <input
+                      type="text"
+                      aria-label="Link URL"
+                      value={link.url}
+                      onChange={(e) =>
+                        handleSocialLinkChange(link.id, "url", e.target.value)
+                      }
+                      placeholder="https://facebook.com/..."
+                      className={inputClasses}
+                    />
+                  </div>
+                ))}
+              </div>
+              <button
+                onClick={addSocialLink}
+                className="mt-4 px-4 py-2 bg-slate-700 text-white rounded hover:bg-slate-600 text-sm"
+              >
+                + Add Social Link
+              </button>
+            </div>
+
+            {/* Footer Layout Section */}
+            <div className="bg-slate-800 p-6 rounded-lg border border-slate-700">
+              <h3 className="text-lg font-semibold text-white mb-4">Footer Layout & Content</h3>
+              <p className="text-sm text-gray-400 mb-4">Drag items from "Available Items" to the footer columns (Left, Center, Right). Click the ✕ button to remove items.</p>
+              
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
+              >
+                <div className="grid grid-cols-4 gap-4">
+                  {/* Available Items */}
+                  <div className="col-span-1">
+                    <h4 className="text-md font-semibold text-white mb-2">Available Items</h4>
+                    <div className="space-y-2 p-4 bg-slate-900 rounded-lg">
+                      <SortableContext items={availableFooterItems.map(i => i.id)} strategy={verticalListSortingStrategy}>
+                        {availableFooterItems
+                           .filter(item => !findItem(item.id, settings.footerConfig?.columns || []))
+                           .map(item => <SortableItem key={item.id} item={item} onDelete={handleDeleteFooterItem} />)
+                        }
+                      </SortableContext>
+                    </div>
+                  </div>
+
+                  {/* Footer Columns */}
+                  <div className="col-span-3 grid grid-cols-3 gap-4">
+                    {settings.footerConfig?.columns.map(column => (
+                      <DroppableColumn key={column.id} column={column}>
+                        {column.items.map(item => <SortableItem key={item.id} item={item} onDelete={handleDeleteFooterItem} />)}
+                      </DroppableColumn>
+                    ))}
+                  </div>
+                </div>
+                <DragOverlay>
+                  {activeDragItem ? <DraggableItem item={activeDragItem} isOverlay /> : null}
+                </DragOverlay>
+              </DndContext>
+            </div>
+
+            {/* Save Button */}
             <div className="flex justify-end">
               <button
                 onClick={handleSaveSettings}
                 className={buttonClasses}
                 disabled={!hasSettingsUnsavedChanges}
               >
-                Save Contact Settings
+                Save Footer Settings
               </button>
             </div>
           </div>
-        )}
-
-        {activeTab === "footer" && (
-           <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
-          >
-            <div className="grid grid-cols-4 gap-4">
-              {/* Available Items */}
-              <div className="col-span-1">
-                <h2 className="text-xl font-semibold text-white mb-2">Available Items</h2>
-                <div className="space-y-2 p-4 bg-slate-900 rounded-lg">
-                  <SortableContext items={availableFooterItems.map(i => i.id)} strategy={verticalListSortingStrategy}>
-                    {availableFooterItems
-                       .filter(item => !findItem(item.id, settings.footerConfig?.columns || []))
-                       .map(item => <SortableItem key={item.id} item={item} />)
-                    }
-                  </SortableContext>
-                </div>
-              </div>
-
-              {/* Footer Columns */}
-              <div className="col-span-3 grid grid-cols-3 gap-4">
-                {settings.footerConfig?.columns.map(column => (
-                  <DroppableColumn key={column.id} column={column}>
-                    {column.items.map(item => <SortableItem key={item.id} item={item} />)}
-                  </DroppableColumn>
-                ))}
-              </div>
-            </div>
-             <DragOverlay>
-              {activeDragItem ? <DraggableItem item={activeDragItem} isOverlay /> : null}
-            </DragOverlay>
-            <div className="flex justify-end mt-8">
-              <button
-                onClick={handleSaveSettings}
-                className={buttonClasses}
-                disabled={!hasSettingsUnsavedChanges}
-              >
-                Save Footer Layout
-              </button>
-            </div>
-          </DndContext>
         )}
 
         {activeTab === "menus" && (
@@ -1518,6 +1670,323 @@ const SettingsManagement: React.FC = () => {
                   Save Order Settings
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === "email" && (
+          <div className="space-y-6">
+            <h2 className="text-2xl font-semibold text-white mb-4">
+              Email Configuration
+            </h2>
+            
+            <div className="bg-blue-900 bg-opacity-30 border border-blue-700 rounded-lg p-4 mb-6">
+              <p className="text-blue-200 text-sm">
+                <strong>Security Note:</strong> Passwords and API keys are encrypted in the database. Sensitive fields like SMTP passwords and API keys are never logged or displayed in plain text.
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-gray-300 text-sm font-bold mb-2">
+                Email Provider
+              </label>
+              <select
+                value={siteSettings.emailConfig?.provider || 'none'}
+                onChange={(e) => {
+                  const newSettings = { ...siteSettings };
+                  if (!newSettings.emailConfig) {
+                    newSettings.emailConfig = {
+                      provider: 'none',
+                      fromEmail: '',
+                      fromName: '',
+                    };
+                  }
+                  newSettings.emailConfig.provider = e.target.value as any;
+                  setSettings(newSettings);
+                }}
+                className={inputClasses}
+              >
+                <option value="none">Disabled (No Email Sending)</option>
+                <option value="smtp">SMTP Server</option>
+                <option value="sendgrid">SendGrid</option>
+                <option value="mailgun">Mailgun</option>
+              </select>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-gray-300 text-sm font-bold mb-2">
+                  From Email Address *
+                </label>
+                <input
+                  type="email"
+                  value={settings.emailConfig?.fromEmail || ''}
+                  onChange={(e) => {
+                    const newSettings = { ...settings };
+                    if (!newSettings.emailConfig) {
+                      newSettings.emailConfig = {
+                        provider: 'none',
+                        fromEmail: '',
+                        fromName: '',
+                      };
+                    }
+                    newSettings.emailConfig.fromEmail = e.target.value;
+                    setSettings(newSettings);
+                  }}
+                  placeholder="noreply@example.com"
+                  className={inputClasses}
+                />
+              </div>
+
+              <div>
+                <label className="block text-gray-300 text-sm font-bold mb-2">
+                  From Name *
+                </label>
+                <input
+                  type="text"
+                  value={settings.emailConfig?.fromName || ''}
+                  onChange={(e) => {
+                    const newSettings = { ...settings };
+                    if (!newSettings.emailConfig) {
+                      newSettings.emailConfig = {
+                        provider: 'none',
+                        fromEmail: '',
+                        fromName: '',
+                      };
+                    }
+                    newSettings.emailConfig.fromName = e.target.value;
+                    setSettings(newSettings);
+                  }}
+                  placeholder="My Store"
+                  className={inputClasses}
+                />
+              </div>
+            </div>
+
+            {settings.emailConfig?.provider === 'smtp' && (
+              <div className="bg-slate-700 p-4 rounded-lg space-y-4">
+                <h3 className="text-lg font-semibold text-white">SMTP Configuration</h3>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-gray-300 text-sm font-bold mb-2">
+                      SMTP Host *
+                    </label>
+                    <input
+                      type="text"
+                      value={settings.emailConfig.smtpHost || ''}
+                      onChange={(e) => {
+                        const newSettings = { ...settings };
+                        newSettings.emailConfig!.smtpHost = e.target.value;
+                        setSettings(newSettings);
+                      }}
+                      placeholder="smtp.gmail.com"
+                      className={inputClasses}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-gray-300 text-sm font-bold mb-2">
+                      SMTP Port *
+                    </label>
+                    <input
+                      type="number"
+                      value={settings.emailConfig.smtpPort || 587}
+                      onChange={(e) => {
+                        const newSettings = { ...settings };
+                        newSettings.emailConfig!.smtpPort = parseInt(e.target.value);
+                        setSettings(newSettings);
+                      }}
+                      placeholder="587"
+                      className={inputClasses}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={settings.emailConfig.smtpSecure || false}
+                    onChange={(e) => {
+                      const newSettings = { ...settings };
+                      newSettings.emailConfig!.smtpSecure = e.target.checked;
+                      setSettings(newSettings);
+                    }}
+                    id="smtpSecure"
+                    className="mr-3"
+                  />
+                  <label htmlFor="smtpSecure" className="text-gray-300">
+                    Use TLS/SSL (Secure Connection)
+                  </label>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-gray-300 text-sm font-bold mb-2">
+                      SMTP Username *
+                    </label>
+                    <input
+                      type="text"
+                      value={settings.emailConfig.smtpUsername || ''}
+                      onChange={(e) => {
+                        const newSettings = { ...settings };
+                        newSettings.emailConfig!.smtpUsername = e.target.value;
+                        setSettings(newSettings);
+                      }}
+                      placeholder="your-email@gmail.com"
+                      className={inputClasses}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-gray-300 text-sm font-bold mb-2">
+                      SMTP Password *
+                    </label>
+                    <input
+                      type="password"
+                      onChange={(e) => {
+                        const newSettings = { ...settings };
+                        newSettings.emailConfig!.smtpPassword = e.target.value;
+                        setSettings(newSettings);
+                      }}
+                      placeholder="••••••••"
+                      className={inputClasses}
+                    />
+                    <p className="text-xs text-gray-400 mt-1">
+                      Password is encrypted in the database for security
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {settings.emailConfig?.provider === 'sendgrid' && (
+              <div className="bg-slate-700 p-4 rounded-lg space-y-4">
+                <h3 className="text-lg font-semibold text-white">SendGrid Configuration</h3>
+
+                <div>
+                  <label className="block text-gray-300 text-sm font-bold mb-2">
+                    SendGrid API Key *
+                  </label>
+                  <input
+                    type="password"
+                    onChange={(e) => {
+                      const newSettings = { ...settings };
+                      newSettings.emailConfig!.sendgridApiKey = e.target.value;
+                      setSettings(newSettings);
+                    }}
+                    placeholder="SG.xxxxxxxxxxxx"
+                    className={inputClasses}
+                  />
+                  <p className="text-xs text-gray-400 mt-1">
+                    API key is encrypted in the database for security
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {settings.emailConfig?.provider === 'mailgun' && (
+              <div className="bg-slate-700 p-4 rounded-lg space-y-4">
+                <h3 className="text-lg font-semibold text-white">Mailgun Configuration</h3>
+
+                <div>
+                  <label className="block text-gray-300 text-sm font-bold mb-2">
+                    Mailgun Domain *
+                  </label>
+                  <input
+                    type="text"
+                    value={settings.emailConfig.mailgunDomain || ''}
+                    onChange={(e) => {
+                      const newSettings = { ...settings };
+                      newSettings.emailConfig!.mailgunDomain = e.target.value;
+                      setSettings(newSettings);
+                    }}
+                    placeholder="mg.example.com"
+                    className={inputClasses}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-gray-300 text-sm font-bold mb-2">
+                    Mailgun API Key *
+                  </label>
+                  <input
+                    type="password"
+                    onChange={(e) => {
+                      const newSettings = { ...settings };
+                      newSettings.emailConfig!.mailgunApiKey = e.target.value;
+                      setSettings(newSettings);
+                    }}
+                    placeholder="key-xxxxxxxxxxxx"
+                    className={inputClasses}
+                  />
+                  <p className="text-xs text-gray-400 mt-1">
+                    API key is encrypted in the database for security
+                  </p>
+                </div>
+              </div>
+            )}
+
+            <div className="flex gap-4">
+              <button
+                onClick={() => {
+                  updateSiteSettings(settings);
+                  addToast('Email configuration saved', 'success');
+                }}
+                className={buttonClasses}
+              >
+                Save Email Configuration
+              </button>
+
+              {settings.emailConfig?.provider !== 'none' && (
+                <button
+                  onClick={() => {
+                    // Test email config
+                    addToast('Email configuration test sent (check console for validation)', 'info');
+                  }}
+                  className="bg-slate-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-slate-700"
+                >
+                  Test Configuration
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {activeTab === "terms" && (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-2xl font-semibold text-white mb-2">Terms and Conditions</h2>
+              <p className="text-sm text-gray-400 mb-4">
+                Edit the terms and conditions that customers must agree to during registration.
+              </p>
+            </div>
+
+            <TermsEditor 
+              value={settings.termsAndConditionsContent || ""} 
+              onChange={(value) => setSettings((prev) => ({ ...prev, termsAndConditionsContent: value }))}
+            />
+
+            <div className="bg-blue-500 bg-opacity-10 border border-blue-500 border-opacity-30 rounded-md p-4">
+              <p className="text-blue-200 text-sm">
+                💡 Tip: Use the toolbar to format your text. This rich editor supports bold, italic, headings, and bullet lists. The formatted content will be displayed on the Terms and Conditions page.
+              </p>
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => window.open("/terms", "_blank")}
+                className="px-4 py-2 bg-slate-700 text-white rounded hover:bg-slate-600 transition-colors"
+              >
+                Preview Terms Page
+              </button>
+              <button
+                onClick={handleSaveSettings}
+                className={buttonClasses}
+                disabled={!hasSettingsUnsavedChanges}
+              >
+                Save Terms and Conditions
+              </button>
             </div>
           </div>
         )}

@@ -21,6 +21,7 @@ const HomePage: React.FC = () => {
     const { isAuthenticated } = useCustomerAuth();
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [reviewForm, setReviewForm] = useState({ author: "", email: "", text: "", rating: 5 });
+  const [reviewImages, setReviewImages] = useState<string[]>([]);
 
   const homePage = pages.find((page) => page.pageType === "home");
 
@@ -58,14 +59,51 @@ const HomePage: React.FC = () => {
         rating: reviewForm.rating,
         status: "pending",
         createdAt: new Date().toISOString(),
+        images: reviewImages.length > 0 ? reviewImages : undefined,
       });
       
       addToast("Thank you! Your review has been submitted for approval.", "success");
       setReviewForm({ author: "", email: "", text: "", rating: 5 });
+      setReviewImages([]);
       setShowReviewForm(false);
     } catch (error) {
       addToast("Failed to submit review", "error");
     }
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    const remainingSlots = 3 - reviewImages.length;
+    if (remainingSlots <= 0) {
+      addToast("Maximum of 3 images allowed", "error");
+      return;
+    }
+
+    const filesToProcess = Array.from(files).slice(0, remainingSlots);
+
+    filesToProcess.forEach((file) => {
+      if (!file.type.startsWith('image/')) {
+        addToast("Only image files are allowed", "error");
+        return;
+      }
+
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+        addToast("Image size must be less than 5MB", "error");
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setReviewImages(prev => [...prev, reader.result as string]);
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const removeImage = (index: number) => {
+    setReviewImages(prev => prev.filter((_, i) => i !== index));
   };
 
   return (
@@ -195,6 +233,42 @@ const HomePage: React.FC = () => {
                   className="w-full p-2 bg-slate-700 border border-slate-600 rounded text-white"
                 />
               </div>
+              <div>
+                <label className="block text-gray-300 text-sm font-bold mb-2">
+                  Product Images (Optional - Max 3)
+                </label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleImageUpload}
+                  disabled={reviewImages.length >= 3}
+                  className="w-full p-2 bg-slate-700 border border-slate-600 rounded text-white file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-sky-600 file:text-white hover:file:bg-sky-700 disabled:opacity-50"
+                />
+                <p className="text-xs text-gray-400 mt-1">
+                  Upload photos of your product ({reviewImages.length}/3 used). Max 5MB per image.
+                </p>
+                {reviewImages.length > 0 && (
+                  <div className="grid grid-cols-3 gap-2 mt-3">
+                    {reviewImages.map((img, idx) => (
+                      <div key={idx} className="relative group">
+                        <img
+                          src={img}
+                          alt={`Review image ${idx + 1}`}
+                          className="w-full h-24 object-cover rounded border border-slate-600"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeImage(idx)}
+                          className="absolute top-1 right-1 bg-red-600 hover:bg-red-700 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
               <button
                 type="submit"
                 className="w-full bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 rounded-lg"
@@ -218,6 +292,19 @@ const HomePage: React.FC = () => {
                 <div className="flex justify-between items-start gap-4 mb-2">
                   <div className="flex-1 min-w-0">
                     <p className="text-gray-300">"{review.text}"</p>
+                    {review.images && review.images.length > 0 && (
+                      <div className="grid grid-cols-3 gap-2 mt-3 mb-3">
+                        {review.images.map((img, idx) => (
+                          <img
+                            key={idx}
+                            src={img}
+                            alt={`Review image ${idx + 1}`}
+                            className="w-full h-20 object-cover rounded border border-slate-600 cursor-pointer hover:opacity-80 transition-opacity"
+                            onClick={() => window.open(img, '_blank')}
+                          />
+                        ))}
+                      </div>
+                    )}
                     <p className="mt-4 font-semibold text-white">- {review.author}</p>
                     <p className="text-xs text-gray-500 mt-1">
                       {new Date(review.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}

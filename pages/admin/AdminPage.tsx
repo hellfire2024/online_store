@@ -16,6 +16,7 @@ import CustomerManagement from "./CustomerManagement";
 import CustomerAnalytics from "./CustomerAnalytics";
 import AdminSecurity from "./AdminSecurity";
 import OrderManagement from "./OrderManagement";
+import TicketsManagement from "./TicketsManagement";
 import { usePermissions } from "../../hooks/usePermissions";
 
 const PermissionRoute: React.FC<{
@@ -47,8 +48,9 @@ const AdminPage: React.FC = () => {
   return (
     <div className="flex h-screen bg-slate-900 text-gray-300">
       <AdminSidebar />
-      <main className="grow p-8 overflow-auto">
-        <Routes>
+      <main className="grow overflow-auto">
+        <div className="max-w-7xl mx-auto p-8">
+          <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route
             path="/products"
@@ -162,7 +164,16 @@ const AdminPage: React.FC = () => {
               </PermissionRoute>
             }
           />
+          <Route
+            path="/tickets"
+            element={
+              <PermissionRoute requiredPermission="support">
+                <TicketsManagement />
+              </PermissionRoute>
+            }
+          />
         </Routes>
+        </div>
       </main>
     </div>
   );

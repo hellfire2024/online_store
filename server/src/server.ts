@@ -18,6 +18,7 @@ import reviewRoutes from './routes/reviews.js';
 import staffRoutes from './routes/staff.js';
 import serviceRoutes from './routes/services.js';
 import settingsRoutes from './routes/settings.js';
+import emailConfigRoutes from './routes/emailConfig.js';
 import taxRoutes from './routes/tax.js';
 import providersTaxRoutes from './routes/providers-tax.js';
 import authRoutes from './routes/auth.js';
@@ -89,6 +90,7 @@ if (DEMO_MODE) {
   app.use('/api/staff', staffRoutes);
   app.use('/api/services', serviceRoutes);
   app.use('/api/settings', settingsRoutes);
+  app.use('/api/email-config', emailConfigRoutes);
   app.use('/api/tax', taxRoutes);
   app.use('/api/tax/providers', providersTaxRoutes);
 }

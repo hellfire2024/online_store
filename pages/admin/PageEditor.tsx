@@ -420,7 +420,7 @@ const PageEditor: React.FC = () => {
 
   if (showPageTypeSelector && isNewPage) {
     return (
-      <div className="max-w-4xl mx-auto">
+      <div>
         <h1 className="text-3xl font-bold text-white mb-2">Create New Page</h1>
         <p className="text-gray-400 mb-8">Select a page type to start. Each type includes the essential fields and starter content.</p>
         
@@ -950,7 +950,7 @@ const PageEditor: React.FC = () => {
   );
 
   return (
-    <div className="max-w-5xl mx-auto">
+    <div>
       <div className="flex justify-between items-start mb-8">
         <div>
           <h1 className="text-3xl font-bold text-white mb-2">
