@@ -65,7 +65,7 @@ const CustomerAnalytics: React.FC = () => {
     if (filterStatus !== 'all' && ((filterStatus === 'active' && !c.isActive) || (filterStatus === 'inactive' && c.isActive))) return false;
     if (filterSegment === 'vip' && c.totalSpent < 1000) return false;
     if (filterSegment === 'atrisk' && (!c.lastOrderDate || (Date.now() - new Date(c.lastOrderDate).getTime())/(1000*60*60*24) <= 180)) return false;
-    if (filterSegment === 'standard' && (c.totalSpent >= 1000 || (c.lastOrderDate && (Date.now() - new Date(c.lastOrderDate).getTime())/(1000*60*60*24) > 180)))) return false;
+    if (filterSegment === 'standard' && (c.totalSpent >= 1000 || (c.lastOrderDate && (Date.now() - new Date(c.lastOrderDate).getTime())/(1000*60*60*24) > 180))) return false;
     return true;
   });
 
