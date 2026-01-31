@@ -2047,8 +2047,11 @@ const SettingsManagement: React.FC = () => {
 
             <div className="bg-slate-700 p-4 rounded-lg mt-4">
               <h3 className="text-sm font-semibold text-white mb-2">Subject Line Format Preview</h3>
-              <p className="text-gray-300 text-sm">
-                {settings.supportSubjectPrefix || '[Subject Prefix]'} | {'{Order: AGIS-001'} | [Date] | {settings.supportTicketSuffix || '[Suffix]'}
+              <p className="text-gray-300 text-sm mb-2">
+                {settings.supportSubjectPrefix || '[Subject Prefix]'} | [Subject] | Order: {'[Selected Order]'} | [Date] | {settings.supportTicketSuffix || '[Suffix]'}
+              </p>
+              <p className="text-gray-400 text-xs">
+                Example: {settings.supportSubjectPrefix || 'Support Request'} | Customization Help | Order: AGIS-0000000001 | 1/30/2026 | {settings.supportTicketSuffix || 'SUP-001-001'}
               </p>
             </div>
 
