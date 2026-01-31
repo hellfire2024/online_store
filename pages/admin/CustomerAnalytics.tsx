@@ -77,7 +77,8 @@ const CustomerAnalytics: React.FC = () => {
   else if (sortBy === 'name') sortedCustomers.sort((a, b) => `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`));
 
   const displayedCustomers = sortedCustomers.slice(0, 10);
-  const topCustomers = [...customers].sort((a, b) => b.totalSpent - a.totalSpent).slice(0, 5);
+
+  const exportSummaryCSV = () => {
     const headers = ['Metric','Value'];
     const rows = [
       ['Total Customers', String(totalCustomers)],
