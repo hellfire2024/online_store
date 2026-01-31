@@ -336,6 +336,11 @@ export interface SiteSettings {
   orderPrefix?: string; // e.g., "AGIS"
   orderNumberLength?: number; // e.g., 10 for AGIS-0000000001
 
+  // Support & Ticketing Configuration
+  supportEmail?: string; // e.g., "support@adaptivegis.com"
+  supportSubjectPrefix?: string; // e.g., "Support Request"
+  supportTicketSuffix?: string; // e.g., "SUP-001-001"
+
   // Theme Management
   siteBackgroundColor: string;
   siteTextColor: string;

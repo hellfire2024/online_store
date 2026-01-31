@@ -267,3 +267,81 @@ export async function sendShippingNotificationEmail(
     return { success: false, message: 'Failed to send email', error };
   }
 }
+
+export async function sendTicketEmail(
+  supportEmail: string,
+  subject: string,
+  ticketNumber: string,
+  orderId: string | undefined,
+  priority: string,
+  message: string,
+  customerInfo: { subject: string; date: string }
+) {
+  try {
+    const transport = transporter || (await initializeTransporter());
+    if (!transport || !cachedConfig) {
+      console.log('Email service not available - skipping support ticket email');
+      return { success: false, message: 'Email service not configured' };
+    }
+
+    const html = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: #1e293b; color: #fff; padding: 20px; border-radius: 5px; margin-bottom: 20px; }
+          .ticket-info { background: #f0f9ff; padding: 15px; border-radius: 5px; margin: 20px 0; }
+          .priority-high { color: #dc2626; font-weight: bold; }
+          .priority-medium { color: #f59e0b; font-weight: bold; }
+          .priority-low { color: #10b981; font-weight: bold; }
+          .divider { border-top: 1px solid #ddd; margin: 20px 0; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>New Support Ticket Submitted</h1>
+            <p>Ticket: ${ticketNumber}</p>
+          </div>
+          
+          <div class="ticket-info">
+            <h2>${customerInfo.subject}</h2>
+            <p><strong>Date:</strong> ${customerInfo.date}</p>
+            <p><strong>Ticket ID:</strong> ${ticketNumber}</p>
+            <p><strong>Priority:</strong> <span class="priority-${priority}">${priority.toUpperCase()}</span></p>
+            ${orderId ? `<p><strong>Order ID:</strong> ${orderId}</p>` : ''}
+          </div>
+
+          <div class="divider"></div>
+
+          <div>
+            <h3>Message:</h3>
+            <p>${message}</p>
+          </div>
+
+          <div class="divider"></div>
+
+          <p style="color: #666; font-size: 12px;">
+            This email was automatically generated from the support ticket system.
+          </p>
+        </div>
+      </body>
+    </html>
+    `;
+
+    const result = await transport.sendMail({
+      from: `${cachedConfig.from_name} <${cachedConfig.from_email}>`,
+      to: supportEmail,
+      subject: subject,
+      html,
+    });
+
+    console.log('Support ticket email sent:', result);
+    return { success: true, message: 'Email sent successfully' };
+  } catch (error) {
+    console.error('Error sending support ticket email:', error);
+    return { success: false, message: 'Failed to send email', error };
+  }
+}

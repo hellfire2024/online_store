@@ -22,6 +22,7 @@ import emailConfigRoutes from './routes/emailConfig.js';
 import taxRoutes from './routes/tax.js';
 import providersTaxRoutes from './routes/providers-tax.js';
 import authRoutes from './routes/auth.js';
+import ticketsApiRoutes from './routes/ticketsApi.js';
 import demoRoutes from './demoRoutes.js';
 
 dotenv.config();
@@ -93,6 +94,7 @@ if (DEMO_MODE) {
   app.use('/api/email-config', emailConfigRoutes);
   app.use('/api/tax', taxRoutes);
   app.use('/api/tax/providers', providersTaxRoutes);
+  app.use('/api/tickets', ticketsApiRoutes);
 }
 
 // 404 handler

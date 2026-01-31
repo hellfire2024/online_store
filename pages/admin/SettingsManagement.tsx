@@ -28,7 +28,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { TrashIcon } from "../../components/Icons";
 
-type SettingsTab = "general" | "footer" | "menus" | "payment" | "shipping" | "tax" | "orders" | "email" | "terms";
+type SettingsTab = "general" | "footer" | "menus" | "payment" | "shipping" | "tax" | "orders" | "email" | "support" | "terms";
 
 // --- Draggable Item Component ---
 const DraggableItem: React.FC<{ item: FooterItem, isOverlay?: boolean, onDelete?: (itemId: string) => void }> = ({ item, isOverlay, onDelete }) => {
@@ -537,6 +537,7 @@ const SettingsManagement: React.FC = () => {
         <TabButton tab="tax" label="Tax Rules" />
         <TabButton tab="orders" label="Orders" />
         <TabButton tab="email" label="Email Configuration" />
+        <TabButton tab="support" label="Support" />
         <TabButton tab="terms" label="Terms & Conditions" />
       </div>
 
@@ -1963,6 +1964,101 @@ const SettingsManagement: React.FC = () => {
                   Test Configuration
                 </button>
               )}
+            </div>
+          </div>
+        )}
+
+        {activeTab === "support" && (
+          <div className="space-y-6">
+            <h2 className="text-2xl font-semibold text-white mb-4">
+              Support Configuration
+            </h2>
+            
+            <div className="bg-blue-900 bg-opacity-30 border border-blue-700 rounded-lg p-4 mb-6">
+              <p className="text-blue-200 text-sm">
+                <strong>Support Email:</strong> This email address will receive all customer support tickets and inquiries.
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-gray-300 text-sm font-bold mb-2">
+                Support Email Address *
+              </label>
+              <input
+                type="email"
+                value={settings.supportEmail || ''}
+                onChange={(e) => {
+                  setSettings({
+                    ...settings,
+                    supportEmail: e.target.value,
+                  });
+                }}
+                placeholder="support@example.com"
+                className={inputClasses}
+              />
+              <p className="text-gray-500 text-sm mt-1">
+                This is where customer support tickets and inquiries will be sent.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-gray-300 text-sm font-bold mb-2">
+                  Support Email Subject Prefix
+                </label>
+                <input
+                  type="text"
+                  value={settings.supportSubjectPrefix || ''}
+                  onChange={(e) => {
+                    setSettings({
+                      ...settings,
+                      supportSubjectPrefix: e.target.value,
+                    });
+                  }}
+                  placeholder="e.g., Support Request"
+                  className={inputClasses}
+                />
+                <p className="text-gray-500 text-sm mt-1">
+                  This prefix will appear at the start of all support ticket subject lines.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-gray-300 text-sm font-bold mb-2">
+                  Support Ticket Suffix
+                </label>
+                <input
+                  type="text"
+                  value={settings.supportTicketSuffix || ''}
+                  onChange={(e) => {
+                    setSettings({
+                      ...settings,
+                      supportTicketSuffix: e.target.value,
+                    });
+                  }}
+                  placeholder="e.g., SUP-001-001"
+                  className={inputClasses}
+                />
+                <p className="text-gray-500 text-sm mt-1">
+                  This suffix will appear at the end of all support ticket subject lines.
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-slate-700 p-4 rounded-lg mt-4">
+              <h3 className="text-sm font-semibold text-white mb-2">Subject Line Format Preview</h3>
+              <p className="text-gray-300 text-sm">
+                {settings.supportSubjectPrefix || '[Subject Prefix]'} | {'{Order: AGIS-001'} | [Date] | {settings.supportTicketSuffix || '[Suffix]'}
+              </p>
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <button
+                onClick={() => handleSaveSettings()}
+                className="bg-sky-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-sky-700"
+              >
+                Save Support Settings
+              </button>
             </div>
           </div>
         )}
