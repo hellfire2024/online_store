@@ -43,7 +43,7 @@ const OrderManagement: React.FC = () => {
     const mockOrders: Order[] = [
       {
         id: '1',
-        orderNumber: 'ORD-2026-001',
+        orderNumber: 'AGIS-0000000001',
         customerName: 'John Doe',
         customerEmail: 'john@example.com',
         date: '2026-01-20T10:30:00Z',
@@ -58,7 +58,7 @@ const OrderManagement: React.FC = () => {
       },
       {
         id: '2',
-        orderNumber: 'ORD-2026-002',
+        orderNumber: 'AGIS-0000000002',
         customerName: 'Jane Smith',
         customerEmail: 'jane@example.com',
         date: '2026-01-24T14:15:00Z',
@@ -69,7 +69,7 @@ const OrderManagement: React.FC = () => {
       },
       {
         id: '3',
-        orderNumber: 'ORD-2026-003',
+        orderNumber: 'AGIS-0000000003',
         customerName: 'Bob Johnson',
         customerEmail: 'bob@example.com',
         date: '2026-01-26T09:00:00Z',
@@ -124,7 +124,7 @@ const OrderManagement: React.FC = () => {
     // If marking as shipped, send API call to trigger email
     if (formData.status === 'shipped' && formData.trackingNumber) {
       try {
-        const response = await fetch(`/api/orders-api/${editingOrder.orderNumber}/ship`, {
+        const response = await fetch(`/api/orders/${editingOrder.orderNumber}/ship`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

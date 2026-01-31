@@ -58,7 +58,7 @@ const AdminProtectedRoute: React.FC<{ children: React.ReactNode }> = ({
 const useAdminKeyListener = (callback: () => void) => {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key.toLowerCase() === "a" && e.altKey && e.shiftKey) {
+      if (e.key && e.key.toLowerCase() === "a" && e.altKey && e.shiftKey) {
         e.preventDefault();
         e.stopPropagation();
         callback();
@@ -76,6 +76,18 @@ const App: React.FC = () => {
 
   const handleOpenAdminLogin = useCallback(() => {
     setIsAdminLoginOpen(true);
+  }, []);
+
+  // Suppress browser extension message channel errors (not application errors)
+  useEffect(() => {
+    const handleError = (event: ErrorEvent) => {
+      if (event.message && event.message.includes('listener indicated an asynchronous response')) {
+        event.preventDefault();
+      }
+    };
+    
+    window.addEventListener('error', handleError);
+    return () => window.removeEventListener('error', handleError);
   }, []);
 
   useAdminKeyListener(handleOpenAdminLogin);

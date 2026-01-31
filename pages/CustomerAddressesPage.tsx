@@ -8,11 +8,13 @@ const CustomerAddressesPage: React.FC = () => {
   const {
     customer,
     addAddress,
+    updateAddress,
     deleteAddress,
     setDefaultAddress,
   } = useCustomerAuth();
   const { addToast } = useToast();
   const [isAdding, setIsAdding] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [formData, setFormData] = useState<Omit<CustomerAddress, "id">>({
@@ -59,6 +61,66 @@ const CustomerAddressesPage: React.FC = () => {
     }
   };
 
+  const handleEditAddress = (address: CustomerAddress) => {
+    setEditingId(address.id);
+    setFormData({
+      type: address.type,
+      fullName: address.fullName,
+      streetAddress: address.streetAddress,
+      city: address.city,
+      state: address.state,
+      zipCode: address.zipCode,
+      country: address.country,
+      phone: address.phone,
+      isDefault: address.isDefault,
+    });
+  };
+
+  const handleUpdateAddress = async () => {
+    if (!formData.fullName || !formData.streetAddress || !formData.city) {
+      addToast("Please fill in all required fields", "error");
+      return;
+    }
+
+    if (!editingId) return;
+
+    const result = await updateAddress({
+      id: editingId,
+      ...formData,
+    });
+    if (result.success) {
+      addToast("Address updated successfully", "success");
+      setEditingId(null);
+      setFormData({
+        type: "shipping",
+        fullName: "",
+        streetAddress: "",
+        city: "",
+        state: "",
+        zipCode: "",
+        country: "USA",
+        phone: "",
+        isDefault: false,
+      });
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setIsAdding(false);
+    setFormData({
+      type: "shipping",
+      fullName: "",
+      streetAddress: "",
+      city: "",
+      state: "",
+      zipCode: "",
+      country: "USA",
+      phone: "",
+      isDefault: false,
+    });
+  };
+
 
   const handleDeleteAddress = async (addressId: string) => {
     const result = await deleteAddress(addressId);
@@ -82,83 +144,147 @@ const CustomerAddressesPage: React.FC = () => {
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold text-white">Addresses</h1>
         <button
-          onClick={() => setIsAdding(!isAdding)}
-          className="px-4 py-2 bg-sky-500 hover:bg-sky-600 text-white rounded-md"
+          onClick={() => {
+            setIsAdding(!isAdding);
+            setEditingId(null);
+          }}
+          disabled={editingId !== null}
+          className={`px-4 py-2 text-white rounded-md font-medium ${
+            editingId ? "bg-gray-600 cursor-not-allowed" : "bg-sky-500 hover:bg-sky-600"
+          }`}
         >
-          {isAdding ? "Cancel" : "+ Add Address"}
+          {editingId ? "Finish Editing" : "+ Add Address"}
         </button>
       </div>
 
-      {/* Add New Address Form */}
-      {isAdding && (
+      {/* Add/Edit Address Form */}
+      {(isAdding || editingId) && (
         <div className="bg-slate-800 p-6 rounded-lg border border-slate-700 mb-6">
-          <h2 className="text-xl font-bold text-white mb-4">Add New Address</h2>
-          {/* Form fields would go here */}
+          <h2 className="text-xl font-bold text-white mb-4">
+            {editingId ? "Edit Address" : "Add New Address"}
+          </h2>
           <div className="space-y-4">
-            <input
-              type="text"
-              placeholder="Full Name"
-              value={formData.fullName}
-              onChange={(e) =>
-                setFormData({ ...formData, fullName: e.target.value })
-              }
-              className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white"
-            />
-            <input
-              type="text"
-              placeholder="Street Address"
-              value={formData.streetAddress}
-              onChange={(e) =>
-                setFormData({ ...formData, streetAddress: e.target.value })
-              }
-              className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white"
-            />
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-gray-300 text-sm font-medium mb-1">Address Type</label>
+                <select
+                  value={formData.type}
+                  onChange={(e) =>
+                    setFormData({ ...formData, type: e.target.value as "shipping" | "billing" })
+                  }
+                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white"
+                >
+                  <option value="shipping">Shipping</option>
+                  <option value="billing">Billing</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-gray-300 text-sm font-medium mb-1">Full Name *</label>
+                <input
+                  type="text"
+                  placeholder="Full Name"
+                  value={formData.fullName}
+                  onChange={(e) =>
+                    setFormData({ ...formData, fullName: e.target.value })
+                  }
+                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white placeholder-gray-400"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-gray-300 text-sm font-medium mb-1">Street Address *</label>
               <input
                 type="text"
-                placeholder="City"
-                value={formData.city}
+                placeholder="Street Address"
+                value={formData.streetAddress}
                 onChange={(e) =>
-                  setFormData({ ...formData, city: e.target.value })
+                  setFormData({ ...formData, streetAddress: e.target.value })
                 }
-                className="px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white"
-              />
-              <input
-                type="text"
-                placeholder="State"
-                value={formData.state}
-                onChange={(e) =>
-                  setFormData({ ...formData, state: e.target.value })
-                }
-                className="px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white"
+                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white placeholder-gray-400"
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <input
-                type="text"
-                placeholder="Zip Code"
-                value={formData.zipCode}
-                onChange={(e) =>
-                  setFormData({ ...formData, zipCode: e.target.value })
-                }
-                className="px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white"
-              />
-              <input
-                type="tel"
-                placeholder="Phone"
-                value={formData.phone}
-                onChange={(e) =>
-                  setFormData({ ...formData, phone: e.target.value })
-                }
-                className="px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white"
-              />
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-gray-300 text-sm font-medium mb-1">City *</label>
+                <input
+                  type="text"
+                  placeholder="City"
+                  value={formData.city}
+                  onChange={(e) =>
+                    setFormData({ ...formData, city: e.target.value })
+                  }
+                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white placeholder-gray-400"
+                />
+              </div>
+              <div>
+                <label className="block text-gray-300 text-sm font-medium mb-1">State</label>
+                <input
+                  type="text"
+                  placeholder="State"
+                  value={formData.state}
+                  onChange={(e) =>
+                    setFormData({ ...formData, state: e.target.value })
+                  }
+                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white placeholder-gray-400"
+                />
+              </div>
+              <div>
+                <label className="block text-gray-300 text-sm font-medium mb-1">Zip Code</label>
+                <input
+                  type="text"
+                  placeholder="Zip Code"
+                  value={formData.zipCode}
+                  onChange={(e) =>
+                    setFormData({ ...formData, zipCode: e.target.value })
+                  }
+                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white placeholder-gray-400"
+                />
+              </div>
             </div>
-            <button
-              onClick={handleAddAddress}
-              className="w-full px-4 py-2 bg-sky-500 hover:bg-sky-600 text-white rounded-md"
-            >
-              Save Address
-            </button>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-gray-300 text-sm font-medium mb-1">Country</label>
+                <input
+                  type="text"
+                  placeholder="Country"
+                  value={formData.country}
+                  onChange={(e) =>
+                    setFormData({ ...formData, country: e.target.value })
+                  }
+                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white placeholder-gray-400"
+                />
+              </div>
+              <div>
+                <label className="block text-gray-300 text-sm font-medium mb-1">Phone</label>
+                <input
+                  type="tel"
+                  placeholder="Phone"
+                  value={formData.phone}
+                  onChange={(e) =>
+                    setFormData({ ...formData, phone: e.target.value })
+                  }
+                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white placeholder-gray-400"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={editingId ? handleUpdateAddress : handleAddAddress}
+                className="flex-1 px-4 py-2 bg-sky-500 hover:bg-sky-600 text-white rounded-md font-medium"
+              >
+                {editingId ? "Update Address" : "Save Address"}
+              </button>
+              <button
+                onClick={handleCancelEdit}
+                className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-md font-medium"
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -192,7 +318,13 @@ const CustomerAddressesPage: React.FC = () => {
                     {address.type} Address {address.isDefault && "(Default)"}
                   </p>
                 </div>
-                <div className="space-x-2">
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleEditAddress(address)}
+                    className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm"
+                  >
+                    Edit
+                  </button>
                   <button
                     onClick={() => handleDeleteAddress(address.id)}
                     className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-sm"

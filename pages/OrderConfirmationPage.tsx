@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 
 interface OrderDetails {
@@ -23,14 +23,70 @@ interface OrderDetails {
     customTextCost?: number;
   }>;
   shippingAddress: {
-    name: string;
+    firstName: string;
+    lastName: string;
     email: string;
-    address: string;
+    street1: string;
     city: string;
     state: string;
     zip: string;
+    country: string;
+    phone: string;
   };
 }
+
+// Watermarked Image Component for Order Confirmation
+const WatermarkedOrderImage: React.FC<{ src: string; alt: string }> = ({ src, alt }) => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    if (!canvasRef.current) return;
+
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      // Set canvas size to match image
+      canvas.width = img.width;
+      canvas.height = img.height;
+
+      // Draw the image
+      ctx.drawImage(img, 0, 0);
+
+      // Add AdaptiveGIS watermark
+      ctx.save();
+      ctx.globalAlpha = 0.25;
+      ctx.font = 'bold 48px Arial';
+      ctx.fillStyle = 'white';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      // Rotate and add watermark text diagonally
+      ctx.translate(canvas.width / 2, canvas.height / 2);
+      ctx.rotate(-Math.PI / 4);
+      
+      // Add watermark text multiple times for coverage
+      ctx.fillText('AdaptiveGIS', 0, -100);
+      ctx.fillText('AdaptiveGIS', 0, 0);
+      ctx.fillText('AdaptiveGIS', 0, 100);
+
+      ctx.restore();
+    };
+    img.src = src;
+  }, [src]);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      alt={alt}
+      className="w-24 h-24 object-cover rounded border-2 border-slate-600"
+      style={{ maxWidth: '100%', height: 'auto' }}
+    />
+  );
+};
 
 const OrderConfirmationPage: React.FC = () => {
   const location = useLocation();
@@ -124,25 +180,6 @@ const OrderConfirmationPage: React.FC = () => {
     );
   }
 
-  const handleDownloadCustomizationImage = (item: OrderDetails['items'][0], index: number) => {
-    if (!item.customization) return;
-
-    const link = document.createElement('a');
-    link.href = item.customization.value;
-    link.download = item.customization.fileName || `${orderDetails.orderNumber}-item-${index + 1}-customization.png`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const handleDownloadAllImages = () => {
-    orderDetails.items.forEach((item, index) => {
-      if (item.customization) {
-        setTimeout(() => handleDownloadCustomizationImage(item, index), index * 500);
-      }
-    });
-  };
-
   const handleDownloadReceipt = () => {
     // Generate receipt content
     const receiptContent = `
@@ -157,9 +194,9 @@ Date: ${new Date().toLocaleDateString()}
 ═══════════════════════════════════════════
 SHIPPING INFORMATION
 ═══════════════════════════════════════════
-${orderDetails.shippingAddress.name}
+${orderDetails.shippingAddress.firstName} ${orderDetails.shippingAddress.lastName}
 ${orderDetails.shippingAddress.email}
-${orderDetails.shippingAddress.address}
+${orderDetails.shippingAddress.street1}
 ${orderDetails.shippingAddress.city}, ${orderDetails.shippingAddress.state} ${orderDetails.shippingAddress.zip}
 
 ═══════════════════════════════════════════
@@ -278,10 +315,9 @@ Questions? Contact us at support@customthreads.com
               {item.customization && (
                 <div className="mt-3 bg-slate-700 p-3 rounded-lg">
                   <div className="flex items-start gap-3">
-                    <img 
+                    <WatermarkedOrderImage 
                       src={item.customization.value} 
                       alt="Customization" 
-                      className="w-24 h-24 object-cover rounded border-2 border-slate-600"
                     />
                     <div className="flex-1">
                       <p className="text-sm text-gray-300 mb-2">
@@ -292,15 +328,6 @@ Questions? Contact us at support@customthreads.com
                           <span className="text-gray-500"> • {item.customization.fileName}</span>
                         )}
                       </p>
-                      <button
-                        onClick={() => handleDownloadCustomizationImage(item, index)}
-                        className="text-xs bg-sky-600 hover:bg-sky-700 text-white px-3 py-1.5 rounded transition-colors flex items-center gap-1"
-                      >
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        Download Full-Size Image
-                      </button>
                     </div>
                   </div>
                 </div>
@@ -335,9 +362,9 @@ Questions? Contact us at support@customthreads.com
       <div className="bg-slate-800 p-8 rounded-lg shadow-2xl border border-slate-700 mb-6">
         <h2 className="text-2xl font-semibold text-white mb-4">Shipping Address</h2>
         <div className="text-gray-300 space-y-1">
-          <p className="font-semibold text-white">{orderDetails.shippingAddress.name}</p>
+          <p className="font-semibold text-white">{orderDetails.shippingAddress.firstName} {orderDetails.shippingAddress.lastName}</p>
           <p>{orderDetails.shippingAddress.email}</p>
-          <p>{orderDetails.shippingAddress.address}</p>
+          <p>{orderDetails.shippingAddress.street1}</p>
           <p>
             {orderDetails.shippingAddress.city}, {orderDetails.shippingAddress.state}{' '}
             {orderDetails.shippingAddress.zip}
@@ -366,27 +393,6 @@ Questions? Contact us at support@customthreads.com
           </svg>
           Download Receipt
         </button>
-        {orderDetails.items.some(item => item.customization) && (
-          <button
-            onClick={handleDownloadAllImages}
-            className="bg-purple-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-purple-700 transition-colors flex items-center justify-center"
-          >
-            <svg
-              className="w-5 h-5 mr-2"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-              />
-            </svg>
-            Download All Images
-          </button>
-        )}
         <Link to="/store">
           <button className="w-full bg-slate-700 text-white font-bold py-3 px-6 rounded-lg hover:bg-slate-600 transition-colors">
             Continue Shopping

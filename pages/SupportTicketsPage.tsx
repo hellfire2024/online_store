@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useCustomerAuth } from '../context/CustomerAuthContext';
+import { useSiteSettings } from '../context/SiteSettingsContext';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../hooks/useToast';
+import { CustomerOrder } from '../types';
 
 interface SupportTicket {
   id: string;
@@ -22,7 +24,8 @@ interface SupportTicket {
 }
 
 const SupportTicketsPage: React.FC = () => {
-  const { isAuthenticated } = useCustomerAuth();
+  const { isAuthenticated, customer } = useCustomerAuth();
+  const { siteSettings } = useSiteSettings();
   const navigate = useNavigate();
   const { addToast } = useToast();
 
@@ -40,7 +43,7 @@ const SupportTicketsPage: React.FC = () => {
           ticketNumber: 'TKT-2026-001',
           subject: 'Question about product customization',
           message: 'Can I add metallic ink to my design?',
-          orderId: 'ORD-2026-001',
+          orderId: 'AGIS-0000000001',
           status: 'in_progress',
           priority: 'medium',
           createdAt: '2026-01-24T10:30:00Z',
@@ -65,7 +68,7 @@ const SupportTicketsPage: React.FC = () => {
     }
   }, [isAuthenticated]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.subject.trim() || !formData.message.trim()) {
       addToast('Subject and message are required', 'error');
@@ -91,6 +94,48 @@ const SupportTicketsPage: React.FC = () => {
         },
       ],
     };
+
+    // Send email to support with ticket information
+    try {
+      const ticketDate = new Date().toLocaleDateString();
+      
+      // Build subject line with order info if available
+      let orderInfo = '';
+      if (formData.orderId) {
+        const selectedOrder = customer?.orders.find(o => o.id === formData.orderId);
+        orderInfo = selectedOrder ? ` | Order: ${selectedOrder.orderNumber}` : '';
+      }
+      
+      const subjectPrefix = siteSettings?.supportSubjectPrefix || 'Support Request';
+      const ticketSuffix = siteSettings?.supportTicketSuffix || 'SUP-001-001';
+      const emailSubject = `${subjectPrefix} | ${formData.subject}${orderInfo} | ${ticketDate} | ${ticketSuffix}`;
+      const supportEmail = siteSettings?.supportEmail || 'support@adaptivegis.com';
+      
+      const response = await fetch('/api/send-ticket-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: supportEmail,
+          subject: emailSubject,
+          ticketNumber: newTicket.ticketNumber,
+          orderId: formData.orderId,
+          priority: formData.priority,
+          message: formData.message,
+          customerInfo: {
+            subject: formData.subject,
+            date: ticketDate,
+          },
+        }),
+      });
+
+      if (response.ok) {
+        console.log('Support ticket email sent successfully');
+      } else {
+        console.warn('Failed to send support ticket email');
+      }
+    } catch (error) {
+      console.error('Error sending support ticket email:', error);
+    }
 
     setTickets([newTicket, ...tickets]);
     setFormData({ subject: '', message: '', orderId: '', priority: 'medium' });
@@ -194,13 +239,29 @@ const SupportTicketsPage: React.FC = () => {
 
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">Related Order (Optional)</label>
-            <input
-              type="text"
-              value={formData.orderId}
-              onChange={(e) => setFormData({ ...formData, orderId: e.target.value })}
-              placeholder="e.g., ORD-2026-001"
-              className="w-full px-4 py-2 rounded bg-slate-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
-            />
+            {customer?.orders && customer.orders.length > 0 ? (
+              <select
+                value={formData.orderId}
+                onChange={(e) => setFormData({ ...formData, orderId: e.target.value })}
+                className="w-full px-4 py-2 rounded bg-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+              >
+                <option value="">Select an order (or leave blank for general inquiry)</option>
+                {customer.orders.map((order) => (
+                  <option key={order.id} value={order.id}>
+                    {order.orderNumber} - {new Date(order.date).toLocaleDateString()} ({order.status})
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                type="text"
+                value={formData.orderId}
+                onChange={(e) => setFormData({ ...formData, orderId: e.target.value })}
+                placeholder="e.g., AGIS-0000000001 or leave blank"
+                className="w-full px-4 py-2 rounded bg-slate-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
+              />
+            )}
+            <p className="text-xs text-gray-500 mt-1">Leave blank to submit a general support request without relating to an order.</p>
           </div>
 
           <div>

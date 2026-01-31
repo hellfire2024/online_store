@@ -41,6 +41,44 @@ export interface CartItem {
   customText?: string; // Custom engraving text
 }
 
+// ===== SHIPPING TYPES =====
+export interface ShippingAddress {
+  firstName: string;
+  lastName: string;
+  street1: string;
+  street2?: string;
+  city: string;
+  state: string;
+  zip: string;
+  country: string;
+  email: string;
+  phone: string;
+}
+
+export interface ShippingPackage {
+  weight: number; // in pounds
+  length: number; // in inches
+  width: number; // in inches
+  height: number; // in inches
+}
+
+export interface ShippingRate {
+  id: string;
+  carrier: 'easypost' | 'shippo' | 'shipstation';
+  service: string;
+  serviceName: string;
+  rate: number; // in cents
+  estimatedDays: number;
+  estimatedDelivery?: string;
+}
+
+export interface ShippingRateRequest {
+  toAddress: ShippingAddress;
+  fromAddress: ShippingAddress;
+  parcel: ShippingPackage;
+  carriers?: ('easypost' | 'shippo' | 'shipstation')[];
+}
+
 // ===== CUSTOMER TYPES =====
 export interface CustomerAddress {
   id: string;
@@ -53,6 +91,17 @@ export interface CustomerAddress {
   country: string;
   phone: string;
   isDefault: boolean;
+}
+
+// ===== CUSTOMER SEGMENTATION TYPES =====
+export interface CustomerSegmentRule {
+  id: string;
+  name: string; // e.g., "VIP", "At-Risk", "Standard"
+  minTotalSpent?: number; // Minimum total spending to qualify (e.g., 1000)
+  minOrderCount?: number; // Minimum number of orders (e.g., 5)
+  maxDaysSinceOrder?: number; // Max days without an order to qualify (e.g., 180)
+  priority: number; // Lower number = higher priority; first match wins
+  enabled: boolean;
 }
 
 export interface TaxRule {
@@ -131,6 +180,8 @@ export interface Customer {
     announcements: boolean;
   };
   isActive: boolean;
+  segment?: string; // Segment ID based on customer behavior (VIP, At-Risk, Standard, etc.)
+  segmentLastCalculated?: string; // When the segment was last assigned
 }
 
 // Keep original User type for backward compatibility
@@ -336,6 +387,11 @@ export interface SiteSettings {
   orderPrefix?: string; // e.g., "AGIS"
   orderNumberLength?: number; // e.g., 10 for AGIS-0000000001
 
+  // Support & Ticketing Configuration
+  supportEmail?: string; // e.g., "support@adaptivegis.com"
+  supportSubjectPrefix?: string; // e.g., "Support Request"
+  supportTicketSuffix?: string; // e.g., "SUP-001-001"
+
   // Theme Management
   siteBackgroundColor: string;
   siteTextColor: string;
@@ -346,4 +402,26 @@ export interface SiteSettings {
 
   // Terms and Conditions
   termsAndConditionsContent: string;
+
+  // Customer Segmentation
+  segmentRules: CustomerSegmentRule[];
+
+  // Shipping Integration
+  shippingCarriers: {
+    easypost: {
+      enabled: boolean;
+      apiKey: string;
+    };
+    shippo: {
+      enabled: boolean;
+      apiKey: string;
+    };
+    shipstation: {
+      enabled: boolean;
+      apiKey: string;
+      apiSecret: string;
+    };
+  };
+  defaultShippingCarrier: 'easypost' | 'shippo' | 'shipstation';
+  fromAddress: ShippingAddress;
 }

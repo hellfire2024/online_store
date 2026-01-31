@@ -105,13 +105,19 @@ CREATE TABLE IF NOT EXISTS orders (
   total DECIMAL(10,2) NOT NULL,
   status ENUM('pending', 'processing', 'shipped', 'delivered', 'cancelled') DEFAULT 'pending',
   shipping_address_id VARCHAR(36),
+  subtotal DECIMAL(10,2),
+  tax_amount DECIMAL(10,2),
+  shipping_cost DECIMAL(10,2),
   tracking_number VARCHAR(100),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE,
+  FOREIGN KEY (shipping_address_id) REFERENCES customer_addresses(id) ON SET NULL,
   INDEX idx_customer (customer_id),
+  INDEX idx_shipping_address (shipping_address_id),
   INDEX idx_order_number (order_number),
-  INDEX idx_status (status)
+  INDEX idx_status (status),
+  INDEX idx_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS order_items (
