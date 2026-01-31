@@ -3,8 +3,10 @@ import { Chart as ChartJS, CategoryScale, LinearScale, BarController, BarElement
 import { Bar, Doughnut, Line } from 'react-chartjs-2';
 import { apiClient } from '../../services/apiClient';
 import { useToast } from '../../hooks/useToast';
+import { getSegmentName, getSegmentColor } from '../../services/segmentationService';
+import { useSiteSettings } from '../../context/SiteSettingsContext';
 
-interface Customer {
+interface AnalyticsCustomer {
   id: string;
   firstName: string;
   lastName: string;
@@ -16,17 +18,19 @@ interface Customer {
   averageOrderValue: number;
   lastOrderDate?: string;
   createdAt: string;
+  segment?: string; // Segment ID (vip, atrisk, standard, etc.)
 }
 
 ChartJS.register(CategoryScale, LinearScale, BarController, BarElement, ArcElement, Tooltip, Legend);
 
 const CustomerAnalytics: React.FC = () => {
-  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [customers, setCustomers] = useState<AnalyticsCustomer[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive'>('all');
-  const [filterSegment, setFilterSegment] = useState<'all' | 'vip' | 'atrisk' | 'standard'>('all');
+  const [filterSegment, setFilterSegment] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'revenue' | 'orders' | 'recent' | 'name'>('revenue');
   const { addToast } = useToast();
+  const { siteSettings } = useSiteSettings();
 
   useEffect(() => {
     const load = async () => {
@@ -35,11 +39,11 @@ const CustomerAnalytics: React.FC = () => {
         const data = await apiClient.customers.getAll();
         setCustomers(data);
       } catch (e) {
-        const mock: Customer[] = [
-          { id: '1', firstName: 'Jane', lastName: 'Smith', email: 'jane@ex.com', phone: '555-045-6789', isActive: true, orderCount: 12, totalSpent: 1450.75, averageOrderValue: 120.9, lastOrderDate: '2026-01-24T15:30:00Z', createdAt: '2023-11-05T08:15:00Z' },
-          { id: '2', firstName: 'John', lastName: 'Doe', email: 'john@ex.com', phone: '555-012-3456', isActive: true, orderCount: 5, totalSpent: 287.5, averageOrderValue: 57.5, lastOrderDate: '2026-01-20T12:00:00Z', createdAt: '2024-02-10T12:00:00Z' },
-          { id: '3', firstName: 'Alice', lastName: 'Williams', email: 'alice@ex.com', phone: '555-078-9123', isActive: true, orderCount: 8, totalSpent: 623.4, averageOrderValue: 77.93, lastOrderDate: '2026-01-22T11:15:00Z', createdAt: '2024-05-17T11:30:00Z' },
-          { id: '4', firstName: 'Bob', lastName: 'Johnson', email: 'bob@ex.com', phone: '555-098-7654', isActive: false, orderCount: 2, totalSpent: 89.99, averageOrderValue: 45.0, lastOrderDate: '2025-11-15T10:00:00Z', createdAt: '2025-08-22T16:45:00Z' },
+        const mock: AnalyticsCustomer[] = [
+          { id: '1', firstName: 'Jane', lastName: 'Smith', email: 'jane@ex.com', phone: '555-045-6789', isActive: true, orderCount: 12, totalSpent: 1450.75, averageOrderValue: 120.9, lastOrderDate: '2026-01-24T15:30:00Z', createdAt: '2023-11-05T08:15:00Z', segment: 'vip' },
+          { id: '2', firstName: 'John', lastName: 'Doe', email: 'john@ex.com', phone: '555-012-3456', isActive: true, orderCount: 5, totalSpent: 287.5, averageOrderValue: 57.5, lastOrderDate: '2026-01-20T12:00:00Z', createdAt: '2024-02-10T12:00:00Z', segment: 'standard' },
+          { id: '3', firstName: 'Alice', lastName: 'Williams', email: 'alice@ex.com', phone: '555-078-9123', isActive: true, orderCount: 8, totalSpent: 623.4, averageOrderValue: 77.93, lastOrderDate: '2026-01-22T11:15:00Z', createdAt: '2024-05-17T11:30:00Z', segment: 'standard' },
+          { id: '4', firstName: 'Bob', lastName: 'Johnson', email: 'bob@ex.com', phone: '555-098-7654', isActive: false, orderCount: 2, totalSpent: 89.99, averageOrderValue: 45.0, lastOrderDate: '2025-11-15T10:00:00Z', createdAt: '2025-08-22T16:45:00Z', segment: 'atrisk' },
         ];
         setCustomers(mock);
         addToast('Using demo analytics - backend not connected', 'info');
@@ -56,16 +60,18 @@ const CustomerAnalytics: React.FC = () => {
   const totalRevenue = customers.reduce((sum, c) => sum + c.totalSpent, 0);
   const avgOrderValue = totalOrders ? totalRevenue / totalOrders : 0;
   const topCustomers = [...customers].sort((a, b) => b.totalSpent - a.totalSpent).slice(0, 5);
-  const vipCount = customers.filter(c => c.totalSpent >= 1000).length;
-  const atRiskCount = customers.filter(c => c.lastOrderDate && ((Date.now() - new Date(c.lastOrderDate).getTime())/(1000*60*60*24) > 180)).length;
   const inactiveCount = customers.filter(c => !c.isActive).length;
+
+  // Count customers by segment
+  const segmentCounts = (siteSettings?.segmentRules || []).reduce((acc, rule) => {
+    acc[rule.id] = customers.filter(c => c.segment === rule.id).length;
+    return acc;
+  }, {} as Record<string, number>);
 
   // Apply filters
   const filteredCustomers = customers.filter(c => {
     if (filterStatus !== 'all' && ((filterStatus === 'active' && !c.isActive) || (filterStatus === 'inactive' && c.isActive))) return false;
-    if (filterSegment === 'vip' && c.totalSpent < 1000) return false;
-    if (filterSegment === 'atrisk' && (!c.lastOrderDate || (Date.now() - new Date(c.lastOrderDate).getTime())/(1000*60*60*24) <= 180)) return false;
-    if (filterSegment === 'standard' && (c.totalSpent >= 1000 || (c.lastOrderDate && (Date.now() - new Date(c.lastOrderDate).getTime())/(1000*60*60*24) > 180))) return false;
+    if (filterSegment !== 'all' && c.segment !== filterSegment) return false;
     return true;
   });
 
@@ -189,11 +195,11 @@ const CustomerAnalytics: React.FC = () => {
           <h3 className="text-sm font-semibold text-gray-300 mb-4">Customer Segments</h3>
           <Doughnut
             data={{
-              labels: ['VIP (≥$1k)', 'At-Risk', 'Standard'],
+              labels: (siteSettings?.segmentRules || []).map(r => r.name),
               datasets: [{
-                data: [vipCount, atRiskCount, totalCustomers - vipCount - atRiskCount],
-                backgroundColor: ['#0ea5e9', '#eab308', '#64748b'],
-                borderColor: ['#0284c7', '#ca8a04', '#475569'],
+                data: (siteSettings?.segmentRules || []).map(r => segmentCounts[r.id] || 0),
+                backgroundColor: (siteSettings?.segmentRules || []).map(r => getSegmentColor(r.id)),
+                borderColor: (siteSettings?.segmentRules || []).map(r => getSegmentColor(r.id)),
                 borderWidth: 2,
               }]
             }}
@@ -278,13 +284,13 @@ const CustomerAnalytics: React.FC = () => {
             <label className="block text-sm text-gray-400 mb-2">Segment</label>
             <select
               value={filterSegment}
-              onChange={(e) => setFilterSegment(e.target.value as any)}
+              onChange={(e) => setFilterSegment(e.target.value)}
               className="w-full px-3 py-2 bg-slate-700 text-white rounded-md text-sm"
             >
               <option value="all">All Segments</option>
-              <option value="vip">VIP ($1,000+)</option>
-              <option value="atrisk">At-Risk (180+ days)</option>
-              <option value="standard">Standard</option>
+              {(siteSettings?.segmentRules || []).map(rule => (
+                <option key={rule.id} value={rule.id}>{rule.name}</option>
+              ))}
             </select>
           </div>
 
@@ -321,13 +327,14 @@ const CustomerAnalytics: React.FC = () => {
                 <th className="px-4 py-2 text-gray-300 text-right">Total Spent</th>
                 <th className="px-4 py-2 text-gray-300 text-right">Avg Order</th>
                 <th className="px-4 py-2 text-gray-300">Last Order</th>
+                <th className="px-4 py-2 text-gray-300">Segment</th>
                 <th className="px-4 py-2 text-gray-300">Status</th>
               </tr>
             </thead>
             <tbody>
               {displayedCustomers.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-4 text-center text-gray-400">No customers match the selected filters</td>
+                  <td colSpan={8} className="px-4 py-4 text-center text-gray-400">No customers match the selected filters</td>
                 </tr>
               ) : (
                 displayedCustomers.map(c => (
@@ -339,6 +346,14 @@ const CustomerAnalytics: React.FC = () => {
                     <td className="px-4 py-3 text-right text-gray-300">${c.averageOrderValue.toFixed(2)}</td>
                     <td className="px-4 py-3 text-gray-400 text-sm">
                       {c.lastOrderDate ? new Date(c.lastOrderDate).toLocaleDateString() : 'Never'}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span 
+                        className="px-2 py-1 rounded text-xs font-semibold text-white"
+                        style={{ backgroundColor: getSegmentColor(c.segment) }}
+                      >
+                        {getSegmentName(c.segment, siteSettings?.segmentRules || [])}
+                      </span>
                     </td>
                     <td className="px-4 py-3">
                       <span className={`px-2 py-1 rounded text-xs font-semibold ${c.isActive ? 'bg-green-900 text-green-200' : 'bg-red-900 text-red-200'}`}>

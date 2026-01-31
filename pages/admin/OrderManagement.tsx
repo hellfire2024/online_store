@@ -124,7 +124,7 @@ const OrderManagement: React.FC = () => {
     // If marking as shipped, send API call to trigger email
     if (formData.status === 'shipped' && formData.trackingNumber) {
       try {
-        const response = await fetch(`/api/orders-api/${editingOrder.orderNumber}/ship`, {
+        const response = await fetch(`/api/orders/${editingOrder.orderNumber}/ship`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

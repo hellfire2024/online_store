@@ -1,0 +1,154 @@
+import axios from 'axios';
+import { ShippingRate, ShippingRateRequest, ShippingAddress, ShippingPackage } from '../../types';
+
+const EASYPOST_API_BASE = 'https://api.easypost.com/v2';
+const EASYPOST_API_KEY = process.env.EASYPOST_API_KEY;
+
+// Helper to format address for EasyPost
+function formatAddressForEasyPost(address: ShippingAddress) {
+  return {
+    name: `${address.firstName} ${address.lastName}`,
+    street1: address.street1,
+    street2: address.street2 || '',
+    city: address.city,
+    state: address.state,
+    zip: address.zip,
+    country: address.country,
+    email: address.email,
+    phone: address.phone,
+  };
+}
+
+// Helper to format parcel for EasyPost
+function formatParcelForEasyPost(parcel: ShippingPackage) {
+  return {
+    length: parcel.length,
+    width: parcel.width,
+    height: parcel.height,
+    weight: parcel.weight,
+  };
+}
+
+// Map EasyPost service names to human-readable names
+const SERVICE_NAME_MAP: { [key: string]: string } = {
+  'First': 'USPS First Class',
+  'Priority': 'USPS Priority Mail',
+  'Express': 'USPS Express Mail',
+  'ParcelSelect': 'USPS Parcel Select',
+  'FedExHomeDelivery': 'FedEx Home Delivery',
+  'FedEx2Day': 'FedEx 2-Day',
+  'FedExOvernight': 'FedEx Overnight',
+  'UPSGround': 'UPS Ground',
+  '2ndDayAir': 'UPS 2nd Day Air',
+  'NextDayAir': 'UPS Next Day Air',
+  'DHLGround': 'DHL Ground',
+};
+
+export async function getShippingRates(request: ShippingRateRequest): Promise<ShippingRate[]> {
+  if (!EASYPOST_API_KEY) {
+    throw new Error('EasyPost API key not configured');
+  }
+
+  try {
+    const auth = Buffer.from(`${EASYPOST_API_KEY}:`).toString('base64');
+
+    // Create shipment with from and to addresses and parcel
+    const shipmentData = {
+      shipment: {
+        from_address: formatAddressForEasyPost(request.fromAddress),
+        to_address: formatAddressForEasyPost(request.toAddress),
+        parcel: formatParcelForEasyPost(request.parcel),
+      },
+    };
+
+    const shipmentResponse = await axios.post(
+      `${EASYPOST_API_BASE}/shipments`,
+      shipmentData,
+      {
+        headers: {
+          Authorization: `Basic ${auth}`,
+        },
+      }
+    );
+
+    const shipment = shipmentResponse.data.shipment;
+    const rates: ShippingRate[] = [];
+
+    // Extract rates from shipment
+    if (shipment.rates && Array.isArray(shipment.rates)) {
+      shipment.rates.forEach((rate: any) => {
+        rates.push({
+          id: rate.id,
+          carrier: 'easypost',
+          service: rate.service,
+          serviceName: SERVICE_NAME_MAP[rate.service] || rate.service,
+          rate: Math.round(parseFloat(rate.rate) * 100), // Convert to cents
+          estimatedDays: rate.est_delivery_days || 0,
+          estimatedDelivery: rate.est_delivery_date,
+        });
+      });
+    }
+
+    return rates;
+  } catch (error) {
+    console.error('EasyPost error:', error);
+    throw new Error(`Failed to get EasyPost rates: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+}
+
+export async function createLabel(
+  shipmentId: string,
+  rateId: string,
+  labelFormat: string = 'PDF'
+): Promise<any> {
+  if (!EASYPOST_API_KEY) {
+    throw new Error('EasyPost API key not configured');
+  }
+
+  try {
+    const auth = Buffer.from(`${EASYPOST_API_KEY}:`).toString('base64');
+
+    const labelData = {
+      label_format: labelFormat,
+    };
+
+    const response = await axios.post(
+      `${EASYPOST_API_BASE}/shipments/${shipmentId}/buy`,
+      { rate_id: rateId, label_format: labelFormat },
+      {
+        headers: {
+          Authorization: `Basic ${auth}`,
+        },
+      }
+    );
+
+    return response.data.shipment;
+  } catch (error) {
+    console.error('EasyPost label creation error:', error);
+    throw new Error(`Failed to create EasyPost label: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+}
+
+export async function trackShipment(trackingId: string): Promise<any> {
+  if (!EASYPOST_API_KEY) {
+    throw new Error('EasyPost API key not configured');
+  }
+
+  try {
+    const auth = Buffer.from(`${EASYPOST_API_KEY}:`).toString('base64');
+
+    const response = await axios.get(
+      `${EASYPOST_API_BASE}/trackers/${trackingId}`,
+      {
+        headers: {
+          Authorization: `Basic ${auth}`,
+        },
+      }
+    );
+
+    return response.data.tracker;
+  } catch (error) {
+    console.error('EasyPost tracking error:', error);
+    throw new Error(`Failed to track EasyPost shipment: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+}

@@ -1,0 +1,50 @@
+// Add to types.ts - Shipping Integration Types
+
+export interface ShippingRate {
+  id: string;
+  carrier: string;
+  service: string;
+  estimatedDays?: number;
+  rate: number;
+  currency: string;
+  provider: 'easypost' | 'shippo' | 'shipstation';
+}
+
+export interface ShippingAddress {
+  name: string;
+  company?: string;
+  street1: string;
+  street2?: string;
+  city: string;
+  state: string;
+  zip: string;
+  country: string;
+  phone?: string;
+  email?: string;
+}
+
+export interface ShippingPackage {
+  weight: number; // in ounces
+  width?: number; // in inches
+  height?: number; // in inches
+  length?: number; // in inches
+}
+
+export interface ShippingRateRequest {
+  toAddress: ShippingAddress;
+  fromAddress: ShippingAddress;
+  parcel: ShippingPackage;
+  carriers?: string[]; // specific carriers to request rates from
+}
+
+export interface ShippingConfig {
+  easypostEnabled: boolean;
+  easypostApiKey?: string;
+  shippoEnabled: boolean;
+  shippoApiKey?: string;
+  shipstationEnabled: boolean;
+  shipstationApiKey?: string;
+  shipstationApiSecret?: string;
+  defaultCarrier?: 'easypost' | 'shippo' | 'shipstation';
+  fromAddress: ShippingAddress;
+}

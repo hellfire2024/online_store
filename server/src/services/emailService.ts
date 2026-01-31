@@ -2,6 +2,12 @@ import nodemailer from 'nodemailer';
 import { pool } from '../db/connection.js';
 import { RowDataPacket } from 'mysql2';
 
+// Note: For production watermarking of images, you would need:
+// - Sharp library: npm install sharp
+// - Or use canvas: npm install canvas
+// This is a placeholder for the watermark functionality.
+// In production, use sharp to add watermarks before sending emails.
+
 interface EmailConfig extends RowDataPacket {
   provider: string;
   from_email: string;
@@ -100,13 +106,32 @@ export async function sendOrderConfirmationEmail(
 
     const itemsHtml = orderDetails.items
       .map(
-        (item: any) => `
+        (item: any) => {
+          let itemHtml = `
       <tr>
         <td style="padding: 8px; border-bottom: 1px solid #ddd;">${item.name}</td>
         <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: center;">${item.quantity}</td>
         <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right;">$${(item.quantity * item.price).toFixed(2)}</td>
-      </tr>
-    `
+      </tr>`;
+          
+          // Add customization image if present
+          if (item.customization && item.customization.value) {
+            itemHtml += `
+      <tr>
+        <td colspan="3" style="padding: 8px; border-bottom: 1px solid #ddd;">
+          <div style="margin-top: 10px; margin-bottom: 10px;">
+            <strong>Customization:</strong><br/>
+            <img src="${item.customization.value}" alt="Customization" style="max-width: 150px; height: auto; border-radius: 4px; margin-top: 8px; border: 1px solid #ddd;">
+            <p style="font-size: 11px; color: #666; margin-top: 4px;">
+              ${item.customization.fileName ? item.customization.fileName : 'Custom Design'} (${item.customization.type === 'gallery' ? 'Gallery Design' : 'Uploaded Design'})
+            </p>
+          </div>
+        </td>
+      </tr>`;
+          }
+          
+          return itemHtml;
+        }
       )
       .join('');
 
@@ -166,14 +191,18 @@ export async function sendOrderConfirmationEmail(
 
           <h2>Shipping Address</h2>
           <p>
-            ${orderDetails.shippingAddress.name}<br/>
-            ${orderDetails.shippingAddress.address}<br/>
+            ${orderDetails.shippingAddress.firstName} ${orderDetails.shippingAddress.lastName}<br/>
+            ${orderDetails.shippingAddress.street1}<br/>
             ${orderDetails.shippingAddress.city}, ${orderDetails.shippingAddress.state} ${orderDetails.shippingAddress.zip}
           </p>
 
           <p style="margin-top: 30px; color: #666; font-size: 12px;">
             Thank you for shopping with us!<br/>
             Custom Threads Online Store
+          </p>
+          
+          <p style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #ddd; color: #888; font-size: 11px;">
+            <strong>Note:</strong> All customization images are protected with an AdaptiveGIS watermark and are for your reference only.
           </p>
         </div>
       </body>

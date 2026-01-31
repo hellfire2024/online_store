@@ -18,7 +18,8 @@ const CheckoutPage: React.FC = () => {
   const [isCalculatingTax, setIsCalculatingTax] = useState(false);
   const [checkoutMode, setCheckoutMode] = useState<'guest' | 'account' | null>(null);
   const [formData, setFormData] = useState({
-    name: '',
+    firstName: '',
+    lastName: '',
     email: '',
     address: '',
     city: '',
@@ -149,7 +150,7 @@ const CheckoutPage: React.FC = () => {
     e.preventDefault();
     
     // Validate required fields
-    if (!formData.name || !formData.email || !formData.address || !formData.city) {
+    if (!formData.firstName || !formData.lastName || !formData.email || !formData.address || !formData.city) {
       addToast('Please fill in all shipping information', 'error');
       return;
     }
@@ -219,12 +220,15 @@ const CheckoutPage: React.FC = () => {
           };
         }),
         shippingAddress: {
-          name: formData.name,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
           email: formData.email,
-          address: formData.address,
+          street1: formData.address,
           city: formData.city,
           state: shippingState,
           zip: shippingZip,
+          country: 'US',
+          phone: '',
         },
       };
 
@@ -237,13 +241,13 @@ const CheckoutPage: React.FC = () => {
       
       // Try to send order to backend API to create order and trigger email
       try {
-        const apiResponse = await fetch('/api/orders-api', {
+        const apiResponse = await fetch('/api/orders', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             orderNumber: orderDetails.orderNumber,
             customerEmail: formData.email,
-            customerName: formData.name,
+            customerName: `${formData.firstName} ${formData.lastName}`,
             orderData: orderDetails,
           }),
         });
@@ -343,14 +347,24 @@ const CheckoutPage: React.FC = () => {
           <form onSubmit={handlePlaceOrder}>
             <h2 className="text-2xl font-semibold text-white mb-6">Shipping Information</h2>
             <div className="space-y-4">
-              <input 
-                type="text" 
-                placeholder="Full Name" 
-                value={formData.name}
-                onChange={(e) => setFormData({...formData, name: e.target.value})}
-                className={inputClasses} 
-                required 
-              />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <input 
+                  type="text" 
+                  placeholder="First Name" 
+                  value={formData.firstName}
+                  onChange={(e) => setFormData({...formData, firstName: e.target.value})}
+                  className={inputClasses} 
+                  required 
+                />
+                <input 
+                  type="text" 
+                  placeholder="Last Name" 
+                  value={formData.lastName}
+                  onChange={(e) => setFormData({...formData, lastName: e.target.value})}
+                  className={inputClasses} 
+                  required 
+                />
+              </div>
               <input 
                 type="email" 
                 placeholder="Email Address" 

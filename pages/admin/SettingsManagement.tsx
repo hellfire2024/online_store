@@ -28,7 +28,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { TrashIcon } from "../../components/Icons";
 
-type SettingsTab = "general" | "footer" | "menus" | "payment" | "shipping" | "tax" | "orders" | "email" | "support" | "terms";
+type SettingsTab = "general" | "footer" | "menus" | "payment" | "shipping" | "tax" | "orders" | "email" | "support" | "segmentation" | "terms";
 
 // --- Draggable Item Component ---
 const DraggableItem: React.FC<{ item: FooterItem, isOverlay?: boolean, onDelete?: (itemId: string) => void }> = ({ item, isOverlay, onDelete }) => {
@@ -538,6 +538,7 @@ const SettingsManagement: React.FC = () => {
         <TabButton tab="orders" label="Orders" />
         <TabButton tab="email" label="Email Configuration" />
         <TabButton tab="support" label="Support" />
+        <TabButton tab="segmentation" label="Segmentation" />
         <TabButton tab="terms" label="Terms & Conditions" />
       </div>
 
@@ -988,67 +989,329 @@ const SettingsManagement: React.FC = () => {
 
         {activeTab === "shipping" && (
           <div className="space-y-6">
-            <h2 className="text-xl font-semibold text-white">
+            <h2 className="text-2xl font-semibold text-white mb-4">
               Shipping Configuration
             </h2>
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">
-                Shipping Method
-              </label>
-              <select
-                name="shippingProvider"
-                value={settings.shippingProvider || "none"}
-                onChange={handleInputChange}
-                className={inputClasses}
-              >
-                <option value="none">None</option>
-                <option value="flatRate">Flat Rate</option>
-                <option value="fedex">FedEx</option>
-                <option value="ups">UPS</option>
-                <option value="usps">USPS</option>
-              </select>
+
+            {/* From Address */}
+            <div className="bg-slate-700 p-6 rounded-lg border border-slate-600">
+              <h3 className="text-lg font-semibold text-white mb-4">Sender Address</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <input
+                  type="text"
+                  placeholder="Full Name"
+                  value={settings.fromAddress?.name || ""}
+                  onChange={(e) =>
+                    setSettings((prev) => ({
+                      ...prev!,
+                      fromAddress: {
+                        ...prev!.fromAddress,
+                        name: e.target.value,
+                      },
+                    }))
+                  }
+                  className={inputClasses}
+                />
+                <input
+                  type="email"
+                  placeholder="Email"
+                  value={settings.fromAddress?.email || ""}
+                  onChange={(e) =>
+                    setSettings((prev) => ({
+                      ...prev!,
+                      fromAddress: {
+                        ...prev!.fromAddress,
+                        email: e.target.value,
+                      },
+                    }))
+                  }
+                  className={inputClasses}
+                />
+                <input
+                  type="text"
+                  placeholder="Street Address"
+                  value={settings.fromAddress?.street1 || ""}
+                  onChange={(e) =>
+                    setSettings((prev) => ({
+                      ...prev!,
+                      fromAddress: {
+                        ...prev!.fromAddress,
+                        street1: e.target.value,
+                      },
+                    }))
+                  }
+                  className={inputClasses}
+                />
+                <input
+                  type="text"
+                  placeholder="Street Address Line 2"
+                  value={settings.fromAddress?.street2 || ""}
+                  onChange={(e) =>
+                    setSettings((prev) => ({
+                      ...prev!,
+                      fromAddress: {
+                        ...prev!.fromAddress,
+                        street2: e.target.value,
+                      },
+                    }))
+                  }
+                  className={inputClasses}
+                />
+                <input
+                  type="text"
+                  placeholder="City"
+                  value={settings.fromAddress?.city || ""}
+                  onChange={(e) =>
+                    setSettings((prev) => ({
+                      ...prev!,
+                      fromAddress: {
+                        ...prev!.fromAddress,
+                        city: e.target.value,
+                      },
+                    }))
+                  }
+                  className={inputClasses}
+                />
+                <select
+                  value={settings.fromAddress?.state || ""}
+                  onChange={(e) =>
+                    setSettings((prev) => ({
+                      ...prev!,
+                      fromAddress: {
+                        ...prev!.fromAddress,
+                        state: e.target.value,
+                      },
+                    }))
+                  }
+                  className={inputClasses}
+                >
+                  <option value="">Select State</option>
+                  {US_STATES.map((state) => (
+                    <option key={state.code} value={state.code}>
+                      {state.name}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  type="text"
+                  placeholder="ZIP Code"
+                  value={settings.fromAddress?.zip || ""}
+                  onChange={(e) =>
+                    setSettings((prev) => ({
+                      ...prev!,
+                      fromAddress: {
+                        ...prev!.fromAddress,
+                        zip: e.target.value,
+                      },
+                    }))
+                  }
+                  className={inputClasses}
+                />
+                <input
+                  type="tel"
+                  placeholder="Phone Number"
+                  value={settings.fromAddress?.phone || ""}
+                  onChange={(e) =>
+                    setSettings((prev) => ({
+                      ...prev!,
+                      fromAddress: {
+                        ...prev!.fromAddress,
+                        phone: e.target.value,
+                      },
+                    }))
+                  }
+                  className={inputClasses}
+                />
+              </div>
             </div>
 
-            {settings.shippingProvider === "flatRate" && (
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">
-                  Flat Rate Cost ($)
-                </label>
-                <input
-                  type="number"
-                  name="shippingFlatRate"
-                  value={settings.shippingFlatRate || 0}
-                  onChange={handleInputChange}
-                  className={inputClasses}
-                />
+            {/* Carrier Configuration */}
+            <div className="bg-slate-700 p-6 rounded-lg border border-slate-600">
+              <h3 className="text-lg font-semibold text-white mb-4">Carrier Configuration</h3>
+
+              {/* EasyPost */}
+              <div className="mb-6 p-4 bg-slate-600 rounded-lg">
+                <div className="flex items-center justify-between mb-3">
+                  <label className="flex items-center space-x-3 flex-1">
+                    <input
+                      type="checkbox"
+                      checked={settings.shippingCarriers?.easypost?.enabled || false}
+                      onChange={(e) =>
+                        setSettings((prev) => ({
+                          ...prev!,
+                          shippingCarriers: {
+                            ...prev!.shippingCarriers,
+                            easypost: {
+                              ...prev!.shippingCarriers?.easypost,
+                              enabled: e.target.checked,
+                            },
+                          },
+                        }))
+                      }
+                      className="w-4 h-4"
+                    />
+                    <span className="text-white font-medium">EasyPost (Multi-carrier)</span>
+                  </label>
+                  <span className="text-xs text-gray-400">USPS, UPS, FedEx, DHL</span>
+                </div>
+                {settings.shippingCarriers?.easypost?.enabled && (
+                  <input
+                    type="password"
+                    placeholder="EasyPost API Key"
+                    value={settings.shippingCarriers?.easypost?.apiKey || ""}
+                    onChange={(e) =>
+                      setSettings((prev) => ({
+                        ...prev!,
+                        shippingCarriers: {
+                          ...prev!.shippingCarriers,
+                          easypost: {
+                            ...prev!.shippingCarriers?.easypost,
+                            apiKey: e.target.value,
+                          },
+                        },
+                      }))
+                    }
+                    className={inputClasses}
+                  />
+                )}
               </div>
-            )}
-            {["fedex", "ups", "usps"].includes(
-              settings.shippingProvider || "none",
-            ) && (
+
+              {/* Shippo */}
+              <div className="mb-6 p-4 bg-slate-600 rounded-lg">
+                <div className="flex items-center justify-between mb-3">
+                  <label className="flex items-center space-x-3 flex-1">
+                    <input
+                      type="checkbox"
+                      checked={settings.shippingCarriers?.shippo?.enabled || false}
+                      onChange={(e) =>
+                        setSettings((prev) => ({
+                          ...prev!,
+                          shippingCarriers: {
+                            ...prev!.shippingCarriers,
+                            shippo: {
+                              ...prev!.shippingCarriers?.shippo,
+                              enabled: e.target.checked,
+                            },
+                          },
+                        }))
+                      }
+                      className="w-4 h-4"
+                    />
+                    <span className="text-white font-medium">Shippo (Multi-carrier)</span>
+                  </label>
+                  <span className="text-xs text-gray-400">USPS, UPS, FedEx, DHL</span>
+                </div>
+                {settings.shippingCarriers?.shippo?.enabled && (
+                  <input
+                    type="password"
+                    placeholder="Shippo API Key"
+                    value={settings.shippingCarriers?.shippo?.apiKey || ""}
+                    onChange={(e) =>
+                      setSettings((prev) => ({
+                        ...prev!,
+                        shippingCarriers: {
+                          ...prev!.shippingCarriers,
+                          shippo: {
+                            ...prev!.shippingCarriers?.shippo,
+                            apiKey: e.target.value,
+                          },
+                        },
+                      }))
+                    }
+                    className={inputClasses}
+                  />
+                )}
+              </div>
+
+              {/* ShipStation */}
+              <div className="mb-6 p-4 bg-slate-600 rounded-lg">
+                <div className="flex items-center justify-between mb-3">
+                  <label className="flex items-center space-x-3 flex-1">
+                    <input
+                      type="checkbox"
+                      checked={settings.shippingCarriers?.shipstation?.enabled || false}
+                      onChange={(e) =>
+                        setSettings((prev) => ({
+                          ...prev!,
+                          shippingCarriers: {
+                            ...prev!.shippingCarriers,
+                            shipstation: {
+                              ...prev!.shippingCarriers?.shipstation,
+                              enabled: e.target.checked,
+                            },
+                          },
+                        }))
+                      }
+                      className="w-4 h-4"
+                    />
+                    <span className="text-white font-medium">ShipStation (Multi-carrier)</span>
+                  </label>
+                  <span className="text-xs text-gray-400">USPS, UPS, FedEx, DHL</span>
+                </div>
+                {settings.shippingCarriers?.shipstation?.enabled && (
+                  <div className="space-y-3">
+                    <input
+                      type="password"
+                      placeholder="ShipStation API Key"
+                      value={settings.shippingCarriers?.shipstation?.apiKey || ""}
+                      onChange={(e) =>
+                        setSettings((prev) => ({
+                          ...prev!,
+                          shippingCarriers: {
+                            ...prev!.shippingCarriers,
+                            shipstation: {
+                              ...prev!.shippingCarriers?.shipstation,
+                              apiKey: e.target.value,
+                            },
+                          },
+                        }))
+                      }
+                      className={inputClasses}
+                    />
+                    <input
+                      type="password"
+                      placeholder="ShipStation API Secret"
+                      value={settings.shippingCarriers?.shipstation?.apiSecret || ""}
+                      onChange={(e) =>
+                        setSettings((prev) => ({
+                          ...prev!,
+                          shippingCarriers: {
+                            ...prev!.shippingCarriers,
+                            shipstation: {
+                              ...prev!.shippingCarriers?.shipstation,
+                              apiSecret: e.target.value,
+                            },
+                          },
+                        }))
+                      }
+                      className={inputClasses}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Default Carrier */}
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">
-                  {settings.shippingProvider?.toUpperCase()} API Key
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Default Shipping Carrier
                 </label>
-                <input
-                  type="password"
-                  value={
-                    settings.shippingApiKeys?.[
-                      settings.shippingProvider as keyof typeof settings.shippingApiKeys
-                    ] || ""
-                  }
+                <select
+                  value={settings.defaultShippingCarrier || "easypost"}
                   onChange={(e) =>
-                    handleApiKeyChange(
-                      "shippingApiKeys",
-                      settings.shippingProvider!,
-                      e.target.value,
-                    )
+                    setSettings((prev) => ({
+                      ...prev!,
+                      defaultShippingCarrier: e.target.value as any,
+                    }))
                   }
-                  placeholder="Enter API Key"
                   className={inputClasses}
-                />
+                >
+                  <option value="easypost">EasyPost</option>
+                  <option value="shippo">Shippo</option>
+                  <option value="shipstation">ShipStation</option>
+                </select>
               </div>
-            )}
+            </div>
+
             <div className="flex justify-end">
               <button
                 onClick={handleSaveSettings}
@@ -2061,6 +2324,184 @@ const SettingsManagement: React.FC = () => {
                 className="bg-sky-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-sky-700"
               >
                 Save Support Settings
+              </button>
+            </div>
+          </div>
+        )}
+
+        {activeTab === "segmentation" && (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-2xl font-semibold text-white mb-2">Customer Segmentation</h2>
+              <p className="text-sm text-gray-400 mb-4">
+                Define customer segments based on spending, order frequency, and inactivity. Segments are applied automatically to customers in analytics.
+              </p>
+            </div>
+
+            {/* Segment Rules */}
+            <div className="space-y-4">
+              {((settings.segmentRules && settings.segmentRules.length > 0) ? settings.segmentRules : []).map((rule, index) => (
+                <div key={rule?.id || index} className="bg-slate-700 p-6 rounded-lg border border-slate-600">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-white">Segment {index + 1}: {rule?.name || 'Unnamed'}</h3>
+                    <div className="flex items-center gap-2">
+                      <label className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          checked={rule?.enabled ?? false}
+                          onChange={(e) => {
+                            const updated = [...(settings.segmentRules || [])];
+                            updated[index] = { ...updated[index], enabled: e.target.checked };
+                            setSettings({ ...settings, segmentRules: updated });
+                          }}
+                          className="w-4 h-4"
+                        />
+                        <span className="text-sm text-gray-300">Enabled</span>
+                      </label>
+                      <button
+                        onClick={() => {
+                          const updated = (settings.segmentRules || []).filter((_, i) => i !== index);
+                          setSettings({ ...settings, segmentRules: updated });
+                          addToast('Segment removed', 'info');
+                        }}
+                        className="text-red-400 hover:text-red-300 text-sm font-medium"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Segment Name</label>
+                      <input
+                        type="text"
+                        value={rule?.name || ''}
+                        onChange={(e) => {
+                          const updated = [...(settings.segmentRules || [])];
+                          updated[index] = { ...updated[index], name: e.target.value };
+                          setSettings({ ...settings, segmentRules: updated });
+                        }}
+                        placeholder="e.g., VIP, At-Risk, Standard"
+                        className={inputClasses}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Priority (1 = highest)</label>
+                      <input
+                        type="number"
+                        value={rule?.priority ?? 1}
+                        onChange={(e) => {
+                          const updated = [...(settings.segmentRules || [])];
+                          updated[index] = { ...updated[index], priority: parseInt(e.target.value) || 1 };
+                          setSettings({ ...settings, segmentRules: updated });
+                        }}
+                        min="1"
+                        className={inputClasses}
+                      />
+                      <p className="text-gray-500 text-xs mt-1">Lower numbers match first. First matching rule wins.</p>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Minimum Total Spent ($)</label>
+                      <input
+                        type="number"
+                        value={rule?.minTotalSpent ?? ''}
+                        onChange={(e) => {
+                          const updated = [...(settings.segmentRules || [])];
+                          updated[index] = { ...updated[index], minTotalSpent: e.target.value ? parseFloat(e.target.value) : undefined };
+                          setSettings({ ...settings, segmentRules: updated });
+                        }}
+                        placeholder="Leave blank to skip this check"
+                        className={inputClasses}
+                      />
+                      <p className="text-gray-500 text-xs mt-1">Customer must have spent at least this much total</p>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Minimum Order Count</label>
+                      <input
+                        type="number"
+                        value={rule?.minOrderCount ?? ''}
+                        onChange={(e) => {
+                          const updated = [...(settings.segmentRules || [])];
+                          updated[index] = { ...updated[index], minOrderCount: e.target.value ? parseInt(e.target.value) : undefined };
+                          setSettings({ ...settings, segmentRules: updated });
+                        }}
+                        placeholder="Leave blank to skip this check"
+                        className={inputClasses}
+                      />
+                      <p className="text-gray-500 text-xs mt-1">Customer must have placed at least this many orders</p>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Max Days Since Order (for At-Risk)</label>
+                      <input
+                        type="number"
+                        value={rule?.maxDaysSinceOrder ?? ''}
+                        onChange={(e) => {
+                          const updated = [...(settings.segmentRules || [])];
+                          updated[index] = { ...updated[index], maxDaysSinceOrder: e.target.value ? parseInt(e.target.value) : undefined };
+                          setSettings({ ...settings, segmentRules: updated });
+                        }}
+                        placeholder="Leave blank to skip this check"
+                        className={inputClasses}
+                      />
+                      <p className="text-gray-500 text-xs mt-1">Customer qualifies if they haven't ordered in at least this many days</p>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 p-3 bg-slate-600 rounded text-sm text-gray-300">
+                    <strong>Rule Logic:</strong> A customer is assigned to this segment if:
+                    <ul className="mt-2 space-y-1 list-disc list-inside">
+                      {rule?.minTotalSpent !== undefined && <li>Total spending ≥ ${rule.minTotalSpent.toFixed(2)}</li>}
+                      {rule?.minOrderCount !== undefined && <li>Number of orders ≥ {rule.minOrderCount}</li>}
+                      {rule?.maxDaysSinceOrder !== undefined && <li>No orders for ≥ {rule.maxDaysSinceOrder} days</li>}
+                      {!rule?.minTotalSpent && !rule?.minOrderCount && !rule?.maxDaysSinceOrder && <li>No conditions set (applies to all customers)</li>}
+                    </ul>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <button
+              onClick={() => {
+                const newSegment = {
+                  id: `segment_${Date.now()}`,
+                  name: 'New Segment',
+                  priority: ((settings.segmentRules || []).length || 0) + 1,
+                  enabled: true,
+                };
+                setSettings({
+                  ...settings,
+                  segmentRules: [...(settings.segmentRules || []), newSegment],
+                });
+                addToast('New segment added', 'success');
+              }}
+              className="px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-500 text-sm font-medium"
+            >
+              + Add Segment
+            </button>
+
+            <div className="bg-slate-700 p-4 rounded-lg border border-slate-600">
+              <h3 className="text-sm font-semibold text-white mb-3">How Segmentation Works</h3>
+              <ul className="text-sm text-gray-400 space-y-2">
+                <li>• Segments are evaluated by priority (lowest number first)</li>
+                <li>• A customer is assigned to the first matching segment</li>
+                <li>• All conditions in a segment must be met for the customer to match</li>
+                <li>• Conditions left blank are ignored (not required)</li>
+                <li>• Segments are recalculated and stored when customers are loaded in analytics</li>
+              </ul>
+            </div>
+
+            <div className="flex justify-end">
+              <button
+                onClick={handleSaveSettings}
+                className={buttonClasses}
+                disabled={!hasSettingsUnsavedChanges}
+              >
+                Save Segmentation Settings
               </button>
             </div>
           </div>
