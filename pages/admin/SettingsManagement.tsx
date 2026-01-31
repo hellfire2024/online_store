@@ -28,7 +28,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { TrashIcon } from "../../components/Icons";
 
-type SettingsTab = "general" | "contact" | "footer" | "menus" | "payment" | "shipping" | "tax" | "orders" | "email" | "terms";
+type SettingsTab = "general" | "footer" | "menus" | "payment" | "shipping" | "tax" | "orders" | "email" | "terms";
 
 // --- Draggable Item Component ---
 const DraggableItem: React.FC<{ item: FooterItem, isOverlay?: boolean, onDelete?: (itemId: string) => void }> = ({ item, isOverlay, onDelete }) => {
@@ -392,7 +392,20 @@ const SettingsManagement: React.FC = () => {
   ) => {
     const { name, value, type } = e.target;
     const parsedValue = type === "number" ? parseFloat(value) : value;
-    setSettings((prev) => ({ ...prev, [name]: parsedValue }));
+    
+    // Handle footerConfig nested fields
+    if (name.startsWith('footerContact')) {
+      const fieldName = name.replace('footerContact', '').toLowerCase();
+      setSettings((prev) => ({
+        ...prev,
+        footerConfig: {
+          ...prev.footerConfig,
+          [fieldName === 'email' ? 'contactEmail' : fieldName === 'phone' ? 'contactPhone' : 'contactAddress']: parsedValue,
+        },
+      }));
+    } else {
+      setSettings((prev) => ({ ...prev, [name]: parsedValue }));
+    }
   };
 
   const handleApiKeyChange = (
@@ -414,10 +427,16 @@ const SettingsManagement: React.FC = () => {
     field: "text" | "url",
     value: string,
   ) => {
-    const updatedLinks = settings.footerSocialLinks?.map((link) =>
+    const updatedLinks = settings.footerConfig?.socialLinks?.map((link) =>
       link.id === id ? { ...link, [field]: value } : link,
     );
-    setSettings((prev) => ({ ...prev, footerSocialLinks: updatedLinks }));
+    setSettings((prev) => ({
+      ...prev,
+      footerConfig: {
+        ...prev.footerConfig,
+        socialLinks: updatedLinks,
+      },
+    }));
   };
 
   const addSocialLink = () => {
@@ -428,7 +447,10 @@ const SettingsManagement: React.FC = () => {
     };
     setSettings((prev) => ({
       ...prev,
-      footerSocialLinks: [...(prev.footerSocialLinks || []), newLink],
+      footerConfig: {
+        ...prev.footerConfig,
+        socialLinks: [...(prev.footerConfig?.socialLinks || []), newLink],
+      },
     }));
   };
 
@@ -508,7 +530,6 @@ const SettingsManagement: React.FC = () => {
 
       <div className="flex border-b border-slate-700">
         <TabButton tab="general" label="General" />
-        <TabButton tab="contact" label="Contact & Social" />
         <TabButton tab="footer" label="Footer" />
         <TabButton tab="menus" label="Menus" />
         <TabButton tab="payment" label="Payment" />
@@ -640,27 +661,6 @@ const SettingsManagement: React.FC = () => {
           </div>
         )}
 
-        {activeTab === "contact" && (
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-2xl font-semibold text-white mb-2">Contact Page Settings</h2>
-              <p className="text-gray-400 text-sm">
-                Configure the contact information displayed on your contact page. Footer contact details and social links are managed in the <strong>Footer</strong> tab.
-              </p>
-            </div>
-
-            <div className="bg-blue-500 bg-opacity-10 border border-blue-500 border-opacity-30 rounded-md p-4">
-              <p className="text-blue-200 text-sm">
-                💡 Footer configuration including contact information, social links, and footer layout are now unified in the <strong>Footer</strong> tab for better organization.
-              </p>
-            </div>
-
-            <div className="space-y-4">
-              <p className="text-gray-400 text-sm italic">Add page-specific contact settings here as needed.</p>
-            </div>
-          </div>
-        )}
-
         {activeTab === "footer" && (
           <div className="space-y-8">
             <div>
@@ -718,8 +718,8 @@ const SettingsManagement: React.FC = () => {
                   <label className="block text-sm font-medium text-gray-400">Link Text</label>
                   <label className="block text-sm font-medium text-gray-400">Link URL</label>
                 </div>
-                {settings.footerSocialLinks?.map((link) => (
-                  <div key={link.id} className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
+                {settings.footerConfig?.socialLinks?.map((link) => (
+                  <div key={link.id} className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-2 items-end">
                     <input
                       type="text"
                       aria-label="Link Text"
@@ -740,6 +740,20 @@ const SettingsManagement: React.FC = () => {
                       placeholder="https://facebook.com/..."
                       className={inputClasses}
                     />
+                    <button
+                      onClick={() => {
+                        setSettings((prev) => ({
+                          ...prev,
+                          footerConfig: {
+                            ...prev.footerConfig,
+                            socialLinks: prev.footerConfig?.socialLinks?.filter((l) => l.id !== link.id) || [],
+                          },
+                        }));
+                      }}
+                      className="px-3 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm"
+                    >
+                      Delete
+                    </button>
                   </div>
                 ))}
               </div>

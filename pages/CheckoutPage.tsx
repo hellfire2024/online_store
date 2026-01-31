@@ -1,19 +1,28 @@
 
 import React, { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
+import { useCustomerAuth } from '../context/CustomerAuthContext';
 import { useSiteSettings } from '../context/SiteSettingsContext';
 import { useToast } from '../hooks/useToast';
 import { calculateTax } from '../services/taxService';
 
 const CheckoutPage: React.FC = () => {
   const { cartItems, clearCart, itemCount } = useCart();
+  const { customer } = useCustomerAuth();
   const { siteSettings } = useSiteSettings();
   const { addToast } = useToast();
   const navigate = useNavigate();
   const [shippingState, setShippingState] = useState('');
   const [shippingZip, setShippingZip] = useState('');
   const [isCalculatingTax, setIsCalculatingTax] = useState(false);
+  const [checkoutMode, setCheckoutMode] = useState<'guest' | 'account' | null>(null);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    address: '',
+    city: '',
+  });
   const [taxCalculation, setTaxCalculation] = useState({
     subtotal: 0,
     taxableAmount: 0,
@@ -22,26 +31,47 @@ const CheckoutPage: React.FC = () => {
     total: 0,
   });
 
-  if (itemCount === 0) {
-    navigate('/cart');
-    return null;
-  }
+  // Redirect to cart if empty (must be in effect to avoid setState during render)
+  // But only if we're still on the checkout page
+  React.useEffect(() => {
+    if (itemCount === 0 && window.location.hash === '#/checkout') {
+      navigate('/cart');
+    }
+  }, [itemCount, navigate]);
 
   // Calculate tax when state/zip changes
   useMemo(() => {
     const calculateTaxAsync = async () => {
+      const shippingCost = siteSettings?.shippingFlatRate || 5;
+
+      // Calculate subtotal first
+      const subtotal = cartItems.reduce((total, item) => {
+        let optionsDelta = 0;
+        if (item.selectedOptions && item.product.optionLists) {
+          item.product.optionLists.forEach((list) => {
+            const selectedOptionId = item.selectedOptions?.[list.id];
+            if (selectedOptionId) {
+              const option = list.options.find((o) => o.id === selectedOptionId);
+              if (option) {
+                optionsDelta += option.priceDelta;
+              }
+            }
+          });
+        }
+        return total + (item.product.price + optionsDelta) * item.quantity;
+      }, 0);
+
       if (!siteSettings || !siteSettings.taxConfig || !shippingState) {
         setTaxCalculation({
-          subtotal: 0,
-          taxableAmount: 0,
+          subtotal: subtotal,
+          taxableAmount: subtotal,
           taxRate: 0,
           taxAmount: 0,
-          total: siteSettings?.shippingFlatRate || 5,
+          total: subtotal + shippingCost,
         });
         return;
       }
 
-      const shippingCost = siteSettings.shippingFlatRate || 5;
       const provider = siteSettings.taxConfig.provider;
       const credentials = siteSettings.taxConfig.credentials;
 
@@ -115,15 +145,133 @@ const CheckoutPage: React.FC = () => {
     calculateTaxAsync();
   }, [cartItems, shippingState, shippingZip, siteSettings, addToast]);
 
-  const handlePlaceOrder = (e: React.FormEvent) => {
+  const handlePlaceOrder = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate required fields
+    if (!formData.name || !formData.email || !formData.address || !formData.city) {
+      addToast('Please fill in all shipping information', 'error');
+      return;
+    }
+    
     if (!shippingState) {
       addToast('Please select a state for tax calculation', 'error');
       return;
     }
-    addToast('Order placed successfully! (This is a demo)', 'success');
-    clearCart();
-    navigate('/');
+
+    if (!shippingZip) {
+      addToast('Please enter a ZIP code', 'error');
+      return;
+    }
+
+    try {
+      // Generate order number in the same format as backend: AGIS-XXXXXXXXXX
+      // Use a combination of timestamp and random number to ensure uniqueness
+      const randomNum = Math.floor(Math.random() * 1000000000);
+      const orderNumber = `AGIS-${String(randomNum).padStart(10, '0')}`;
+
+      // Prepare order details
+      const orderDetails = {
+        orderNumber,
+        subtotal: taxCalculation.subtotal,
+        shipping: siteSettings?.shippingFlatRate || 5,
+        tax: taxCalculation.taxAmount,
+        total: taxCalculation.total,
+        items: cartItems.map(item => {
+          let optionsDelta = 0;
+          let selectedOptionsText = '';
+          
+          if (item.selectedOptions && item.product.optionLists) {
+            const optionParts: string[] = [];
+            item.product.optionLists.forEach((list) => {
+              const selectedOptionId = item.selectedOptions?.[list.id];
+              if (selectedOptionId) {
+                const option = list.options.find((o) => o.id === selectedOptionId);
+                if (option) {
+                  optionsDelta += option.priceDelta;
+                  optionParts.push(`${list.name}: ${option.name}`);
+                }
+              }
+            });
+            selectedOptionsText = optionParts.join(', ');
+          }
+          
+          // Add custom text cost
+          let customTextCost = 0;
+          if (item.customText && item.product.customTextPricePerChar) {
+            customTextCost = item.customText.length * item.product.customTextPricePerChar;
+          }
+          
+          return {
+            name: item.product.name,
+            quantity: item.quantity,
+            price: item.product.price + optionsDelta + customTextCost,
+            productImage: item.product.imageUrl,
+            customization: item.customization ? {
+              type: item.customization.type,
+              value: item.customization.value, // Full-size image URL or data URL
+              fileName: item.customization.type === 'upload' ? `${item.product.name}-custom.png` : undefined,
+            } : undefined,
+            selectedOptions: selectedOptionsText || undefined,
+            customText: item.customText || undefined,
+            customTextCharCount: item.customText ? item.customText.length : undefined,
+            customTextCost: customTextCost > 0 ? customTextCost : undefined,
+          };
+        }),
+        shippingAddress: {
+          name: formData.name,
+          email: formData.email,
+          address: formData.address,
+          city: formData.city,
+          state: shippingState,
+          zip: shippingZip,
+        },
+      };
+
+      // Store in both sessionStorage and localStorage for HashRouter compatibility
+      sessionStorage.setItem('orderDetails', JSON.stringify(orderDetails));
+      localStorage.setItem('orderDetails', JSON.stringify(orderDetails));
+      localStorage.setItem('shouldShowOrderConfirmation', 'true');
+      
+      console.log('Order placed. Stored in sessionStorage and localStorage:', orderDetails.orderNumber);
+      
+      // Try to send order to backend API to create order and trigger email
+      try {
+        const apiResponse = await fetch('/api/orders-api', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            orderNumber: orderDetails.orderNumber,
+            customerEmail: formData.email,
+            customerName: formData.name,
+            orderData: orderDetails,
+          }),
+        });
+
+        if (apiResponse.ok) {
+          const result = await apiResponse.json();
+          console.log('Order sent to backend:', result);
+          if (result.emailSent) {
+            addToast('Order confirmation email sent!', 'success');
+          }
+        } else {
+          console.warn('Backend order creation failed, but continuing with local data');
+        }
+      } catch (error) {
+        console.warn('Could not send order to backend (expected if server is down):', error);
+      }
+      
+      addToast('Order placed successfully!', 'success');
+      
+      // Navigate FIRST, then clear cart (clearing cart first causes redirect back to cart)
+      navigate('/order-confirmation', { state: orderDetails, replace: true });
+      
+      // Clear cart after navigation to avoid triggering the empty cart redirect
+      setTimeout(() => clearCart(), 100);
+    } catch (error) {
+      console.error('Error processing order:', error);
+      addToast('An error occurred while processing your order. Please try again.', 'error');
+    }
   };
 
   const inputClasses = "w-full p-3 bg-slate-700 border border-slate-600 rounded-md shadow-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500";
@@ -136,20 +284,98 @@ const CheckoutPage: React.FC = () => {
     'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY',
   ];
 
+  // Guard against rendering if cart is empty (redirect will happen via useEffect)
+  if (itemCount === 0) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-gray-400">Redirecting to cart...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-5xl mx-auto">
       <h1 className="text-4xl font-bold text-white text-center mb-8">Checkout</h1>
+      
+      {/* Show login/guest prompt if not authenticated and mode not selected */}
+      {!customer && !checkoutMode && (
+        <div className="bg-slate-800 p-8 rounded-lg shadow-2xl border border-slate-700 mb-8">
+          <h2 className="text-2xl font-semibold text-white mb-6 text-center">How would you like to checkout?</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Guest Checkout */}
+            <div className="border border-slate-600 rounded-lg p-6 hover:border-sky-500 transition-colors">
+              <h3 className="text-xl font-semibold text-white mb-3">Guest Checkout</h3>
+              <p className="text-gray-400 mb-4">Checkout quickly without creating an account</p>
+              <button
+                onClick={() => setCheckoutMode('guest')}
+                className="w-full bg-slate-700 text-white font-bold py-3 rounded-lg hover:bg-slate-600 transition-colors"
+              >
+                Continue as Guest
+              </button>
+            </div>
+
+            {/* Account Checkout */}
+            <div className="border border-slate-600 rounded-lg p-6 hover:border-sky-500 transition-colors">
+              <h3 className="text-xl font-semibold text-white mb-3">Sign In or Register</h3>
+              <p className="text-gray-400 mb-4">Track orders, save addresses, and checkout faster</p>
+              <div className="space-y-3">
+                <Link to="/login?redirect=/checkout">
+                  <button className="w-full bg-sky-500 text-white font-bold py-3 rounded-lg hover:bg-sky-600 transition-colors">
+                    Sign In
+                  </button>
+                </Link>
+                <Link to="/register?redirect=/checkout">
+                  <button className="w-full bg-slate-700 text-white font-bold py-3 rounded-lg hover:bg-slate-600 transition-colors">
+                    Create Account
+                  </button>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Show checkout form if authenticated or guest mode selected */}
+      {(customer || checkoutMode === 'guest') && (
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-12">
         {/* Shipping & Payment Form */}
         <div className="lg:col-span-3 bg-slate-800 p-8 rounded-lg shadow-2xl border border-slate-700">
           <form onSubmit={handlePlaceOrder}>
             <h2 className="text-2xl font-semibold text-white mb-6">Shipping Information</h2>
             <div className="space-y-4">
-              <input type="text" placeholder="Full Name" className={inputClasses} required />
-              <input type="email" placeholder="Email Address" className={inputClasses} required />
-              <input type="text" placeholder="Address" className={inputClasses} required />
+              <input 
+                type="text" 
+                placeholder="Full Name" 
+                value={formData.name}
+                onChange={(e) => setFormData({...formData, name: e.target.value})}
+                className={inputClasses} 
+                required 
+              />
+              <input 
+                type="email" 
+                placeholder="Email Address" 
+                value={formData.email}
+                onChange={(e) => setFormData({...formData, email: e.target.value})}
+                className={inputClasses} 
+                required 
+              />
+              <input 
+                type="text" 
+                placeholder="Address" 
+                value={formData.address}
+                onChange={(e) => setFormData({...formData, address: e.target.value})}
+                className={inputClasses} 
+                required 
+              />
               <div className="flex space-x-4">
-                <input type="text" placeholder="City" className={inputClasses} required />
+                <input 
+                  type="text" 
+                  placeholder="City" 
+                  value={formData.city}
+                  onChange={(e) => setFormData({...formData, city: e.target.value})}
+                  className={inputClasses} 
+                  required 
+                />
                 <select
                   value={shippingState}
                   onChange={(e) => setShippingState(e.target.value)}
@@ -176,10 +402,10 @@ const CheckoutPage: React.FC = () => {
 
             <h2 className="text-2xl font-semibold text-white mt-8 mb-6">Payment Details</h2>
             <div className="space-y-4">
-              <input type="text" placeholder="Card Number" className={inputClasses} required />
+              <input type="text" placeholder="Card Number" className={inputClasses} />
               <div className="flex space-x-4">
-                <input type="text" placeholder="MM / YY" className={inputClasses} required />
-                <input type="text" placeholder="CVC" className={inputClasses} required />
+                <input type="text" placeholder="MM / YY" className={inputClasses} />
+                <input type="text" placeholder="CVC" className={inputClasses} />
               </div>
             </div>
             <div className="mt-8">
@@ -235,6 +461,7 @@ const CheckoutPage: React.FC = () => {
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 };

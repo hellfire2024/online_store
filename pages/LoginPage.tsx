@@ -1,12 +1,13 @@
 import React, { useState } from "react";
 import { useCustomerAuth } from "../context/CustomerAuthContext";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { useToast } from "../hooks/useToast";
 
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [searchParams] = useSearchParams();
 
   const { login: customerLogin } = useCustomerAuth();
   const navigate = useNavigate();
@@ -19,7 +20,8 @@ const LoginPage: React.FC = () => {
     const result = await customerLogin(email, password);
     if (result.success) {
       addToast("Welcome back!", "success");
-      navigate("/account");
+      const redirect = searchParams.get('redirect');
+      navigate(redirect || "/account");
     } else {
       addToast(result.error || "Login failed", "error");
     }

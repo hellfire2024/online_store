@@ -46,6 +46,8 @@ const ProductDetailPage: React.FC = () => {
   
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [uploadedFileName, setUploadedFileName] = useState<string>('');
+  
+  const [customText, setCustomText] = useState<string>('');
 
   const [designIdeas, setDesignIdeas] = useState<string[]>([]);
   const [ideasLoading, setIdeasLoading] = useState(false);
@@ -128,6 +130,7 @@ const ProductDetailPage: React.FC = () => {
       quantity,
       customization,
       selectedOptions,
+      customText: customText || undefined,
     });
   };
 
@@ -168,7 +171,7 @@ const ProductDetailPage: React.FC = () => {
     );
   }, [currentGalleryImages, selectedGalleryImage]);
 
-  // Calculate display price including all selected options - memoized
+  // Calculate display price including all selected options and custom text - memoized
   const displayPrice = useMemo(() => {
     if (!product) return 0;
     let price = product.price;
@@ -183,8 +186,12 @@ const ProductDetailPage: React.FC = () => {
         }
       });
     }
+    // Add custom text cost
+    if (product.allowCustomText && customText && product.customTextPricePerChar) {
+      price += customText.length * product.customTextPricePerChar;
+    }
     return price;
-  }, [product, selectedOptions]);
+  }, [product, selectedOptions, customText]);
 
   if (loading || !product) {
     return <div className="mt-16"><Spinner /></div>;
@@ -291,6 +298,43 @@ const ProductDetailPage: React.FC = () => {
                     )}
                   </div>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {product.allowCustomText && (
+            <div className="mb-6">
+              <h3 className="text-xl font-semibold text-white mb-3">Custom Engraving Text</h3>
+              <div className="bg-slate-700 p-4 rounded-lg">
+                <textarea
+                  value={customText}
+                  onChange={(e) => {
+                    const text = e.target.value;
+                    const maxLength = product.customTextMaxLength || 100;
+                    if (text.length <= maxLength) {
+                      setCustomText(text);
+                    }
+                  }}
+                  placeholder="Enter your custom text here..."
+                  maxLength={product.customTextMaxLength || 100}
+                  rows={3}
+                  className="w-full p-3 bg-slate-600 border border-slate-500 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500 resize-none"
+                />
+                <div className="flex justify-between items-center mt-2 text-sm">
+                  <span className="text-gray-400">
+                    {customText.length} / {product.customTextMaxLength || 100} characters
+                  </span>
+                  {product.customTextPricePerChar && customText.length > 0 && (
+                    <span className="text-sky-400 font-semibold">
+                      +${(customText.length * product.customTextPricePerChar).toFixed(2)} for text
+                    </span>
+                  )}
+                </div>
+                {product.customTextPricePerChar && (
+                  <p className="text-xs text-gray-500 mt-2">
+                    ${product.customTextPricePerChar.toFixed(2)} per character
+                  </p>
+                )}
               </div>
             </div>
           )}

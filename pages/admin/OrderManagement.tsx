@@ -34,8 +34,10 @@ const OrderManagement: React.FC = () => {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
-  const [formData, setFormData] = useState({ status: 'pending', trackingNumber: '', notes: '' });
+  const [formData, setFormData] = useState({ status: 'pending', trackingNumber: '', shipper: 'UPS', notes: '' });
   const { addToast } = useToast();
+
+  const shippers = ['UPS', 'FedEx', 'USPS', 'DHL', 'Other'];
 
   useEffect(() => {
     const mockOrders: Order[] = [
@@ -110,16 +112,47 @@ const OrderManagement: React.FC = () => {
     setFormData({
       status: order.status,
       trackingNumber: order.trackingNumber || '',
+      shipper: 'UPS',
       notes: order.notes || '',
     });
     setIsModalOpen(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!editingOrder) return;
+    
+    // If marking as shipped, send API call to trigger email
+    if (formData.status === 'shipped' && formData.trackingNumber) {
+      try {
+        const response = await fetch(`/api/orders-api/${editingOrder.orderNumber}/ship`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            trackingNumber: formData.trackingNumber,
+            shipper: formData.shipper,
+          }),
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          addToast('Shipping notification sent to customer!', 'success');
+        } else {
+          addToast('Order updated but email may not have been sent', 'warning');
+        }
+      } catch (error) {
+        console.error('Error sending shipping notification:', error);
+        addToast('Order updated (backend may be offline)', 'warning');
+      }
+    }
+
     const updated = orders.map(o =>
       o.id === editingOrder.id
-        ? { ...o, status: formData.status as Order['status'], trackingNumber: formData.trackingNumber, notes: formData.notes }
+        ? { 
+            ...o, 
+            status: formData.status as Order['status'], 
+            trackingNumber: formData.trackingNumber, 
+            notes: formData.notes 
+          }
         : o
     );
     setOrders(updated);
@@ -313,6 +346,23 @@ const OrderManagement: React.FC = () => {
                   className="w-full px-4 py-2 rounded bg-slate-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
                 />
               </div>
+
+              {formData.status === 'shipped' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Shipper</label>
+                  <select
+                    value={formData.shipper}
+                    onChange={(e) => setFormData({ ...formData, shipper: e.target.value })}
+                    className="w-full px-4 py-2 rounded bg-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+                  >
+                    {shippers.map((shipper) => (
+                      <option key={shipper} value={shipper}>
+                        {shipper}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">Notes</label>

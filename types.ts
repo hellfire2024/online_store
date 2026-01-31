@@ -10,6 +10,9 @@ export interface Product {
   enableAIIdeas?: boolean; // Enable AI design ideas for this product
   lowStockThreshold?: number; // Trigger alerts when inventory <= threshold
   optionLists?: ProductOptionList[]; // Multiple option lists (e.g., Size, Color, Material)
+  allowCustomText?: boolean; // Allow customers to add custom engraving text
+  customTextPricePerChar?: number; // Price per character for custom text
+  customTextMaxLength?: number; // Maximum characters allowed
 }
 
 export interface ProductOptionList {
@@ -35,6 +38,7 @@ export interface CartItem {
     value: string; // URL for gallery, data URL for upload
   };
   selectedOptions?: { [listId: string]: string }; // Map of option list ID to selected option ID
+  customText?: string; // Custom engraving text
 }
 
 // ===== CUSTOMER TYPES =====
@@ -285,12 +289,11 @@ export interface SiteSettings {
   faviconUrl?: string;
   footerConfig?: {
     columns: FooterColumn[];
+    socialLinks?: MenuItem[];
+    contactEmail?: string;
+    contactPhone?: string;
+    contactAddress?: string;
   };
-
-  footerSocialLinks: MenuItem[];
-  footerContactEmail: string;
-  footerContactPhone: string;
-  footerContactAddress: string;
 
   paymentProvider: PaymentProvider;
   paymentApiKeys: {

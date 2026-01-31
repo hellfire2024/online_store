@@ -294,6 +294,9 @@ const ProductManagement: React.FC = () => {
       customizable: false,
       lowStockThreshold: 0,
       optionLists: [],
+      allowCustomText: false,
+      customTextPricePerChar: 0.10,
+      customTextMaxLength: 100,
     };
     setNewProduct(newProd);
     setOriginalProduct(newProd);
@@ -807,7 +810,7 @@ const ProductManagement: React.FC = () => {
                   Customizable
                 </label>
               </div>
-              {currentProduct.customizable && (
+                  {currentProduct.customizable && (
                 <>
                   <div>
                     <label htmlFor="galleryId" className="block text-sm text-gray-300 mb-1">
@@ -843,6 +846,65 @@ const ProductManagement: React.FC = () => {
                     >
                       Enable AI Design Ideas
                     </label>
+                  </div>
+
+                  <div className="border-t border-slate-600 pt-4 mt-4">
+                    <h4 className="text-sm font-semibold text-gray-300 mb-3">Custom Engraving Text</h4>
+                    <div className="flex items-center mb-3">
+                      <input
+                        type="checkbox"
+                        name="allowCustomText"
+                        id="allowCustomText"
+                        checked={currentProduct.allowCustomText || false}
+                        onChange={handleCheckboxChange}
+                        className="h-4 w-4 rounded border-gray-300 text-sky-600 focus:ring-sky-500"
+                      />
+                      <label
+                        htmlFor="allowCustomText"
+                        className="ml-2 block text-sm text-gray-300"
+                      >
+                        Allow Custom Engraving Text
+                      </label>
+                    </div>
+                    {currentProduct.allowCustomText && (
+                      <>
+                        <div className="space-y-3">
+                          <div>
+                            <label htmlFor="customTextPricePerChar" className="block text-sm text-gray-300 mb-1">
+                              Price Per Character ($)
+                            </label>
+                            <input
+                              type="number"
+                              id="customTextPricePerChar"
+                              name="customTextPricePerChar"
+                              step="0.01"
+                              min="0"
+                              placeholder="0.10"
+                              value={currentProduct.customTextPricePerChar ?? 0}
+                              onChange={handleChange}
+                              className="w-full p-2 bg-slate-700 border border-slate-600 rounded-md text-white"
+                            />
+                            <p className="text-xs text-gray-400 mt-1">Cost added per character entered (e.g., 0.10 = 10¢ per character)</p>
+                          </div>
+                          <div>
+                            <label htmlFor="customTextMaxLength" className="block text-sm text-gray-300 mb-1">
+                              Maximum Characters
+                            </label>
+                            <input
+                              type="number"
+                              id="customTextMaxLength"
+                              name="customTextMaxLength"
+                              min="1"
+                              placeholder="100"
+                              value={currentProduct.customTextMaxLength ?? 100}
+                              onChange={handleChange}
+                              className="w-full p-2 bg-slate-700 border border-slate-600 rounded-md text-white"
+                            />
+                            <p className="text-xs text-gray-400 mt-1">Maximum number of characters customers can enter</p>
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </>
               )}

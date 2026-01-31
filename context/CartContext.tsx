@@ -21,19 +21,23 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const addToCart = (newItem: CartItem) => {
     setCartItems(prevItems => {
-      const existingItem = prevItems.find(item => 
+      // Check if exact same item exists (same product, options, AND customization)
+      const existingItemIndex = prevItems.findIndex(item => 
         item.product.id === newItem.product.id && 
-        JSON.stringify(item.selectedOptions) === JSON.stringify(newItem.selectedOptions)
+        JSON.stringify(item.selectedOptions) === JSON.stringify(newItem.selectedOptions) &&
+        JSON.stringify(item.customization) === JSON.stringify(newItem.customization)
       );
-      if (existingItem) {
-        addToast(`${newItem.product.name} updated in cart.`, 'success');
-        return prevItems.map(item =>
-          item.product.id === newItem.product.id && 
-          JSON.stringify(item.selectedOptions) === JSON.stringify(newItem.selectedOptions)
-            ? newItem
+      
+      if (existingItemIndex !== -1) {
+        // Item exists - increment quantity
+        addToast(`${newItem.product.name} quantity increased in cart.`, 'success');
+        return prevItems.map((item, index) =>
+          index === existingItemIndex
+            ? { ...item, quantity: item.quantity + newItem.quantity }
             : item
         );
       } else {
+        // New item - add to cart
         addToast(`${newItem.product.name} added to cart.`, 'success');
         return [...prevItems, newItem];
       }
@@ -79,7 +83,12 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
       });
     }
-    return total + (item.product.price + optionsDelta) * item.quantity;
+    // Add custom text cost
+    let customTextCost = 0;
+    if (item.customText && item.product.customTextPricePerChar) {
+      customTextCost = item.customText.length * item.product.customTextPricePerChar;
+    }
+    return total + (item.product.price + optionsDelta + customTextCost) * item.quantity;
   }, 0);
 
   return (

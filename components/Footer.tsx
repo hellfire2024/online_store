@@ -67,29 +67,29 @@ const Footer: React.FC = () => {
           <div>
             <h4 className="font-semibold mb-4">Contact</h4>
             <ul className="space-y-2 text-sm text-gray-400">
-              {siteSettings?.footerContactEmail && (
+              {siteSettings?.footerConfig?.contactEmail && (
                 <li>
                   <a
-                    href={`mailto:${siteSettings.footerContactEmail}`}
+                    href={`mailto:${siteSettings.footerConfig.contactEmail}`}
                     className="hover:text-white transition"
                   >
-                    {siteSettings.footerContactEmail}
+                    {siteSettings.footerConfig.contactEmail}
                   </a>
                 </li>
               )}
-              {siteSettings?.footerContactPhone && (
+              {siteSettings?.footerConfig?.contactPhone && (
                 <li>
                   <a
-                    href={`tel:${siteSettings.footerContactPhone}`}
+                    href={`tel:${siteSettings.footerConfig.contactPhone}`}
                     className="hover:text-white transition"
                   >
-                    {siteSettings.footerContactPhone}
+                    {siteSettings.footerConfig.contactPhone}
                   </a>
                 </li>
               )}
-              {siteSettings?.footerContactAddress && (
+              {siteSettings?.footerConfig?.contactAddress && (
                 <li className="text-gray-400">
-                  {siteSettings.footerContactAddress}
+                  {siteSettings.footerConfig.contactAddress}
                 </li>
               )}
             </ul>

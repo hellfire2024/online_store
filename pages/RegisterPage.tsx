@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useCustomerAuth } from "../context/CustomerAuthContext";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { useToast } from "../hooks/useToast";
 import { validatePassword, getPasswordStrengthColor, getPasswordStrengthBgColor } from "../services/passwordValidator";
 
@@ -28,6 +28,7 @@ const RegisterPage: React.FC = () => {
     sessionStorage.getItem("register_agreeToTerms") === "true"
   );
   const [isLoading, setIsLoading] = useState(false);
+  const [searchParams] = useSearchParams();
 
   const { register } = useCustomerAuth();
   const navigate = useNavigate();
@@ -110,7 +111,8 @@ const RegisterPage: React.FC = () => {
     if (result.success) {
       clearFormData();
       addToast("Account created successfully! Welcome!", "success");
-      navigate("/account");
+      const redirect = searchParams.get('redirect');
+      navigate(redirect || "/account");
     } else {
       addToast(result.error || "Registration failed", "error");
     }

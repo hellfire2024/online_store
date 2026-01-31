@@ -33,12 +33,20 @@ const CartItemRow: React.FC<{ item: CartItem }> = ({ item }) => {
       });
     }
     
-    const finalPrice = item.product.price + optionsDelta;
+    // Add custom text cost
+    let customTextCost = 0;
+    if (item.customText && item.product.customTextPricePerChar) {
+      customTextCost = item.customText.length * item.product.customTextPricePerChar;
+    }
+    
+    const finalPrice = item.product.price + optionsDelta + customTextCost;
 
     return (
-        <div className="flex items-center py-5 border-b border-slate-700">
-            <img src={item.product.imageUrl} alt={item.product.name} className="w-24 h-24 object-cover rounded-md" />
-            <div className="grow ml-4">
+        <div className="flex items-start py-5 border-b border-slate-700 gap-4">
+            <div className="flex-shrink-0">
+                <img src={item.product.imageUrl} alt={item.product.name} className="w-24 h-24 object-cover rounded-md" />
+            </div>
+            <div className="grow">
                 <h3 className="font-semibold text-white">{item.product.name}</h3>
                 <p className="text-sm text-gray-400">${finalPrice.toFixed(2)}</p>
                 {selectedOptionDetails.length > 0 && (
@@ -51,12 +59,35 @@ const CartItemRow: React.FC<{ item: CartItem }> = ({ item }) => {
                     </div>
                 )}
                 {item.customization && (
-                    <div className="text-sm text-sky-400 mt-1">
-                        Customization: {item.customization.type === 'gallery' ? 'Gallery Design' : 'Uploaded Design'}
+                    <div className="mt-2 bg-slate-700 p-2 rounded-lg">
+                        <div className="flex items-center gap-2">
+                            <img 
+                                src={item.customization.value} 
+                                alt="Customization" 
+                                className="w-16 h-16 object-cover rounded border-2 border-slate-600"
+                            />
+                            <div>
+                                <p className="text-xs font-semibold text-sky-400">
+                                    {item.customization.type === 'gallery' ? 'Gallery Design' : 'Uploaded Design'}
+                                </p>
+                                <p className="text-xs text-gray-400 mt-0.5">Custom engraving image</p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+                {item.customText && (
+                    <div className="mt-2 bg-slate-700 p-2 rounded-lg">
+                        <p className="text-xs font-semibold text-purple-400 mb-1">Custom Engraving Text:</p>
+                        <p className="text-sm text-white italic">"{item.customText}"</p>
+                        {item.product.customTextPricePerChar && (
+                            <p className="text-xs text-gray-400 mt-1">
+                                {item.customText.length} characters • +${(item.customText.length * item.product.customTextPricePerChar).toFixed(2)}
+                            </p>
+                        )}
                     </div>
                 )}
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-4 flex-shrink-0">
                 <input
                     type="number"
                     min="1"
@@ -88,6 +119,12 @@ const CartPage: React.FC = () => {
     );
   }
 
+  // Estimate shipping and tax (these will be calculated precisely at checkout)
+  const estimatedShipping = 5.00; // Flat rate estimate
+  const estimatedTaxRate = 0.08; // 8% estimate
+  const estimatedTax = totalPrice * estimatedTaxRate;
+  const estimatedTotal = totalPrice + estimatedShipping + estimatedTax;
+
   return (
     <div className="bg-slate-800 p-8 rounded-lg shadow-2xl border border-slate-700">
       <h1 className="text-3xl font-bold text-white mb-6">Your Shopping Cart</h1>
@@ -97,12 +134,25 @@ const CartPage: React.FC = () => {
         ))}
       </div>
       <div className="mt-6 flex justify-end">
-        <div className="w-full max-w-sm">
-          <div className="flex justify-between text-lg font-semibold text-white">
+        <div className="w-full max-w-sm space-y-2">
+          <div className="flex justify-between text-white">
             <span>Subtotal</span>
             <span>${totalPrice.toFixed(2)}</span>
           </div>
-          <p className="text-gray-400 text-sm mt-2 text-right">Taxes and shipping calculated at checkout.</p>
+          <div className="flex justify-between text-gray-400 text-sm">
+            <span>Estimated Shipping</span>
+            <span>${estimatedShipping.toFixed(2)}</span>
+          </div>
+          <div className="flex justify-between text-gray-400 text-sm">
+            <span>Estimated Tax ({(estimatedTaxRate * 100).toFixed(0)}%)</span>
+            <span>${estimatedTax.toFixed(2)}</span>
+          </div>
+          <div className="border-t border-slate-700 pt-2 mt-2"></div>
+          <div className="flex justify-between text-lg font-semibold text-white">
+            <span>Estimated Total</span>
+            <span>${estimatedTotal.toFixed(2)}</span>
+          </div>
+          <p className="text-gray-400 text-xs mt-2 text-right">Final taxes and shipping calculated at checkout based on your location.</p>
           <Link to="/checkout">
             <button className="w-full mt-4 bg-sky-500 text-white font-bold py-3 rounded-lg hover:bg-sky-600 transition-colors">
               Proceed to Checkout

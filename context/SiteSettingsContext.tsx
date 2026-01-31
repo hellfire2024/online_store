@@ -21,11 +21,11 @@ const defaultSettings: SiteSettings = {
       { id: "center", items: [] },
       { id: "right", items: [] },
     ],
+    socialLinks: [],
+    contactEmail: "",
+    contactPhone: "",
+    contactAddress: "",
   },
-  footerSocialLinks: [],
-  footerContactEmail: "",
-  footerContactPhone: "",
-  footerContactAddress: "",
   paymentProvider: "none",
   paymentApiKeys: { stripe: "", paypal: "", square: "", authorizeNet: "" },
   shippingProvider: "none",
@@ -34,8 +34,8 @@ const defaultSettings: SiteSettings = {
   // Default tax configuration
   taxConfig: {
     enableTaxCollection: true,
-    provider: "stripe",
-    defaultTaxRate: 0,
+    provider: "manual",
+    defaultTaxRate: 8,
     credentials: {
       stripeApiKey: "",
     },
