@@ -43,7 +43,7 @@ const SupportTicketsPage: React.FC = () => {
           ticketNumber: 'TKT-2026-001',
           subject: 'Question about product customization',
           message: 'Can I add metallic ink to my design?',
-          orderId: 'ORD-2026-001',
+          orderId: 'AGIS-0000000001',
           status: 'in_progress',
           priority: 'medium',
           createdAt: '2026-01-24T10:30:00Z',
@@ -257,7 +257,7 @@ const SupportTicketsPage: React.FC = () => {
                 type="text"
                 value={formData.orderId}
                 onChange={(e) => setFormData({ ...formData, orderId: e.target.value })}
-                placeholder="e.g., ORD-2026-001 or leave blank"
+                placeholder="e.g., AGIS-0000000001 or leave blank"
                 className="w-full px-4 py-2 rounded bg-slate-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
               />
             )}
