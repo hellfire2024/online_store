@@ -1,8 +1,8 @@
 import { Router, Request, Response } from 'express';
-import * as easypostService from '../services/easypostService';
-import * as shippoService from '../services/shippoService';
-import * as shipstationService from '../services/shipstationService';
-import { ShippingRateRequest, ShippingRate } from '../types';
+import * as easypostService from '../services/easypostService.js';
+import * as shippoService from '../services/shippoService.js';
+import * as shipstationService from '../services/shipstationService.js';
+import { ShippingRateRequest, ShippingRate } from '../types.js';
 
 const router = Router();
 

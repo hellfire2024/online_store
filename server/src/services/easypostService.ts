@@ -1,4 +1,4 @@
-import { ShippingRate, ShippingRateRequest, ShippingAddress, ShippingPackage } from '../types';
+import { ShippingRate, ShippingRateRequest, ShippingAddress, ShippingPackage } from '../types.js';
 
 const EASYPOST_API_BASE = 'https://api.easypost.com/v2';
 const EASYPOST_API_KEY = process.env.EASYPOST_API_KEY;

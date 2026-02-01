@@ -1,4 +1,4 @@
-import { ShippingRate, ShippingRateRequest, ShippingAddress, ShippingPackage } from '../types';
+import { ShippingRate, ShippingRateRequest, ShippingAddress, ShippingPackage } from '../types.js';
 
 const SHIPPO_API_BASE = 'https://api.goshippo.com/v1';
 const SHIPPO_API_KEY = process.env.SHIPPO_API_KEY;

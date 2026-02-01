@@ -1,4 +1,4 @@
-import { ShippingRate, ShippingRateRequest, ShippingAddress } from '../types';
+import { ShippingRate, ShippingRateRequest, ShippingAddress } from '../types.js';
 
 const SHIPSTATION_API_BASE = 'https://ssapi.shipstation.com';
 const SHIPSTATION_API_KEY = process.env.SHIPSTATION_API_KEY;
