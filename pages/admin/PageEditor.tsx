@@ -981,7 +981,6 @@ const PageEditor: React.FC = () => {
             value={page.title}
             onChange={handleChange}
             className="w-full p-3 bg-slate-800 border-2 border-slate-700 rounded-md text-white text-2xl font-bold focus:outline-none focus:ring-2 focus:ring-sky-500"
-            disabled={!isNewPage && (page.pageType === 'home' || page.pageType === 'about')}
           />
         </div>
 
