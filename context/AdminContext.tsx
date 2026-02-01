@@ -171,11 +171,11 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({
     }
   };
 
-  // ===== AUTO-LOGOUT AFTER 30 MIN INACTIVITY =====
+  // ===== AUTO-LOGOUT AFTER 5 MIN INACTIVITY =====
   useEffect(() => {
     if (!adminUser) return;
 
-    const TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
+    const TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
     let timeoutId: NodeJS.Timeout;
 
     const resetTimeout = () => {
