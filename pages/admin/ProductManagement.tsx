@@ -31,7 +31,11 @@ interface SortableOptionListProps {
   onToggleRequired: () => void;
   onDelete: () => void;
   onAddOption: () => void;
-  onOptionChange: (optionId: string, field: "name" | "priceDelta", value: string) => void;
+  onOptionChange: (
+    optionId: string,
+    field: "name" | "priceDelta",
+    value: string,
+  ) => void;
   onDeleteOption: (optionId: string) => void;
   onDragEndOption: (event: DragEndEvent) => void;
 }
@@ -59,7 +63,7 @@ const SortableOptionList: React.FC<SortableOptionListProps> = ({
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
-    })
+    }),
   );
 
   const style = {
@@ -68,7 +72,9 @@ const SortableOptionList: React.FC<SortableOptionListProps> = ({
     opacity: isDragging ? 0.5 : 1,
   };
 
-  const sortedOptions = [...optionList.options].sort((a, b) => a.order - b.order);
+  const sortedOptions = [...optionList.options].sort(
+    (a, b) => a.order - b.order,
+  );
 
   return (
     <div
@@ -125,7 +131,9 @@ const SortableOptionList: React.FC<SortableOptionListProps> = ({
                 key={opt.id}
                 option={opt}
                 onChangeName={(value) => onOptionChange(opt.id, "name", value)}
-                onChangePriceDelta={(value) => onOptionChange(opt.id, "priceDelta", value)}
+                onChangePriceDelta={(value) =>
+                  onOptionChange(opt.id, "priceDelta", value)
+                }
                 onDelete={() => onDeleteOption(opt.id)}
               />
             ))}
@@ -133,7 +141,9 @@ const SortableOptionList: React.FC<SortableOptionListProps> = ({
         </DndContext>
 
         {sortedOptions.length === 0 && (
-          <p className="text-sm text-gray-400 italic p-2">No options in this list yet</p>
+          <p className="text-sm text-gray-400 italic p-2">
+            No options in this list yet
+          </p>
         )}
 
         <button
@@ -220,8 +230,14 @@ const SortableOption: React.FC<SortableOptionProps> = ({
 };
 
 const ProductManagement: React.FC = () => {
-  const { products, isLoading, addProduct, updateProduct, fetchProducts, deleteProduct } =
-    useProducts();
+  const {
+    products,
+    isLoading,
+    addProduct,
+    updateProduct,
+    fetchProducts,
+    deleteProduct,
+  } = useProducts();
   const { galleries, galleryImages, fetchGalleryImages } = useGalleries();
   const [newProduct, setNewProduct] = useState<Omit<Product, "id"> | null>(
     null,
@@ -231,7 +247,9 @@ const ProductManagement: React.FC = () => {
     Product | Omit<Product, "id"> | null
   >(null);
   const [imagePreview, setImagePreview] = useState<string>("");
-  const [imageVersions, setImageVersions] = useState<Record<string, number>>({});
+  const [imageVersions, setImageVersions] = useState<Record<string, number>>(
+    {},
+  );
   const [showImageSelector, setShowImageSelector] = useState(false);
   const { addToast } = useToast();
   const { setHasUnsavedChanges } = useUnsavedChanges();
@@ -242,7 +260,7 @@ const ProductManagement: React.FC = () => {
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
-    })
+    }),
   );
 
   const isModalOpen = !!newProduct || !!editingProduct;
@@ -252,10 +270,14 @@ const ProductManagement: React.FC = () => {
     JSON.stringify(currentProduct) !== JSON.stringify(originalProduct);
 
   const setProductState = (
-    updater: (p: Product | Omit<Product, "id">) => Product | Omit<Product, "id">
+    updater: (
+      p: Product | Omit<Product, "id">,
+    ) => Product | Omit<Product, "id">,
   ) => {
     if (newProduct) {
-      setNewProduct((prev) => (prev ? (updater(prev) as Omit<Product, "id">) : prev));
+      setNewProduct((prev) =>
+        prev ? (updater(prev) as Omit<Product, "id">) : prev,
+      );
     } else if (editingProduct) {
       setEditingProduct((prev) => (prev ? (updater(prev) as Product) : prev));
     }
@@ -263,11 +285,15 @@ const ProductManagement: React.FC = () => {
 
   // Filter out any null/undefined products and ensure valid data
   const validProducts = products.filter((p): p is Product => p != null);
-  
+
   const lowStockProducts = validProducts.filter(
-    (p) => (p.lowStockThreshold ?? 0) > 0 && Number(p.inventory) <= (p.lowStockThreshold ?? 0)
+    (p) =>
+      (p.lowStockThreshold ?? 0) > 0 &&
+      Number(p.inventory) <= (p.lowStockThreshold ?? 0),
   );
-  const outOfStockProducts = validProducts.filter((p) => Number(p.inventory) <= 0);
+  const outOfStockProducts = validProducts.filter(
+    (p) => Number(p.inventory) <= 0,
+  );
 
   useEffect(() => {
     setHasUnsavedChanges(hasUnsavedChanges);
@@ -299,7 +325,7 @@ const ProductManagement: React.FC = () => {
       lowStockThreshold: 0,
       optionLists: [],
       allowCustomText: false,
-      customTextPricePerChar: 0.10,
+      customTextPricePerChar: 0.1,
       customTextMaxLength: 100,
     };
     setNewProduct(newProd);
@@ -319,17 +345,18 @@ const ProductManagement: React.FC = () => {
       try {
         // Upload image to server
         const formData = new FormData();
-        formData.append('image', file);
-        formData.append('type', 'products');
+        formData.append("image", file);
+        formData.append("type", "products");
 
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+        const apiUrl =
+          import.meta.env.VITE_API_URL || "http://localhost:3001/api";
         const response = await fetch(`${apiUrl}/upload/image`, {
-          method: 'POST',
+          method: "POST",
           body: formData,
         });
 
         if (!response.ok) {
-          throw new Error('Failed to upload image');
+          throw new Error("Failed to upload image");
         }
 
         const data = await response.json();
@@ -343,7 +370,7 @@ const ProductManagement: React.FC = () => {
         }
         addToast("Image uploaded successfully!", "success");
       } catch (error) {
-        console.error('Error uploading image:', error);
+        console.error("Error uploading image:", error);
         addToast("Failed to upload image. Please try again.", "error");
       }
     }
@@ -368,7 +395,9 @@ const ProductManagement: React.FC = () => {
   };
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >,
   ) => {
     const { name, value, type } = e.target;
     const parsedValue = type === "number" ? parseFloat(value) : value;
@@ -418,8 +447,13 @@ const ProductManagement: React.FC = () => {
 
   const handleDeleteOptionList = (listId: string) => {
     setProductState((prev) => {
-      const optionLists = (prev.optionLists || []).filter((l) => l.id !== listId);
-      const reordered = optionLists.map((list, idx) => ({ ...list, order: idx + 1 }));
+      const optionLists = (prev.optionLists || []).filter(
+        (l) => l.id !== listId,
+      );
+      const reordered = optionLists.map((list, idx) => ({
+        ...list,
+        order: idx + 1,
+      }));
       return { ...prev, optionLists: reordered } as Product;
     });
   };
@@ -456,7 +490,8 @@ const ProductManagement: React.FC = () => {
             opt.id === optionId
               ? {
                   ...opt,
-                  [field]: field === "priceDelta" ? parseFloat(value) || 0 : value,
+                  [field]:
+                    field === "priceDelta" ? parseFloat(value) || 0 : value,
                 }
               : opt,
           );
@@ -473,13 +508,17 @@ const ProductManagement: React.FC = () => {
     if (!over || active.id === over.id) return;
 
     setProductState((prev) => {
-      const optionLists = [...(prev.optionLists || [])].sort((a, b) => a.order - b.order);
+      const optionLists = [...(prev.optionLists || [])].sort(
+        (a, b) => a.order - b.order,
+      );
       const oldIndex = optionLists.findIndex((l) => l.id === active.id);
       const newIndex = optionLists.findIndex((l) => l.id === over.id);
-      const reordered = arrayMove(optionLists, oldIndex, newIndex).map((list, idx) => ({
-        ...list,
-        order: idx + 1,
-      }));
+      const reordered = arrayMove(optionLists, oldIndex, newIndex).map(
+        (list, idx) => ({
+          ...list,
+          order: idx + 1,
+        }),
+      );
       return { ...prev, optionLists: reordered } as Product;
     });
   };
@@ -494,10 +533,12 @@ const ProductManagement: React.FC = () => {
           const options = [...list.options].sort((a, b) => a.order - b.order);
           const oldIndex = options.findIndex((o) => o.id === active.id);
           const newIndex = options.findIndex((o) => o.id === over.id);
-          const reordered = arrayMove(options, oldIndex, newIndex).map((opt, idx) => ({
-            ...opt,
-            order: idx + 1,
-          }));
+          const reordered = arrayMove(options, oldIndex, newIndex).map(
+            (opt, idx) => ({
+              ...opt,
+              order: idx + 1,
+            }),
+          );
           return { ...list, options: reordered };
         }
         return list;
@@ -511,7 +552,10 @@ const ProductManagement: React.FC = () => {
       const optionLists = (prev.optionLists || []).map((list) => {
         if (list.id === listId) {
           const options = list.options.filter((o) => o.id !== optionId);
-          const reordered = options.map((opt, idx) => ({ ...opt, order: idx + 1 }));
+          const reordered = options.map((opt, idx) => ({
+            ...opt,
+            order: idx + 1,
+          }));
           return { ...list, options: reordered };
         }
         return list;
@@ -522,33 +566,33 @@ const ProductManagement: React.FC = () => {
 
   const handleSave = async () => {
     const productToSave = newProduct || editingProduct;
-    
+
     // Validation
     if (!productToSave?.name?.trim()) {
       addToast("Product name is required", "error");
       return;
     }
-    
+
     if (!productToSave.price || productToSave.price <= 0) {
       addToast("Product price must be greater than 0", "error");
       return;
     }
-    
+
     if (!productToSave.inventory || Number(productToSave.inventory) < 0) {
       addToast("Product inventory must be 0 or greater", "error");
       return;
     }
-    
+
     if (!productToSave.imageUrl?.trim()) {
       addToast("Product image is required", "error");
       return;
     }
 
     // Warn if trying to use base64 image (won't be persisted to database)
-    if (productToSave.imageUrl?.startsWith('data:')) {
+    if (productToSave.imageUrl?.startsWith("data:")) {
       addToast(
         "⚠️ Base64 images cannot be persisted. Please upload the image using the Upload Image button.",
-        "error"
+        "error",
       );
       return;
     }
@@ -598,17 +642,25 @@ const ProductManagement: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
         <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
           <p className="text-sm text-gray-400 mb-1">Low Stock</p>
-          <p className="text-2xl font-bold text-yellow-300">{lowStockProducts.length}</p>
-          <p className="text-xs text-gray-500">Inventory at or below threshold</p>
+          <p className="text-2xl font-bold text-yellow-300">
+            {lowStockProducts.length}
+          </p>
+          <p className="text-xs text-gray-500">
+            Inventory at or below threshold
+          </p>
         </div>
         <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
           <p className="text-sm text-gray-400 mb-1">Out of Stock</p>
-          <p className="text-2xl font-bold text-red-300">{outOfStockProducts.length}</p>
+          <p className="text-2xl font-bold text-red-300">
+            {outOfStockProducts.length}
+          </p>
           <p className="text-xs text-gray-500">Needs immediate attention</p>
         </div>
         <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
           <p className="text-sm text-gray-400 mb-1">Total Products</p>
-          <p className="text-2xl font-bold text-sky-300">{validProducts.length}</p>
+          <p className="text-2xl font-bold text-sky-300">
+            {validProducts.length}
+          </p>
           <p className="text-xs text-gray-500">Catalog items</p>
         </div>
       </div>
@@ -625,9 +677,18 @@ const ProductManagement: React.FC = () => {
             </tr>
           </thead>
           <tbody>
-            {(itemsPerPage === -1 ? validProducts : validProducts.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)).map((product) => {
+            {(itemsPerPage === -1
+              ? validProducts
+              : validProducts.slice(
+                  (currentPage - 1) * itemsPerPage,
+                  currentPage * itemsPerPage,
+                )
+            ).map((product) => {
               const isOut = Number(product.inventory) <= 0;
-              const isLow = (product.lowStockThreshold ?? 0) > 0 && Number(product.inventory) <= (product.lowStockThreshold ?? 0) && !isOut;
+              const isLow =
+                (product.lowStockThreshold ?? 0) > 0 &&
+                Number(product.inventory) <= (product.lowStockThreshold ?? 0) &&
+                !isOut;
               const cacheBust = imageVersions[product.id];
               const imageSrc = cacheBust
                 ? `${product.imageUrl}${product.imageUrl.includes("?") ? "&" : "?"}v=${cacheBust}`
@@ -650,8 +711,8 @@ const ProductManagement: React.FC = () => {
                         isOut
                           ? "bg-red-900 text-red-200"
                           : isLow
-                          ? "bg-yellow-900 text-yellow-200"
-                          : "bg-green-900 text-green-200"
+                            ? "bg-yellow-900 text-yellow-200"
+                            : "bg-green-900 text-green-200"
                       }`}
                     >
                       {isOut ? "Out of stock" : isLow ? "Low stock" : "Healthy"}
@@ -667,7 +728,11 @@ const ProductManagement: React.FC = () => {
                       </button>
                       <button
                         onClick={() => {
-                          if (window.confirm(`Are you sure you want to delete "${product.name}"? This action cannot be undone.`)) {
+                          if (
+                            window.confirm(
+                              `Are you sure you want to delete "${product.name}"? This action cannot be undone.`,
+                            )
+                          ) {
                             deleteProduct(product.id);
                           }
                         }}
@@ -700,7 +765,10 @@ const ProductManagement: React.FC = () => {
             </h2>
             <div className="space-y-4">
               <div>
-                <label htmlFor="name" className="block text-sm font-semibold text-gray-300 mb-1">
+                <label
+                  htmlFor="name"
+                  className="block text-sm font-semibold text-gray-300 mb-1"
+                >
                   Product Name
                 </label>
                 <input
@@ -714,7 +782,10 @@ const ProductManagement: React.FC = () => {
                 />
               </div>
               <div>
-                <label htmlFor="description" className="block text-sm font-semibold text-gray-300 mb-1">
+                <label
+                  htmlFor="description"
+                  className="block text-sm font-semibold text-gray-300 mb-1"
+                >
                   Description
                 </label>
                 <textarea
@@ -729,7 +800,10 @@ const ProductManagement: React.FC = () => {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="price" className="block text-sm font-semibold text-gray-300 mb-1">
+                  <label
+                    htmlFor="price"
+                    className="block text-sm font-semibold text-gray-300 mb-1"
+                  >
                     Price ($)
                   </label>
                   <input
@@ -744,7 +818,10 @@ const ProductManagement: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label htmlFor="inventory" className="block text-sm font-semibold text-gray-300 mb-1">
+                  <label
+                    htmlFor="inventory"
+                    className="block text-sm font-semibold text-gray-300 mb-1"
+                  >
                     Stock Quantity
                   </label>
                   <input
@@ -759,7 +836,10 @@ const ProductManagement: React.FC = () => {
                 </div>
               </div>
               <div>
-                <label htmlFor="lowStockThreshold" className="block text-sm font-semibold text-gray-300 mb-1">
+                <label
+                  htmlFor="lowStockThreshold"
+                  className="block text-sm font-semibold text-gray-300 mb-1"
+                >
                   Low Stock Threshold
                 </label>
                 <input
@@ -771,7 +851,9 @@ const ProductManagement: React.FC = () => {
                   onChange={handleChange}
                   className="w-full p-2 bg-slate-700 border border-slate-600 rounded-md text-white"
                 />
-                <p className="text-xs text-gray-400 mt-1">Alerts when inventory drops to this level.</p>
+                <p className="text-xs text-gray-400 mt-1">
+                  Alerts when inventory drops to this level.
+                </p>
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-300 mb-2">
@@ -788,7 +870,14 @@ const ProductManagement: React.FC = () => {
                 )}
                 <div className="flex gap-2 mb-3">
                   <label className="flex-1 flex items-center px-4 py-2 bg-slate-700 text-sky-300 rounded-lg shadow-sm border border-slate-600 cursor-pointer hover:bg-slate-600 hover:text-white transition-colors">
-                    <svg className="w-5 h-5 mr-2" fill="currentColor" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M16.88 9.1A4 4 0 0 1 16 17H5a5 5 0 0 1-1-9.9V7a3 3 0 0 1 4.52-2.59A4.98 4.98 0 0 1 17 8c0 .38-.04.74-.12 1.1zM11 11h3l-4 4-4-4h3V7h2v4z" /></svg>
+                    <svg
+                      className="w-5 h-5 mr-2"
+                      fill="currentColor"
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 20 20"
+                    >
+                      <path d="M16.88 9.1A4 4 0 0 1 16 17H5a5 5 0 0 1-1-9.9V7a3 3 0 0 1 4.52-2.59A4.98 4.98 0 0 1 17 8c0 .38-.04.74-.12 1.1zM11 11h3l-4 4-4-4h3V7h2v4z" />
+                    </svg>
                     <span className="text-sm">Upload Image</span>
                     <input
                       type="file"
@@ -809,36 +898,49 @@ const ProductManagement: React.FC = () => {
 
               {showImageSelector && (
                 <div className="bg-slate-700 rounded-lg p-4 border border-slate-600">
-                  <p className="text-sm text-gray-300 mb-3">Select from gallery images:</p>
+                  <p className="text-sm text-gray-300 mb-3">
+                    Select from gallery images:
+                  </p>
                   <div className="grid grid-cols-4 gap-2 max-h-64 overflow-y-auto">
                     {galleries.length === 0 ? (
-                      <p className="col-span-4 text-center text-gray-400 text-sm">No galleries available</p>
+                      <p className="col-span-4 text-center text-gray-400 text-sm">
+                        No galleries available
+                      </p>
                     ) : (
-                      galleries.flatMap((gallery) => 
-                        galleryImages[gallery.id]?.map((img) => (
-                          <div
-                            key={img.id}
-                            onClick={() => {
-                              setImagePreview(img.imageUrl);
-                              if (newProduct) {
-                                setNewProduct({ ...newProduct, imageUrl: img.imageUrl });
-                              } else if (editingProduct) {
-                                setEditingProduct({ ...editingProduct, imageUrl: img.imageUrl });
-                              }
-                              setShowImageSelector(false);
-                            }}
-                            className={`cursor-pointer rounded-md overflow-hidden border-2 transition-colors hover:border-sky-400 ${
-                              imagePreview === img.imageUrl ? 'border-sky-500' : 'border-slate-600'
-                            }`}
-                          >
-                            <img
-                              src={img.imageUrl}
-                              alt={img.name}
-                              className="w-full h-20 object-cover"
-                              title={img.name}
-                            />
-                          </div>
-                        )) || []
+                      galleries.flatMap(
+                        (gallery) =>
+                          galleryImages[gallery.id]?.map((img) => (
+                            <div
+                              key={img.id}
+                              onClick={() => {
+                                setImagePreview(img.imageUrl);
+                                if (newProduct) {
+                                  setNewProduct({
+                                    ...newProduct,
+                                    imageUrl: img.imageUrl,
+                                  });
+                                } else if (editingProduct) {
+                                  setEditingProduct({
+                                    ...editingProduct,
+                                    imageUrl: img.imageUrl,
+                                  });
+                                }
+                                setShowImageSelector(false);
+                              }}
+                              className={`cursor-pointer rounded-md overflow-hidden border-2 transition-colors hover:border-sky-400 ${
+                                imagePreview === img.imageUrl
+                                  ? "border-sky-500"
+                                  : "border-slate-600"
+                              }`}
+                            >
+                              <img
+                                src={img.imageUrl}
+                                alt={img.name}
+                                className="w-full h-20 object-cover"
+                                title={img.name}
+                              />
+                            </div>
+                          )) || [],
                       )
                     )}
                   </div>
@@ -861,10 +963,13 @@ const ProductManagement: React.FC = () => {
                   Customizable
                 </label>
               </div>
-                  {currentProduct.customizable && (
+              {currentProduct.customizable && (
                 <>
                   <div>
-                    <label htmlFor="galleryId" className="block text-sm text-gray-300 mb-1">
+                    <label
+                      htmlFor="galleryId"
+                      className="block text-sm text-gray-300 mb-1"
+                    >
                       Gallery for Customization
                     </label>
                     <select
@@ -900,7 +1005,9 @@ const ProductManagement: React.FC = () => {
                   </div>
 
                   <div className="border-t border-slate-600 pt-4 mt-4">
-                    <h4 className="text-sm font-semibold text-gray-300 mb-3">Custom Engraving Text</h4>
+                    <h4 className="text-sm font-semibold text-gray-300 mb-3">
+                      Custom Engraving Text
+                    </h4>
                     <div className="flex items-center mb-3">
                       <input
                         type="checkbox"
@@ -921,7 +1028,10 @@ const ProductManagement: React.FC = () => {
                       <>
                         <div className="space-y-3">
                           <div>
-                            <label htmlFor="customTextPricePerChar" className="block text-sm text-gray-300 mb-1">
+                            <label
+                              htmlFor="customTextPricePerChar"
+                              className="block text-sm text-gray-300 mb-1"
+                            >
                               Price Per Character ($)
                             </label>
                             <input
@@ -935,10 +1045,16 @@ const ProductManagement: React.FC = () => {
                               onChange={handleChange}
                               className="w-full p-2 bg-slate-700 border border-slate-600 rounded-md text-white"
                             />
-                            <p className="text-xs text-gray-400 mt-1">Cost added per character entered (e.g., 0.10 = 10¢ per character)</p>
+                            <p className="text-xs text-gray-400 mt-1">
+                              Cost added per character entered (e.g., 0.10 = 10¢
+                              per character)
+                            </p>
                           </div>
                           <div>
-                            <label htmlFor="customTextMaxLength" className="block text-sm text-gray-300 mb-1">
+                            <label
+                              htmlFor="customTextMaxLength"
+                              className="block text-sm text-gray-300 mb-1"
+                            >
                               Maximum Characters
                             </label>
                             <input
@@ -951,7 +1067,9 @@ const ProductManagement: React.FC = () => {
                               onChange={handleChange}
                               className="w-full p-2 bg-slate-700 border border-slate-600 rounded-md text-white"
                             />
-                            <p className="text-xs text-gray-400 mt-1">Maximum number of characters customers can enter</p>
+                            <p className="text-xs text-gray-400 mt-1">
+                              Maximum number of characters customers can enter
+                            </p>
                           </div>
                         </div>
                       </>
@@ -962,7 +1080,9 @@ const ProductManagement: React.FC = () => {
 
               <div className="mt-4">
                 <div className="flex justify-between items-center mb-2">
-                  <label className="block text-sm font-semibold text-gray-300">Product Option Lists</label>
+                  <label className="block text-sm font-semibold text-gray-300">
+                    Product Option Lists
+                  </label>
                   <button
                     type="button"
                     onClick={handleAddOption}
@@ -972,7 +1092,8 @@ const ProductManagement: React.FC = () => {
                   </button>
                 </div>
                 <p className="text-xs text-gray-400 mb-3">
-                  Create separate lists for different option types (e.g., Size, Color, Material). Drag to reorder.
+                  Create separate lists for different option types (e.g., Size,
+                  Color, Material). Drag to reorder.
                 </p>
                 {currentProduct.optionLists?.length ? (
                   <DndContext
@@ -981,28 +1102,54 @@ const ProductManagement: React.FC = () => {
                     onDragEnd={handleDragEndList}
                   >
                     <SortableContext
-                      items={[...currentProduct.optionLists].sort((a, b) => a.order - b.order).map((l) => l.id)}
+                      items={[...currentProduct.optionLists]
+                        .sort((a, b) => a.order - b.order)
+                        .map((l) => l.id)}
                       strategy={verticalListSortingStrategy}
                     >
                       <div className="space-y-2">
-                        {[...currentProduct.optionLists].sort((a, b) => a.order - b.order).map((list) => (
-                          <SortableOptionList
-                            key={list.id}
-                            optionList={list}
-                            onChangeName={(value) => handleOptionListChange(list.id, "name", value)}
-                            onToggleRequired={() => handleOptionListChange(list.id, "required", !list.required)}
-                            onDelete={() => handleDeleteOptionList(list.id)}
-                            onAddOption={() => handleAddOptionToList(list.id)}
-                            onOptionChange={(optionId, field, value) => handleOptionChange(list.id, optionId, field, value)}
-                            onDeleteOption={(optionId) => handleDeleteOption(list.id, optionId)}
-                            onDragEndOption={(event) => handleDragEndOption(list.id, event)}
-                          />
-                        ))}
+                        {[...currentProduct.optionLists]
+                          .sort((a, b) => a.order - b.order)
+                          .map((list) => (
+                            <SortableOptionList
+                              key={list.id}
+                              optionList={list}
+                              onChangeName={(value) =>
+                                handleOptionListChange(list.id, "name", value)
+                              }
+                              onToggleRequired={() =>
+                                handleOptionListChange(
+                                  list.id,
+                                  "required",
+                                  !list.required,
+                                )
+                              }
+                              onDelete={() => handleDeleteOptionList(list.id)}
+                              onAddOption={() => handleAddOptionToList(list.id)}
+                              onOptionChange={(optionId, field, value) =>
+                                handleOptionChange(
+                                  list.id,
+                                  optionId,
+                                  field,
+                                  value,
+                                )
+                              }
+                              onDeleteOption={(optionId) =>
+                                handleDeleteOption(list.id, optionId)
+                              }
+                              onDragEndOption={(event) =>
+                                handleDragEndOption(list.id, event)
+                              }
+                            />
+                          ))}
                       </div>
                     </SortableContext>
                   </DndContext>
                 ) : (
-                  <p className="text-sm text-gray-400">No option lists yet. Add separate lists for sizes, colors, materials, etc.</p>
+                  <p className="text-sm text-gray-400">
+                    No option lists yet. Add separate lists for sizes, colors,
+                    materials, etc.
+                  </p>
                 )}
               </div>
             </div>

@@ -1,13 +1,14 @@
-import React, {
-  useState,
-  useEffect,
-  useCallback,
-  useRef,
-} from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { usePages } from "../../context/PagesContext";
 import { useSiteSettings } from "../../context/SiteSettingsContext";
-import { Page, HomePageContent, AboutPageContent, ContactPageContent, ContactFormField } from "../../types";
+import {
+  Page,
+  HomePageContent,
+  AboutPageContent,
+  ContactPageContent,
+  ContactFormField,
+} from "../../types";
 import { useToast } from "../../hooks/useToast";
 import { useUnsavedChanges } from "../../context/UnsavedChangesContext";
 import {
@@ -18,15 +19,15 @@ import {
   useSensor,
   useSensors,
   DragEndEvent,
-} from '@dnd-kit/core';
+} from "@dnd-kit/core";
 import {
   arrayMove,
   SortableContext,
   sortableKeyboardCoordinates,
   useSortable,
   verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { useEditor, EditorContent, Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Image from "@tiptap/extension-image";
@@ -70,16 +71,55 @@ const PAGE_TEMPLATES = {
     path: "/contact",
     defaults: {
       pageTitle: "Get In Touch",
-      pageSubtitle: "Have questions? We'd love to hear from you. Send us a message and we'll respond as soon as possible.",
+      pageSubtitle:
+        "Have questions? We'd love to hear from you. Send us a message and we'll respond as soon as possible.",
       targetEmail: "contact@customthreads.com",
       subjectTemplate: "Contact Form Submission: {subject}",
       successMessage: "Thank you for your message! We'll get back to you soon.",
       formFields: [
-        { id: "f1", type: "fullName" as const, label: "Full Name", placeholder: "John Doe", required: true, enabled: true },
-        { id: "f2", type: "email" as const, label: "Email Address", placeholder: "john@example.com", required: true, enabled: true, validation: { pattern: "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$" } },
-        { id: "f3", type: "phone" as const, label: "Phone Number", placeholder: "(555) 123-4567", required: false, enabled: true, validation: { pattern: "^[\\d\\s()+-]+$" } },
-        { id: "f4", type: "subject" as const, label: "Subject", placeholder: "How can we help?", required: true, enabled: true },
-        { id: "f5", type: "message" as const, label: "Message", placeholder: "Your message here...", required: true, enabled: true, validation: { minLength: 10 } },
+        {
+          id: "f1",
+          type: "fullName" as const,
+          label: "Full Name",
+          placeholder: "John Doe",
+          required: true,
+          enabled: true,
+        },
+        {
+          id: "f2",
+          type: "email" as const,
+          label: "Email Address",
+          placeholder: "john@example.com",
+          required: true,
+          enabled: true,
+          validation: { pattern: "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$" },
+        },
+        {
+          id: "f3",
+          type: "phone" as const,
+          label: "Phone Number",
+          placeholder: "(555) 123-4567",
+          required: false,
+          enabled: true,
+          validation: { pattern: "^[\\d\\s()+-]+$" },
+        },
+        {
+          id: "f4",
+          type: "subject" as const,
+          label: "Subject",
+          placeholder: "How can we help?",
+          required: true,
+          enabled: true,
+        },
+        {
+          id: "f5",
+          type: "message" as const,
+          label: "Message",
+          placeholder: "Your message here...",
+          required: true,
+          enabled: true,
+          validation: { minLength: 10 },
+        },
       ],
     },
   },
@@ -146,29 +186,29 @@ const MenuBar: React.FC<{ editor: Editor | null }> = ({ editor }) => {
     }`;
 
   const colors = [
-    { name: 'Black', value: '#000000' },
-    { name: 'White', value: '#FFFFFF' },
-    { name: 'Gray', value: '#6B7280' },
-    { name: 'Red', value: '#EF4444' },
-    { name: 'Orange', value: '#F97316' },
-    { name: 'Yellow', value: '#EAB308' },
-    { name: 'Green', value: '#22C55E' },
-    { name: 'Blue', value: '#3B82F6' },
-    { name: 'Sky', value: '#0EA5E9' },
-    { name: 'Purple', value: '#A855F7' },
-    { name: 'Pink', value: '#EC4899' },
+    { name: "Black", value: "#000000" },
+    { name: "White", value: "#FFFFFF" },
+    { name: "Gray", value: "#6B7280" },
+    { name: "Red", value: "#EF4444" },
+    { name: "Orange", value: "#F97316" },
+    { name: "Yellow", value: "#EAB308" },
+    { name: "Green", value: "#22C55E" },
+    { name: "Blue", value: "#3B82F6" },
+    { name: "Sky", value: "#0EA5E9" },
+    { name: "Purple", value: "#A855F7" },
+    { name: "Pink", value: "#EC4899" },
   ];
 
   const fonts = [
-    'Arial',
-    'Helvetica',
-    'Times New Roman',
-    'Georgia',
-    'Courier New',
-    'Verdana',
-    'Comic Sans MS',
-    'Impact',
-    'Trebuchet MS',
+    "Arial",
+    "Helvetica",
+    "Times New Roman",
+    "Georgia",
+    "Courier New",
+    "Verdana",
+    "Comic Sans MS",
+    "Impact",
+    "Trebuchet MS",
   ];
 
   const currentFont = editor.getAttributes("textStyle").fontFamily || "";
@@ -177,17 +217,25 @@ const MenuBar: React.FC<{ editor: Editor | null }> = ({ editor }) => {
   useEffect(() => {
     const handleOutsideClick = (event: MouseEvent) => {
       const target = event.target as Node;
-      if (showFontPicker && fontMenuRef.current && !fontMenuRef.current.contains(target)) {
+      if (
+        showFontPicker &&
+        fontMenuRef.current &&
+        !fontMenuRef.current.contains(target)
+      ) {
         setShowFontPicker(false);
       }
-      if (showColorPicker && colorMenuRef.current && !colorMenuRef.current.contains(target)) {
+      if (
+        showColorPicker &&
+        colorMenuRef.current &&
+        !colorMenuRef.current.contains(target)
+      ) {
         setShowColorPicker(false);
       }
     };
 
-    document.addEventListener('mousedown', handleOutsideClick);
+    document.addEventListener("mousedown", handleOutsideClick);
     return () => {
-      document.removeEventListener('mousedown', handleOutsideClick);
+      document.removeEventListener("mousedown", handleOutsideClick);
     };
   }, [showFontPicker, showColorPicker]);
 
@@ -213,7 +261,9 @@ const MenuBar: React.FC<{ editor: Editor | null }> = ({ editor }) => {
                   setShowFontPicker(false);
                 }}
                 className={`block w-full text-left px-4 py-2 text-sm hover:bg-slate-700 ${
-                  currentFont === font ? "bg-slate-700 text-sky-400" : "text-gray-300"
+                  currentFont === font
+                    ? "bg-slate-700 text-sky-400"
+                    : "text-gray-300"
                 }`}
                 style={{ fontFamily: font }}
               >
@@ -255,7 +305,9 @@ const MenuBar: React.FC<{ editor: Editor | null }> = ({ editor }) => {
                     setShowColorPicker(false);
                   }}
                   className={`w-8 h-8 rounded border-2 hover:border-sky-400 ${
-                    currentColor === color.value ? "border-sky-400" : "border-slate-600"
+                    currentColor === color.value
+                      ? "border-sky-400"
+                      : "border-slate-600"
                   }`}
                   style={{ backgroundColor: color.value }}
                   title={color.name}
@@ -391,56 +443,60 @@ const PageEditor: React.FC = () => {
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
-    })
+    }),
   );
 
   const isNewPage = !pageId;
 
-  const editor = useEditor({
-    extensions: [
-      StarterKit,
-      Image,
-      TextStyle,
-      Color,
-      FontFamily,
-      Underline,
-      TextAlign.configure({
-        types: ['heading', 'paragraph'],
-      }),
-      Highlight.configure({
-        multicolor: false,
-      }),
-    ],
-    content: "",
-    editorProps: {
-      attributes: {
-        class:
-          "prose prose-invert max-w-none p-4 h-96 overflow-y-auto focus:outline-none",
+  const editor = useEditor(
+    {
+      extensions: [
+        StarterKit,
+        Image,
+        TextStyle,
+        Color,
+        FontFamily,
+        Underline,
+        TextAlign.configure({
+          types: ["heading", "paragraph"],
+        }),
+        Highlight.configure({
+          multicolor: false,
+        }),
+      ],
+      content: "",
+      editorProps: {
+        attributes: {
+          class:
+            "prose prose-invert max-w-none p-4 h-96 overflow-y-auto focus:outline-none",
+        },
+      },
+      onUpdate: ({ editor }) => {
+        setPage((prev) => {
+          if (!prev) return null;
+          const newPage = { ...prev };
+
+          if (newPage.pageType === "home") {
+            return newPage;
+          } else if (newPage.pageType === "about") {
+            newPage.contentData = {
+              ...(newPage.contentData as AboutPageContent),
+              aboutPageContent: editor.getHTML(),
+            };
+          } else {
+            newPage.content = editor.getHTML();
+          }
+
+          return newPage;
+        });
       },
     },
-    onUpdate: ({ editor }) => {
-      setPage((prev) => {
-        if (!prev) return null;
-        const newPage = { ...prev };
-        
-        if (newPage.pageType === "home") {
-          return newPage;
-        } else if (newPage.pageType === "about") {
-          newPage.contentData = {
-            ...(newPage.contentData as AboutPageContent),
-            aboutPageContent: editor.getHTML(),
-          };
-        } else {
-          newPage.content = editor.getHTML();
-        }
-        
-        return newPage;
-      });
-    },
-  }, []);
+    [],
+  );
 
   const hasUnsavedChanges =
-    JSON.stringify(page) !== JSON.stringify(originalPage) || selectedImageFile !== null;
+    JSON.stringify(page) !== JSON.stringify(originalPage) ||
+    selectedImageFile !== null;
 
   useEffect(() => {
     setHasUnsavedChanges(hasUnsavedChanges);
@@ -450,7 +506,7 @@ const PageEditor: React.FC = () => {
     const template = PAGE_TEMPLATES[pageType];
     let contentData: any;
     let content: string | undefined;
-    
+
     // Set up the content structure based on page type
     if (pageType === "home") {
       contentData = {
@@ -478,7 +534,7 @@ const PageEditor: React.FC = () => {
     setPage(newPage);
     setOriginalPage(newPage);
     setShowPageTypeSelector(false);
-    
+
     // Load content into editor - only for about and custom pages
     if (editor && pageType !== "home" && pageType !== "contact") {
       let contentToLoad = "";
@@ -501,35 +557,37 @@ const PageEditor: React.FC = () => {
 
     let pageToLoad: Omit<Page, "id"> | Page;
     if (pageId) {
-      pageToLoad =
-        pages.find((p) => p.id === pageId) || {
-          title: "Not Found",
-          path: "",
-          content: "",
-          pageType: "custom",
-        };
+      pageToLoad = pages.find((p) => p.id === pageId) || {
+        title: "Not Found",
+        path: "",
+        content: "",
+        pageType: "custom",
+      };
     } else {
       return;
     }
 
     setPage(pageToLoad);
     setOriginalPage(pageToLoad);
-    
-    if (pageToLoad.pageType === 'home' && pageToLoad.contentData) {
-      setPreviewImageUrl((pageToLoad.contentData as HomePageContent).heroBackgroundImageUrl);
+
+    if (pageToLoad.pageType === "home" && pageToLoad.contentData) {
+      setPreviewImageUrl(
+        (pageToLoad.contentData as HomePageContent).heroBackgroundImageUrl,
+      );
     }
 
     if (editor) {
       let contentToLoad = "";
-      
+
       if (pageToLoad.pageType === "about" && pageToLoad.contentData) {
-        contentToLoad = (pageToLoad.contentData as AboutPageContent).aboutPageContent;
+        contentToLoad = (pageToLoad.contentData as AboutPageContent)
+          .aboutPageContent;
       } else if (pageToLoad.pageType === "home") {
         contentToLoad = "";
       } else if (pageToLoad.content) {
         contentToLoad = pageToLoad.content;
       }
-      
+
       if (contentToLoad) {
         const isContentDifferent = editor.getHTML() !== contentToLoad;
         if (isContentDifferent) {
@@ -542,10 +600,12 @@ const PageEditor: React.FC = () => {
   const handleSave = async () => {
     if (page) {
       let pageToSave = { ...page };
-      
+
       // Handle home page image
-      if (pageToSave.pageType === 'home') {
-        let finalImageUrl = (pageToSave.contentData as HomePageContent)?.heroBackgroundImageUrl || '';
+      if (pageToSave.pageType === "home") {
+        let finalImageUrl =
+          (pageToSave.contentData as HomePageContent)?.heroBackgroundImageUrl ||
+          "";
 
         if (selectedImageFile) {
           finalImageUrl = await new Promise<string>((resolve) => {
@@ -558,10 +618,10 @@ const PageEditor: React.FC = () => {
         }
 
         // Warn if trying to use base64 image (won't be persisted)
-        if (finalImageUrl.startsWith('data:')) {
+        if (finalImageUrl.startsWith("data:")) {
           addToast(
             "⚠️ Base64 images cannot be persisted. Please use a URL or implement proper image upload.",
-            "error"
+            "error",
           );
           return;
         }
@@ -587,7 +647,9 @@ const PageEditor: React.FC = () => {
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) => {
     if (page) {
       const { name, value } = e.target;
       setPage({ ...page, [name]: value });
@@ -596,10 +658,13 @@ const PageEditor: React.FC = () => {
 
   const handlePageFontChange = (value: string) => {
     if (!page) return;
-    const baseContentData = (page.contentData && typeof page.contentData === "object")
-      ? page.contentData
-      : {};
-    const updatedContentData: Record<string, any> = { ...(baseContentData as Record<string, any>) };
+    const baseContentData =
+      page.contentData && typeof page.contentData === "object"
+        ? page.contentData
+        : {};
+    const updatedContentData: Record<string, any> = {
+      ...(baseContentData as Record<string, any>),
+    };
 
     if (value) {
       updatedContentData.pageFont = value;
@@ -615,12 +680,18 @@ const PageEditor: React.FC = () => {
     });
   };
 
-  const handlePageTitleStyleChange = (field: "pageTitleFont" | "pageTitleColor", value: string) => {
+  const handlePageTitleStyleChange = (
+    field: "pageTitleFont" | "pageTitleColor",
+    value: string,
+  ) => {
     if (!page) return;
-    const baseContentData = (page.contentData && typeof page.contentData === "object")
-      ? page.contentData
-      : {};
-    const updatedContentData: Record<string, any> = { ...(baseContentData as Record<string, any>) };
+    const baseContentData =
+      page.contentData && typeof page.contentData === "object"
+        ? page.contentData
+        : {};
+    const updatedContentData: Record<string, any> = {
+      ...(baseContentData as Record<string, any>),
+    };
 
     if (value) {
       updatedContentData[field] = value;
@@ -636,8 +707,10 @@ const PageEditor: React.FC = () => {
     });
   };
 
-  const handleHomePageContentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (page && page.pageType === 'home') {
+  const handleHomePageContentChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    if (page && page.pageType === "home") {
       const { name, value } = e.target;
       const currentContentData = (page.contentData || {}) as HomePageContent;
       setPage({
@@ -652,7 +725,7 @@ const PageEditor: React.FC = () => {
 
   const handlePreview = () => {
     if (page) {
-      navigate('/admin/pages/preview', {
+      navigate("/admin/pages/preview", {
         state: {
           page: page,
         },
@@ -668,52 +741,64 @@ const PageEditor: React.FC = () => {
     return (
       <div>
         <h1 className="text-3xl font-bold text-white mb-2">Create New Page</h1>
-        <p className="text-gray-400 mb-8">Select a page type to start. Each type includes the essential fields and starter content.</p>
-        
+        <p className="text-gray-400 mb-8">
+          Select a page type to start. Each type includes the essential fields
+          and starter content.
+        </p>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {(Object.entries(PAGE_TEMPLATES) as [keyof typeof PAGE_TEMPLATES, typeof PAGE_TEMPLATES.home][]).map(
-            ([key, template]) => (
-              <button
-                key={key}
-                onClick={() => handleSelectPageType(key)}
-                className="p-6 bg-slate-800 border-2 border-slate-700 rounded-lg hover:border-sky-500 hover:bg-slate-700 transition-all text-left group"
-              >
-                <div className="text-4xl mb-3 group-hover:scale-110 transition-transform">{template.icon}</div>
-                <h3 className="text-xl font-bold text-white mb-2">{template.label}</h3>
-                <p className="text-gray-400 text-sm mb-4">{template.description}</p>
-                <ul className="text-sm text-gray-300 space-y-1">
-                  {key === "home" && (
-                    <>
-                      <li>✓ Hero title & subtitle</li>
-                      <li>✓ Background image upload</li>
-                      <li>✓ Full page control</li>
-                    </>
-                  )}
-                  {key === "about" && (
-                    <>
-                      <li>✓ Rich text editor</li>
-                      <li>✓ Company story template</li>
-                      <li>✓ HTML formatting support</li>
-                    </>
-                  )}
-                  {key === "contact" && (
-                    <>
-                      <li>✓ Contact template</li>
-                      <li>✓ Rich text content</li>
-                      <li>✓ Custom layout</li>
-                    </>
-                  )}
-                  {key === "custom" && (
-                    <>
-                      <li>✓ Custom title & URL</li>
-                      <li>✓ Full content editor</li>
-                      <li>✓ Images and formatting</li>
-                    </>
-                  )}
-                </ul>
-              </button>
-            ),
-          )}
+          {(
+            Object.entries(PAGE_TEMPLATES) as [
+              keyof typeof PAGE_TEMPLATES,
+              typeof PAGE_TEMPLATES.home,
+            ][]
+          ).map(([key, template]) => (
+            <button
+              key={key}
+              onClick={() => handleSelectPageType(key)}
+              className="p-6 bg-slate-800 border-2 border-slate-700 rounded-lg hover:border-sky-500 hover:bg-slate-700 transition-all text-left group"
+            >
+              <div className="text-4xl mb-3 group-hover:scale-110 transition-transform">
+                {template.icon}
+              </div>
+              <h3 className="text-xl font-bold text-white mb-2">
+                {template.label}
+              </h3>
+              <p className="text-gray-400 text-sm mb-4">
+                {template.description}
+              </p>
+              <ul className="text-sm text-gray-300 space-y-1">
+                {key === "home" && (
+                  <>
+                    <li>✓ Hero title & subtitle</li>
+                    <li>✓ Background image upload</li>
+                    <li>✓ Full page control</li>
+                  </>
+                )}
+                {key === "about" && (
+                  <>
+                    <li>✓ Rich text editor</li>
+                    <li>✓ Company story template</li>
+                    <li>✓ HTML formatting support</li>
+                  </>
+                )}
+                {key === "contact" && (
+                  <>
+                    <li>✓ Contact template</li>
+                    <li>✓ Rich text content</li>
+                    <li>✓ Custom layout</li>
+                  </>
+                )}
+                {key === "custom" && (
+                  <>
+                    <li>✓ Custom title & URL</li>
+                    <li>✓ Full content editor</li>
+                    <li>✓ Images and formatting</li>
+                  </>
+                )}
+              </ul>
+            </button>
+          ))}
         </div>
       </div>
     );
@@ -727,31 +812,37 @@ const PageEditor: React.FC = () => {
     const content = (page.contentData as HomePageContent) || {};
     return (
       <div className="space-y-4 p-4 bg-slate-800 border-2 border-slate-700 rounded-md">
-         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-1">Hero Title</label>
+        <div>
+          <label className="block text-sm font-medium text-gray-300 mb-1">
+            Hero Title
+          </label>
           <input
             type="text"
             name="heroTitle"
-            value={content.heroTitle || ''}
+            value={content.heroTitle || ""}
             onChange={handleHomePageContentChange}
             className="w-full p-2 bg-slate-700 border-2 border-slate-600 rounded-md text-white"
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-1">Hero Subtitle</label>
+          <label className="block text-sm font-medium text-gray-300 mb-1">
+            Hero Subtitle
+          </label>
           <input
             type="text"
             name="heroSubtitle"
-            value={content.heroSubtitle || ''}
+            value={content.heroSubtitle || ""}
             onChange={handleHomePageContentChange}
             className="w-full p-2 bg-slate-700 border-2 border-slate-600 rounded-md text-white"
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-1">Hero Background Image</label>
+          <label className="block text-sm font-medium text-gray-300 mb-1">
+            Hero Background Image
+          </label>
           <ImageUploadInput
             label=""
-            imageUrl={previewImageUrl || ''}
+            imageUrl={previewImageUrl || ""}
             onFileSelect={(file) => {
               setSelectedImageFile(file);
               setPreviewImageUrl(URL.createObjectURL(file));
@@ -767,7 +858,9 @@ const PageEditor: React.FC = () => {
     return (
       <div className="bg-slate-900 border-2 border-slate-700 rounded-md">
         <div className="p-3 bg-slate-800 border-b border-slate-700">
-          <p className="text-gray-300 text-sm">Edit your About page content below</p>
+          <p className="text-gray-300 text-sm">
+            Edit your About page content below
+          </p>
         </div>
         <MenuBar editor={editor} />
         <EditorContent editor={editor} />
@@ -776,9 +869,14 @@ const PageEditor: React.FC = () => {
   };
 
   const renderContactPageEditor = () => {
-    const content = (page.contentData as ContactPageContent) || PAGE_TEMPLATES.contact.defaults;
+    const content =
+      (page.contentData as ContactPageContent) ||
+      PAGE_TEMPLATES.contact.defaults;
 
-    const handleContactContentChange = (field: keyof ContactPageContent, value: any) => {
+    const handleContactContentChange = (
+      field: keyof ContactPageContent,
+      value: any,
+    ) => {
       setPage({
         ...page,
         contentData: {
@@ -788,12 +886,15 @@ const PageEditor: React.FC = () => {
       });
     };
 
-    const handleFieldUpdate = (fieldId: string, updates: Partial<ContactFormField>) => {
+    const handleFieldUpdate = (
+      fieldId: string,
+      updates: Partial<ContactFormField>,
+    ) => {
       const fields = [...(content.formFields || [])];
-      const index = fields.findIndex(f => f.id === fieldId);
+      const index = fields.findIndex((f) => f.id === fieldId);
       if (index >= 0) {
         fields[index] = { ...fields[index], ...updates };
-        handleContactContentChange('formFields', fields);
+        handleContactContentChange("formFields", fields);
       }
     };
 
@@ -801,37 +902,40 @@ const PageEditor: React.FC = () => {
       const { active, over } = event;
       if (over && active.id !== over.id) {
         const fields = [...(content.formFields || [])];
-        const oldIndex = fields.findIndex(f => f.id === active.id);
-        const newIndex = fields.findIndex(f => f.id === over.id);
-        handleContactContentChange('formFields', arrayMove(fields, oldIndex, newIndex));
+        const oldIndex = fields.findIndex((f) => f.id === active.id);
+        const newIndex = fields.findIndex((f) => f.id === over.id);
+        handleContactContentChange(
+          "formFields",
+          arrayMove(fields, oldIndex, newIndex),
+        );
       }
     };
 
     const addCustomField = () => {
       const newField: ContactFormField = {
         id: `custom_${Date.now()}`,
-        type: 'text',
-        label: 'Custom Field',
-        placeholder: 'Enter value',
+        type: "text",
+        label: "Custom Field",
+        placeholder: "Enter value",
         required: false,
         enabled: true,
       };
-      handleContactContentChange('formFields', [...(content.formFields || []), newField]);
+      handleContactContentChange("formFields", [
+        ...(content.formFields || []),
+        newField,
+      ]);
     };
 
     const deleteField = (fieldId: string) => {
-      const fields = content.formFields.filter(f => f.id !== fieldId);
-      handleContactContentChange('formFields', fields);
+      const fields = content.formFields.filter((f) => f.id !== fieldId);
+      handleContactContentChange("formFields", fields);
     };
 
-    const SortableField: React.FC<{ field: ContactFormField }> = ({ field }) => {
-      const {
-        attributes,
-        listeners,
-        setNodeRef,
-        transform,
-        transition,
-      } = useSortable({ id: field.id });
+    const SortableField: React.FC<{ field: ContactFormField }> = ({
+      field,
+    }) => {
+      const { attributes, listeners, setNodeRef, transform, transition } =
+        useSortable({ id: field.id });
 
       const style = {
         transform: CSS.Transform.toString(transform),
@@ -839,7 +943,11 @@ const PageEditor: React.FC = () => {
       };
 
       return (
-        <div ref={setNodeRef} style={style} className="bg-slate-700 p-4 rounded-md border border-slate-600">
+        <div
+          ref={setNodeRef}
+          style={style}
+          className="bg-slate-700 p-4 rounded-md border border-slate-600"
+        >
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-3">
               <button
@@ -853,12 +961,18 @@ const PageEditor: React.FC = () => {
               <input
                 type="checkbox"
                 checked={field.enabled}
-                onChange={(e) => handleFieldUpdate(field.id, { enabled: e.target.checked })}
+                onChange={(e) =>
+                  handleFieldUpdate(field.id, { enabled: e.target.checked })
+                }
                 className="w-4 h-4"
               />
               <select
                 value={field.type}
-                onChange={(e) => handleFieldUpdate(field.id, { type: e.target.value as ContactFormField['type'] })}
+                onChange={(e) =>
+                  handleFieldUpdate(field.id, {
+                    type: e.target.value as ContactFormField["type"],
+                  })
+                }
                 className="bg-slate-600 text-white px-2 py-1 rounded text-sm border border-slate-500"
               >
                 <option value="text">Text</option>
@@ -880,7 +994,9 @@ const PageEditor: React.FC = () => {
                 <input
                   type="checkbox"
                   checked={field.required}
-                  onChange={(e) => handleFieldUpdate(field.id, { required: e.target.checked })}
+                  onChange={(e) =>
+                    handleFieldUpdate(field.id, { required: e.target.checked })
+                  }
                   className="w-4 h-4"
                 />
                 Required
@@ -898,47 +1014,67 @@ const PageEditor: React.FC = () => {
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs text-gray-400 mb-1">Label</label>
+                  <label className="block text-xs text-gray-400 mb-1">
+                    Label
+                  </label>
                   <input
                     type="text"
                     value={field.label}
-                    onChange={(e) => handleFieldUpdate(field.id, { label: e.target.value })}
+                    onChange={(e) =>
+                      handleFieldUpdate(field.id, { label: e.target.value })
+                    }
                     className="w-full p-2 bg-slate-600 border border-slate-500 rounded text-white text-sm"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-400 mb-1">Placeholder</label>
+                  <label className="block text-xs text-gray-400 mb-1">
+                    Placeholder
+                  </label>
                   <input
                     type="text"
                     value={field.placeholder}
-                    onChange={(e) => handleFieldUpdate(field.id, { placeholder: e.target.value })}
+                    onChange={(e) =>
+                      handleFieldUpdate(field.id, {
+                        placeholder: e.target.value,
+                      })
+                    }
                     className="w-full p-2 bg-slate-600 border border-slate-500 rounded text-white text-sm"
                   />
                 </div>
               </div>
-              
-              {field.type === 'select' && (
+
+              {field.type === "select" && (
                 <div>
-                  <label className="block text-xs text-gray-400 mb-1">Options (comma-separated)</label>
+                  <label className="block text-xs text-gray-400 mb-1">
+                    Options (comma-separated)
+                  </label>
                   <input
                     type="text"
-                    value={field.options?.join(', ') || ''}
-                    onChange={(e) => handleFieldUpdate(field.id, { options: e.target.value.split(',').map(o => o.trim()) })}
+                    value={field.options?.join(", ") || ""}
+                    onChange={(e) =>
+                      handleFieldUpdate(field.id, {
+                        options: e.target.value.split(",").map((o) => o.trim()),
+                      })
+                    }
                     placeholder="Option 1, Option 2, Option 3"
                     className="w-full p-2 bg-slate-600 border border-slate-500 rounded text-white text-sm"
                   />
                 </div>
               )}
-              
+
               <details className="bg-slate-600 rounded p-2">
-                <summary className="text-xs text-gray-300 cursor-pointer">Validation Rules</summary>
+                <summary className="text-xs text-gray-300 cursor-pointer">
+                  Validation Rules
+                </summary>
                 <div className="mt-2 space-y-2">
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <label className="block text-xs text-gray-400">Regex Pattern</label>
-                      <a 
-                        href="https://regex101.com/" 
-                        target="_blank" 
+                      <label className="block text-xs text-gray-400">
+                        Regex Pattern
+                      </label>
+                      <a
+                        href="https://regex101.com/"
+                        target="_blank"
                         rel="noopener noreferrer"
                         className="text-xs text-sky-400 hover:text-sky-300"
                       >
@@ -947,46 +1083,71 @@ const PageEditor: React.FC = () => {
                     </div>
                     <input
                       type="text"
-                      value={field.validation?.pattern || ''}
-                      onChange={(e) => handleFieldUpdate(field.id, { 
-                        validation: { ...field.validation, pattern: e.target.value || undefined }
-                      })}
+                      value={field.validation?.pattern || ""}
+                      onChange={(e) =>
+                        handleFieldUpdate(field.id, {
+                          validation: {
+                            ...field.validation,
+                            pattern: e.target.value || undefined,
+                          },
+                        })
+                      }
                       placeholder="e.g., ^[^\s@]+@[^\s@]+\.[^\s@]+$ for email"
                       className="w-full p-1 bg-slate-700 text-white text-xs rounded border border-slate-500"
                     />
                     <div className="flex gap-1 mt-1 flex-wrap">
                       <button
                         type="button"
-                        onClick={() => handleFieldUpdate(field.id, { 
-                          validation: { ...field.validation, pattern: '^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$' }
-                        })}
+                        onClick={() =>
+                          handleFieldUpdate(field.id, {
+                            validation: {
+                              ...field.validation,
+                              pattern: "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$",
+                            },
+                          })
+                        }
                         className="text-xs px-2 py-0.5 bg-slate-700 hover:bg-slate-600 text-gray-300 rounded border border-slate-500"
                       >
                         Email
                       </button>
                       <button
                         type="button"
-                        onClick={() => handleFieldUpdate(field.id, { 
-                          validation: { ...field.validation, pattern: '^[\\d\\s()+-]+$' }
-                        })}
+                        onClick={() =>
+                          handleFieldUpdate(field.id, {
+                            validation: {
+                              ...field.validation,
+                              pattern: "^[\\d\\s()+-]+$",
+                            },
+                          })
+                        }
                         className="text-xs px-2 py-0.5 bg-slate-700 hover:bg-slate-600 text-gray-300 rounded border border-slate-500"
                       >
                         Phone
                       </button>
                       <button
                         type="button"
-                        onClick={() => handleFieldUpdate(field.id, { 
-                          validation: { ...field.validation, pattern: '^\\d{5}(-\\d{4})?$' }
-                        })}
+                        onClick={() =>
+                          handleFieldUpdate(field.id, {
+                            validation: {
+                              ...field.validation,
+                              pattern: "^\\d{5}(-\\d{4})?$",
+                            },
+                          })
+                        }
                         className="text-xs px-2 py-0.5 bg-slate-700 hover:bg-slate-600 text-gray-300 rounded border border-slate-500"
                       >
                         ZIP Code
                       </button>
                       <button
                         type="button"
-                        onClick={() => handleFieldUpdate(field.id, { 
-                          validation: { ...field.validation, pattern: '^https?://.*' }
-                        })}
+                        onClick={() =>
+                          handleFieldUpdate(field.id, {
+                            validation: {
+                              ...field.validation,
+                              pattern: "^https?://.*",
+                            },
+                          })
+                        }
                         className="text-xs px-2 py-0.5 bg-slate-700 hover:bg-slate-600 text-gray-300 rounded border border-slate-500"
                       >
                         URL
@@ -995,25 +1156,43 @@ const PageEditor: React.FC = () => {
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="block text-xs text-gray-400 mb-1">Min Length</label>
+                      <label className="block text-xs text-gray-400 mb-1">
+                        Min Length
+                      </label>
                       <input
                         type="number"
-                        value={field.validation?.minLength || ''}
-                        onChange={(e) => handleFieldUpdate(field.id, { 
-                          validation: { ...field.validation, minLength: e.target.value ? parseInt(e.target.value) : undefined }
-                        })}
+                        value={field.validation?.minLength || ""}
+                        onChange={(e) =>
+                          handleFieldUpdate(field.id, {
+                            validation: {
+                              ...field.validation,
+                              minLength: e.target.value
+                                ? parseInt(e.target.value)
+                                : undefined,
+                            },
+                          })
+                        }
                         placeholder="0"
                         className="w-full p-1 bg-slate-700 text-white text-xs rounded border border-slate-500"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs text-gray-400 mb-1">Max Length</label>
+                      <label className="block text-xs text-gray-400 mb-1">
+                        Max Length
+                      </label>
                       <input
                         type="number"
-                        value={field.validation?.maxLength || ''}
-                        onChange={(e) => handleFieldUpdate(field.id, { 
-                          validation: { ...field.validation, maxLength: e.target.value ? parseInt(e.target.value) : undefined }
-                        })}
+                        value={field.validation?.maxLength || ""}
+                        onChange={(e) =>
+                          handleFieldUpdate(field.id, {
+                            validation: {
+                              ...field.validation,
+                              maxLength: e.target.value
+                                ? parseInt(e.target.value)
+                                : undefined,
+                            },
+                          })
+                        }
                         placeholder="∞"
                         className="w-full p-1 bg-slate-700 text-white text-xs rounded border border-slate-500"
                       />
@@ -1021,11 +1200,15 @@ const PageEditor: React.FC = () => {
                   </div>
                 </div>
               </details>
-              
+
               <details className="bg-slate-600 rounded p-2">
-                <summary className="text-xs text-gray-300 cursor-pointer">Conditional Visibility</summary>
+                <summary className="text-xs text-gray-300 cursor-pointer">
+                  Conditional Visibility
+                </summary>
                 <div className="mt-2 space-y-2">
-                  <p className="text-xs text-gray-400">Show this field only when:</p>
+                  <p className="text-xs text-gray-400">
+                    Show this field only when:
+                  </p>
                   {field.conditionalRules?.map((rule, idx) => (
                     <div key={idx} className="flex gap-2 items-center">
                       <select
@@ -1033,21 +1216,29 @@ const PageEditor: React.FC = () => {
                         onChange={(e) => {
                           const rules = [...(field.conditionalRules || [])];
                           rules[idx].fieldId = e.target.value;
-                          handleFieldUpdate(field.id, { conditionalRules: rules });
+                          handleFieldUpdate(field.id, {
+                            conditionalRules: rules,
+                          });
                         }}
                         className="flex-1 p-1 bg-slate-700 text-white text-xs rounded"
                       >
                         <option value="">Select field...</option>
-                        {content.formFields.filter(f => f.id !== field.id).map(f => (
-                          <option key={f.id} value={f.id}>{f.label}</option>
-                        ))}
+                        {content.formFields
+                          .filter((f) => f.id !== field.id)
+                          .map((f) => (
+                            <option key={f.id} value={f.id}>
+                              {f.label}
+                            </option>
+                          ))}
                       </select>
                       <select
                         value={rule.operator}
                         onChange={(e) => {
                           const rules = [...(field.conditionalRules || [])];
                           rules[idx].operator = e.target.value as any;
-                          handleFieldUpdate(field.id, { conditionalRules: rules });
+                          handleFieldUpdate(field.id, {
+                            conditionalRules: rules,
+                          });
                         }}
                         className="p-1 bg-slate-700 text-white text-xs rounded"
                       >
@@ -1062,7 +1253,9 @@ const PageEditor: React.FC = () => {
                         onChange={(e) => {
                           const rules = [...(field.conditionalRules || [])];
                           rules[idx].value = e.target.value;
-                          handleFieldUpdate(field.id, { conditionalRules: rules });
+                          handleFieldUpdate(field.id, {
+                            conditionalRules: rules,
+                          });
                         }}
                         placeholder="value"
                         className="flex-1 p-1 bg-slate-700 text-white text-xs rounded"
@@ -1070,8 +1263,12 @@ const PageEditor: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => {
-                          const rules = field.conditionalRules?.filter((_, i) => i !== idx);
-                          handleFieldUpdate(field.id, { conditionalRules: rules });
+                          const rules = field.conditionalRules?.filter(
+                            (_, i) => i !== idx,
+                          );
+                          handleFieldUpdate(field.id, {
+                            conditionalRules: rules,
+                          });
                         }}
                         className="text-red-400 text-xs"
                       >
@@ -1082,7 +1279,10 @@ const PageEditor: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => {
-                      const rules = [...(field.conditionalRules || []), { fieldId: '', operator: 'equals' as const, value: '' }];
+                      const rules = [
+                        ...(field.conditionalRules || []),
+                        { fieldId: "", operator: "equals" as const, value: "" },
+                      ];
                       handleFieldUpdate(field.id, { conditionalRules: rules });
                     }}
                     className="text-xs text-sky-400 hover:text-sky-300"
@@ -1101,22 +1301,32 @@ const PageEditor: React.FC = () => {
       <div className="space-y-6">
         {/* Page Settings */}
         <div className="bg-slate-800 p-4 rounded-lg border border-slate-700">
-          <h3 className="text-lg font-semibold text-white mb-4">Page Settings</h3>
+          <h3 className="text-lg font-semibold text-white mb-4">
+            Page Settings
+          </h3>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Page Title</label>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                Page Title
+              </label>
               <input
                 type="text"
-                value={content.pageTitle || ''}
-                onChange={(e) => handleContactContentChange('pageTitle', e.target.value)}
+                value={content.pageTitle || ""}
+                onChange={(e) =>
+                  handleContactContentChange("pageTitle", e.target.value)
+                }
                 className="w-full p-2 bg-slate-700 border border-slate-600 rounded-md text-white"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Page Subtitle</label>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                Page Subtitle
+              </label>
               <textarea
-                value={content.pageSubtitle || ''}
-                onChange={(e) => handleContactContentChange('pageSubtitle', e.target.value)}
+                value={content.pageSubtitle || ""}
+                onChange={(e) =>
+                  handleContactContentChange("pageSubtitle", e.target.value)
+                }
                 rows={2}
                 className="w-full p-2 bg-slate-700 border border-slate-600 rounded-md text-white"
               />
@@ -1126,35 +1336,53 @@ const PageEditor: React.FC = () => {
 
         {/* Form Configuration */}
         <div className="bg-slate-800 p-4 rounded-lg border border-slate-700">
-          <h3 className="text-lg font-semibold text-white mb-4">Form Configuration (Admin Only)</h3>
+          <h3 className="text-lg font-semibold text-white mb-4">
+            Form Configuration (Admin Only)
+          </h3>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Target Email Address</label>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                Target Email Address
+              </label>
               <input
                 type="email"
-                value={content.targetEmail || ''}
-                onChange={(e) => handleContactContentChange('targetEmail', e.target.value)}
+                value={content.targetEmail || ""}
+                onChange={(e) =>
+                  handleContactContentChange("targetEmail", e.target.value)
+                }
                 placeholder="contact@example.com"
                 className="w-full p-2 bg-slate-700 border border-slate-600 rounded-md text-white"
               />
-              <p className="text-xs text-gray-500 mt-1">Form submissions will be sent to this email</p>
+              <p className="text-xs text-gray-500 mt-1">
+                Form submissions will be sent to this email
+              </p>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Email Subject Template</label>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                Email Subject Template
+              </label>
               <input
                 type="text"
-                value={content.subjectTemplate || ''}
-                onChange={(e) => handleContactContentChange('subjectTemplate', e.target.value)}
+                value={content.subjectTemplate || ""}
+                onChange={(e) =>
+                  handleContactContentChange("subjectTemplate", e.target.value)
+                }
                 placeholder="Contact Form: {subject}"
                 className="w-full p-2 bg-slate-700 border border-slate-600 rounded-md text-white"
               />
-              <p className="text-xs text-gray-500 mt-1">Use {`{subject}`} to insert the subject field value</p>
+              <p className="text-xs text-gray-500 mt-1">
+                Use {`{subject}`} to insert the subject field value
+              </p>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Success Message</label>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                Success Message
+              </label>
               <textarea
-                value={content.successMessage || ''}
-                onChange={(e) => handleContactContentChange('successMessage', e.target.value)}
+                value={content.successMessage || ""}
+                onChange={(e) =>
+                  handleContactContentChange("successMessage", e.target.value)
+                }
                 rows={2}
                 className="w-full p-2 bg-slate-700 border border-slate-600 rounded-md text-white"
               />
@@ -1174,8 +1402,15 @@ const PageEditor: React.FC = () => {
               + Add Custom Field
             </button>
           </div>
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-            <SortableContext items={content.formFields?.map(f => f.id) || []} strategy={verticalListSortingStrategy}>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={content.formFields?.map((f) => f.id) || []}
+              strategy={verticalListSortingStrategy}
+            >
               <div className="space-y-3">
                 {content.formFields?.map((field) => (
                   <SortableField key={field.id} field={field} />
@@ -1205,13 +1440,21 @@ const PageEditor: React.FC = () => {
           {page?.pageType && (
             <div className="flex items-center gap-2">
               <span className="px-3 py-1 bg-slate-700 rounded-full text-sm text-gray-300">
-                Type: <span className="text-sky-400 font-semibold">{PAGE_TEMPLATES[page.pageType as keyof typeof PAGE_TEMPLATES]?.label || page.pageType}</span>
+                Type:{" "}
+                <span className="text-sky-400 font-semibold">
+                  {PAGE_TEMPLATES[page.pageType as keyof typeof PAGE_TEMPLATES]
+                    ?.label || page.pageType}
+                </span>
               </span>
               {page.pageType === "home" && (
-                <span className="text-xs text-gray-500">• Required for the hero section</span>
+                <span className="text-xs text-gray-500">
+                  • Required for the hero section
+                </span>
               )}
               {page.pageType === "about" && (
-                <span className="text-xs text-gray-500">• Main company information page</span>
+                <span className="text-xs text-gray-500">
+                  • Main company information page
+                </span>
               )}
             </div>
           )}
@@ -1219,7 +1462,9 @@ const PageEditor: React.FC = () => {
       </div>
       <div className="space-y-6">
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">Page Title</label>
+          <label className="block text-sm font-medium text-gray-300 mb-2">
+            Page Title
+          </label>
           <input
             type="text"
             name="title"
@@ -1232,10 +1477,14 @@ const PageEditor: React.FC = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Page Title Font</label>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Page Title Font
+            </label>
             <select
-              value={((page.contentData as any)?.pageTitleFont || "")}
-              onChange={(e) => handlePageTitleStyleChange("pageTitleFont", e.target.value)}
+              value={(page.contentData as any)?.pageTitleFont || ""}
+              onChange={(e) =>
+                handlePageTitleStyleChange("pageTitleFont", e.target.value)
+              }
               className="w-full p-2 bg-slate-800 border-2 border-slate-700 rounded-md text-white"
             >
               <option value="">Use Site Default Font</option>
@@ -1251,11 +1500,15 @@ const PageEditor: React.FC = () => {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Page Title Color</label>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Page Title Color
+            </label>
             <input
               type="color"
-              value={((page.contentData as any)?.pageTitleColor || "#ffffff")}
-              onChange={(e) => handlePageTitleStyleChange("pageTitleColor", e.target.value)}
+              value={(page.contentData as any)?.pageTitleColor || "#ffffff"}
+              onChange={(e) =>
+                handlePageTitleStyleChange("pageTitleColor", e.target.value)
+              }
               className="w-full h-10 bg-slate-800 border-2 border-slate-700 rounded-md"
             />
             <button
@@ -1269,7 +1522,9 @@ const PageEditor: React.FC = () => {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">Page URL Path</label>
+          <label className="block text-sm font-medium text-gray-300 mb-2">
+            Page URL Path
+          </label>
           <input
             type="text"
             name="path"
@@ -1277,14 +1532,19 @@ const PageEditor: React.FC = () => {
             value={page.path}
             onChange={handleChange}
             className="w-full p-2 bg-slate-800 border-2 border-slate-700 rounded-md text-white"
-            disabled={!isNewPage && (page.pageType === 'home' || page.pageType === 'about')}
+            disabled={
+              !isNewPage &&
+              (page.pageType === "home" || page.pageType === "about")
+            }
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">Page Font Override</label>
+          <label className="block text-sm font-medium text-gray-300 mb-2">
+            Page Font Override
+          </label>
           <select
-            value={((page.contentData as any)?.pageFont || "")}
+            value={(page.contentData as any)?.pageFont || ""}
             onChange={(e) => handlePageFontChange(e.target.value)}
             className="w-full p-2 bg-slate-800 border-2 border-slate-700 rounded-md text-white"
           >
@@ -1299,17 +1559,28 @@ const PageEditor: React.FC = () => {
             <option value="Impact">Impact</option>
             <option value="Trebuchet MS">Trebuchet MS</option>
           </select>
-          <p className="text-xs text-gray-500 mt-1">Overrides the global font for this page only.</p>
+          <p className="text-xs text-gray-500 mt-1">
+            Overrides the global font for this page only.
+          </p>
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
-            {page.pageType === 'home' ? 'Hero Section' : page.pageType === 'about' ? 'Page Content' : page.pageType === 'contact' ? 'Contact Form Builder' : 'Page Content'}
+            {page.pageType === "home"
+              ? "Hero Section"
+              : page.pageType === "about"
+                ? "Page Content"
+                : page.pageType === "contact"
+                  ? "Contact Form Builder"
+                  : "Page Content"}
           </label>
-          {page.pageType === 'home' ? renderHomePageEditor() : 
-           page.pageType === 'about' ? renderAboutPageEditor() : 
-           page.pageType === 'contact' ? renderContactPageEditor() : 
-           renderDefaultEditor()}
+          {page.pageType === "home"
+            ? renderHomePageEditor()
+            : page.pageType === "about"
+              ? renderAboutPageEditor()
+              : page.pageType === "contact"
+                ? renderContactPageEditor()
+                : renderDefaultEditor()}
         </div>
       </div>
       <div className="flex justify-end mt-8 gap-4">

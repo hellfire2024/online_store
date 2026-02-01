@@ -63,7 +63,10 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({
 
   const updateProduct = async (product: Product) => {
     try {
-      const updatedProduct = await apiClient.products.update(product.id, product);
+      const updatedProduct = await apiClient.products.update(
+        product.id,
+        product,
+      );
       const resolvedProduct = {
         ...updatedProduct,
         imageUrl: updatedProduct.imageUrl || product.imageUrl,
@@ -96,7 +99,14 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({
 
   return (
     <ProductContext.Provider
-      value={{ products, isLoading, addProduct, updateProduct, fetchProducts, deleteProduct }}
+      value={{
+        products,
+        isLoading,
+        addProduct,
+        updateProduct,
+        fetchProducts,
+        deleteProduct,
+      }}
     >
       {children}
     </ProductContext.Provider>

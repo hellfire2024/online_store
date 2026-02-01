@@ -64,7 +64,7 @@ export interface ShippingPackage {
 
 export interface ShippingRate {
   id: string;
-  carrier: 'easypost' | 'shippo' | 'shipstation';
+  carrier: "easypost" | "shippo" | "shipstation";
   service: string;
   serviceName: string;
   rate: number; // in cents
@@ -76,7 +76,7 @@ export interface ShippingRateRequest {
   toAddress: ShippingAddress;
   fromAddress: ShippingAddress;
   parcel: ShippingPackage;
-  carriers?: ('easypost' | 'shippo' | 'shipstation')[];
+  carriers?: ("easypost" | "shippo" | "shipstation")[];
 }
 
 // ===== CUSTOMER TYPES =====
@@ -115,27 +115,34 @@ export interface TaxRule {
   priority: number; // Higher priority rules override lower ones
 }
 
-export type TaxProvider = "manual" | "stripe" | "taxjar" | "avalara" | "taxcloud" | "zamp" | "anrok";
+export type TaxProvider =
+  | "manual"
+  | "stripe"
+  | "taxjar"
+  | "avalara"
+  | "taxcloud"
+  | "zamp"
+  | "anrok";
 
 export interface TaxProviderCredentials {
   // Stripe Tax
   stripeApiKey?: string;
-  
+
   // TaxJar
   taxjarApiKey?: string;
-  
+
   // Avalara AvaTax
   avalaraAccountId?: string;
   avalaraLicenseKey?: string;
   avalaraEnvironment?: "sandbox" | "production";
-  
+
   // TaxCloud
   taxcloudApiKey?: string;
   taxcloudUserId?: string;
-  
+
   // Zamp
   zampApiKey?: string;
-  
+
   // Anrok
   anrokApiKey?: string;
 }
@@ -256,7 +263,7 @@ export interface Menu {
   items: MenuItem[];
 }
 
-export type FooterItemType = 'contactInfo' | 'socialLinks' | 'menu';
+export type FooterItemType = "contactInfo" | "socialLinks" | "menu";
 
 export interface FooterItem {
   id: string; // Unique ID for DnD, e.g., 'contactInfo', 'socialLinks', 'menu_123'
@@ -266,7 +273,7 @@ export interface FooterItem {
 }
 
 export interface FooterColumn {
-  id: 'left' | 'center' | 'right';
+  id: "left" | "center" | "right";
   items: FooterItem[];
 }
 
@@ -287,13 +294,25 @@ export interface AboutPageContent {
   pageTitleColor?: string; // Page title color override
 }
 
-  export type ContactFieldType = 'firstName' | 'lastName' | 'fullName' | 'email' | 'phone' | 'address' | 'subject' | 'message' | 'text' | 'textarea' | 'select' | 'checkbox';
+export type ContactFieldType =
+  | "firstName"
+  | "lastName"
+  | "fullName"
+  | "email"
+  | "phone"
+  | "address"
+  | "subject"
+  | "message"
+  | "text"
+  | "textarea"
+  | "select"
+  | "checkbox";
 
-  export interface ConditionalRule {
-    fieldId: string; // ID of field to check
-    operator: 'equals' | 'notEquals' | 'contains' | 'notEmpty';
-    value: string;
-  }
+export interface ConditionalRule {
+  fieldId: string; // ID of field to check
+  operator: "equals" | "notEquals" | "contains" | "notEmpty";
+  value: string;
+}
 
 export interface ContactFormField {
   id: string;
@@ -302,8 +321,8 @@ export interface ContactFormField {
   placeholder: string;
   required: boolean;
   enabled: boolean;
-    options?: string[]; // For select fields
-    conditionalRules?: ConditionalRule[]; // Show field only if rules match
+  options?: string[]; // For select fields
+  conditionalRules?: ConditionalRule[]; // Show field only if rules match
   validation?: {
     pattern?: string;
     minLength?: number;
@@ -335,7 +354,11 @@ export interface Page {
   title: string;
   path: string;
   pageType?: "home" | "about" | "contact" | "custom";
-  contentData?: HomePageContent | AboutPageContent | ContactPageContent | CustomPageContent; // Structured content
+  contentData?:
+    | HomePageContent
+    | AboutPageContent
+    | ContactPageContent
+    | CustomPageContent; // Structured content
   content?: string; // Fallback for simple rich text (e.g., custom pages)
 }
 
@@ -382,7 +405,7 @@ export interface SiteSettings {
 
   // Email Configuration
   emailConfig: {
-    provider: 'smtp' | 'sendgrid' | 'mailgun' | 'none';
+    provider: "smtp" | "sendgrid" | "mailgun" | "none";
     fromEmail: string;
     fromName: string;
     // SMTP specific
@@ -438,6 +461,6 @@ export interface SiteSettings {
       apiSecret: string;
     };
   };
-  defaultShippingCarrier: 'easypost' | 'shippo' | 'shipstation';
+  defaultShippingCarrier: "easypost" | "shippo" | "shipstation";
   fromAddress: ShippingAddress;
 }

@@ -66,14 +66,16 @@ const calculateTaxableSubtotal = (
     if (isProductTaxable(item.product.id, rule)) {
       const itemPrice = item.product.price;
       const optionsDelta = item.selectedOptions
-        ? Object.values(item.selectedOptions).flat().reduce((sum, optionId) => {
-            // Find the option to get its priceDelta
-            const optionList = item.product.optionLists?.find((ol) =>
-              ol.options.some((o) => o.id === optionId),
-            );
-            const option = optionList?.options.find((o) => o.id === optionId);
-            return sum + (option?.priceDelta || 0);
-          }, 0)
+        ? Object.values(item.selectedOptions)
+            .flat()
+            .reduce((sum, optionId) => {
+              // Find the option to get its priceDelta
+              const optionList = item.product.optionLists?.find((ol) =>
+                ol.options.some((o) => o.id === optionId),
+              );
+              const option = optionList?.options.find((o) => o.id === optionId);
+              return sum + (option?.priceDelta || 0);
+            }, 0)
         : 0;
 
       return total + (itemPrice + optionsDelta) * item.quantity;
@@ -112,8 +114,9 @@ export const calculateTax = (
 
   // Calculate taxable amount (could exclude certain products based on rules)
   const applicableRules = taxConfig.rules
-    .filter((rule) =>
-      rule.enabled && rule.states.includes(shippingState.toUpperCase()),
+    .filter(
+      (rule) =>
+        rule.enabled && rule.states.includes(shippingState.toUpperCase()),
     )
     .sort((a, b) => b.priority - a.priority);
 
@@ -122,7 +125,7 @@ export const calculateTax = (
       ? calculateTaxableSubtotal(cartItems, applicableRules[0])
       : subtotal;
 
-  const taxAmount = Math.round((taxableAmount * taxRate) / 100 * 100) / 100; // Round to 2 decimals
+  const taxAmount = Math.round(((taxableAmount * taxRate) / 100) * 100) / 100; // Round to 2 decimals
   const total = subtotal + shippingCost + taxAmount;
 
   return {
@@ -141,13 +144,15 @@ export const calculateSubtotal = (cartItems: CartItem[]): number => {
   return cartItems.reduce((total, item) => {
     const basePrice = item.product.price;
     const optionsDelta = item.selectedOptions
-      ? Object.values(item.selectedOptions).flat().reduce((sum, optionId) => {
-          const optionList = item.product.optionLists?.find((ol) =>
-            ol.options.some((o) => o.id === optionId),
-          );
-          const option = optionList?.options.find((o) => o.id === optionId);
-          return sum + (option?.priceDelta || 0);
-        }, 0)
+      ? Object.values(item.selectedOptions)
+          .flat()
+          .reduce((sum, optionId) => {
+            const optionList = item.product.optionLists?.find((ol) =>
+              ol.options.some((o) => o.id === optionId),
+            );
+            const option = optionList?.options.find((o) => o.id === optionId);
+            return sum + (option?.priceDelta || 0);
+          }, 0)
       : 0;
 
     return total + (basePrice + optionsDelta) * item.quantity;
@@ -158,9 +163,54 @@ export const calculateSubtotal = (cartItems: CartItem[]): number => {
  * Get all US state codes for reference
  */
 export const US_STATES = [
-  "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA",
-  "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD",
-  "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ",
-  "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC",
-  "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY",
+  "AL",
+  "AK",
+  "AZ",
+  "AR",
+  "CA",
+  "CO",
+  "CT",
+  "DE",
+  "FL",
+  "GA",
+  "HI",
+  "ID",
+  "IL",
+  "IN",
+  "IA",
+  "KS",
+  "KY",
+  "LA",
+  "ME",
+  "MD",
+  "MA",
+  "MI",
+  "MN",
+  "MS",
+  "MO",
+  "MT",
+  "NE",
+  "NV",
+  "NH",
+  "NJ",
+  "NM",
+  "NY",
+  "NC",
+  "ND",
+  "OH",
+  "OK",
+  "OR",
+  "PA",
+  "RI",
+  "SC",
+  "SD",
+  "TN",
+  "TX",
+  "UT",
+  "VT",
+  "VA",
+  "WA",
+  "WV",
+  "WI",
+  "WY",
 ];

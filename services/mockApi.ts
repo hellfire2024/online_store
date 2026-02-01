@@ -90,7 +90,12 @@ let mockProducts: Product[] = [
         required: true,
         order: 1,
         options: [
-          { id: "opt-tote-standard", name: "Standard", priceDelta: 0, order: 1 },
+          {
+            id: "opt-tote-standard",
+            name: "Standard",
+            priceDelta: 0,
+            order: 1,
+          },
           { id: "opt-tote-zip", name: "With Zipper", priceDelta: 4, order: 2 },
         ],
       },
@@ -149,7 +154,12 @@ let mockProducts: Product[] = [
         required: true,
         order: 2,
         options: [
-          { id: "opt-hoodie-pullover", name: "Pullover", priceDelta: 0, order: 1 },
+          {
+            id: "opt-hoodie-pullover",
+            name: "Pullover",
+            priceDelta: 0,
+            order: 1,
+          },
           { id: "opt-hoodie-zip", name: "Zip-Up", priceDelta: 6, order: 2 },
         ],
       },
@@ -159,8 +169,18 @@ let mockProducts: Product[] = [
         required: false,
         order: 3,
         options: [
-          { id: "opt-hoodie-standard", name: "Standard", priceDelta: 0, order: 1 },
-          { id: "opt-hoodie-heavy", name: "Heavyweight", priceDelta: 10, order: 2 },
+          {
+            id: "opt-hoodie-standard",
+            name: "Standard",
+            priceDelta: 0,
+            order: 1,
+          },
+          {
+            id: "opt-hoodie-heavy",
+            name: "Heavyweight",
+            priceDelta: 10,
+            order: 2,
+          },
         ],
       },
     ],
@@ -187,7 +207,7 @@ let mockProducts: Product[] = [
         ],
       },
     ],
-  }
+  },
 ];
 
 let mockGalleries: Gallery[] = [
@@ -452,9 +472,33 @@ let mockSiteSettings: SiteSettings = {
     phone: "",
   },
   segmentRules: [
-    { id: 'vip', name: 'VIP', minTotalSpent: 1000, minOrderCount: undefined, maxDaysSinceOrder: undefined, priority: 1, enabled: true },
-    { id: 'atrisk', name: 'At-Risk', minTotalSpent: undefined, minOrderCount: undefined, maxDaysSinceOrder: 180, priority: 2, enabled: true },
-    { id: 'standard', name: 'Standard', minTotalSpent: undefined, minOrderCount: undefined, maxDaysSinceOrder: undefined, priority: 3, enabled: true },
+    {
+      id: "vip",
+      name: "VIP",
+      minTotalSpent: 1000,
+      minOrderCount: undefined,
+      maxDaysSinceOrder: undefined,
+      priority: 1,
+      enabled: true,
+    },
+    {
+      id: "atrisk",
+      name: "At-Risk",
+      minTotalSpent: undefined,
+      minOrderCount: undefined,
+      maxDaysSinceOrder: 180,
+      priority: 2,
+      enabled: true,
+    },
+    {
+      id: "standard",
+      name: "Standard",
+      minTotalSpent: undefined,
+      minOrderCount: undefined,
+      maxDaysSinceOrder: undefined,
+      priority: 3,
+      enabled: true,
+    },
   ],
 };
 
@@ -553,9 +597,14 @@ export const deleteGallery = (galleryId: string): Promise<void> =>
       }
       delete mockGalleryImages[galleryId];
       // Update products that reference this gallery
-      const prodIndex = mockProducts.findIndex((p) => p.galleryId === galleryId);
+      const prodIndex = mockProducts.findIndex(
+        (p) => p.galleryId === galleryId,
+      );
       if (prodIndex !== -1) {
-        mockProducts[prodIndex] = { ...mockProducts[prodIndex], galleryId: undefined };
+        mockProducts[prodIndex] = {
+          ...mockProducts[prodIndex],
+          galleryId: undefined,
+        };
       }
       res();
     }, apiDelay);
@@ -588,7 +637,7 @@ export const deleteGalleryImage = (
     setTimeout(() => {
       if (mockGalleryImages[galleryId]) {
         const index = mockGalleryImages[galleryId].findIndex(
-          (img) => img.id === imageId
+          (img) => img.id === imageId,
         );
         if (index !== -1) {
           mockGalleryImages[galleryId].splice(index, 1);

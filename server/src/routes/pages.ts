@@ -1,38 +1,43 @@
-import { Router, Request, Response } from 'express';
-import { pool } from '../db/connection.js';
-import { RowDataPacket } from 'mysql2';
+import { Router, Request, Response } from "express";
+import { pool } from "../db/connection.js";
+import { RowDataPacket } from "mysql2";
 
 const router = Router();
 
 // Helper function to sanitize base64 images from content data
 // Base64 images are too large for database storage and should use file/blob storage
 function sanitizeContentData(contentData: any): any {
-  if (!contentData || typeof contentData !== 'object') {
+  if (!contentData || typeof contentData !== "object") {
     return contentData;
   }
 
   const sanitized = { ...contentData };
-  
+
   // Check for heroBackgroundImageUrl starting with data:
-  if (sanitized.heroBackgroundImageUrl && typeof sanitized.heroBackgroundImageUrl === 'string') {
-    if (sanitized.heroBackgroundImageUrl.startsWith('data:')) {
-      console.warn('⚠️ Base64 image detected in heroBackgroundImageUrl - this will not be persisted. Use a URL or implement image upload.');
+  if (
+    sanitized.heroBackgroundImageUrl &&
+    typeof sanitized.heroBackgroundImageUrl === "string"
+  ) {
+    if (sanitized.heroBackgroundImageUrl.startsWith("data:")) {
+      console.warn(
+        "⚠️ Base64 image detected in heroBackgroundImageUrl - this will not be persisted. Use a URL or implement image upload.",
+      );
       // For now, remove base64 images to prevent database bloat
       // In production, these should be uploaded to blob storage (S3, etc.)
       delete sanitized.heroBackgroundImageUrl;
     }
   }
-  
+
   return sanitized;
 }
 
 // Get all pages
-router.get('/', async (_req: Request, res: Response) => {
+router.get("/", async (_req: Request, res: Response) => {
   try {
     const [rows] = await pool.query<RowDataPacket[]>(
-      'SELECT * FROM pages ORDER BY created_at DESC'
+      "SELECT * FROM pages ORDER BY created_at DESC",
     );
-    
+
     // Transform snake_case to camelCase for API response
     const transformedRows = (rows || []).map((row: any) => ({
       id: row.id,
@@ -40,30 +45,33 @@ router.get('/', async (_req: Request, res: Response) => {
       path: row.path,
       pageType: row.page_type,
       content: row.content,
-      contentData: typeof row.content_data === 'string' ? JSON.parse(row.content_data) : row.content_data,
+      contentData:
+        typeof row.content_data === "string"
+          ? JSON.parse(row.content_data)
+          : row.content_data,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
     }));
-    
+
     return res.json(transformedRows);
   } catch (error) {
-    console.error('Error fetching pages:', error);
-    return res.status(500).json({ error: 'Failed to fetch pages' });
+    console.error("Error fetching pages:", error);
+    return res.status(500).json({ error: "Failed to fetch pages" });
   }
 });
 
 // Get single page
-router.get('/:id', async (req: Request, res: Response) => {
+router.get("/:id", async (req: Request, res: Response) => {
   try {
     const [rows] = await pool.query<RowDataPacket[]>(
-      'SELECT * FROM pages WHERE id = ?',
-      [req.params.id]
+      "SELECT * FROM pages WHERE id = ?",
+      [req.params.id],
     );
-    
+
     if (!rows || rows.length === 0) {
-      return res.status(404).json({ error: 'Page not found' });
+      return res.status(404).json({ error: "Page not found" });
     }
-    
+
     const row = rows[0];
     // Transform snake_case to camelCase for API response
     const page = {
@@ -72,86 +80,117 @@ router.get('/:id', async (req: Request, res: Response) => {
       path: row.path,
       pageType: row.page_type,
       content: row.content,
-      contentData: typeof row.content_data === 'string' ? JSON.parse(row.content_data) : row.content_data,
+      contentData:
+        typeof row.content_data === "string"
+          ? JSON.parse(row.content_data)
+          : row.content_data,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
     };
-    
+
     return res.json(page);
   } catch (error) {
-    console.error('Error fetching page:', error);
-    return res.status(500).json({ error: 'Failed to fetch page' });
+    console.error("Error fetching page:", error);
+    return res.status(500).json({ error: "Failed to fetch page" });
   }
 });
 
 // Create page
-router.post('/', async (req: Request, res: Response) => {
+router.post("/", async (req: Request, res: Response) => {
   try {
     const { id, pageType, title, path, content, contentData } = req.body;
-    
+
     if (!id || !pageType) {
-      return res.status(400).json({ error: 'id and pageType are required' });
+      return res.status(400).json({ error: "id and pageType are required" });
     }
-    
+
     // Sanitize content data to remove base64 images
     const sanitizedContentData = sanitizeContentData(contentData);
-    const contentDataJson = typeof sanitizedContentData === 'string' ? sanitizedContentData : JSON.stringify(sanitizedContentData || {});
-    
+    const contentDataJson =
+      typeof sanitizedContentData === "string"
+        ? sanitizedContentData
+        : JSON.stringify(sanitizedContentData || {});
+
     await pool.query(
       `INSERT INTO pages (id, title, path, page_type, content, content_data, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())`,
-      [id, title || '', path || '/', pageType, content || '', contentDataJson]
+      [id, title || "", path || "/", pageType, content || "", contentDataJson],
     );
-    
-    return res.status(201).json({ id, pageType, title, path, content, contentData: sanitizedContentData });
+
+    return res
+      .status(201)
+      .json({
+        id,
+        pageType,
+        title,
+        path,
+        content,
+        contentData: sanitizedContentData,
+      });
   } catch (error) {
-    console.error('Error creating page:', error);
-    return res.status(500).json({ error: 'Failed to create page' });
+    console.error("Error creating page:", error);
+    return res.status(500).json({ error: "Failed to create page" });
   }
 });
 
 // Update page
-router.put('/:id', async (req: Request, res: Response) => {
+router.put("/:id", async (req: Request, res: Response) => {
   try {
     const { pageType, title, path, content, contentData } = req.body;
-    
+
     // Sanitize content data to remove base64 images
     const sanitizedContentData = sanitizeContentData(contentData);
-    const contentDataJson = typeof sanitizedContentData === 'string' ? sanitizedContentData : JSON.stringify(sanitizedContentData || {});
-    
+    const contentDataJson =
+      typeof sanitizedContentData === "string"
+        ? sanitizedContentData
+        : JSON.stringify(sanitizedContentData || {});
+
     const [result] = await pool.query(
       `UPDATE pages SET title = ?, path = ?, page_type = ?, content = ?, content_data = ?, updated_at = NOW()
        WHERE id = ?`,
-      [title || '', path || '/', pageType, content || '', contentDataJson, req.params.id]
+      [
+        title || "",
+        path || "/",
+        pageType,
+        content || "",
+        contentDataJson,
+        req.params.id,
+      ],
     );
-    
+
     if ((result as any).affectedRows === 0) {
-      return res.status(404).json({ error: 'Page not found' });
+      return res.status(404).json({ error: "Page not found" });
     }
-    
-    return res.json({ id: req.params.id, pageType, title, path, content, contentData: sanitizedContentData });
+
+    return res.json({
+      id: req.params.id,
+      pageType,
+      title,
+      path,
+      content,
+      contentData: sanitizedContentData,
+    });
   } catch (error) {
-    console.error('Error updating page:', error);
-    return res.status(500).json({ error: 'Failed to update page' });
+    console.error("Error updating page:", error);
+    return res.status(500).json({ error: "Failed to update page" });
   }
 });
 
 // Delete page
-router.delete('/:id', async (req: Request, res: Response) => {
+router.delete("/:id", async (req: Request, res: Response) => {
   try {
-    const [result] = await pool.query(
-      'DELETE FROM pages WHERE id = ?',
-      [req.params.id]
-    );
-    
+    const [result] = await pool.query("DELETE FROM pages WHERE id = ?", [
+      req.params.id,
+    ]);
+
     if ((result as any).affectedRows === 0) {
-      return res.status(404).json({ error: 'Page not found' });
+      return res.status(404).json({ error: "Page not found" });
     }
-    
+
     return res.status(204).send();
   } catch (error) {
-    console.error('Error deleting page:', error);
-    return res.status(500).json({ error: 'Failed to delete page' });
+    console.error("Error deleting page:", error);
+    return res.status(500).json({ error: "Failed to delete page" });
   }
 });
 

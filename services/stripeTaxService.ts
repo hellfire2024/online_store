@@ -57,13 +57,15 @@ export const calculateSubtotal = (cartItems: CartItem[]): number => {
   return cartItems.reduce((total, item) => {
     const basePrice = item.product.price;
     const optionsDelta = item.selectedOptions
-      ? Object.values(item.selectedOptions).flat().reduce((sum, optionId) => {
-          const optionList = item.product.optionLists?.find((ol) =>
-            ol.options.some((o) => o.id === optionId),
-          );
-          const option = optionList?.options.find((o) => o.id === optionId);
-          return sum + (option?.priceDelta || 0);
-        }, 0)
+      ? Object.values(item.selectedOptions)
+          .flat()
+          .reduce((sum, optionId) => {
+            const optionList = item.product.optionLists?.find((ol) =>
+              ol.options.some((o) => o.id === optionId),
+            );
+            const option = optionList?.options.find((o) => o.id === optionId);
+            return sum + (option?.priceDelta || 0);
+          }, 0)
       : 0;
 
     return total + (basePrice + optionsDelta) * item.quantity;
