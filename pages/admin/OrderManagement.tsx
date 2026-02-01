@@ -47,8 +47,11 @@ const OrderManagement: React.FC = () => {
         // Try to load orders from API
         const apiOrders = await apiClient.orders.getAll();
         
+        // Ensure we have an array
+        const ordersArray = Array.isArray(apiOrders) ? apiOrders : [];
+        
         // Transform API orders to match UI format if needed
-        const transformedOrders = apiOrders.map((order: any) => {
+        const transformedOrders = ordersArray.map((order: any) => {
           let orderData;
           try {
             orderData = typeof order.order_data === 'string' 

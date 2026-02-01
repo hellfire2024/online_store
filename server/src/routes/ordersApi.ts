@@ -24,7 +24,8 @@ router.get('/', async (_req: Request, res: Response) => {
     const [rows] = await pool.query<OrderRow[]>(
       `SELECT * FROM orders ORDER BY created_at DESC LIMIT 100`
     );
-    res.json(rows || []);
+    // Always return an array, even if empty
+    res.json(Array.isArray(rows) ? rows : []);
   } catch (error) {
     console.error('Error fetching orders:', error);
     res.status(500).json({ error: 'Failed to fetch orders' });
