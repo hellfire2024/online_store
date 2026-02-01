@@ -1,71 +1,48 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useSiteSettings } from "../context/SiteSettingsContext";
+import { usePages } from "../context/PagesContext";
 
 const Footer: React.FC = () => {
   const { siteSettings } = useSiteSettings();
+  const { menus } = usePages();
+  const navigate = useNavigate();
 
-  return (
-    <footer className="bg-gray-900 text-white py-12 mt-16">
-      <div className="container mx-auto px-4">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
-          {/* Company Info */}
-          <div>
-            <h3 className="font-bold text-lg mb-4">
-              {siteSettings?.siteTitle || "Online Store"}
-            </h3>
-            <p className="text-gray-400 text-sm">
-              Your trusted online shopping destination.
-            </p>
-          </div>
+  const handleLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, url: string) => {
+    // Check if it's an internal anchor link (starts with #)
+    if (url.startsWith('#')) {
+      e.preventDefault();
+      const targetId = url.substring(1);
+      const element = document.getElementById(targetId);
+      
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    } else if (url.startsWith('/')) {
+      // Internal route - check if it has a hash
+      const [path, hash] = url.split('#');
+      if (hash) {
+        e.preventDefault();
+        navigate(path);
+        // Wait for navigation then scroll
+        setTimeout(() => {
+          const element = document.getElementById(hash);
+          if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }, 100);
+      }
+    }
+  };
 
-          {/* Shop Links */}
-          <div>
-            <h4 className="font-semibold mb-4">Shop</h4>
-            <ul className="space-y-2 text-sm text-gray-400">
-              <li>
-                <Link to="/store" className="hover:text-white transition">
-                  Products
-                </Link>
-              </li>
-              <li>
-                <Link to="/about" className="hover:text-white transition">
-                  About Us
-                </Link>
-              </li>
-              <li>
-                <Link to="/contact" className="hover:text-white transition">
-                  Contact
-                </Link>
-              </li>
-            </ul>
-          </div>
+  const renderFooterColumn = (columnItems: any[]) => {
+    if (!columnItems || columnItems.length === 0) return null;
 
-          {/* Account Links */}
-          <div>
-            <h4 className="font-semibold mb-4">Account</h4>
-            <ul className="space-y-2 text-sm text-gray-400">
-              <li>
-                <Link to="/login" className="hover:text-white transition">
-                  Login
-                </Link>
-              </li>
-              <li>
-                <Link to="/register" className="hover:text-white transition">
-                  Register
-                </Link>
-              </li>
-              <li>
-                <Link to="/account" className="hover:text-white transition">
-                  My Account
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Contact Info */}
-          <div>
-            <h4 className="font-semibold mb-4">Contact</h4>
+    return columnItems.map((item) => {
+      if (item.type === 'contactInfo') {
+        return (
+          <div key={item.id}>
+            <h4 className="font-semibold mb-4">{item.title}</h4>
             <ul className="space-y-2 text-sm text-gray-400">
               {siteSettings?.footerConfig?.contactEmail && (
                 <li>
@@ -94,7 +71,174 @@ const Footer: React.FC = () => {
               )}
             </ul>
           </div>
-        </div>
+        );
+      }
+
+      if (item.type === 'socialLinks') {
+        const socialLinks = siteSettings?.footerConfig?.socialLinks || [];
+        if (socialLinks.length === 0) return null;
+
+        return (
+          <div key={item.id}>
+            <h4 className="font-semibold mb-4">{item.title}</h4>
+            <div className="flex gap-4">
+              {socialLinks.map((link: any, idx: number) => (
+                <a
+                  key={idx}
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-gray-400 hover:text-white transition"
+                >
+                  {link.platform}
+                </a>
+              ))}
+            </div>
+          </div>
+        );
+      }
+
+      if (item.type === 'menu' && item.menuId) {
+        const menu = menus.find((m) => m.id === item.menuId);
+        if (!menu || menu.items.length === 0) return null;
+
+        return (
+          <div key={item.id}>
+            <h4 className="font-semibold mb-4">{item.title}</h4>
+            <ul className="space-y-2 text-sm text-gray-400">
+              {menu.items.map((menuItem) => (
+                <li key={menuItem.id}>
+                  {menuItem.type === 'external' ? (
+                    <a
+                      href={menuItem.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:text-white transition"
+                    >
+                      {menuItem.label}
+                    </a>
+                  ) : (
+                    <a
+                      href={menuItem.url}
+                      onClick={(e) => handleLinkClick(e, menuItem.url)}
+                      className="hover:text-white transition cursor-pointer"
+                    >
+                      {menuItem.label}
+                    </a>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+        );
+      }
+
+      return null;
+    });
+  };
+
+  return (
+    <footer className="bg-gray-900 text-white py-12 mt-16">
+      <div className="container mx-auto px-4">
+        {/* Dynamic Footer Columns from Settings */}
+        {siteSettings?.footerConfig?.columns && siteSettings.footerConfig.columns.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+            {siteSettings.footerConfig.columns.map((column) => (
+              <div key={column.id}>
+                {renderFooterColumn(column.items)}
+              </div>
+            ))}
+          </div>
+        ) : (
+          // Fallback to default footer layout
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+            {/* Company Info */}
+            <div>
+              <h3 className="font-bold text-lg mb-4">
+                {siteSettings?.siteTitle || "Online Store"}
+              </h3>
+              <p className="text-gray-400 text-sm">
+                Your trusted online shopping destination.
+              </p>
+            </div>
+
+            {/* Shop Links */}
+            <div>
+              <h4 className="font-semibold mb-4">Shop</h4>
+              <ul className="space-y-2 text-sm text-gray-400">
+                <li>
+                  <Link to="/store" className="hover:text-white transition">
+                    Products
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/about" className="hover:text-white transition">
+                    About Us
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/contact" className="hover:text-white transition">
+                    Contact
+                  </Link>
+                </li>
+              </ul>
+            </div>
+
+            {/* Account Links */}
+            <div>
+              <h4 className="font-semibold mb-4">Account</h4>
+              <ul className="space-y-2 text-sm text-gray-400">
+                <li>
+                  <Link to="/login" className="hover:text-white transition">
+                    Login
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/register" className="hover:text-white transition">
+                    Register
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/account" className="hover:text-white transition">
+                    My Account
+                  </Link>
+                </li>
+              </ul>
+            </div>
+
+            {/* Contact Info */}
+            <div>
+              <h4 className="font-semibold mb-4">Contact</h4>
+              <ul className="space-y-2 text-sm text-gray-400">
+                {siteSettings?.footerConfig?.contactEmail && (
+                  <li>
+                    <a
+                      href={`mailto:${siteSettings.footerConfig.contactEmail}`}
+                      className="hover:text-white transition"
+                    >
+                      {siteSettings.footerConfig.contactEmail}
+                    </a>
+                  </li>
+                )}
+                {siteSettings?.footerConfig?.contactPhone && (
+                  <li>
+                    <a
+                      href={`tel:${siteSettings.footerConfig.contactPhone}`}
+                      className="hover:text-white transition"
+                    >
+                      {siteSettings.footerConfig.contactPhone}
+                    </a>
+                  </li>
+                )}
+                {siteSettings?.footerConfig?.contactAddress && (
+                  <li className="text-gray-400">
+                    {siteSettings.footerConfig.contactAddress}
+                  </li>
+                )}
+              </ul>
+            </div>
+          </div>
+        )}
 
         {/* Bottom Section */}
         <div className="border-t border-gray-800 pt-8">
