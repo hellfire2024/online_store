@@ -5,9 +5,7 @@ const SiteEffectHandler: React.FC = () => {
   const { siteSettings } = useSiteSettings();
 
   useEffect(() => {
-    if (siteSettings?.siteTitle) {
-      document.title = siteSettings.siteTitle;
-    }
+    document.title = siteSettings?.siteTitle || "Initializing...";
     if (siteSettings?.faviconUrl) {
       const link: HTMLLinkElement = document.querySelector("link[rel*='icon']") || document.createElement('link');
       link.type = 'image/x-icon';
