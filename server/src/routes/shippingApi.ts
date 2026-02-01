@@ -1,8 +1,8 @@
-import express, { Router, Request, Response } from 'express';
+import { Router, Request, Response } from 'express';
 import * as easypostService from '../services/easypostService';
 import * as shippoService from '../services/shippoService';
 import * as shipstationService from '../services/shipstationService';
-import { ShippingRateRequest, ShippingRate } from '../../types';
+import { ShippingRateRequest, ShippingRate } from '../types';
 
 const router = Router();
 
@@ -22,9 +22,10 @@ router.post('/rates', async (req: Request, res: Response) => {
       !rateRequest.fromAddress ||
       !rateRequest.parcel
     ) {
-      return res.status(400).json({
+      res.status(400).json({
         error: 'Missing required fields: toAddress, fromAddress, parcel',
       });
+      return;
     }
 
     const allRates: ShippingRate[] = [];
@@ -68,11 +69,13 @@ router.post('/rates', async (req: Request, res: Response) => {
       rates: allRates,
       errors: Object.keys(errors).length > 0 ? errors : undefined,
     });
+    return;
   } catch (error) {
     console.error('Shipping rates error:', error);
     res.status(500).json({
       error: error instanceof Error ? error.message : 'Failed to get shipping rates',
     });
+    return;
   }
 });
 
@@ -87,9 +90,10 @@ router.post('/label', async (req: Request, res: Response) => {
     const { carrier, rateId, shipmentId, shipmentData } = req.body;
 
     if (!carrier || !rateId) {
-      return res.status(400).json({
+      res.status(400).json({
         error: 'Missing required fields: carrier, rateId',
       });
+      return;
     }
 
     let label;
@@ -103,9 +107,10 @@ router.post('/label', async (req: Request, res: Response) => {
         break;
       case 'shipstation':
         if (!shipmentData) {
-          return res.status(400).json({
+          res.status(400).json({
             error: 'ShipStation requires shipmentData',
           });
+          return;
         }
         label = await shipstationService.createLabel(
           shipmentData,
@@ -114,17 +119,20 @@ router.post('/label', async (req: Request, res: Response) => {
         );
         break;
       default:
-        return res.status(400).json({
+        res.status(400).json({
           error: `Unknown carrier: ${carrier}`,
         });
+        return;
     }
 
     res.json(label);
+    return;
   } catch (error) {
     console.error('Label creation error:', error);
     res.status(500).json({
       error: error instanceof Error ? error.message : 'Failed to create label',
     });
+    return;
   }
 });
 
@@ -140,9 +148,10 @@ router.get('/track/:trackingId', async (req: Request, res: Response) => {
     const { carrier, carrierCode } = req.query;
 
     if (!trackingId) {
-      return res.status(400).json({
+      res.status(400).json({
         error: 'Tracking ID is required',
       });
+      return;
     }
 
     let tracking;
@@ -154,17 +163,20 @@ router.get('/track/:trackingId', async (req: Request, res: Response) => {
     } else if (carrier === 'shipstation') {
       tracking = await shipstationService.trackShipment(trackingId as string, carrierCode as string);
     } else {
-      return res.status(400).json({
+      res.status(400).json({
         error: 'Unknown or missing carrier',
       });
+      return;
     }
 
     res.json(tracking);
+    return;
   } catch (error) {
     console.error('Tracking error:', error);
     res.status(500).json({
       error: error instanceof Error ? error.message : 'Failed to track shipment',
     });
+    return;
   }
 });
 

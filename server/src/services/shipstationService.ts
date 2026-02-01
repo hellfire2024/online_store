@@ -1,5 +1,4 @@
-import axios from 'axios';
-import { ShippingRate, ShippingRateRequest, ShippingAddress, ShippingPackage } from '../../types';
+import { ShippingRate, ShippingRateRequest, ShippingAddress } from '../types';
 
 const SHIPSTATION_API_BASE = 'https://ssapi.shipstation.com';
 const SHIPSTATION_API_KEY = process.env.SHIPSTATION_API_KEY;
@@ -58,58 +57,36 @@ const CARRIER_SERVICE_MAP: { [key: string]: { [key: string]: string } } = {
 
 export async function getShippingRates(request: ShippingRateRequest): Promise<ShippingRate[]> {
   try {
-    const rateData = {
-      carrierCode: 'usps', // Can request specific carrier
-      serviceCode: null, // null gets all services
-      fromPostalCode: request.fromAddress.zip,
-      toPostalCode: request.toAddress.zip,
-      toCountry: 'US',
-      weight: {
-        value: request.parcel.weight,
-        units: 'pounds',
-      },
-      dimensions: {
-        length: request.parcel.length,
-        width: request.parcel.width,
-        height: request.parcel.height,
-        units: 'inches',
-      },
-      confirmation: 'delivery',
-      insurance: {
-        provider: 'carrier',
-      },
-    };
-
     const rates: ShippingRate[] = [];
 
     // Get rates from ShipStation for each enabled carrier
-    const carriersToCheck = request.carriers || ['easypost', 'shippo', 'shipstation'];
     const shipstationCarriers = ['usps', 'fedex', 'ups', 'dhl'];
 
     for (const shipstationCarrier of shipstationCarriers) {
       try {
-        const response = await axios.get(
-          `${SHIPSTATION_API_BASE}/shipments/getrates`,
-          {
-            params: {
-              carrierCode: shipstationCarrier,
-              serviceCode: null,
-              fromPostalCode: request.fromAddress.zip,
-              toPostalCode: request.toAddress.zip,
-              toCountry: 'US',
-              weight: request.parcel.weight,
-              dimensionsLength: request.parcel.length,
-              dimensionsWidth: request.parcel.width,
-              dimensionsHeight: request.parcel.height,
-            },
-            headers: {
-              Authorization: getAuthHeader(),
-            },
-          }
-        );
+        const url = new URL(`${SHIPSTATION_API_BASE}/shipments/getrates`);
+        url.searchParams.set('carrierCode', shipstationCarrier);
+        url.searchParams.set('fromPostalCode', request.fromAddress.zip);
+        url.searchParams.set('toPostalCode', request.toAddress.zip);
+        url.searchParams.set('toCountry', 'US');
+        url.searchParams.set('weight', request.parcel.weight.toString());
+        url.searchParams.set('dimensionsLength', request.parcel.length.toString());
+        url.searchParams.set('dimensionsWidth', request.parcel.width.toString());
+        url.searchParams.set('dimensionsHeight', request.parcel.height.toString());
 
-        if (response.data && Array.isArray(response.data)) {
-          response.data.forEach((rate: any) => {
+        const response = await fetch(url.toString(), {
+          headers: {
+            Authorization: getAuthHeader(),
+          },
+        });
+
+        const payload = await response.json();
+        if (!response.ok) {
+          throw new Error(payload?.message || `ShipStation error: ${response.status}`);
+        }
+
+        if (payload && Array.isArray(payload)) {
+          payload.forEach((rate: any) => {
             const carrierServiceMap = CARRIER_SERVICE_MAP[shipstationCarrier] || {};
             const serviceName = carrierServiceMap[rate.serviceName] || rate.serviceName;
 
@@ -163,17 +140,21 @@ export async function createLabel(
       confirmationChecked: true,
     };
 
-    const response = await axios.post(
-      `${SHIPSTATION_API_BASE}/shipments/createlabel`,
-      labelData,
-      {
-        headers: {
-          Authorization: getAuthHeader(),
-        },
-      }
-    );
+    const response = await fetch(`${SHIPSTATION_API_BASE}/shipments/createlabel`, {
+      method: 'POST',
+      headers: {
+        Authorization: getAuthHeader(),
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(labelData),
+    });
 
-    return response.data;
+    const payload = await response.json();
+    if (!response.ok) {
+      throw new Error(payload?.message || `ShipStation error: ${response.status}`);
+    }
+
+    return payload;
   } catch (error) {
     console.error('ShipStation label creation error:', error);
     throw new Error(
@@ -184,20 +165,24 @@ export async function createLabel(
 
 export async function trackShipment(trackingId: string, carrierCode?: string): Promise<any> {
   try {
-    const response = await axios.get(
-      `${SHIPSTATION_API_BASE}/shipments/track`,
-      {
-        params: {
-          trackingNumber: trackingId,
-          carrierCode: carrierCode,
-        },
-        headers: {
-          Authorization: getAuthHeader(),
-        },
-      }
-    );
+    const url = new URL(`${SHIPSTATION_API_BASE}/shipments/track`);
+    url.searchParams.set('trackingNumber', trackingId);
+    if (carrierCode) {
+      url.searchParams.set('carrierCode', carrierCode);
+    }
 
-    return response.data;
+    const response = await fetch(url.toString(), {
+      headers: {
+        Authorization: getAuthHeader(),
+      },
+    });
+
+    const payload = await response.json();
+    if (!response.ok) {
+      throw new Error(payload?.message || `ShipStation error: ${response.status}`);
+    }
+
+    return payload;
   } catch (error) {
     console.error('ShipStation tracking error:', error);
     throw new Error(

@@ -17,7 +17,8 @@ router.post('/send-ticket-email', async (req: Request, res: Response) => {
     } = req.body;
 
     if (!to || !subject || !message) {
-      return res.status(400).json({ error: 'Missing required fields' });
+      res.status(400).json({ error: 'Missing required fields' });
+      return;
     }
 
     // Send email to support
@@ -35,9 +36,11 @@ router.post('/send-ticket-email', async (req: Request, res: Response) => {
       success: emailResult.success,
       message: emailResult.message,
     });
+    return;
   } catch (error) {
     console.error('Error sending ticket email:', error);
     res.status(500).json({ error: 'Failed to send ticket email' });
+    return;
   }
 });
 

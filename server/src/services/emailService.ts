@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import SMTPTransport from 'nodemailer/lib/smtp-transport';
 import { pool } from '../db/connection.js';
 import { RowDataPacket } from 'mysql2';
 
@@ -53,15 +54,22 @@ async function initializeTransporter() {
     }
 
     if (config.provider === 'smtp') {
-      transporter = nodemailer.createTransport({
+      if (!config.smtp_host || !config.smtp_port || !config.smtp_username || !config.smtp_password) {
+        console.log('SMTP configuration incomplete');
+        return null;
+      }
+
+      const transportOptions: SMTPTransport.Options = {
         host: config.smtp_host,
         port: config.smtp_port,
-        secure: config.smtp_secure,
+        secure: config.smtp_secure ?? false,
         auth: {
           user: config.smtp_username,
           pass: config.smtp_password,
         },
-      });
+      };
+
+      transporter = nodemailer.createTransport(transportOptions);
     } else if (config.provider === 'sendgrid') {
       const sgTransport = require('nodemailer-sendgrid-transport');
       transporter = nodemailer.createTransport(

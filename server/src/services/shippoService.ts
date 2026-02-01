@@ -1,5 +1,4 @@
-import axios from 'axios';
-import { ShippingRate, ShippingRateRequest, ShippingAddress, ShippingPackage } from '../../types';
+import { ShippingRate, ShippingRateRequest, ShippingAddress, ShippingPackage } from '../types';
 
 const SHIPPO_API_BASE = 'https://api.goshippo.com/v1';
 const SHIPPO_API_KEY = process.env.SHIPPO_API_KEY;
@@ -72,18 +71,19 @@ export async function getShippingRates(request: ShippingRateRequest): Promise<Sh
       async: false, // Get rates synchronously
     };
 
-    const shipmentResponse = await axios.post(
-      `${SHIPPO_API_BASE}/shipments`,
-      shipmentData,
-      {
-        headers: {
-          Authorization: `ShippoToken ${SHIPPO_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-      }
-    );
+    const shipmentResponse = await fetch(`${SHIPPO_API_BASE}/shipments`, {
+      method: 'POST',
+      headers: {
+        Authorization: `ShippoToken ${SHIPPO_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(shipmentData),
+    });
 
-    const shipment = shipmentResponse.data;
+    const shipment = await shipmentResponse.json();
+    if (!shipmentResponse.ok) {
+      throw new Error(shipment?.detail || `Shippo error: ${shipmentResponse.status}`);
+    }
     const rates: ShippingRate[] = [];
 
     // Extract rates from shipment
@@ -129,18 +129,21 @@ export async function createLabel(
       label_file_type: labelFormat.toLowerCase(),
     };
 
-    const response = await axios.post(
-      `${SHIPPO_API_BASE}/transactions`,
-      labelData,
-      {
-        headers: {
-          Authorization: `ShippoToken ${SHIPPO_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-      }
-    );
+    const response = await fetch(`${SHIPPO_API_BASE}/transactions`, {
+      method: 'POST',
+      headers: {
+        Authorization: `ShippoToken ${SHIPPO_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(labelData),
+    });
 
-    return response.data;
+    const payload = await response.json();
+    if (!response.ok) {
+      throw new Error(payload?.detail || `Shippo error: ${response.status}`);
+    }
+
+    return payload;
   } catch (error) {
     console.error('Shippo label creation error:', error);
     throw new Error(`Failed to create Shippo label: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -155,22 +158,24 @@ export async function trackShipment(trackingId: string, carrier?: string): Promi
   try {
     // For Shippo, tracking requires both tracking number and carrier
     // Format: /v1/tracks/CARRIER_CODE/TRACKING_NUMBER
-    const params: any = {};
+    const url = new URL(`${SHIPPO_API_BASE}/tracks/`);
+    url.searchParams.set('tracking_number', trackingId);
+    if (carrier) {
+      url.searchParams.set('carrier', carrier);
+    }
 
-    const response = await axios.get(
-      `${SHIPPO_API_BASE}/tracks/`,
-      {
-        params: {
-          tracking_number: trackingId,
-          carrier: carrier,
-        },
-        headers: {
-          Authorization: `ShippoToken ${SHIPPO_API_KEY}`,
-        },
-      }
-    );
+    const response = await fetch(url.toString(), {
+      headers: {
+        Authorization: `ShippoToken ${SHIPPO_API_KEY}`,
+      },
+    });
 
-    return response.data;
+    const payload = await response.json();
+    if (!response.ok) {
+      throw new Error(payload?.detail || `Shippo error: ${response.status}`);
+    }
+
+    return payload;
   } catch (error) {
     console.error('Shippo tracking error:', error);
     throw new Error(`Failed to track Shippo shipment: ${error instanceof Error ? error.message : 'Unknown error'}`);

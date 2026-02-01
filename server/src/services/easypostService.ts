@@ -1,5 +1,4 @@
-import axios from 'axios';
-import { ShippingRate, ShippingRateRequest, ShippingAddress, ShippingPackage } from '../../types';
+import { ShippingRate, ShippingRateRequest, ShippingAddress, ShippingPackage } from '../types';
 
 const EASYPOST_API_BASE = 'https://api.easypost.com/v2';
 const EASYPOST_API_KEY = process.env.EASYPOST_API_KEY;
@@ -61,17 +60,23 @@ export async function getShippingRates(request: ShippingRateRequest): Promise<Sh
       },
     };
 
-    const shipmentResponse = await axios.post(
-      `${EASYPOST_API_BASE}/shipments`,
-      shipmentData,
-      {
-        headers: {
-          Authorization: `Basic ${auth}`,
-        },
-      }
-    );
+    const shipmentResponse = await fetch(`${EASYPOST_API_BASE}/shipments`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Basic ${auth}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(shipmentData),
+    });
 
-    const shipment = shipmentResponse.data.shipment;
+    const shipmentPayload = await shipmentResponse.json();
+    if (!shipmentResponse.ok) {
+      throw new Error(
+        shipmentPayload?.error?.message || `EasyPost error: ${shipmentResponse.status}`
+      );
+    }
+
+    const shipment = shipmentPayload.shipment;
     const rates: ShippingRate[] = [];
 
     // Extract rates from shipment
@@ -108,21 +113,21 @@ export async function createLabel(
   try {
     const auth = Buffer.from(`${EASYPOST_API_KEY}:`).toString('base64');
 
-    const labelData = {
-      label_format: labelFormat,
-    };
+    const response = await fetch(`${EASYPOST_API_BASE}/shipments/${shipmentId}/buy`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Basic ${auth}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ rate_id: rateId, label_format: labelFormat }),
+    });
 
-    const response = await axios.post(
-      `${EASYPOST_API_BASE}/shipments/${shipmentId}/buy`,
-      { rate_id: rateId, label_format: labelFormat },
-      {
-        headers: {
-          Authorization: `Basic ${auth}`,
-        },
-      }
-    );
+    const payload = await response.json();
+    if (!response.ok) {
+      throw new Error(payload?.error?.message || `EasyPost error: ${response.status}`);
+    }
 
-    return response.data.shipment;
+    return payload.shipment;
   } catch (error) {
     console.error('EasyPost label creation error:', error);
     throw new Error(`Failed to create EasyPost label: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -137,16 +142,18 @@ export async function trackShipment(trackingId: string): Promise<any> {
   try {
     const auth = Buffer.from(`${EASYPOST_API_KEY}:`).toString('base64');
 
-    const response = await axios.get(
-      `${EASYPOST_API_BASE}/trackers/${trackingId}`,
-      {
-        headers: {
-          Authorization: `Basic ${auth}`,
-        },
-      }
-    );
+    const response = await fetch(`${EASYPOST_API_BASE}/trackers/${trackingId}`, {
+      headers: {
+        Authorization: `Basic ${auth}`,
+      },
+    });
 
-    return response.data.tracker;
+    const payload = await response.json();
+    if (!response.ok) {
+      throw new Error(payload?.error?.message || `EasyPost error: ${response.status}`);
+    }
+
+    return payload.tracker;
   } catch (error) {
     console.error('EasyPost tracking error:', error);
     throw new Error(`Failed to track EasyPost shipment: ${error instanceof Error ? error.message : 'Unknown error'}`);
