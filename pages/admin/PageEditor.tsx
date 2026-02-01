@@ -589,7 +589,7 @@ const PageEditor: React.FC = () => {
     const baseContentData = (page.contentData && typeof page.contentData === "object")
       ? page.contentData
       : {};
-    const updatedContentData: Record<string, any> = { ...baseContentData };
+    const updatedContentData: Record<string, any> = { ...(baseContentData as Record<string, any>) };
 
     if (value) {
       updatedContentData.pageFont = value;
@@ -599,7 +599,9 @@ const PageEditor: React.FC = () => {
 
     setPage({
       ...page,
-      contentData: Object.keys(updatedContentData).length ? updatedContentData : undefined,
+      contentData: Object.keys(updatedContentData).length
+        ? (updatedContentData as Page["contentData"])
+        : undefined,
     });
   };
 
@@ -608,7 +610,7 @@ const PageEditor: React.FC = () => {
     const baseContentData = (page.contentData && typeof page.contentData === "object")
       ? page.contentData
       : {};
-    const updatedContentData: Record<string, any> = { ...baseContentData };
+    const updatedContentData: Record<string, any> = { ...(baseContentData as Record<string, any>) };
 
     if (value) {
       updatedContentData[field] = value;
@@ -618,7 +620,9 @@ const PageEditor: React.FC = () => {
 
     setPage({
       ...page,
-      contentData: Object.keys(updatedContentData).length ? updatedContentData : undefined,
+      contentData: Object.keys(updatedContentData).length
+        ? (updatedContentData as Page["contentData"])
+        : undefined,
     });
   };
 
