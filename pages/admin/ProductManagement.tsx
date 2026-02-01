@@ -500,7 +500,7 @@ const ProductManagement: React.FC = () => {
     });
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const productToSave = newProduct || editingProduct;
     
     // Validation
@@ -533,17 +533,22 @@ const ProductManagement: React.FC = () => {
       return;
     }
 
-    if (newProduct) {
-      addProduct(newProduct);
-      addToast("Product added!", "success");
-    } else if (editingProduct) {
-      updateProduct(editingProduct);
-      addToast("Product updated!", "success");
+    try {
+      if (newProduct) {
+        await addProduct(newProduct);
+        addToast("Product added!", "success");
+      } else if (editingProduct) {
+        await updateProduct(editingProduct);
+        addToast("Product updated!", "success");
+      }
+      // Clear preview after save to force refresh from actual product data
+      setImagePreview("");
+      setNewProduct(null);
+      setEditingProduct(null);
+    } catch (error) {
+      console.error("Failed to save product", error);
+      addToast("Failed to save product. Please try again.", "error");
     }
-    // Clear preview after save to force refresh from actual product data
-    setImagePreview("");
-    setNewProduct(null);
-    setEditingProduct(null);
   };
 
   if (isLoading) {

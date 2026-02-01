@@ -12,8 +12,8 @@ import { apiClient } from "../services/apiClient";
 interface ProductContextType {
   products: Product[];
   isLoading: boolean;
-  addProduct: (product: Omit<Product, "id">) => Promise<void>;
-  updateProduct: (product: Product) => Promise<void>;
+  addProduct: (product: Omit<Product, "id">) => Promise<Product>;
+  updateProduct: (product: Product) => Promise<Product>;
   deleteProduct: (productId: string) => Promise<void>;
 }
 
@@ -50,25 +50,33 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({
     try {
       const newProduct = await apiClient.products.create(product);
       setProducts((prev) => [...prev, newProduct]);
+      return newProduct;
     } catch (error) {
       console.error("Failed to add product via API, using mock", error);
       const newProduct = await mockApi.addProduct(product);
       setProducts((prev) => [...prev, newProduct]);
+      return newProduct;
     }
   };
 
   const updateProduct = async (product: Product) => {
     try {
       const updatedProduct = await apiClient.products.update(product.id, product);
+      const resolvedProduct = {
+        ...updatedProduct,
+        imageUrl: updatedProduct.imageUrl || product.imageUrl,
+      };
       setProducts((prev) =>
-        prev.map((p) => (p.id === updatedProduct.id ? updatedProduct : p)),
+        prev.map((p) => (p.id === resolvedProduct.id ? resolvedProduct : p)),
       );
+      return resolvedProduct;
     } catch (error) {
       console.error("Failed to update product via API, using mock", error);
       const updatedProduct = await mockApi.updateProduct(product);
       setProducts((prev) =>
         prev.map((p) => (p.id === updatedProduct.id ? updatedProduct : p)),
       );
+      return updatedProduct;
     }
   };
 
