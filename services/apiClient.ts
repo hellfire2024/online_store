@@ -4,6 +4,8 @@ const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost
 class ApiClient {
   private baseUrl: string;
   private token: string | null = null;
+  private inFlight: Map<string, Promise<any>> = new Map();
+  private cache: Map<string, { expiresAt: number; data: any }> = new Map();
 
   constructor(baseUrl: string) {
     this.baseUrl = baseUrl;
@@ -47,21 +49,73 @@ class ApiClient {
       headers['Authorization'] = `Bearer ${this.token}`;
     }
 
-    const response = await fetch(`${this.baseUrl}${endpoint}`, {
-      ...options,
-      headers,
-    });
+    const method = (options.method || 'GET').toUpperCase();
+    const cacheKey = `${method}:${endpoint}`;
 
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: 'Request failed' }));
-      throw new Error(error.error || `HTTP ${response.status}`);
+    if (method === 'GET') {
+      const cached = this.cache.get(cacheKey);
+      if (cached && cached.expiresAt > Date.now()) {
+        return cached.data as T;
+      }
+
+      const existing = this.inFlight.get(cacheKey);
+      if (existing) {
+        return existing as Promise<T>;
+      }
     }
 
-    if (response.status === 204) {
-      return {} as T;
+    const execute = async (): Promise<T> => {
+      const maxRetries = 3;
+      let attempt = 0;
+
+      while (true) {
+        const response = await fetch(`${this.baseUrl}${endpoint}`, {
+          ...options,
+          headers,
+        });
+
+        if (response.ok) {
+          if (response.status === 204) {
+            return {} as T;
+          }
+
+          const data = await response.json();
+
+          if (method === 'GET') {
+            this.cache.set(cacheKey, {
+              data,
+              expiresAt: Date.now() + 15000,
+            });
+          }
+
+          return data as T;
+        }
+
+        if ((response.status === 429 || response.status === 503) && attempt < maxRetries) {
+          attempt += 1;
+          const retryAfterHeader = response.headers.get('Retry-After');
+          const retryAfterSeconds = retryAfterHeader ? parseInt(retryAfterHeader, 10) : NaN;
+          const delayMs = Number.isFinite(retryAfterSeconds)
+            ? retryAfterSeconds * 1000
+            : Math.min(1000 * Math.pow(2, attempt), 5000);
+          await new Promise((resolve) => setTimeout(resolve, delayMs));
+          continue;
+        }
+
+        const error = await response.json().catch(() => ({ error: 'Request failed' }));
+        throw new Error(error.error || `HTTP ${response.status}`);
+      }
+    };
+
+    if (method === 'GET') {
+      const promise = execute().finally(() => {
+        this.inFlight.delete(cacheKey);
+      });
+      this.inFlight.set(cacheKey, promise);
+      return promise as Promise<T>;
     }
 
-    return response.json();
+    return execute();
   }
 
   // Products
