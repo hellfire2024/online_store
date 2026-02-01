@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { EditIcon, TrashIcon } from '../../components/Icons';
 import { useToast } from '../../hooks/useToast';
 import Pagination from '../../components/Pagination';
+import { apiClient } from '../../services/apiClient';
 
 interface OrderItem {
   productName: string;
@@ -40,48 +41,95 @@ const OrderManagement: React.FC = () => {
   const shippers = ['UPS', 'FedEx', 'USPS', 'DHL', 'Other'];
 
   useEffect(() => {
-    const mockOrders: Order[] = [
-      {
-        id: '1',
-        orderNumber: 'AGIS-0000000001',
-        customerName: 'John Doe',
-        customerEmail: 'john@example.com',
-        date: '2026-01-20T10:30:00Z',
-        total: 156.99,
-        status: 'delivered',
-        items: [
-          { productName: 'Custom T-Shirt', quantity: 2, price: 34.99 },
-          { productName: 'Design Services', quantity: 1, price: 87.01 },
-        ],
-        trackingNumber: 'TRK123456789',
-        notes: 'Customer requested rush delivery',
-      },
-      {
-        id: '2',
-        orderNumber: 'AGIS-0000000002',
-        customerName: 'Jane Smith',
-        customerEmail: 'jane@example.com',
-        date: '2026-01-24T14:15:00Z',
-        total: 89.50,
-        status: 'shipped',
-        items: [{ productName: 'Hoodie', quantity: 1, price: 89.50 }],
-        trackingNumber: 'TRK987654321',
-      },
-      {
-        id: '3',
-        orderNumber: 'AGIS-0000000003',
-        customerName: 'Bob Johnson',
-        customerEmail: 'bob@example.com',
-        date: '2026-01-26T09:00:00Z',
-        total: 45.00,
-        status: 'processing',
-        items: [{ productName: 'Cap', quantity: 1, price: 45.00 }],
-      },
-    ];
-    setOrders(mockOrders);
-    setFilteredOrders(mockOrders);
-    setIsLoading(false);
-  }, []);
+    const loadOrders = async () => {
+      setIsLoading(true);
+      try {
+        // Try to load orders from API
+        const apiOrders = await apiClient.orders.getAll();
+        
+        // Transform API orders to match UI format if needed
+        const transformedOrders = apiOrders.map((order: any) => {
+          let orderData;
+          try {
+            orderData = typeof order.order_data === 'string' 
+              ? JSON.parse(order.order_data) 
+              : order.order_data;
+          } catch {
+            orderData = {};
+          }
+
+          return {
+            id: order.id?.toString() || '',
+            orderNumber: order.order_number || '',
+            customerName: order.customer_name || orderData.customerName || 'Unknown',
+            customerEmail: order.customer_email || orderData.customerEmail || '',
+            date: order.created_at || new Date().toISOString(),
+            total: orderData.total || 0,
+            status: order.status || 'pending',
+            items: orderData.items || [],
+            trackingNumber: order.tracking_number || undefined,
+            notes: orderData.notes || undefined,
+          };
+        });
+
+        setOrders(transformedOrders);
+        setFilteredOrders(transformedOrders);
+        
+        if (transformedOrders.length === 0) {
+          addToast('No orders found in database', 'info');
+        }
+      } catch (error) {
+        console.error('Failed to load orders from API, using mock data:', error);
+        
+        // Fallback to mock orders when API fails or DB is empty
+        const mockOrders: Order[] = [
+          {
+            id: '1',
+            orderNumber: 'AGIS-0000000001',
+            customerName: 'John Doe',
+            customerEmail: 'john@example.com',
+            date: '2026-01-20T10:30:00Z',
+            total: 156.99,
+            status: 'delivered',
+            items: [
+              { productName: 'Custom T-Shirt', quantity: 2, price: 34.99 },
+              { productName: 'Design Services', quantity: 1, price: 87.01 },
+            ],
+            trackingNumber: 'TRK123456789',
+            notes: 'Customer requested rush delivery',
+          },
+          {
+            id: '2',
+            orderNumber: 'AGIS-0000000002',
+            customerName: 'Jane Smith',
+            customerEmail: 'jane@example.com',
+            date: '2026-01-24T14:15:00Z',
+            total: 89.50,
+            status: 'shipped',
+            items: [{ productName: 'Hoodie', quantity: 1, price: 89.50 }],
+            trackingNumber: 'TRK987654321',
+          },
+          {
+            id: '3',
+            orderNumber: 'AGIS-0000000003',
+            customerName: 'Bob Johnson',
+            customerEmail: 'bob@example.com',
+            date: '2026-01-26T09:00:00Z',
+            total: 45.00,
+            status: 'processing',
+            items: [{ productName: 'Cap', quantity: 1, price: 45.00 }],
+          },
+        ];
+        setOrders(mockOrders);
+        setFilteredOrders(mockOrders);
+        addToast('Using demo orders - backend not connected', 'info');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadOrders();
+  }, [addToast]);
 
   useEffect(() => {
     let filtered = orders.filter((o) =>

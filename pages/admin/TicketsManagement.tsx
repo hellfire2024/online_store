@@ -41,7 +41,12 @@ const TicketsManagement: React.FC = () => {
       return;
     }
 
-    // Load mock tickets
+    // Note: Tickets currently use mock data
+    // The backend has an email endpoint (/api/tickets/send-ticket-email) but no database table yet
+    // To enable database storage, you need to:
+    // 1. Create a support_tickets table in the database
+    // 2. Add CRUD routes in server/src/routes/ticketsApi.ts
+    // 3. Update this component to use apiClient.tickets (similar to orders)
     const mockTickets: SupportTicket[] = [
       {
         id: "1",

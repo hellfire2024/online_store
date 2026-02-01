@@ -471,7 +471,7 @@ const UserManagement: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Role Permissions (read-only)</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Role Permissions</label>
                 <div className="p-4 bg-slate-700/50 rounded">
                   {(() => {
                     const currentRole = roleOptions.find(r => r.key === formData.role);
