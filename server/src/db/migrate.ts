@@ -112,7 +112,7 @@ CREATE TABLE IF NOT EXISTS orders (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE,
-  FOREIGN KEY (shipping_address_id) REFERENCES customer_addresses(id) ON SET NULL,
+  FOREIGN KEY (shipping_address_id) REFERENCES customer_addresses(id) ON DELETE SET NULL,
   INDEX idx_customer (customer_id),
   INDEX idx_shipping_address (shipping_address_id),
   INDEX idx_order_number (order_number),
