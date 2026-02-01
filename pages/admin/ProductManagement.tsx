@@ -588,15 +588,6 @@ const ProductManagement: React.FC = () => {
       return;
     }
 
-    // Warn if trying to use base64 image (won't be persisted to database)
-    if (productToSave.imageUrl?.startsWith("data:")) {
-      addToast(
-        "⚠️ Base64 images cannot be persisted. Please upload the image using the Upload Image button.",
-        "error",
-      );
-      return;
-    }
-
     try {
       let savedProduct: Product | null = null;
       if (newProduct) {
