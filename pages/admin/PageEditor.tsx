@@ -440,7 +440,7 @@ const PageEditor: React.FC = () => {
   }, []);
 
   const hasUnsavedChanges =
-    JSON.stringify(page) !== JSON.stringify(originalPage);
+    JSON.stringify(page) !== JSON.stringify(originalPage) || selectedImageFile !== null;
 
   useEffect(() => {
     setHasUnsavedChanges(hasUnsavedChanges);
