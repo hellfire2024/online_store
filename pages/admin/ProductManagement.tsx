@@ -524,6 +524,15 @@ const ProductManagement: React.FC = () => {
       return;
     }
 
+    // Warn if trying to use base64 image (won't be persisted to database)
+    if (productToSave.imageUrl?.startsWith('data:')) {
+      addToast(
+        "⚠️ Base64 images cannot be persisted. Please select an image from your gallery instead.",
+        "error"
+      );
+      return;
+    }
+
     if (newProduct) {
       addProduct(newProduct);
       addToast("Product added!", "success");
@@ -531,6 +540,8 @@ const ProductManagement: React.FC = () => {
       updateProduct(editingProduct);
       addToast("Product updated!", "success");
     }
+    // Clear preview after save to force refresh from actual product data
+    setImagePreview("");
     setNewProduct(null);
     setEditingProduct(null);
   };

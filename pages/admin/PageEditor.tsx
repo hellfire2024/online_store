@@ -557,6 +557,15 @@ const PageEditor: React.FC = () => {
           finalImageUrl = previewImageUrl;
         }
 
+        // Warn if trying to use base64 image (won't be persisted)
+        if (finalImageUrl.startsWith('data:')) {
+          addToast(
+            "⚠️ Base64 images cannot be persisted. Please use a URL or implement proper image upload.",
+            "error"
+          );
+          return;
+        }
+
         pageToSave.contentData = {
           ...(pageToSave.contentData as HomePageContent),
           heroBackgroundImageUrl: finalImageUrl,
@@ -568,6 +577,7 @@ const PageEditor: React.FC = () => {
         addToast("Page updated!", "success");
         setOriginalPage(JSON.parse(JSON.stringify(pageToSave)));
         setSelectedImageFile(null);
+        setPreviewImageUrl(null); // Clear preview after save
       } else {
         // Create new page - no restrictions on Home/About pages anymore
         const newPage = await addPage(pageToSave);
