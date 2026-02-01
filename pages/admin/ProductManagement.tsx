@@ -597,14 +597,19 @@ const ProductManagement: React.FC = () => {
         savedProduct = await updateProduct(editingProduct);
         addToast("Product updated!", "success");
       }
+      
+      // Force products to refresh by fetching again
       await fetchProducts();
+      
       if (savedProduct) {
+        // Update image version for cache busting (though not needed for base64)
         setImageVersions((prev) => ({
           ...prev,
           [savedProduct.id]: Date.now(),
         }));
       }
-      // Clear preview after save to force refresh from actual product data
+      
+      // Clear states
       setImagePreview("");
       setNewProduct(null);
       setEditingProduct(null);
@@ -681,14 +686,12 @@ const ProductManagement: React.FC = () => {
                 Number(product.inventory) <= (product.lowStockThreshold ?? 0) &&
                 !isOut;
               const cacheBust = imageVersions[product.id];
-              const imageSrc = cacheBust
-                ? `${product.imageUrl}${product.imageUrl.includes("?") ? "&" : "?"}v=${cacheBust}`
-                : product.imageUrl;
               return (
                 <tr key={product.id} className="border-t border-slate-700">
                   <td className="p-4 flex items-center gap-4">
                     <img
-                      src={imageSrc}
+                      key={cacheBust || 0}
+                      src={product.imageUrl}
                       alt={product.name}
                       className="w-16 h-16 object-cover rounded-md bg-slate-700"
                     />
