@@ -80,7 +80,7 @@ export async function getShippingRates(request: ShippingRateRequest): Promise<Sh
           },
         });
 
-        const payload = await response.json();
+        const payload = (await response.json()) as any;
         if (!response.ok) {
           throw new Error(payload?.message || `ShipStation error: ${response.status}`);
         }
@@ -149,7 +149,7 @@ export async function createLabel(
       body: JSON.stringify(labelData),
     });
 
-    const payload = await response.json();
+    const payload = (await response.json()) as any;
     if (!response.ok) {
       throw new Error(payload?.message || `ShipStation error: ${response.status}`);
     }
@@ -177,7 +177,7 @@ export async function trackShipment(trackingId: string, carrierCode?: string): P
       },
     });
 
-    const payload = await response.json();
+    const payload = (await response.json()) as any;
     if (!response.ok) {
       throw new Error(payload?.message || `ShipStation error: ${response.status}`);
     }

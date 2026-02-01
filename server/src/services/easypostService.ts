@@ -69,7 +69,7 @@ export async function getShippingRates(request: ShippingRateRequest): Promise<Sh
       body: JSON.stringify(shipmentData),
     });
 
-    const shipmentPayload = await shipmentResponse.json();
+    const shipmentPayload = (await shipmentResponse.json()) as any;
     if (!shipmentResponse.ok) {
       throw new Error(
         shipmentPayload?.error?.message || `EasyPost error: ${shipmentResponse.status}`
@@ -122,7 +122,7 @@ export async function createLabel(
       body: JSON.stringify({ rate_id: rateId, label_format: labelFormat }),
     });
 
-    const payload = await response.json();
+    const payload = (await response.json()) as any;
     if (!response.ok) {
       throw new Error(payload?.error?.message || `EasyPost error: ${response.status}`);
     }
@@ -148,7 +148,7 @@ export async function trackShipment(trackingId: string): Promise<any> {
       },
     });
 
-    const payload = await response.json();
+    const payload = (await response.json()) as any;
     if (!response.ok) {
       throw new Error(payload?.error?.message || `EasyPost error: ${response.status}`);
     }
