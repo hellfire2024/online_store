@@ -231,6 +231,7 @@ const ProductManagement: React.FC = () => {
     Product | Omit<Product, "id"> | null
   >(null);
   const [imagePreview, setImagePreview] = useState<string>("");
+  const [imageVersions, setImageVersions] = useState<Record<string, number>>({});
   const [showImageSelector, setShowImageSelector] = useState(false);
   const { addToast } = useToast();
   const { setHasUnsavedChanges } = useUnsavedChanges();
@@ -534,12 +535,19 @@ const ProductManagement: React.FC = () => {
     }
 
     try {
+      let savedProduct: Product | null = null;
       if (newProduct) {
-        await addProduct(newProduct);
+        savedProduct = await addProduct(newProduct);
         addToast("Product added!", "success");
       } else if (editingProduct) {
-        await updateProduct(editingProduct);
+        savedProduct = await updateProduct(editingProduct);
         addToast("Product updated!", "success");
+      }
+      if (savedProduct) {
+        setImageVersions((prev) => ({
+          ...prev,
+          [savedProduct.id]: Date.now(),
+        }));
       }
       // Clear preview after save to force refresh from actual product data
       setImagePreview("");
@@ -600,11 +608,15 @@ const ProductManagement: React.FC = () => {
             {(itemsPerPage === -1 ? validProducts : validProducts.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)).map((product) => {
               const isOut = Number(product.inventory) <= 0;
               const isLow = (product.lowStockThreshold ?? 0) > 0 && Number(product.inventory) <= (product.lowStockThreshold ?? 0) && !isOut;
+              const cacheBust = imageVersions[product.id];
+              const imageSrc = cacheBust
+                ? `${product.imageUrl}${product.imageUrl.includes("?") ? "&" : "?"}v=${cacheBust}`
+                : product.imageUrl;
               return (
                 <tr key={product.id} className="border-t border-slate-700">
                   <td className="p-4 flex items-center gap-4">
                     <img
-                      src={product.imageUrl}
+                      src={imageSrc}
                       alt={product.name}
                       className="w-16 h-16 object-cover rounded-md bg-slate-700"
                     />
