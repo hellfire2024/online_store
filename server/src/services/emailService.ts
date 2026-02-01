@@ -181,19 +181,19 @@ export async function sendOrderConfirmationEmail(
             ${itemsHtml}
             <tr class="total-row">
               <td colspan="2" style="text-align: right; padding: 10px;">Subtotal:</td>
-              <td style="padding: 10px; text-align: right;">$${orderDetails.subtotal.toFixed(2)}</td>
+              <td style="padding: 10px; text-align: right;">$${Number(orderDetails.subtotal).toFixed(2)}</td>
             </tr>
             <tr>
               <td colspan="2" style="text-align: right; padding: 10px;">Shipping:</td>
-              <td style="padding: 10px; text-align: right;">$${orderDetails.shipping.toFixed(2)}</td>
+              <td style="padding: 10px; text-align: right;">$${Number(orderDetails.shipping).toFixed(2)}</td>
             </tr>
             <tr>
               <td colspan="2" style="text-align: right; padding: 10px;">Tax:</td>
-              <td style="padding: 10px; text-align: right;">$${orderDetails.tax.toFixed(2)}</td>
+              <td style="padding: 10px; text-align: right;">$${Number(orderDetails.tax).toFixed(2)}</td>
             </tr>
             <tr class="total-row">
               <td colspan="2" style="text-align: right; padding: 10px;">Total:</td>
-              <td style="padding: 10px; text-align: right;">$${orderDetails.total.toFixed(2)}</td>
+              <td style="padding: 10px; text-align: right;">$${Number(orderDetails.total).toFixed(2)}</td>
             </tr>
           </table>
 

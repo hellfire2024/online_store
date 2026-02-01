@@ -373,8 +373,8 @@ const CustomerManagement: React.FC = () => {
       c.email,
       c.phone,
       String(c.orderCount),
-      c.totalSpent.toFixed(2),
-      c.averageOrderValue.toFixed(2),
+      Number(c.totalSpent).toFixed(2),
+      Number(c.averageOrderValue).toFixed(2),
       c.lastOrderDate ? new Date(c.lastOrderDate).toISOString().split('T')[0] : '',
       c.isActive ? 'Yes' : 'No',
     ]);
@@ -513,8 +513,8 @@ const CustomerManagement: React.FC = () => {
                     <td className="px-6 py-4 text-gray-300">{customer.email}</td>
                     <td className="px-6 py-4 text-gray-300">{customer.phone}</td>
                     <td className="px-6 py-4 text-gray-300 text-center">{customer.orderCount}</td>
-                    <td className="px-6 py-4 text-gray-300 text-center">${customer.averageOrderValue.toFixed(2)}</td>
-                    <td className="px-6 py-4 text-gray-300 font-medium">${customer.totalSpent.toFixed(2)}</td>
+                    <td className="px-6 py-4 text-gray-300 text-center">${Number(customer.averageOrderValue).toFixed(2)}</td>
+                    <td className="px-6 py-4 text-gray-300 font-medium">${Number(customer.totalSpent).toFixed(2)}</td>
                     <td className="px-6 py-4 text-gray-400 text-sm">{customer.lastOrderDate ? new Date(customer.lastOrderDate).toLocaleDateString() : 'Never'}</td>
                     <td className="px-6 py-4">
                       <button
@@ -610,8 +610,8 @@ const CustomerManagement: React.FC = () => {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
               <div className="bg-slate-700 p-4 rounded-lg"><div className="text-sm text-gray-400 mb-1">Total Orders</div><div className="text-2xl font-bold text-white">{selectedCustomer.orderCount}</div></div>
-              <div className="bg-slate-700 p-4 rounded-lg"><div className="text-sm text-gray-400 mb-1">Total Spent</div><div className="text-2xl font-bold text-green-400">${selectedCustomer.totalSpent.toFixed(2)}</div></div>
-              <div className="bg-slate-700 p-4 rounded-lg"><div className="text-sm text-gray-400 mb-1">Avg Order Value</div><div className="text-2xl font-bold text-blue-400">${selectedCustomer.averageOrderValue.toFixed(2)}</div></div>
+              <div className="bg-slate-700 p-4 rounded-lg"><div className="text-sm text-gray-400 mb-1">Total Spent</div><div className="text-2xl font-bold text-green-400">${Number(selectedCustomer.totalSpent).toFixed(2)}</div></div>
+              <div className="bg-slate-700 p-4 rounded-lg"><div className="text-sm text-gray-400 mb-1">Avg Order Value</div><div className="text-2xl font-bold text-blue-400">${Number(selectedCustomer.averageOrderValue).toFixed(2)}</div></div>
               <div className="bg-slate-700 p-4 rounded-lg"><div className="text-sm text-gray-400 mb-1">Customer Since</div><div className="text-lg font-bold text-white">{new Date(selectedCustomer.createdAt).toLocaleDateString()}</div></div>
             </div>
             <div className="bg-slate-700 p-4 rounded-lg mb-6">
@@ -702,7 +702,7 @@ const CustomerManagement: React.FC = () => {
                           <p className="text-xs text-gray-400">{new Date(order.date).toLocaleDateString()}</p>
                         </div>
                         <div className="text-right">
-                          <p className="text-white font-bold text-lg">${order.total.toFixed(2)}</p>
+                          <p className="text-white font-bold text-lg">${Number(order.total).toFixed(2)}</p>
                           <p className="text-xs text-gray-400">{order.items.length} item{order.items.length !== 1 ? 's' : ''}</p>
                         </div>
                       </div>
@@ -797,7 +797,7 @@ const CustomerManagement: React.FC = () => {
                 </div>
                 <div className="text-right">
                   <p className="text-sm text-gray-400 mb-1">Total Amount</p>
-                  <p className="text-3xl font-bold text-white">${selectedOrderDetail.total.toFixed(2)}</p>
+                  <p className="text-3xl font-bold text-white">${Number(selectedOrderDetail.total).toFixed(2)}</p>
                 </div>
               </div>
               {selectedOrderDetail.trackingNumber && (
@@ -816,10 +816,10 @@ const CustomerManagement: React.FC = () => {
                   <div key={idx} className="flex items-center justify-between p-3 bg-slate-800 rounded border border-slate-600">
                     <div className="flex-1">
                       <p className="text-white font-semibold text-lg">{item.product.name}</p>
-                      <p className="text-gray-400 text-sm">Price: ${item.product.price.toFixed(2)} × {item.quantity}</p>
+                      <p className="text-gray-400 text-sm">Price: ${Number(item.product.price).toFixed(2)} × {item.quantity}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-white font-bold text-xl">${(item.product.price * item.quantity).toFixed(2)}</p>
+                      <p className="text-white font-bold text-xl">${(Number(item.product.price) * item.quantity).toFixed(2)}</p>
                       <p className="text-gray-400 text-xs">Qty: {item.quantity}</p>
                     </div>
                   </div>
@@ -833,15 +833,15 @@ const CustomerManagement: React.FC = () => {
               <div className="space-y-2">
                 <div className="flex justify-between text-gray-300">
                   <span>Subtotal</span>
-                  <span>${(selectedOrderDetail.total * 0.9).toFixed(2)}</span>
+                  <span>${(Number(selectedOrderDetail.total) * 0.9).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-gray-300">
                   <span>Tax (estimated)</span>
-                  <span>${(selectedOrderDetail.total * 0.1).toFixed(2)}</span>
+                  <span>${(Number(selectedOrderDetail.total) * 0.1).toFixed(2)}</span>
                 </div>
                 <div className="border-t border-slate-600 pt-2 flex justify-between text-white font-bold text-lg">
                   <span>Total</span>
-                  <span>${selectedOrderDetail.total.toFixed(2)}</span>
+                  <span>${Number(selectedOrderDetail.total).toFixed(2)}</span>
                 </div>
               </div>
             </div>

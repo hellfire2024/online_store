@@ -202,7 +202,7 @@ ${orderDetails.shippingAddress.city}, ${orderDetails.shippingAddress.state} ${or
 ORDER ITEMS
 ═══════════════════════════════════════════
 ${orderDetails.items.map((item, idx) => 
-  `${item.name}\n  Qty: ${item.quantity} × $${item.price.toFixed(2)} = $${(item.quantity * item.price).toFixed(2)}${
+  `${item.name}\n  Qty: ${item.quantity} × $${Number(item.price).toFixed(2)} = $${(item.quantity * Number(item.price)).toFixed(2)}${
     item.selectedOptions ? `\n  Options: ${item.selectedOptions}` : ''
   }${
     item.customText ? `\n  Custom Text: "${item.customText}"\n  (${item.customTextCharCount} characters • +$${item.customTextCost?.toFixed(2)})` : ''
@@ -214,11 +214,11 @@ ${orderDetails.items.map((item, idx) =>
 ═══════════════════════════════════════════
 ORDER SUMMARY
 ═══════════════════════════════════════════
-Subtotal:        $${orderDetails.subtotal.toFixed(2)}
-Shipping:        $${orderDetails.shipping.toFixed(2)}
-Tax:             $${orderDetails.tax.toFixed(2)}
+Subtotal:        $${Number(orderDetails.subtotal).toFixed(2)}
+Shipping:        $${Number(orderDetails.shipping).toFixed(2)}
+Tax:             $${Number(orderDetails.tax).toFixed(2)}
 ───────────────────────────────────────────
-TOTAL:           $${orderDetails.total.toFixed(2)}
+TOTAL:           $${Number(orderDetails.total).toFixed(2)}
 
 ═══════════════════════════════════════════
 
@@ -298,7 +298,7 @@ Questions? Contact us at support@customthreads.com
                     <p className="text-sky-400 text-xs mt-1">{item.selectedOptions}</p>
                   )}
                 </div>
-                <p className="text-white font-semibold">${(item.quantity * item.price).toFixed(2)}</p>
+                <p className="text-white font-semibold">${(item.quantity * Number(item.price)).toFixed(2)}</p>
               </div>
               {item.customText && (
                 <div className="mt-3 bg-slate-700 p-3 rounded-lg">
@@ -338,20 +338,20 @@ Questions? Contact us at support@customthreads.com
         <div className="space-y-2 text-gray-300">
           <div className="flex justify-between">
             <span>Subtotal</span>
-            <span>${orderDetails.subtotal.toFixed(2)}</span>
+            <span>${Number(orderDetails.subtotal).toFixed(2)}</span>
           </div>
           <div className="flex justify-between">
             <span>Shipping</span>
-            <span>${orderDetails.shipping.toFixed(2)}</span>
+            <span>${Number(orderDetails.shipping).toFixed(2)}</span>
           </div>
           <div className="flex justify-between">
             <span>Tax</span>
-            <span>${orderDetails.tax.toFixed(2)}</span>
+            <span>${Number(orderDetails.tax).toFixed(2)}</span>
           </div>
           <div className="border-t border-slate-700 pt-2 mt-2"></div>
           <div className="flex justify-between text-xl font-bold text-white">
             <span>Total</span>
-            <span>${orderDetails.total.toFixed(2)}</span>
+            <span>${Number(orderDetails.total).toFixed(2)}</span>
           </div>
         </div>
       </div>

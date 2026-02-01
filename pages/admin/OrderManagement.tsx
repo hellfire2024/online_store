@@ -301,7 +301,7 @@ const OrderManagement: React.FC = () => {
                 </td>
                 <td className="px-6 py-4 text-gray-300">{new Date(order.date).toLocaleDateString()}</td>
                 <td className="px-6 py-4 text-gray-300 text-center">{order.items.length}</td>
-                <td className="px-6 py-4 text-right text-white font-medium">${order.total.toFixed(2)}</td>
+                <td className="px-6 py-4 text-right text-white font-medium">${Number(order.total).toFixed(2)}</td>
                 <td className="px-6 py-4">
                   <span className={`px-3 py-1 rounded text-xs font-semibold ${getStatusColor(order.status)}`}>
                     {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
@@ -351,7 +351,7 @@ const OrderManagement: React.FC = () => {
           </div>
           <div className="border-t border-slate-600 pt-4">
             <p className="text-gray-400 text-sm">Total</p>
-            <p className="text-2xl font-bold text-white">${selectedOrder.total.toFixed(2)}</p>
+            <p className="text-2xl font-bold text-white">${Number(selectedOrder.total).toFixed(2)}</p>
           </div>
         </div>
       )}

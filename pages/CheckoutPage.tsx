@@ -436,7 +436,7 @@ const CheckoutPage: React.FC = () => {
           <div className="space-y-3 text-gray-300">
             <div className="flex justify-between">
               <span>Subtotal</span>
-              <span>${taxCalculation.subtotal.toFixed(2)}</span>
+              <span>${Number(taxCalculation.subtotal).toFixed(2)}</span>
             </div>
             <div className="flex justify-between">
               <span>Shipping</span>
@@ -446,7 +446,7 @@ const CheckoutPage: React.FC = () => {
               <>
                 <div className="flex justify-between text-gray-400">
                   <span>{isCalculatingTax ? 'Calculating tax...' : `Tax (${taxCalculation.taxRate}%)`}</span>
-                  <span>{isCalculatingTax ? '...' : `$${taxCalculation.taxAmount.toFixed(2)}`}</span>
+                  <span>{isCalculatingTax ? '...' : `$${Number(taxCalculation.taxAmount).toFixed(2)}`}</span>
                 </div>
                 <div className="text-xs text-gray-500 mt-2">
                   {siteSettings.taxConfig.provider === "stripe" ? (
@@ -470,7 +470,7 @@ const CheckoutPage: React.FC = () => {
             <div className="border-t border-slate-700 my-3"></div>
             <div className="flex justify-between text-xl font-bold text-white">
               <span>Total</span>
-              <span>${taxCalculation.total.toFixed(2)}</span>
+              <span>${Number(taxCalculation.total).toFixed(2)}</span>
             </div>
           </div>
         </div>

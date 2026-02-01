@@ -174,21 +174,21 @@ const ProductDetailPage: React.FC = () => {
   // Calculate display price including all selected options and custom text - memoized
   const displayPrice = useMemo(() => {
     if (!product) return 0;
-    let price = product.price;
+    let price = Number(product.price);
     if (product.optionLists) {
       product.optionLists.forEach((list) => {
         const selectedOptionId = selectedOptions[list.id];
         if (selectedOptionId) {
           const option = list.options.find((o) => o.id === selectedOptionId);
           if (option) {
-            price += option.priceDelta;
+            price += Number(option.priceDelta);
           }
         }
       });
     }
     // Add custom text cost
     if (product.allowCustomText && customText && product.customTextPricePerChar) {
-      price += customText.length * product.customTextPricePerChar;
+      price += customText.length * Number(product.customTextPricePerChar);
     }
     return price;
   }, [product, selectedOptions, customText]);
@@ -249,7 +249,7 @@ const ProductDetailPage: React.FC = () => {
                         {!list.required && <option value="">None</option>}
                         {sortedOptions.map((opt) => (
                           <option key={opt.id} value={opt.id}>
-                            {opt.name} {opt.priceDelta !== 0 ? `(+$${opt.priceDelta.toFixed(2)})` : ""}
+                            {opt.name} {Number(opt.priceDelta) !== 0 ? `(+$${Number(opt.priceDelta).toFixed(2)})` : ""}
                           </option>
                         ))}
                       </select>
@@ -332,7 +332,7 @@ const ProductDetailPage: React.FC = () => {
                 </div>
                 {product.customTextPricePerChar && (
                   <p className="text-xs text-gray-500 mt-2">
-                    ${product.customTextPricePerChar.toFixed(2)} per character
+                    ${Number(product.customTextPricePerChar).toFixed(2)} per character
                   </p>
                 )}
               </div>
@@ -345,7 +345,7 @@ const ProductDetailPage: React.FC = () => {
               type="number"
               id="quantity"
               min="1"
-              max={product.inventory}
+              max={Number(product.inventory)}
               value={quantity}
               onChange={(e) => setQuantity(parseInt(e.target.value, 10))}
               className="w-20 p-2 bg-slate-700 border border-slate-600 rounded-md text-center text-white"
@@ -355,9 +355,9 @@ const ProductDetailPage: React.FC = () => {
           <button
             onClick={handleAddToCart}
             className="w-full bg-sky-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-sky-600 transition-colors disabled:bg-gray-500 disabled:cursor-not-allowed"
-            disabled={product.inventory === 0}
+            disabled={Number(product.inventory) === 0}
           >
-            {product.inventory > 0 ? 'Add to Cart' : 'Out of Stock'}
+            {Number(product.inventory) > 0 ? 'Add to Cart' : 'Out of Stock'}
           </button>
         </div>
       </div>

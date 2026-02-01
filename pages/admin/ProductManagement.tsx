@@ -264,9 +264,9 @@ const ProductManagement: React.FC = () => {
   const validProducts = products.filter((p): p is Product => p != null);
   
   const lowStockProducts = validProducts.filter(
-    (p) => (p.lowStockThreshold ?? 0) > 0 && p.inventory <= (p.lowStockThreshold ?? 0)
+    (p) => (p.lowStockThreshold ?? 0) > 0 && Number(p.inventory) <= (p.lowStockThreshold ?? 0)
   );
-  const outOfStockProducts = validProducts.filter((p) => p.inventory <= 0);
+  const outOfStockProducts = validProducts.filter((p) => Number(p.inventory) <= 0);
 
   useEffect(() => {
     setHasUnsavedChanges(hasUnsavedChanges);
@@ -514,7 +514,7 @@ const ProductManagement: React.FC = () => {
       return;
     }
     
-    if (!productToSave.inventory || productToSave.inventory < 0) {
+    if (!productToSave.inventory || Number(productToSave.inventory) < 0) {
       addToast("Product inventory must be 0 or greater", "error");
       return;
     }
@@ -582,8 +582,8 @@ const ProductManagement: React.FC = () => {
           </thead>
           <tbody>
             {(itemsPerPage === -1 ? validProducts : validProducts.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)).map((product) => {
-              const isOut = product.inventory <= 0;
-              const isLow = (product.lowStockThreshold ?? 0) > 0 && product.inventory <= (product.lowStockThreshold ?? 0) && !isOut;
+              const isOut = Number(product.inventory) <= 0;
+              const isLow = (product.lowStockThreshold ?? 0) > 0 && Number(product.inventory) <= (product.lowStockThreshold ?? 0) && !isOut;
               return (
                 <tr key={product.id} className="border-t border-slate-700">
                   <td className="p-4 flex items-center gap-4">
@@ -594,7 +594,7 @@ const ProductManagement: React.FC = () => {
                     />
                     <span>{product.name}</span>
                   </td>
-                  <td className="p-4">${product.price.toFixed(2)}</td>
+                  <td className="p-4">${Number(product.price).toFixed(2)}</td>
                   <td className="p-4">{product.inventory}</td>
                   <td className="p-4">
                     <span

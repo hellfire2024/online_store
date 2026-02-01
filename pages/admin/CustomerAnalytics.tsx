@@ -169,7 +169,7 @@ const CustomerAnalytics: React.FC = () => {
         </div>
         <div className="bg-slate-800 p-4 rounded-lg">
           <div className="text-sm text-gray-400">Total Revenue</div>
-          <div className="text-2xl font-bold text-blue-400">${totalRevenue.toFixed(0)}</div>
+          <div className="text-2xl font-bold text-blue-400">${Number(totalRevenue).toFixed(0)}</div>
         </div>
       </div>
 
@@ -346,8 +346,8 @@ const CustomerAnalytics: React.FC = () => {
                     <td className="px-4 py-3 text-white font-medium">{c.firstName} {c.lastName}</td>
                     <td className="px-4 py-3 text-gray-400 text-sm">{c.email}</td>
                     <td className="px-4 py-3 text-right text-white">{c.orderCount}</td>
-                    <td className="px-4 py-3 text-right text-green-400 font-medium">${c.totalSpent.toFixed(2)}</td>
-                    <td className="px-4 py-3 text-right text-gray-300">${c.averageOrderValue.toFixed(2)}</td>
+                    <td className="px-4 py-3 text-right text-green-400 font-medium">${Number(c.totalSpent).toFixed(2)}</td>
+                    <td className="px-4 py-3 text-right text-gray-300">${Number(c.averageOrderValue).toFixed(2)}</td>
                     <td className="px-4 py-3 text-gray-400 text-sm">
                       {c.lastOrderDate ? new Date(c.lastOrderDate).toLocaleDateString() : 'Never'}
                     </td>

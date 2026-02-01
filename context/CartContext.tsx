@@ -78,7 +78,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         if (selectedOptionId) {
           const option = list.options.find((o) => o.id === selectedOptionId);
           if (option) {
-            optionsDelta += option.priceDelta;
+            optionsDelta += Number(option.priceDelta);
           }
         }
       });
@@ -86,9 +86,9 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     // Add custom text cost
     let customTextCost = 0;
     if (item.customText && item.product.customTextPricePerChar) {
-      customTextCost = item.customText.length * item.product.customTextPricePerChar;
+      customTextCost = item.customText.length * Number(item.product.customTextPricePerChar);
     }
-    return total + (item.product.price + optionsDelta + customTextCost) * item.quantity;
+    return total + (Number(item.product.price) + optionsDelta + customTextCost) * item.quantity;
   }, 0);
 
   return (

@@ -26,7 +26,7 @@ const CartItemRow: React.FC<{ item: CartItem }> = ({ item }) => {
         if (selectedOptionId) {
           const option = list.options.find((o) => o.id === selectedOptionId);
           if (option) {
-            optionsDelta += option.priceDelta;
+            optionsDelta += Number(option.priceDelta);
             selectedOptionDetails.push({ listName: list.name, optionName: option.name });
           }
         }
@@ -36,10 +36,10 @@ const CartItemRow: React.FC<{ item: CartItem }> = ({ item }) => {
     // Add custom text cost
     let customTextCost = 0;
     if (item.customText && item.product.customTextPricePerChar) {
-      customTextCost = item.customText.length * item.product.customTextPricePerChar;
+      customTextCost = item.customText.length * Number(item.product.customTextPricePerChar);
     }
     
-    const finalPrice = item.product.price + optionsDelta + customTextCost;
+    const finalPrice = Number(item.product.price) + optionsDelta + customTextCost;
 
     return (
         <div className="flex items-start py-5 border-b border-slate-700 gap-4">

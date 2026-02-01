@@ -91,7 +91,7 @@ const CustomerOrdersPage: React.FC = () => {
     const rows = ordersToExport.map(order => [
       order.orderNumber,
       new Date(order.date).toLocaleDateString(),
-      `$${order.total.toFixed(2)}`,
+      `$${Number(order.total).toFixed(2)}`,
       order.status,
       order.items.length,
       order.trackingNumber || 'N/A',
@@ -229,11 +229,11 @@ const CustomerOrdersPage: React.FC = () => {
             </div>
             <div className="bg-slate-800 p-4 rounded-lg border border-slate-700">
               <p className="text-gray-400 text-sm">Total Spent</p>
-              <p className="text-white text-2xl font-bold">${stats.totalSpent.toFixed(2)}</p>
+              <p className="text-white text-2xl font-bold">${Number(stats.totalSpent).toFixed(2)}</p>
             </div>
             <div className="bg-slate-800 p-4 rounded-lg border border-slate-700">
               <p className="text-gray-400 text-sm">Average Order</p>
-              <p className="text-white text-2xl font-bold">${stats.average.toFixed(2)}</p>
+              <p className="text-white text-2xl font-bold">${Number(stats.average).toFixed(2)}</p>
             </div>
           </div>
         );
@@ -375,7 +375,7 @@ const CustomerOrdersPage: React.FC = () => {
                           </div>
                           <div>
                             <p className="text-gray-400">Total</p>
-                            <p className="text-white font-bold text-lg">${order.total.toFixed(2)}</p>
+                            <p className="text-white font-bold text-lg">${Number(order.total).toFixed(2)}</p>
                           </div>
                           <div>
                             <p className="text-gray-400">Items</p>
@@ -406,7 +406,7 @@ const CustomerOrdersPage: React.FC = () => {
                             <div key={idx} className="flex items-center justify-between p-2 bg-slate-800/50 rounded">
                               <div className="flex-1">
                                 <p className="text-white font-medium">{item.product.name}</p>
-                                <p className="text-gray-400 text-sm">Qty: {item.quantity} × ${item.product.price.toFixed(2)}</p>
+                                <p className="text-gray-400 text-sm">Qty: {item.quantity} × ${Number(item.product.price).toFixed(2)}</p>
                               </div>
                               <div className="text-right">
                                 <p className="text-white font-bold">${(item.product.price * item.quantity).toFixed(2)}</p>
@@ -424,11 +424,11 @@ const CustomerOrdersPage: React.FC = () => {
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-400">Tax (estimated)</span>
-                          <span className="text-white">${(order.total * 0.1).toFixed(2)}</span>
+                          <span className="text-white">${(Number(order.total) * 0.1).toFixed(2)}</span>
                         </div>
                         <div className="border-t border-slate-600 pt-2 flex justify-between">
                           <span className="text-white font-bold">Total</span>
-                          <span className="text-white font-bold text-lg">${order.total.toFixed(2)}</span>
+                          <span className="text-white font-bold text-lg">${Number(order.total).toFixed(2)}</span>
                         </div>
                       </div>
 
