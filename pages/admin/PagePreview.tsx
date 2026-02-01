@@ -27,6 +27,7 @@ const PagePreview: React.FC = () => {
   }
 
   const page = state.page;
+  const pageFont = (page.contentData as any)?.pageFont as string | undefined;
 
   const renderPreview = () => {
     if (page.pageType === 'home') {
@@ -136,7 +137,10 @@ const PagePreview: React.FC = () => {
       >
         ← Back to Editor
       </button>
-      <div className="bg-slate-800 p-8 md:p-12 rounded-lg shadow-2xl max-w-4xl mx-auto border border-slate-700">
+      <div
+        className="bg-slate-800 p-8 md:p-12 rounded-lg shadow-2xl max-w-4xl mx-auto border border-slate-700"
+        style={{ fontFamily: pageFont || undefined }}
+      >
         <h1 className="text-4xl md:text-5xl font-bold text-white mb-6">{page.title}</h1>
         {renderPreview()}
       </div>

@@ -639,6 +639,36 @@ const SettingsManagement: React.FC = () => {
             />
 
             <div className="border-t border-slate-700 pt-6">
+              <h3 className="text-lg font-semibold text-white mb-4">Font Settings</h3>
+              <div>
+                <label
+                  htmlFor="globalFont"
+                  className="block text-gray-300 text-sm font-bold mb-1"
+                >
+                  Site-Wide Default Font
+                </label>
+                <select
+                  id="globalFont"
+                  name="globalFont"
+                  value={settings.globalFont || "Arial"}
+                  onChange={handleInputChange}
+                  className={inputClasses}
+                >
+                  <option value="Arial">Arial</option>
+                  <option value="Helvetica">Helvetica</option>
+                  <option value="Times New Roman">Times New Roman</option>
+                  <option value="Georgia">Georgia</option>
+                  <option value="Courier New">Courier New</option>
+                  <option value="Verdana">Verdana</option>
+                  <option value="Comic Sans MS">Comic Sans MS</option>
+                  <option value="Impact">Impact</option>
+                  <option value="Trebuchet MS">Trebuchet MS</option>
+                </select>
+                <p className="text-xs text-gray-400 mt-1">This font applies to your entire site. Individual pages can override this setting.</p>
+              </div>
+            </div>
+
+            <div className="border-t border-slate-700 pt-6">
               <h3 className="text-lg font-semibold text-white mb-4">Review Settings</h3>
               <div>
                 <label

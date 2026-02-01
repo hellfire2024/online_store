@@ -275,10 +275,12 @@ export interface HomePageContent {
   heroTitle: string;
   heroSubtitle: string;
   heroBackgroundImageUrl: string;
+  pageFont?: string; // Page-specific font override
 }
 
 export interface AboutPageContent {
   aboutPageContent: string;
+  pageFont?: string; // Page-specific font override
 }
 
   export type ContactFieldType = 'firstName' | 'lastName' | 'fullName' | 'email' | 'phone' | 'address' | 'subject' | 'message' | 'text' | 'textarea' | 'select' | 'checkbox';
@@ -312,10 +314,12 @@ export interface ContactPageContent {
   targetEmail: string; // Where form submissions go
   subjectTemplate: string; // Email subject template, e.g., "Contact Form: {subject}"
   successMessage: string;
+  pageFont?: string; // Page-specific font override
 }
 
 export interface CustomPageContent {
   content: string;
+  pageFont?: string; // Page-specific font override
 }
 
 export interface Page {
@@ -402,6 +406,7 @@ export interface SiteSettings {
   siteBackgroundImageUrl: string;
   siteBackgroundOpacity: number;
   maxReviewsDisplayed: number; // How many approved reviews to show on site
+  globalFont?: string; // Site-wide default font
 
   // Terms and Conditions
   termsAndConditionsContent: string;

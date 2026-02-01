@@ -98,6 +98,7 @@ const defaultSettings: SiteSettings = {
     { id: 'atrisk', name: 'At-Risk', minTotalSpent: undefined, minOrderCount: undefined, maxDaysSinceOrder: 180, priority: 2, enabled: true },
     { id: 'standard', name: 'Standard', minTotalSpent: undefined, minOrderCount: undefined, maxDaysSinceOrder: undefined, priority: 3, enabled: true },
   ],
+  globalFont: 'Arial',
 };
 
 interface SiteSettingsContextType {

@@ -15,7 +15,10 @@ const SiteEffectHandler: React.FC = () => {
       link.href = siteSettings.faviconUrl;
       document.getElementsByTagName('head')[0].appendChild(link);
     }
-  }, [siteSettings?.siteTitle, siteSettings?.faviconUrl]);
+
+    const font = siteSettings?.globalFont || 'Arial';
+    document.documentElement.style.setProperty('--site-font', `${font}, Arial, sans-serif`);
+  }, [siteSettings?.siteTitle, siteSettings?.faviconUrl, siteSettings?.globalFont]);
 
   return null; // This component doesn't render anything visible
 };

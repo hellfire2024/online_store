@@ -20,9 +20,13 @@ const AboutPage: React.FC = () => {
 
   const aboutContent = (aboutPage.contentData as AboutPageContent)?.aboutPageContent || 
     "<p>Welcome to Custom Threads, where creativity meets quality.</p>";
+  const pageFont = (aboutPage.contentData as AboutPageContent)?.pageFont;
 
   return (
-    <div className="bg-slate-800 p-8 md:p-12 rounded-lg shadow-2xl max-w-4xl mx-auto border border-slate-700">
+    <div
+      className="bg-slate-800 p-8 md:p-12 rounded-lg shadow-2xl max-w-4xl mx-auto border border-slate-700"
+      style={{ fontFamily: pageFont || undefined }}
+    >
       <h1 className="text-4xl md:text-5xl font-bold text-white mb-6">
         About{" "}
         <span className="text-sky-400">{siteSettings?.logoTextAccent}</span>

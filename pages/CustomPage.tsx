@@ -2,6 +2,7 @@
 import React from 'react';
 import { useLocation } from 'react-router-dom';
 import { usePages } from '../context/PagesContext';
+import { CustomPageContent } from '../types';
 
 const CustomPage: React.FC = () => {
   const { pages } = usePages();
@@ -18,8 +19,13 @@ const CustomPage: React.FC = () => {
     );
   }
 
+  const pageFont = (page.contentData as CustomPageContent)?.pageFont;
+
   return (
-    <div className="bg-slate-800 p-8 md:p-12 rounded-lg shadow-2xl max-w-4xl mx-auto border border-slate-700">
+    <div
+      className="bg-slate-800 p-8 md:p-12 rounded-lg shadow-2xl max-w-4xl mx-auto border border-slate-700"
+      style={{ fontFamily: pageFont || undefined }}
+    >
       <h1 className="text-4xl md:text-5xl font-bold text-white mb-6">{page.title}</h1>
       {/* In a real app, this HTML should be sanitized on a server before being rendered to prevent XSS attacks. */}
       <div 

@@ -37,6 +37,7 @@ const HomePage: React.FC = () => {
   const approvedReviews = reviews.filter((r) => r.status === "approved");
   const maxReviews = siteSettings?.maxReviewsDisplayed || 5;
   const featuredReviews = approvedReviews.slice(0, maxReviews);
+  const pageFont = (homePage.contentData as HomePageContent)?.pageFont;
 
   const handleSubmitReview = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -107,7 +108,7 @@ const HomePage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-16">
+    <div className="space-y-16" style={{ fontFamily: pageFont || undefined }}>
       {/* Hero Section */}
       {homePage.pageType === "home" && homePage.contentData && (
         <div className="relative text-center text-white bg-slate-900 rounded-lg overflow-hidden h-96">

@@ -558,6 +558,25 @@ const PageEditor: React.FC = () => {
     }
   };
 
+  const handlePageFontChange = (value: string) => {
+    if (!page) return;
+    const baseContentData = (page.contentData && typeof page.contentData === "object")
+      ? page.contentData
+      : {};
+    const updatedContentData: Record<string, any> = { ...baseContentData };
+
+    if (value) {
+      updatedContentData.pageFont = value;
+    } else {
+      delete updatedContentData.pageFont;
+    }
+
+    setPage({
+      ...page,
+      contentData: Object.keys(updatedContentData).length ? updatedContentData : undefined,
+    });
+  };
+
   const handleHomePageContentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (page && page.pageType === 'home') {
       const { name, value } = e.target;
@@ -1163,6 +1182,27 @@ const PageEditor: React.FC = () => {
             className="w-full p-2 bg-slate-800 border-2 border-slate-700 rounded-md text-white"
             disabled={!isNewPage && (page.pageType === 'home' || page.pageType === 'about')}
           />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-300 mb-2">Page Font Override</label>
+          <select
+            value={((page.contentData as any)?.pageFont || "")}
+            onChange={(e) => handlePageFontChange(e.target.value)}
+            className="w-full p-2 bg-slate-800 border-2 border-slate-700 rounded-md text-white"
+          >
+            <option value="">Use Site Default Font</option>
+            <option value="Arial">Arial</option>
+            <option value="Helvetica">Helvetica</option>
+            <option value="Times New Roman">Times New Roman</option>
+            <option value="Georgia">Georgia</option>
+            <option value="Courier New">Courier New</option>
+            <option value="Verdana">Verdana</option>
+            <option value="Comic Sans MS">Comic Sans MS</option>
+            <option value="Impact">Impact</option>
+            <option value="Trebuchet MS">Trebuchet MS</option>
+          </select>
+          <p className="text-xs text-gray-500 mt-1">Overrides the global font for this page only.</p>
         </div>
 
         <div>
