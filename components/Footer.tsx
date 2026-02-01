@@ -145,18 +145,8 @@ const Footer: React.FC = () => {
   return (
     <footer className="bg-gray-900 text-white py-12 mt-16">
       <div className="container mx-auto px-4">
-        {/* Dynamic Footer Columns from Settings */}
-        {siteSettings?.footerConfig?.columns && siteSettings.footerConfig.columns.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
-            {siteSettings.footerConfig.columns.map((column) => (
-              <div key={column.id}>
-                {renderFooterColumn(column.items)}
-              </div>
-            ))}
-          </div>
-        ) : (
-          // Fallback to default footer layout
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+        {/* Fallback to default footer layout - always show for now */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
             {/* Company Info */}
             <div>
               <h3 className="font-bold text-lg mb-4">
@@ -243,7 +233,6 @@ const Footer: React.FC = () => {
               </ul>
             </div>
           </div>
-        )}
 
         {/* Bottom Section */}
         <div className="border-t border-gray-800 pt-8">
