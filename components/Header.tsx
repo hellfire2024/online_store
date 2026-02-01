@@ -42,6 +42,7 @@ const UserIcon: React.FC = () => (
 
 const Header: React.FC = () => {
   const [isProfileOpen, setIsProfileOpen] = React.useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   const { itemCount } = useCart();
   const { customer, logout } = useCustomerAuth();
   const { siteSettings, isLoading: settingsLoading } = useSiteSettings();
@@ -80,12 +81,12 @@ const Header: React.FC = () => {
   return (
     <header className="bg-slate-900/80 backdrop-blur-md shadow-lg sticky top-0 z-40">
       <div className="container mx-auto px-4">
-        <div className="relative flex justify-between items-center py-4">
-          <Link to="/" className="flex items-center gap-3 text-2xl font-bold text-white tracking-wider">
+        <div className="relative flex justify-between items-center py-3">
+          <Link to="/" className="flex items-center gap-2 text-lg md:text-2xl font-bold text-white tracking-wider">
             {siteSettings?.headerLogoUrl && (
-              <img src={siteSettings.headerLogoUrl} alt="Site Logo" className="h-8 w-auto" />
+              <img src={siteSettings.headerLogoUrl} alt="Site Logo" className="h-6 md:h-8 w-auto" />
             )}
-            <span>
+            <span className="truncate">
               {siteSettings?.logoText}
               <span className="text-sky-400">{siteSettings?.logoTextAccent}</span>
             </span>
@@ -102,7 +103,38 @@ const Header: React.FC = () => {
               </NavLink>
             )}
           </nav>
-          <div className="flex items-center space-x-5">
+          <div className="flex items-center space-x-3 md:space-x-5">
+            <button
+              type="button"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="md:hidden text-gray-300 hover:text-white p-2 touch-manipulation"
+              aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="28"
+                height="28"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                {isMobileMenuOpen ? (
+                  <>
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </>
+                ) : (
+                  <>
+                    <line x1="3" y1="12" x2="21" y2="12" />
+                    <line x1="3" y1="6" x2="21" y2="6" />
+                    <line x1="3" y1="18" x2="21" y2="18" />
+                  </>
+                )}
+              </svg>
+            </button>
             {customer ? (
               <div ref={profileRef} className="relative">
                 <button
@@ -153,6 +185,33 @@ const Header: React.FC = () => {
               )}
             </Link>
           </div>
+        </div>
+        <div className={`md:hidden ${isMobileMenuOpen ? 'block' : 'hidden'} border-t border-slate-700 pb-4 pt-2`}> 
+          <nav className="flex flex-col space-y-1">
+            {headerMenu?.items.map((item) => (
+              <NavLink
+                key={item.id}
+                to={item.url}
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={({ isActive }) =>
+                  `py-3 px-2 rounded transition-colors touch-manipulation ${isActive ? 'text-white font-semibold bg-slate-800' : 'text-gray-300 hover:text-white hover:bg-slate-800'}`
+                }
+              >
+                {item.text}
+              </NavLink>
+            ))}
+            {customer && (
+              <NavLink
+                to="/support"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={({ isActive }) =>
+                  `py-3 px-2 rounded transition-colors touch-manipulation ${isActive ? 'text-white font-semibold bg-slate-800' : 'text-gray-300 hover:text-white hover:bg-slate-800'}`
+                }
+              >
+                Support
+              </NavLink>
+            )}
+          </nav>
         </div>
       </div>
     </header>

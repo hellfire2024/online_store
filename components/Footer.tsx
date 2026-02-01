@@ -104,12 +104,12 @@ const Footer: React.FC = () => {
               reserved.
             </p>
             <div className="flex gap-6 mt-4 md:mt-0">
-              <a href="#" className="hover:text-white transition">
+              <Link to="/terms" className="hover:text-white transition">
                 Privacy Policy
-              </a>
-              <a href="#" className="hover:text-white transition">
+              </Link>
+              <Link to="/terms" className="hover:text-white transition">
                 Terms of Service
-              </a>
+              </Link>
             </div>
           </div>
         </div>
