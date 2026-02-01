@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useAdmin } from "../../context/AdminContext";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "../../hooks/useToast";
+import { apiClient } from "../../services/apiClient";
 
 interface SupportTicket {
   id: string;
@@ -41,13 +42,38 @@ const TicketsManagement: React.FC = () => {
       return;
     }
 
-    // Note: Tickets currently use mock data
-    // The backend has an email endpoint (/api/tickets/send-ticket-email) but no database table yet
-    // To enable database storage, you need to:
-    // 1. Create a support_tickets table in the database
-    // 2. Add CRUD routes in server/src/routes/ticketsApi.ts
-    // 3. Update this component to use apiClient.tickets (similar to orders)
-    const mockTickets: SupportTicket[] = [
+    const loadTickets = async () => {
+      setIsLoading(true);
+      try {
+        // Try to load tickets from API
+        const apiTickets = await apiClient.tickets.getAll();
+        
+        // Transform API tickets to match UI format if needed
+        const transformedTickets = apiTickets.map((ticket: any) => ({
+          id: ticket.id,
+          ticketNumber: ticket.ticketNumber,
+          customerName: ticket.customerName,
+          customerEmail: ticket.customerEmail,
+          subject: ticket.subject,
+          message: ticket.message,
+          orderId: ticket.orderId,
+          status: ticket.status,
+          priority: ticket.priority,
+          createdAt: ticket.createdAt,
+          updatedAt: ticket.updatedAt,
+          replies: ticket.replies || [],
+        }));
+        
+        setTickets(transformedTickets);
+        
+        if (transformedTickets.length === 0) {
+          addToast('No tickets found in database', 'info');
+        }
+      } catch (error) {
+        console.error('Failed to load tickets from API, using mock data:', error);
+        
+        // Fallback to mock tickets when API fails or DB is empty
+        const mockTickets: SupportTicket[] = [
       {
         id: "1",
         ticketNumber: "TKT-2026-001",
@@ -132,57 +158,136 @@ const TicketsManagement: React.FC = () => {
     ];
 
     setTickets(mockTickets);
-    setIsLoading(false);
-  }, [isAdminAuthenticated, navigate]);
+    addToast('Using demo tickets - backend not connected', 'info');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadTickets();
+  }, [isAdminAuthenticated, navigate, addToast]);
 
-  const handleReply = (e: React.FormEvent) => {
+  const handleReply = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedTicket || !replyMessage.trim()) return;
 
-    const updated = tickets.map((t) => {
-      if (t.id === selectedTicket.id) {
-        return {
-          ...t,
-          replies: [
-            ...t.replies,
-            {
-              id: String(t.replies.length + 1),
-              author: "support" as const,
-              message: replyMessage,
-              timestamp: new Date().toISOString(),
-            },
-          ],
+    try {
+      // Try to add reply via API
+      const reply = await apiClient.tickets.addReply(
+        selectedTicket.id,
+        'support',
+        replyMessage
+      );
+      
+      // Update local state
+      const updated = tickets.map((t) => {
+        if (t.id === selectedTicket.id) {
+          return {
+            ...t,
+            replies: [
+              ...t.replies,
+              {
+                id: reply.id,
+                author: "support" as const,
+                message: replyMessage,
+                timestamp: reply.timestamp || new Date().toISOString(),
+              },
+            ],
+          };
+        }
+        return t;
+      });
+      
+      setTickets(updated);
+      setSelectedTicket(updated.find(t => t.id === selectedTicket.id) || null);
+      setReplyMessage("");
+      addToast("Reply sent successfully", "success");
+    } catch (error) {
+      console.error('Failed to send reply via API, updating locally:', error);
+      
+      // Fallback to local update if API fails
+      const updated = tickets.map((t) => {
+        if (t.id === selectedTicket.id) {
+          return {
+            ...t,
+            replies: [
+              ...t.replies,
+              {
+                id: String(t.replies.length + 1),
+                author: "support" as const,
+                message: replyMessage,
+                timestamp: new Date().toISOString(),
+              },
+            ],
           updatedAt: new Date().toISOString(),
         };
       }
       return t;
     });
+    
     setTickets(updated);
     setSelectedTicket(updated.find((t) => t.id === selectedTicket.id) || null);
     setReplyMessage("");
-    addToast("Reply sent to customer", "success");
+    addToast("Reply sent to customer (local only)", "success");
+    }
   };
 
-  const handleStatusChange = (ticketId: string, newStatus: string) => {
-    const updated = tickets.map((t) =>
-      t.id === ticketId ? { ...t, status: newStatus as any, updatedAt: new Date().toISOString() } : t
-    );
-    setTickets(updated);
-    if (selectedTicket?.id === ticketId) {
-      setSelectedTicket(updated.find((t) => t.id === ticketId) || null);
+  const handleStatusChange = async (ticketId: string, newStatus: string) => {
+    try {
+      // Try to update via API
+      await apiClient.tickets.update(ticketId, { status: newStatus });
+      
+      // Update local state
+      const updated = tickets.map((t) =>
+        t.id === ticketId ? { ...t, status: newStatus as any, updatedAt: new Date().toISOString() } : t
+      );
+      setTickets(updated);
+      if (selectedTicket?.id === ticketId) {
+        setSelectedTicket(updated.find((t) => t.id === ticketId) || null);
+      }
+      addToast(`Ticket status updated to ${newStatus}`, "success");
+    } catch (error) {
+      console.error('Failed to update ticket via API, updating locally:', error);
+      
+      // Fallback to local update if API fails
+      const updated = tickets.map((t) =>
+        t.id === ticketId ? { ...t, status: newStatus as any, updatedAt: new Date().toISOString() } : t
+      );
+      setTickets(updated);
+      if (selectedTicket?.id === ticketId) {
+        setSelectedTicket(updated.find((t) => t.id === ticketId) || null);
+      }
+      addToast(`Ticket status updated to ${newStatus} (local only)`, "info");
     }
-    addToast(`Ticket status updated to ${newStatus}`, "success");
   };
 
-  const handlePriorityChange = (ticketId: string, newPriority: string) => {
-    const updated = tickets.map((t) =>
-      t.id === ticketId ? { ...t, priority: newPriority as any, updatedAt: new Date().toISOString() } : t
-    );
-    setTickets(updated);
-    if (selectedTicket?.id === ticketId) {
-      setSelectedTicket(updated.find((t) => t.id === ticketId) || null);
+  const handlePriorityChange = async (ticketId: string, newPriority: string) => {
+    try {
+      // Try to update via API
+      await apiClient.tickets.update(ticketId, { priority: newPriority });
+      
+      // Update local state
+      const updated = tickets.map((t) =>
+        t.id === ticketId ? { ...t, priority: newPriority as any } : t
+      );
+      setTickets(updated);
+      if (selectedTicket?.id === ticketId) {
+        setSelectedTicket(updated.find((t) => t.id === ticketId) || null);
+      }
+      addToast(`Ticket priority updated to ${newPriority}`, "success");
+    } catch (error) {
+      console.error('Failed to update priority via API, updating locally:', error);
+      
+      // Fallback to local update if API fails
+      const updated = tickets.map((t) =>
+        t.id === ticketId ? { ...t, priority: newPriority as any } : t
+      );
+      setTickets(updated);
+      if (selectedTicket?.id === ticketId) {
+        setSelectedTicket(updated.find((t) => t.id === ticketId) || null);
+      }
+      addToast(`Ticket priority updated to ${newPriority} (local only)`, "info");
     }
-    addToast(`Ticket priority updated to ${newPriority}`, "success");
   };
 
   const getStatusColor = (status: string) => {

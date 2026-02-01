@@ -270,6 +270,42 @@ CREATE TABLE IF NOT EXISTS email_config (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   CHECK (id = 1)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================
+-- SUPPORT TICKETS
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS support_tickets (
+  id VARCHAR(36) PRIMARY KEY,
+  ticket_number VARCHAR(50) UNIQUE NOT NULL,
+  customer_id VARCHAR(36),
+  customer_name VARCHAR(255) NOT NULL,
+  customer_email VARCHAR(255) NOT NULL,
+  subject VARCHAR(500) NOT NULL,
+  message TEXT NOT NULL,
+  order_id VARCHAR(36),
+  status ENUM('open', 'in_progress', 'resolved', 'closed') DEFAULT 'open',
+  priority ENUM('low', 'medium', 'high') DEFAULT 'medium',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE SET NULL,
+  INDEX idx_ticket_number (ticket_number),
+  INDEX idx_customer (customer_id),
+  INDEX idx_status (status),
+  INDEX idx_priority (priority),
+  INDEX idx_created (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS ticket_replies (
+  id VARCHAR(36) PRIMARY KEY,
+  ticket_id VARCHAR(36) NOT NULL,
+  author ENUM('customer', 'support') NOT NULL,
+  message TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (ticket_id) REFERENCES support_tickets(id) ON DELETE CASCADE,
+  INDEX idx_ticket (ticket_id),
+  INDEX idx_created (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 `;
 
   try {

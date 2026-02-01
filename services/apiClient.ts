@@ -192,6 +192,32 @@ class ApiClient {
   staff = this.createCrud('staff');
   services = this.createCrud('services');
   orders = this.createCrud('orders');
+  
+  // Tickets with custom methods
+  tickets = {
+    getAll: () => this.request<any[]>('/tickets'),
+    getById: (id: string) => this.request<any>(`/tickets/${id}`),
+    create: (data: any) => this.request<any>('/tickets', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+    update: (id: string, data: any) => this.request<any>(`/tickets/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+    delete: (id: string) => this.request<void>(`/tickets/${id}`, {
+      method: 'DELETE',
+    }),
+    addReply: (id: string, author: 'customer' | 'support', message: string) => 
+      this.request<any>(`/tickets/${id}/replies`, {
+        method: 'POST',
+        body: JSON.stringify({ author, message }),
+      }),
+    sendEmail: (data: any) => this.request<any>('/tickets/send-ticket-email', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  };
 }
 
 export const apiClient = new ApiClient(API_BASE_URL);
