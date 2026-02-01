@@ -98,6 +98,8 @@ const PAGE_TEMPLATES = {
 // --- Toolbar Component ---
 const MenuBar: React.FC<{ editor: Editor | null }> = ({ editor }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const fontMenuRef = useRef<HTMLDivElement>(null);
+  const colorMenuRef = useRef<HTMLDivElement>(null);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [showFontPicker, setShowFontPicker] = useState(false);
 
@@ -169,16 +171,36 @@ const MenuBar: React.FC<{ editor: Editor | null }> = ({ editor }) => {
     'Trebuchet MS',
   ];
 
+  const currentFont = editor.getAttributes("textStyle").fontFamily || "";
+  const currentColor = editor.getAttributes("textStyle").color || "";
+
+  useEffect(() => {
+    const handleOutsideClick = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (showFontPicker && fontMenuRef.current && !fontMenuRef.current.contains(target)) {
+        setShowFontPicker(false);
+      }
+      if (showColorPicker && colorMenuRef.current && !colorMenuRef.current.contains(target)) {
+        setShowColorPicker(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+    };
+  }, [showFontPicker, showColorPicker]);
+
   return (
     <div className="flex flex-wrap items-center gap-2 p-2 bg-slate-800 border-b border-slate-700">
       {/* Font Family */}
-      <div className="relative">
+      <div className="relative" ref={fontMenuRef}>
         <button
           type="button"
           onClick={() => setShowFontPicker(!showFontPicker)}
           className={buttonClass(false)}
         >
-          Font
+          {currentFont || "Font"}
         </button>
         {showFontPicker && (
           <div className="absolute top-full left-0 mt-1 bg-slate-800 border border-slate-700 rounded-md shadow-lg z-10 max-h-60 overflow-y-auto">
@@ -190,7 +212,9 @@ const MenuBar: React.FC<{ editor: Editor | null }> = ({ editor }) => {
                   editor.chain().focus().setFontFamily(font).run();
                   setShowFontPicker(false);
                 }}
-                className="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-slate-700"
+                className={`block w-full text-left px-4 py-2 text-sm hover:bg-slate-700 ${
+                  currentFont === font ? "bg-slate-700 text-sky-400" : "text-gray-300"
+                }`}
                 style={{ fontFamily: font }}
               >
                 {font}
@@ -211,13 +235,13 @@ const MenuBar: React.FC<{ editor: Editor | null }> = ({ editor }) => {
       </div>
 
       {/* Text Color */}
-      <div className="relative">
+      <div className="relative" ref={colorMenuRef}>
         <button
           type="button"
           onClick={() => setShowColorPicker(!showColorPicker)}
           className={buttonClass(false)}
         >
-          Color
+          {currentColor ? "Color" : "Color"}
         </button>
         {showColorPicker && (
           <div className="absolute top-full left-0 mt-1 bg-slate-800 border border-slate-700 rounded-md shadow-lg z-10 p-2">
@@ -230,7 +254,9 @@ const MenuBar: React.FC<{ editor: Editor | null }> = ({ editor }) => {
                     editor.chain().focus().setColor(color.value).run();
                     setShowColorPicker(false);
                   }}
-                  className="w-8 h-8 rounded border-2 border-slate-600 hover:border-sky-400"
+                  className={`w-8 h-8 rounded border-2 hover:border-sky-400 ${
+                    currentColor === color.value ? "border-sky-400" : "border-slate-600"
+                  }`}
                   style={{ backgroundColor: color.value }}
                   title={color.name}
                 />
@@ -569,6 +595,25 @@ const PageEditor: React.FC = () => {
       updatedContentData.pageFont = value;
     } else {
       delete updatedContentData.pageFont;
+    }
+
+    setPage({
+      ...page,
+      contentData: Object.keys(updatedContentData).length ? updatedContentData : undefined,
+    });
+  };
+
+  const handlePageTitleStyleChange = (field: "pageTitleFont" | "pageTitleColor", value: string) => {
+    if (!page) return;
+    const baseContentData = (page.contentData && typeof page.contentData === "object")
+      ? page.contentData
+      : {};
+    const updatedContentData: Record<string, any> = { ...baseContentData };
+
+    if (value) {
+      updatedContentData[field] = value;
+    } else {
+      delete updatedContentData[field];
     }
 
     setPage({
@@ -1169,6 +1214,44 @@ const PageEditor: React.FC = () => {
             onChange={handleChange}
             className="w-full p-3 bg-slate-800 border-2 border-slate-700 rounded-md text-white text-2xl font-bold focus:outline-none focus:ring-2 focus:ring-sky-500"
           />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">Page Title Font</label>
+            <select
+              value={((page.contentData as any)?.pageTitleFont || "")}
+              onChange={(e) => handlePageTitleStyleChange("pageTitleFont", e.target.value)}
+              className="w-full p-2 bg-slate-800 border-2 border-slate-700 rounded-md text-white"
+            >
+              <option value="">Use Site Default Font</option>
+              <option value="Arial">Arial</option>
+              <option value="Helvetica">Helvetica</option>
+              <option value="Times New Roman">Times New Roman</option>
+              <option value="Georgia">Georgia</option>
+              <option value="Courier New">Courier New</option>
+              <option value="Verdana">Verdana</option>
+              <option value="Comic Sans MS">Comic Sans MS</option>
+              <option value="Impact">Impact</option>
+              <option value="Trebuchet MS">Trebuchet MS</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">Page Title Color</label>
+            <input
+              type="color"
+              value={((page.contentData as any)?.pageTitleColor || "#ffffff")}
+              onChange={(e) => handlePageTitleStyleChange("pageTitleColor", e.target.value)}
+              className="w-full h-10 bg-slate-800 border-2 border-slate-700 rounded-md"
+            />
+            <button
+              type="button"
+              onClick={() => handlePageTitleStyleChange("pageTitleColor", "")}
+              className="mt-2 text-xs text-gray-400 hover:text-gray-200"
+            >
+              Reset Title Color
+            </button>
+          </div>
         </div>
 
         <div>

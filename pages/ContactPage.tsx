@@ -105,13 +105,20 @@ const ContactPage: React.FC = () => {
 
   const visibleFields = content.formFields?.filter(f => f.enabled && evaluateConditionalRules(f)) || [];
   const pageFont = content.pageFont;
+  const pageTitleFont = content.pageTitleFont;
+  const pageTitleColor = content.pageTitleColor;
 
   return (
     <div
       className="max-w-2xl mx-auto bg-slate-800 p-8 rounded-lg shadow-2xl border border-slate-700"
       style={{ fontFamily: pageFont || undefined }}
     >
-      <h1 className="text-4xl font-bold text-white mb-4 text-center">{content.pageTitle}</h1>
+      <h1
+        className="text-4xl font-bold text-white mb-4 text-center"
+        style={{ fontFamily: pageTitleFont || undefined, color: pageTitleColor || undefined }}
+      >
+        {content.pageTitle}
+      </h1>
       <p className="text-center text-gray-400 mb-8">{content.pageSubtitle}</p>
       <form onSubmit={handleSubmit} className="space-y-6">
         {visibleFields.map((field) => (

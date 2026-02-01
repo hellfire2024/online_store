@@ -276,11 +276,15 @@ export interface HomePageContent {
   heroSubtitle: string;
   heroBackgroundImageUrl: string;
   pageFont?: string; // Page-specific font override
+  pageTitleFont?: string; // Page title font override
+  pageTitleColor?: string; // Page title color override
 }
 
 export interface AboutPageContent {
   aboutPageContent: string;
   pageFont?: string; // Page-specific font override
+  pageTitleFont?: string; // Page title font override
+  pageTitleColor?: string; // Page title color override
 }
 
   export type ContactFieldType = 'firstName' | 'lastName' | 'fullName' | 'email' | 'phone' | 'address' | 'subject' | 'message' | 'text' | 'textarea' | 'select' | 'checkbox';
@@ -315,11 +319,15 @@ export interface ContactPageContent {
   subjectTemplate: string; // Email subject template, e.g., "Contact Form: {subject}"
   successMessage: string;
   pageFont?: string; // Page-specific font override
+  pageTitleFont?: string; // Page title font override
+  pageTitleColor?: string; // Page title color override
 }
 
 export interface CustomPageContent {
   content: string;
   pageFont?: string; // Page-specific font override
+  pageTitleFont?: string; // Page title font override
+  pageTitleColor?: string; // Page title color override
 }
 
 export interface Page {
