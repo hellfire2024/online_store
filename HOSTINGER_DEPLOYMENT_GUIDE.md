@@ -164,6 +164,22 @@ npm run migrate
 
 If you update the backend code (especially database schema), **always run migrations again** to apply changes.
 
+### Step 3.5: Create Initial Admin User
+
+After migrations, create your first admin user:
+
+```bash
+cd /opt/render/project/src/server
+npm run seed
+```
+
+**Default credentials created:**
+- **Username:** `admin`
+- **Password:** `admin123`
+- **Email:** `admin@customthreads.com`
+
+⚠️ **SECURITY:** Log in immediately and change this password in Admin → Security!
+
 ---
 
 ## Part 4: Configure App Settings (Admin Panel)
@@ -279,7 +295,20 @@ Invoke-WebRequest -Uri "https://custom-threads-api.onrender.com/api/health" -Use
 ---
 
 ## Part 8: Troubleshooting
+### Cannot log in as admin (401 Unauthorized)
 
+**Problem:** No admin users exist in production database.
+
+**Solution:** Create admin user via Render Shell:
+
+```bash
+cd /opt/render/project/src/server
+npm run seed
+```
+
+Default credentials: `admin` / `admin123`
+
+⚠️ Change password immediately after logging in!
 ### Backend won’t start (Render)
 
 Check Render **Logs** for:

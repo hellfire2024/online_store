@@ -117,6 +117,41 @@ router.put('/:id', async (req: Request, res: Response) => {
   try {
     const { firstName, lastName, phone, username, email, password, role, isActive, permissions } = req.body;
     
+    // Check if username or email is already taken by another user
+    if (username !== undefined || email !== undefined) {
+      const conditions: string[] = [];
+      const checkValues: any[] = [];
+      
+      if (username !== undefined) {
+        conditions.push('username = ?');
+        checkValues.push(username);
+      }
+      if (email !== undefined) {
+        conditions.push('email = ?');
+        checkValues.push(email);
+      }
+      
+      checkValues.push(req.params.id);
+      
+      const [existing] = await pool.query<RowDataPacket[]>(
+        `SELECT id, username, email FROM admins WHERE (${conditions.join(' OR ')}) AND id != ?`,
+        checkValues
+      );
+      
+      if (existing.length > 0) {
+        const conflicts: string[] = [];
+        if (username !== undefined && existing.some((u: any) => u.username === username)) {
+          conflicts.push('username');
+        }
+        if (email !== undefined && existing.some((u: any) => u.email === email)) {
+          conflicts.push('email');
+        }
+        return res.status(400).json({ 
+          error: `${conflicts.join(' and ')} already in use by another admin` 
+        });
+      }
+    }
+    
     const updates: string[] = [];
     const values: any[] = [];
 
