@@ -117,13 +117,13 @@ const UserManagement: React.FC = () => {
     if (user) {
       setEditingUser(user);
       setFormData({
-        firstName: user.firstName,
-        lastName: user.lastName,
-        username: user.username,
-        email: user.email,
-        phone: user.phone,
+        firstName: user.firstName ?? '',
+        lastName: user.lastName ?? '',
+        username: user.username ?? '',
+        email: user.email ?? '',
+        phone: user.phone ?? '',
         password: '',
-        role: user.role,
+        role: user.role ?? 'manager',
       });
     } else {
       setEditingUser(null);
@@ -155,7 +155,7 @@ const UserManagement: React.FC = () => {
   };
 
   const handleSave = async () => {
-    if (!formData.firstName.trim() || !formData.lastName.trim() || !formData.username.trim() || !formData.email.trim()) {
+    if (!formData.firstName?.trim() || !formData.lastName?.trim() || !formData.username?.trim() || !formData.email?.trim()) {
       addToast('First name, last name, username and email are required', 'error');
       return;
     }
