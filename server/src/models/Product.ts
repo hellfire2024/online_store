@@ -147,7 +147,19 @@ export async function create(data: Partial<Product>): Promise<Product> {
 
 export async function update(id: string, data: Partial<Product>): Promise<Product | null> {
   return withTransaction(async (connection) => {
-    const sanitizedImageUrl = sanitizeImageUrl(data.imageUrl);
+    // Fetch current product to preserve imageUrl if not provided
+    const currentProduct = await findById(id);
+    if (!currentProduct) return null;
+    
+    // Only update imageUrl if explicitly provided and valid
+    let finalImageUrl = currentProduct.imageUrl;
+    if (data.imageUrl !== undefined) {
+      const sanitized = sanitizeImageUrl(data.imageUrl);
+      if (sanitized !== null) {
+        finalImageUrl = sanitized;
+      }
+      // If sanitized is null (base64), keep current imageUrl
+    }
     
     const [result] = await connection.query<ResultSetHeader>(
       `UPDATE products SET name = ?, description = ?, price = ?, image_url = ?,
@@ -155,15 +167,15 @@ export async function update(id: string, data: Partial<Product>): Promise<Produc
                           enable_ai_ideas = ?, gallery_id = ?
        WHERE id = ?`,
       [
-        data.name,
-        data.description || null,
-        data.price,
-        sanitizedImageUrl,
-        data.inventory,
-        data.lowStockThreshold || 20,
-        data.customizable || false,
-        data.enableAIIdeas || false,
-        data.galleryId || null,
+        data.name ?? currentProduct.name,
+        data.description ?? currentProduct.description,
+        data.price ?? currentProduct.price,
+        finalImageUrl,
+        data.inventory ?? currentProduct.inventory,
+        data.lowStockThreshold ?? currentProduct.lowStockThreshold ?? 20,
+        data.customizable ?? currentProduct.customizable,
+        data.enableAIIdeas ?? currentProduct.enableAIIdeas,
+        data.galleryId ?? currentProduct.galleryId,
         id,
       ]
     );
