@@ -138,12 +138,31 @@ DB_DATABASE=custom_threads_db
 
 ### Step 3.4: Run Migrations
 
+⚠️ **IMPORTANT:** Run migrations after deploying or updating your backend to ensure all database tables are created.
+
 Render → your service → **Shell**:
 
 ```bash
 cd /opt/render/project/src/server
 npm run migrate
 ```
+
+**What this creates:**
+- `admins` - Admin user accounts
+- `customers` - Customer accounts
+- `customer_addresses` - Shipping/billing addresses
+- `products` - Product catalog
+- `orders` - Order history
+- `support_tickets` - Customer support tickets
+- `ticket_replies` - Support ticket conversations
+- `reviews` - Product reviews
+- `staff` - Staff member profiles
+- `services` - Service offerings
+- `pages` - Custom pages (Terms, Privacy, etc.)
+- `site_settings` - Global site configuration
+- `email_config` - Email provider credentials
+
+If you update the backend code (especially database schema), **always run migrations again** to apply changes.
 
 ---
 
