@@ -22,6 +22,17 @@ class ApiClient {
     }
   }
 
+  private invalidateCache(endpoint: string): void {
+    // Remove all cache entries for this resource and related resources
+    const resourcePath = endpoint.split('/').slice(0, 2).join('/'); // e.g., "/settings" or "/products"
+    
+    for (const [key] of Array.from(this.cache.entries())) {
+      if (key.includes(resourcePath)) {
+        this.cache.delete(key);
+      }
+    }
+  }
+
   private async request<T>(
     endpoint: string,
     options: RequestInit = {}
@@ -76,6 +87,10 @@ class ApiClient {
 
         if (response.ok) {
           if (response.status === 204) {
+            // Invalidate cache on successful mutation
+            if (method !== 'GET') {
+              this.invalidateCache(endpoint);
+            }
             return {} as T;
           }
 
@@ -86,6 +101,9 @@ class ApiClient {
               data,
               expiresAt: Date.now() + 15000,
             });
+          } else {
+            // Invalidate cache on successful mutation
+            this.invalidateCache(endpoint);
           }
 
           return data as T;
