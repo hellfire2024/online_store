@@ -354,35 +354,41 @@ const SettingsManagement: React.FC = () => {
 
 
   const handleSaveSettings = async () => {
-    let finalSettings = { ...settings };
+    try {
+      let finalSettings = { ...settings };
 
-    if (selectedFaviconFile) {
-      try {
-        const faviconUrl = await uploadFavicon(selectedFaviconFile);
-        finalSettings.faviconUrl = faviconUrl;
-        addToast("Favicon uploaded successfully!", "success");
-      } catch (error) {
-        addToast("Favicon upload failed!", "error");
-        return;
+      if (selectedFaviconFile) {
+        try {
+          const faviconUrl = await uploadFavicon(selectedFaviconFile);
+          finalSettings.faviconUrl = faviconUrl;
+          addToast("Favicon uploaded successfully!", "success");
+        } catch (error) {
+          addToast("Favicon upload failed!", "error");
+          return;
+        }
       }
-    }
 
-    if (selectedLogoFile) {
-      try {
-        // We can reuse the uploadFavicon logic for any image upload
-        const logoUrl = await uploadFavicon(selectedLogoFile);
-        finalSettings.headerLogoUrl = logoUrl;
-        addToast("Header logo uploaded successfully!", "success");
-      } catch (error) {
-        addToast("Header logo upload failed!", "error");
-        return;
+      if (selectedLogoFile) {
+        try {
+          // We can reuse the uploadFavicon logic for any image upload
+          const logoUrl = await uploadFavicon(selectedLogoFile);
+          finalSettings.headerLogoUrl = logoUrl;
+          addToast("Header logo uploaded successfully!", "success");
+        } catch (error) {
+          addToast("Header logo upload failed!", "error");
+          return;
+        }
       }
-    }
 
-    await updateSiteSettings(finalSettings);
-    addToast("Settings updated successfully!", "success");
-    setSelectedFaviconFile(null);
-    setSelectedLogoFile(null);
+      console.log('Attempting to save settings:', finalSettings);
+      await updateSiteSettings(finalSettings);
+      addToast("Settings updated successfully!", "success");
+      setSelectedFaviconFile(null);
+      setSelectedLogoFile(null);
+    } catch (error) {
+      console.error('Failed to save settings:', error);
+      addToast("Failed to save settings. Check console for details.", "error");
+    }
   };
 
   const handleInputChange = (

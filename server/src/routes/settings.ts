@@ -30,19 +30,21 @@ router.get('/', async (_req: Request, res: Response) => {
 // Update settings
 router.put('/', async (req: Request, res: Response) => {
   try {
+    console.log('Received settings update request, body size:', JSON.stringify(req.body).length, 'bytes');
+    
     const settingsJson = JSON.stringify(req.body);
     
-    await pool.query(
+    const [result] = await pool.query(
       `INSERT INTO site_settings (id, settings) VALUES (1, ?)
        ON DUPLICATE KEY UPDATE settings = ?`,
       [settingsJson, settingsJson]
     );
     
-    console.log('Settings saved successfully');
+    console.log('Settings saved successfully to database, affected rows:', (result as any).affectedRows);
     return res.json(req.body);
   } catch (error) {
     console.error('Error updating settings:', error);
-    return res.status(500).json({ error: 'Failed to update settings' });
+    return res.status(500).json({ error: 'Failed to update settings', details: error instanceof Error ? error.message : String(error) });
   }
 });
 

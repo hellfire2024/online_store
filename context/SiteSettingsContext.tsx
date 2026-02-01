@@ -148,15 +148,17 @@ export const SiteSettingsProvider: React.FC<{ children: ReactNode }> = ({
       // Merge new settings with existing settings
       const updatedSettings = { ...siteSettings, ...newSettings };
       
+      console.log('Saving settings to API:', updatedSettings);
+      
       // Try to save to API first
       const savedSettings = await apiClient.settings.update(updatedSettings);
+      
+      console.log('Settings saved successfully:', savedSettings);
       setSiteSettings(savedSettings);
     } catch (error) {
-      console.error("Failed to save settings to API, falling back to mock", error);
-      // Fallback to mock API if real API fails
-      const updatedSettings = await mockApi.updateSiteSettings(newSettings);
-      setSiteSettings(updatedSettings);
-      throw error; // Re-throw so the UI can show an error
+      console.error("Failed to save settings to API:", error);
+      // Don't fall back to mock - just throw the error so user sees it failed
+      throw error;
     }
   };
 
