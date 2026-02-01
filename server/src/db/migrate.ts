@@ -75,7 +75,7 @@ CREATE TABLE IF NOT EXISTS products (
   name VARCHAR(255) NOT NULL,
   description TEXT,
   price DECIMAL(10,2) NOT NULL,
-  image_url VARCHAR(1000),
+  image_url LONGTEXT,
   inventory INT NOT NULL DEFAULT 0,
   low_stock_threshold INT DEFAULT 20,
   customizable BOOLEAN DEFAULT FALSE,
@@ -86,6 +86,10 @@ CREATE TABLE IF NOT EXISTS products (
   INDEX idx_name (name),
   INDEX idx_price (price)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Alter existing products table to use LONGTEXT for image_url
+ALTER TABLE products
+  MODIFY COLUMN image_url LONGTEXT;
 
 CREATE TABLE IF NOT EXISTS product_option_lists (
   id VARCHAR(36) PRIMARY KEY,
@@ -161,11 +165,15 @@ CREATE TABLE IF NOT EXISTS gallery_images (
   id VARCHAR(36) PRIMARY KEY,
   gallery_id VARCHAR(36) NOT NULL,
   name VARCHAR(255) NOT NULL,
-  image_url VARCHAR(1000) NOT NULL,
+  image_url LONGTEXT NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (gallery_id) REFERENCES galleries(id) ON DELETE CASCADE,
   INDEX idx_gallery (gallery_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Alter existing gallery_images table to use LONGTEXT for image_url
+ALTER TABLE gallery_images
+  MODIFY COLUMN image_url LONGTEXT;
 
 -- ============================================
 -- CONTENT MANAGEMENT
@@ -226,9 +234,13 @@ CREATE TABLE IF NOT EXISTS staff (
   id VARCHAR(36) PRIMARY KEY,
   name VARCHAR(255) NOT NULL,
   role VARCHAR(255) NOT NULL,
-  image_url VARCHAR(1000),
+  image_url LONGTEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Alter existing staff table to use LONGTEXT for image_url
+ALTER TABLE staff
+  MODIFY COLUMN image_url LONGTEXT;
 
 CREATE TABLE IF NOT EXISTS services (
   id VARCHAR(36) PRIMARY KEY,
