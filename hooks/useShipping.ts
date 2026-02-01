@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { ShippingRate, ShippingRateRequest, ShippingAddress } from '../types';
+import { ShippingRate, ShippingRateRequest } from '../types';
 import { getShippingRates } from '../services/shippingService';
 
 interface UseShippingResult {

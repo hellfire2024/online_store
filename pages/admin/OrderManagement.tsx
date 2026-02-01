@@ -134,14 +134,14 @@ const OrderManagement: React.FC = () => {
         });
 
         if (response.ok) {
-          const result = await response.json();
+          await response.json();
           addToast('Shipping notification sent to customer!', 'success');
         } else {
-          addToast('Order updated but email may not have been sent', 'warning');
+          addToast('Order updated but email may not have been sent', 'error');
         }
       } catch (error) {
         console.error('Error sending shipping notification:', error);
-        addToast('Order updated (backend may be offline)', 'warning');
+        addToast('Order updated (backend may be offline)', 'error');
       }
     }
 

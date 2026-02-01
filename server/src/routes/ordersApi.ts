@@ -41,7 +41,8 @@ router.get('/:orderNumber', async (req: Request, res: Response) => {
     );
 
     if (rows.length === 0) {
-      return res.status(404).json({ error: 'Order not found' });
+      res.status(404).json({ error: 'Order not found' });
+      return;
     }
 
     const order = rows[0];
@@ -76,11 +77,12 @@ router.post('/', async (req: Request, res: Response) => {
     } = req.body;
 
     if (!orderNumber || !customerEmail || !customerName || !orderData) {
-      return res.status(400).json({ error: 'Missing required fields' });
+      res.status(400).json({ error: 'Missing required fields' });
+      return;
     }
 
     // Insert order into database
-    const [result] = await pool.query(
+    await pool.query(
       `INSERT INTO orders (order_number, customer_email, customer_name, order_data, status)
        VALUES (?, ?, ?, ?, 'pending')`,
       [orderNumber, customerEmail, customerName, JSON.stringify(orderData)]
@@ -113,7 +115,8 @@ router.put('/:orderNumber/ship', async (req: Request, res: Response) => {
     const { trackingNumber, shipper, shippingUrl } = req.body;
 
     if (!trackingNumber || !shipper) {
-      return res.status(400).json({ error: 'Missing tracking number or shipper' });
+      res.status(400).json({ error: 'Missing tracking number or shipper' });
+      return;
     }
 
     // Get order details
@@ -123,7 +126,8 @@ router.put('/:orderNumber/ship', async (req: Request, res: Response) => {
     );
 
     if (rows.length === 0) {
-      return res.status(404).json({ error: 'Order not found' });
+      res.status(404).json({ error: 'Order not found' });
+      return;
     }
 
     const order = rows[0];

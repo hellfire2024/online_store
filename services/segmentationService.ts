@@ -45,7 +45,7 @@ function matchesRule(customer: Customer, rule: CustomerSegmentRule): boolean {
   // Check maximum days since last order (at-risk customers)
   if (rule.maxDaysSinceOrder !== undefined) {
     const lastOrderDate = customer.orders && customer.orders.length > 0
-      ? new Date(customer.orders[customer.orders.length - 1].createdAt).getTime()
+      ? new Date(customer.orders[customer.orders.length - 1].date).getTime()
       : new Date(customer.createdAt).getTime();
     
     const daysSinceLastOrder = (Date.now() - lastOrderDate) / (1000 * 60 * 60 * 24);

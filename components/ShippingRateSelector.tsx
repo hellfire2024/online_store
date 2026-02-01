@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { ShippingRate } from '../types';
 import Spinner from './Spinner';
 import Toast from './Toast';
@@ -19,7 +19,6 @@ export default function ShippingRateSelector({
   error = null,
 }: ShippingRateSelectorProps) {
   const [sortedRates, setSortedRates] = useState<ShippingRate[]>([]);
-  const [showError, setShowError] = useState(!!error);
 
   useEffect(() => {
     // Sort rates by price (cheapest first)
@@ -56,7 +55,7 @@ export default function ShippingRateSelector({
   if (error) {
     return (
       <div className="p-6">
-        <Toast type="error" message={error} onClose={() => setShowError(false)} />
+        <Toast type="error" message={error} onClose={() => {}} />
       </div>
     );
   }

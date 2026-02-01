@@ -36,7 +36,7 @@ interface OrderDetails {
 }
 
 // Watermarked Image Component for Order Confirmation
-const WatermarkedOrderImage: React.FC<{ src: string; alt: string }> = ({ src, alt }) => {
+const WatermarkedOrderImage: React.FC<{ src: string }> = ({ src }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -81,7 +81,6 @@ const WatermarkedOrderImage: React.FC<{ src: string; alt: string }> = ({ src, al
   return (
     <canvas
       ref={canvasRef}
-      alt={alt}
       className="w-24 h-24 object-cover rounded border-2 border-slate-600"
       style={{ maxWidth: '100%', height: 'auto' }}
     />
@@ -316,8 +315,7 @@ Questions? Contact us at support@customthreads.com
                 <div className="mt-3 bg-slate-700 p-3 rounded-lg">
                   <div className="flex items-start gap-3">
                     <WatermarkedOrderImage 
-                      src={item.customization.value} 
-                      alt="Customization" 
+                      src={item.customization.value}
                     />
                     <div className="flex-1">
                       <p className="text-sm text-gray-300 mb-2">

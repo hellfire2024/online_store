@@ -399,6 +399,8 @@ const SettingsManagement: React.FC = () => {
       setSettings((prev) => ({
         ...prev,
         footerConfig: {
+          columns: prev.footerConfig?.columns || [],
+          socialLinks: prev.footerConfig?.socialLinks || [],
           ...prev.footerConfig,
           [fieldName === 'email' ? 'contactEmail' : fieldName === 'phone' ? 'contactPhone' : 'contactAddress']: parsedValue,
         },
@@ -433,8 +435,9 @@ const SettingsManagement: React.FC = () => {
     setSettings((prev) => ({
       ...prev,
       footerConfig: {
+        columns: prev.footerConfig?.columns || [],
         ...prev.footerConfig,
-        socialLinks: updatedLinks,
+        socialLinks: updatedLinks || [],
       },
     }));
   };
@@ -448,6 +451,7 @@ const SettingsManagement: React.FC = () => {
     setSettings((prev) => ({
       ...prev,
       footerConfig: {
+        columns: prev.footerConfig?.columns || [],
         ...prev.footerConfig,
         socialLinks: [...(prev.footerConfig?.socialLinks || []), newLink],
       },
@@ -679,7 +683,7 @@ const SettingsManagement: React.FC = () => {
                     type="email"
                     id="footerContactEmail"
                     name="footerContactEmail"
-                    value={settings.footerContactEmail || ""}
+                    value={settings.footerConfig?.contactEmail || ""}
                     onChange={handleInputChange}
                     placeholder="support@example.com"
                     className={inputClasses}
@@ -691,7 +695,7 @@ const SettingsManagement: React.FC = () => {
                     type="tel"
                     id="footerContactPhone"
                     name="footerContactPhone"
-                    value={settings.footerContactPhone || ""}
+                    value={settings.footerConfig?.contactPhone || ""}
                     onChange={handleInputChange}
                     placeholder="(123) 456-7890"
                     className={inputClasses}
@@ -703,7 +707,7 @@ const SettingsManagement: React.FC = () => {
                     type="text"
                     id="footerContactAddress"
                     name="footerContactAddress"
-                    value={settings.footerContactAddress || ""}
+                    value={settings.footerConfig?.contactAddress || ""}
                     onChange={handleInputChange}
                     placeholder="123 Example St, City, State"
                     className={inputClasses}
@@ -747,6 +751,7 @@ const SettingsManagement: React.FC = () => {
                         setSettings((prev) => ({
                           ...prev,
                           footerConfig: {
+                            columns: prev.footerConfig?.columns || [],
                             ...prev.footerConfig,
                             socialLinks: prev.footerConfig?.socialLinks?.filter((l) => l.id !== link.id) || [],
                           },
@@ -999,14 +1004,47 @@ const SettingsManagement: React.FC = () => {
               <div className="grid grid-cols-2 gap-4">
                 <input
                   type="text"
-                  placeholder="Full Name"
-                  value={settings.fromAddress?.name || ""}
+                  placeholder="First Name"
+                  value={settings.fromAddress?.firstName || ""}
                   onChange={(e) =>
                     setSettings((prev) => ({
                       ...prev!,
                       fromAddress: {
+                        lastName: "",
+                        street1: "",
+                        street2: "",
+                        city: "",
+                        state: "",
+                        zip: "",
+                        country: "US",
+                        email: "",
+                        phone: "",
                         ...prev!.fromAddress,
-                        name: e.target.value,
+                        firstName: e.target.value,
+                      },
+                    }))
+                  }
+                  className={inputClasses}
+                />
+                <input
+                  type="text"
+                  placeholder="Last Name"
+                  value={settings.fromAddress?.lastName || ""}
+                  onChange={(e) =>
+                    setSettings((prev) => ({
+                      ...prev!,
+                      fromAddress: {
+                        firstName: "",
+                        street1: "",
+                        street2: "",
+                        city: "",
+                        state: "",
+                        zip: "",
+                        country: "US",
+                        email: "",
+                        phone: "",
+                        ...prev!.fromAddress,
+                        lastName: e.target.value,
                       },
                     }))
                   }
@@ -1020,6 +1058,15 @@ const SettingsManagement: React.FC = () => {
                     setSettings((prev) => ({
                       ...prev!,
                       fromAddress: {
+                        firstName: "",
+                        lastName: "",
+                        street1: "",
+                        street2: "",
+                        city: "",
+                        state: "",
+                        zip: "",
+                        country: "US",
+                        phone: "",
                         ...prev!.fromAddress,
                         email: e.target.value,
                       },
@@ -1035,6 +1082,15 @@ const SettingsManagement: React.FC = () => {
                     setSettings((prev) => ({
                       ...prev!,
                       fromAddress: {
+                        firstName: "",
+                        lastName: "",
+                        street2: "",
+                        city: "",
+                        state: "",
+                        zip: "",
+                        country: "US",
+                        email: "",
+                        phone: "",
                         ...prev!.fromAddress,
                         street1: e.target.value,
                       },
@@ -1050,6 +1106,15 @@ const SettingsManagement: React.FC = () => {
                     setSettings((prev) => ({
                       ...prev!,
                       fromAddress: {
+                        firstName: "",
+                        lastName: "",
+                        street1: "",
+                        city: "",
+                        state: "",
+                        zip: "",
+                        country: "US",
+                        email: "",
+                        phone: "",
                         ...prev!.fromAddress,
                         street2: e.target.value,
                       },
@@ -1065,6 +1130,15 @@ const SettingsManagement: React.FC = () => {
                     setSettings((prev) => ({
                       ...prev!,
                       fromAddress: {
+                        firstName: "",
+                        lastName: "",
+                        street1: "",
+                        street2: "",
+                        state: "",
+                        zip: "",
+                        country: "US",
+                        email: "",
+                        phone: "",
                         ...prev!.fromAddress,
                         city: e.target.value,
                       },
@@ -1078,6 +1152,15 @@ const SettingsManagement: React.FC = () => {
                     setSettings((prev) => ({
                       ...prev!,
                       fromAddress: {
+                        firstName: "",
+                        lastName: "",
+                        street1: "",
+                        street2: "",
+                        city: "",
+                        zip: "",
+                        country: "US",
+                        email: "",
+                        phone: "",
                         ...prev!.fromAddress,
                         state: e.target.value,
                       },
@@ -1087,8 +1170,8 @@ const SettingsManagement: React.FC = () => {
                 >
                   <option value="">Select State</option>
                   {US_STATES.map((state) => (
-                    <option key={state.code} value={state.code}>
-                      {state.name}
+                    <option key={state} value={state}>
+                      {state}
                     </option>
                   ))}
                 </select>
@@ -1100,6 +1183,15 @@ const SettingsManagement: React.FC = () => {
                     setSettings((prev) => ({
                       ...prev!,
                       fromAddress: {
+                        firstName: "",
+                        lastName: "",
+                        street1: "",
+                        street2: "",
+                        city: "",
+                        state: "",
+                        country: "US",
+                        email: "",
+                        phone: "",
                         ...prev!.fromAddress,
                         zip: e.target.value,
                       },
@@ -1115,6 +1207,15 @@ const SettingsManagement: React.FC = () => {
                     setSettings((prev) => ({
                       ...prev!,
                       fromAddress: {
+                        firstName: "",
+                        lastName: "",
+                        street1: "",
+                        street2: "",
+                        city: "",
+                        state: "",
+                        zip: "",
+                        country: "US",
+                        email: "",
                         ...prev!.fromAddress,
                         phone: e.target.value,
                       },
@@ -1140,11 +1241,12 @@ const SettingsManagement: React.FC = () => {
                         setSettings((prev) => ({
                           ...prev!,
                           shippingCarriers: {
-                            ...prev!.shippingCarriers,
                             easypost: {
-                              ...prev!.shippingCarriers?.easypost,
+                              ...(prev!.shippingCarriers?.easypost || { enabled: false, apiKey: "" }),
                               enabled: e.target.checked,
                             },
+                            shippo: prev!.shippingCarriers?.shippo || { enabled: false, apiKey: "" },
+                            shipstation: prev!.shippingCarriers?.shipstation || { enabled: false, apiKey: "", apiSecret: "" },
                           },
                         }))
                       }
@@ -1163,11 +1265,12 @@ const SettingsManagement: React.FC = () => {
                       setSettings((prev) => ({
                         ...prev!,
                         shippingCarriers: {
-                          ...prev!.shippingCarriers,
                           easypost: {
-                            ...prev!.shippingCarriers?.easypost,
+                            ...(prev!.shippingCarriers?.easypost || { enabled: false, apiKey: "" }),
                             apiKey: e.target.value,
                           },
+                          shippo: prev!.shippingCarriers?.shippo || { enabled: false, apiKey: "" },
+                          shipstation: prev!.shippingCarriers?.shipstation || { enabled: false, apiKey: "", apiSecret: "" },
                         },
                       }))
                     }
@@ -1187,11 +1290,12 @@ const SettingsManagement: React.FC = () => {
                         setSettings((prev) => ({
                           ...prev!,
                           shippingCarriers: {
-                            ...prev!.shippingCarriers,
+                            easypost: prev!.shippingCarriers?.easypost || { enabled: false, apiKey: "" },
                             shippo: {
-                              ...prev!.shippingCarriers?.shippo,
+                              ...(prev!.shippingCarriers?.shippo || { enabled: false, apiKey: "" }),
                               enabled: e.target.checked,
                             },
+                            shipstation: prev!.shippingCarriers?.shipstation || { enabled: false, apiKey: "", apiSecret: "" },
                           },
                         }))
                       }
@@ -1210,11 +1314,12 @@ const SettingsManagement: React.FC = () => {
                       setSettings((prev) => ({
                         ...prev!,
                         shippingCarriers: {
-                          ...prev!.shippingCarriers,
+                          easypost: prev!.shippingCarriers?.easypost || { enabled: false, apiKey: "" },
                           shippo: {
-                            ...prev!.shippingCarriers?.shippo,
+                            ...(prev!.shippingCarriers?.shippo || { enabled: false, apiKey: "" }),
                             apiKey: e.target.value,
                           },
+                          shipstation: prev!.shippingCarriers?.shipstation || { enabled: false, apiKey: "", apiSecret: "" },
                         },
                       }))
                     }
@@ -1234,9 +1339,10 @@ const SettingsManagement: React.FC = () => {
                         setSettings((prev) => ({
                           ...prev!,
                           shippingCarriers: {
-                            ...prev!.shippingCarriers,
+                            easypost: prev!.shippingCarriers?.easypost || { enabled: false, apiKey: "" },
+                            shippo: prev!.shippingCarriers?.shippo || { enabled: false, apiKey: "" },
                             shipstation: {
-                              ...prev!.shippingCarriers?.shipstation,
+                              ...(prev!.shippingCarriers?.shipstation || { enabled: false, apiKey: "", apiSecret: "" }),
                               enabled: e.target.checked,
                             },
                           },
@@ -1258,9 +1364,10 @@ const SettingsManagement: React.FC = () => {
                         setSettings((prev) => ({
                           ...prev!,
                           shippingCarriers: {
-                            ...prev!.shippingCarriers,
+                            easypost: prev!.shippingCarriers?.easypost || { enabled: false, apiKey: "" },
+                            shippo: prev!.shippingCarriers?.shippo || { enabled: false, apiKey: "" },
                             shipstation: {
-                              ...prev!.shippingCarriers?.shipstation,
+                              ...(prev!.shippingCarriers?.shipstation || { enabled: false, apiKey: "", apiSecret: "" }),
                               apiKey: e.target.value,
                             },
                           },
@@ -1276,9 +1383,10 @@ const SettingsManagement: React.FC = () => {
                         setSettings((prev) => ({
                           ...prev!,
                           shippingCarriers: {
-                            ...prev!.shippingCarriers,
+                            easypost: prev!.shippingCarriers?.easypost || { enabled: false, apiKey: "" },
+                            shippo: prev!.shippingCarriers?.shippo || { enabled: false, apiKey: "" },
                             shipstation: {
-                              ...prev!.shippingCarriers?.shipstation,
+                              ...(prev!.shippingCarriers?.shipstation || { enabled: false, apiKey: "", apiSecret: "" }),
                               apiSecret: e.target.value,
                             },
                           },

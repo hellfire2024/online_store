@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarController, BarElement, ArcElement, Tooltip, Legend } from 'chart.js';
-import { Bar, Doughnut, Line } from 'react-chartjs-2';
+import { Bar, Doughnut } from 'react-chartjs-2';
 import { apiClient } from '../../services/apiClient';
 import { useToast } from '../../hooks/useToast';
 import { getSegmentName, getSegmentColor } from '../../services/segmentationService';
@@ -83,6 +83,10 @@ const CustomerAnalytics: React.FC = () => {
   else if (sortBy === 'name') sortedCustomers.sort((a, b) => `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`));
 
   const displayedCustomers = sortedCustomers.slice(0, 10);
+
+  // Calculate segment counts dynamically
+  const vipCount = customers.filter(c => c.segment?.toLowerCase() === 'vip').length;
+  const atRiskCount = customers.filter(c => c.segment?.toLowerCase().includes('risk')).length;
 
   const exportSummaryCSV = () => {
     const headers = ['Metric','Value'];

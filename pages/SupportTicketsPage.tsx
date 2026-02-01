@@ -3,7 +3,6 @@ import { useCustomerAuth } from '../context/CustomerAuthContext';
 import { useSiteSettings } from '../context/SiteSettingsContext';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../hooks/useToast';
-import { CustomerOrder } from '../types';
 
 interface SupportTicket {
   id: string;

@@ -80,8 +80,10 @@ const defaultSettings: SiteSettings = {
   },
   defaultShippingCarrier: "easypost",
   fromAddress: {
-    name: "",
+    firstName: "",
+    lastName: "",
     street1: "",
+    street2: "",
     city: "",
     state: "",
     zip: "",
