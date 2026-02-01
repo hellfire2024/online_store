@@ -478,16 +478,20 @@ const createCrud = <T extends { id: string }>(mockData: T[]) => ({
   update: (updatedItem: T): Promise<T> =>
     new Promise((res) => {
       setTimeout(() => {
-        mockData = mockData.map((item) =>
-          item.id === updatedItem.id ? updatedItem : item,
-        );
+        const index = mockData.findIndex((item) => item.id === updatedItem.id);
+        if (index !== -1) {
+          mockData[index] = updatedItem;
+        }
         res(updatedItem);
       }, apiDelay);
     }),
   delete: (itemId: string): Promise<void> =>
     new Promise((res) => {
       setTimeout(() => {
-        mockData = mockData.filter((item) => item.id !== itemId);
+        const index = mockData.findIndex((item) => item.id === itemId);
+        if (index !== -1) {
+          mockData.splice(index, 1);
+        }
         res();
       }, apiDelay);
     }),
@@ -543,11 +547,16 @@ export const addGallery = (
 export const deleteGallery = (galleryId: string): Promise<void> =>
   new Promise((res) => {
     setTimeout(() => {
-      mockGalleries = mockGalleries.filter((g) => g.id !== galleryId);
+      const index = mockGalleries.findIndex((g) => g.id === galleryId);
+      if (index !== -1) {
+        mockGalleries.splice(index, 1);
+      }
       delete mockGalleryImages[galleryId];
-      mockProducts = mockProducts.map((p) =>
-        p.galleryId === galleryId ? { ...p, galleryId: undefined } : p,
-      );
+      // Update products that reference this gallery
+      const prodIndex = mockProducts.findIndex((p) => p.galleryId === galleryId);
+      if (prodIndex !== -1) {
+        mockProducts[prodIndex] = { ...mockProducts[prodIndex], galleryId: undefined };
+      }
       res();
     }, apiDelay);
   });
@@ -578,9 +587,12 @@ export const deleteGalleryImage = (
   new Promise((res) => {
     setTimeout(() => {
       if (mockGalleryImages[galleryId]) {
-        mockGalleryImages[galleryId] = mockGalleryImages[galleryId].filter(
-          (img) => img.id !== imageId,
+        const index = mockGalleryImages[galleryId].findIndex(
+          (img) => img.id === imageId
         );
+        if (index !== -1) {
+          mockGalleryImages[galleryId].splice(index, 1);
+        }
       }
       res();
     }, apiDelay);
@@ -596,7 +608,7 @@ export const updateSiteSettings = (
 ): Promise<SiteSettings> =>
   new Promise((res) => {
     setTimeout(() => {
-      mockSiteSettings = { ...mockSiteSettings, ...newSettings };
+      Object.assign(mockSiteSettings, newSettings);
       res({ ...mockSiteSettings });
     }, apiDelay);
   });
