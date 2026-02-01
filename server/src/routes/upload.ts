@@ -20,8 +20,6 @@ const pagesDir = path.join(uploadsDir, "pages");
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => {
-    // Default to products if type not specified
-    const dir = pagesDir; // We'll determine this from the field name or type form field
     cb(null, productsDir);
   },
   filename: (_req, file, cb) => {
