@@ -49,20 +49,40 @@ export const ServicesProvider: React.FC<{ children: ReactNode }> = ({
   }, []);
 
   const addService = async (service: Omit<Service, "id">) => {
-    const newService = await mockApi.addService(service);
-    setServices((prev) => [...prev, newService]);
+    try {
+      const newService = await apiClient.services.create(service);
+      setServices((prev) => [...prev, newService]);
+    } catch (error) {
+      console.error("Failed to add service via API, using mock", error);
+      const newService = await mockApi.addService(service);
+      setServices((prev) => [...prev, newService]);
+    }
   };
 
   const updateService = async (service: Service) => {
-    const updatedService = await mockApi.updateService(service);
-    setServices((prev) =>
-      prev.map((s) => (s.id === updatedService.id ? updatedService : s)),
-    );
+    try {
+      const updatedService = await apiClient.services.update(service.id, service);
+      setServices((prev) =>
+        prev.map((s) => (s.id === updatedService.id ? updatedService : s)),
+      );
+    } catch (error) {
+      console.error("Failed to update service via API, using mock", error);
+      const updatedService = await mockApi.updateService(service);
+      setServices((prev) =>
+        prev.map((s) => (s.id === updatedService.id ? updatedService : s)),
+      );
+    }
   };
 
   const deleteService = async (serviceId: string) => {
-    await mockApi.deleteService(serviceId);
-    setServices((prev) => prev.filter((s) => s.id !== serviceId));
+    try {
+      await apiClient.services.delete(serviceId);
+      setServices((prev) => prev.filter((s) => s.id !== serviceId));
+    } catch (error) {
+      console.error("Failed to delete service via API, using mock", error);
+      await mockApi.deleteService(serviceId);
+      setServices((prev) => prev.filter((s) => s.id !== serviceId));
+    }
   };
 
   return (

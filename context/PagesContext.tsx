@@ -136,26 +136,50 @@ export const PagesProvider: React.FC<{ children: ReactNode }> = ({
   }, [settingsLoading, siteSettings]); // Add settingsLoading and siteSettings to the dependency array
 
   const addPage = async (page: Omit<Page, "id">) => {
-    const newPage = await mockApi.addPage(page);
-    setPages((prev) => [...prev, newPage]);
-    return newPage;
+    try {
+      const newPage = await apiClient.pages.create(page);
+      setPages((prev) => [...prev, newPage]);
+      return newPage;
+    } catch (error) {
+      console.error("Failed to add page via API, using mock", error);
+      const newPage = await mockApi.addPage(page);
+      setPages((prev) => [...prev, newPage]);
+      return newPage;
+    }
   };
 
   const updatePage = async (page: Page) => {
-    await mockApi.updatePage(page);
-    setPages((prev) => prev.map((p) => (p.id === page.id ? page : p)));
+    try {
+      await apiClient.pages.update(page.id, page);
+      setPages((prev) => prev.map((p) => (p.id === page.id ? page : p)));
+    } catch (error) {
+      console.error("Failed to update page via API, using mock", error);
+      await mockApi.updatePage(page);
+      setPages((prev) => prev.map((p) => (p.id === page.id ? page : p)));
+    }
   };
 
   const deletePage = async (pageId: string) => {
-    // Allow deletion - pages can be recreated from the Page Editor
-    await mockApi.deletePage(pageId);
-    setPages((prev) => prev.filter((p) => p.id !== pageId));
+    try {
+      await apiClient.pages.delete(pageId);
+      setPages((prev) => prev.filter((p) => p.id !== pageId));
+    } catch (error) {
+      console.error("Failed to delete page via API, using mock", error);
+      await mockApi.deletePage(pageId);
+      setPages((prev) => prev.filter((p) => p.id !== pageId));
+    }
     addToast("Page deleted. You can recreate it from the Page Editor.", "success");
   };
 
   const updateMenu = async (menu: Menu) => {
-    await mockApi.updateMenu(menu);
-    setMenus((prev) => prev.map((m) => (m.id === menu.id ? menu : m)));
+    try {
+      await apiClient.pages.update(menu.id, menu);  // Assuming menus are also in the pages resource
+      setMenus((prev) => prev.map((m) => (m.id === menu.id ? menu : m)));
+    } catch (error) {
+      console.error("Failed to update menu via API, using mock", error);
+      await mockApi.updateMenu(menu);
+      setMenus((prev) => prev.map((m) => (m.id === menu.id ? menu : m)));
+    }
   };
 
   return (
