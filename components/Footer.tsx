@@ -1,9 +1,16 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useSiteSettings } from "../context/SiteSettingsContext";
 
 const Footer: React.FC = () => {
   const { siteSettings } = useSiteSettings();
+  const navigate = useNavigate();
+
+  const handleLinkClick = (path: string) => {
+    // Scroll to top when navigating
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    navigate(path);
+  };
 
   return (
     <footer className="bg-gray-900 text-white py-12 mt-16">
@@ -25,19 +32,28 @@ const Footer: React.FC = () => {
               <h4 className="font-semibold mb-4">Shop</h4>
               <ul className="space-y-2 text-sm text-gray-400">
                 <li>
-                  <Link to="/store" className="hover:text-white transition">
+                  <button 
+                    onClick={() => handleLinkClick('/store')} 
+                    className="hover:text-white transition text-left"
+                  >
                     Products
-                  </Link>
+                  </button>
                 </li>
                 <li>
-                  <Link to="/about" className="hover:text-white transition">
+                  <button 
+                    onClick={() => handleLinkClick('/about')} 
+                    className="hover:text-white transition text-left"
+                  >
                     About Us
-                  </Link>
+                  </button>
                 </li>
                 <li>
-                  <Link to="/contact" className="hover:text-white transition">
+                  <button 
+                    onClick={() => handleLinkClick('/contact')} 
+                    className="hover:text-white transition text-left"
+                  >
                     Contact
-                  </Link>
+                  </button>
                 </li>
               </ul>
             </div>
@@ -47,19 +63,28 @@ const Footer: React.FC = () => {
               <h4 className="font-semibold mb-4">Account</h4>
               <ul className="space-y-2 text-sm text-gray-400">
                 <li>
-                  <Link to="/login" className="hover:text-white transition">
+                  <button 
+                    onClick={() => handleLinkClick('/login')} 
+                    className="hover:text-white transition text-left"
+                  >
                     Login
-                  </Link>
+                  </button>
                 </li>
                 <li>
-                  <Link to="/register" className="hover:text-white transition">
+                  <button 
+                    onClick={() => handleLinkClick('/register')} 
+                    className="hover:text-white transition text-left"
+                  >
                     Register
-                  </Link>
+                  </button>
                 </li>
                 <li>
-                  <Link to="/account" className="hover:text-white transition">
+                  <button 
+                    onClick={() => handleLinkClick('/account')} 
+                    className="hover:text-white transition text-left"
+                  >
                     My Account
-                  </Link>
+                  </button>
                 </li>
               </ul>
             </div>
