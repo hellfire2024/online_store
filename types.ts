@@ -37,7 +37,7 @@ export interface CartItem {
     type: "gallery" | "upload";
     value: string; // URL for gallery, data URL for upload
   };
-  selectedOptions?: { [listId: string]: string }; // Map of option list ID to selected option ID
+  selectedOptions?: { [listId: string]: string[] }; // Map of option list ID to selected option IDs (array for multi-select)
   customText?: string; // Custom engraving text
 }
 

@@ -39,8 +39,8 @@ function sanitizeImageUrl(imageUrl?: string): string | null {
   }
   
   if (typeof imageUrl === 'string' && imageUrl.startsWith('data:')) {
-    console.warn('⚠️ Base64 image detected in product imageUrl - this will not be persisted. Use a URL or implement image upload.');
-    // Return null to prevent database bloat; client should use gallery images instead
+    console.warn('⚠️ Base64 image detected in product imageUrl - this will not be persisted. Use the upload endpoint instead.');
+    // Return null to prevent database bloat; client should upload images to /api/upload/image
     return null;
   }
   

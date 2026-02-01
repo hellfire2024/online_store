@@ -313,20 +313,38 @@ const ProductManagement: React.FC = () => {
     setImagePreview(product.imageUrl);
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const dataUrl = reader.result as string;
-        setImagePreview(dataUrl);
-        if (newProduct) {
-          setNewProduct({ ...newProduct, imageUrl: dataUrl });
-        } else if (editingProduct) {
-          setEditingProduct({ ...editingProduct, imageUrl: dataUrl });
+      try {
+        // Upload image to server
+        const formData = new FormData();
+        formData.append('image', file);
+        formData.append('type', 'products');
+
+        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/upload/image`, {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to upload image');
         }
-      };
-      reader.readAsDataURL(file);
+
+        const data = await response.json();
+        const imageUrl = data.imageUrl;
+
+        setImagePreview(imageUrl);
+        if (newProduct) {
+          setNewProduct({ ...newProduct, imageUrl });
+        } else if (editingProduct) {
+          setEditingProduct({ ...editingProduct, imageUrl });
+        }
+        addToast("Image uploaded successfully!", "success");
+      } catch (error) {
+        console.error('Error uploading image:', error);
+        addToast("Failed to upload image. Please try again.", "error");
+      }
     }
   };
 
@@ -528,7 +546,7 @@ const ProductManagement: React.FC = () => {
     // Warn if trying to use base64 image (won't be persisted to database)
     if (productToSave.imageUrl?.startsWith('data:')) {
       addToast(
-        "⚠️ Base64 images cannot be persisted. Please select an image from your gallery instead.",
+        "⚠️ Base64 images cannot be persisted. Please upload the image using the Upload Image button.",
         "error"
       );
       return;

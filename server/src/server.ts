@@ -5,6 +5,7 @@ import compression from 'compression';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
+import path from 'path';
 import { testConnection } from './db/connection.js';
 
 // Import routes
@@ -24,6 +25,7 @@ import providersTaxRoutes from './routes/providers-tax.js';
 import authRoutes from './routes/auth.js';
 import ticketsApiRoutes from './routes/ticketsApi.js';
 import shippingRoutes from './routes/shippingApi.js';
+import uploadRoutes from './routes/upload.js';
 import demoRoutes from './demoRoutes.js';
 
 dotenv.config();
@@ -51,6 +53,9 @@ app.use(
 // Body parsing
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Serve static files from public directory
+app.use(express.static(path.join(process.cwd(), 'public')));
 
 // Compression
 app.use(compression());
@@ -83,6 +88,7 @@ if (DEMO_MODE) {
   app.use('/api', demoRoutes);
 } else {
   app.use('/api/auth', authRoutes);
+  app.use('/api/upload', uploadRoutes);
   app.use('/api/products', productRoutes);
   app.use('/api/customers', customerRoutes);
   app.use('/api/admin-users', adminUserRoutes);
