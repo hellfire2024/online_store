@@ -6,8 +6,8 @@ import { useToast } from '../hooks/useToast';
 interface CartContextType {
   cartItems: CartItem[];
   addToCart: (item: CartItem) => void;
-  removeFromCart: (productId: string, selectedOptions?: { [listId: string]: string }) => void;
-  updateQuantity: (productId: string, quantity: number, selectedOptions?: { [listId: string]: string }) => void;
+  removeFromCart: (productId: string, selectedOptions?: { [listId: string]: string[] }) => void;
+  updateQuantity: (productId: string, quantity: number, selectedOptions?: { [listId: string]: string[] }) => void;
   clearCart: () => void;
   itemCount: number;
   totalPrice: number;
@@ -44,7 +44,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     });
   };
 
-  const removeFromCart = (productId: string, selectedOptions?: { [listId: string]: string }) => {
+  const removeFromCart = (productId: string, selectedOptions?: { [listId: string]: string[] }) => {
     setCartItems(prevItems =>
       prevItems.filter(item =>
         !(item.product.id === productId && 
@@ -54,7 +54,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     addToast('Item removed from cart.', 'info');
   };
 
-  const updateQuantity = (productId: string, quantity: number, selectedOptions?: { [listId: string]: string }) => {
+  const updateQuantity = (productId: string, quantity: number, selectedOptions?: { [listId: string]: string[] }) => {
     setCartItems(prevItems =>
       prevItems.map(item =>
         item.product.id === productId && 
@@ -74,13 +74,13 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     let optionsDelta = 0;
     if (item.selectedOptions && item.product.optionLists) {
       item.product.optionLists.forEach((list) => {
-        const selectedOptionId = item.selectedOptions?.[list.id];
-        if (selectedOptionId) {
-          const option = list.options.find((o) => o.id === selectedOptionId);
+        const selectedOptionIds = item.selectedOptions?.[list.id] || [];
+        selectedOptionIds.forEach((optionId) => {
+          const option = list.options.find((o) => o.id === optionId);
           if (option) {
             optionsDelta += Number(option.priceDelta);
           }
-        }
+        });
       });
     }
     // Add custom text cost

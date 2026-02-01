@@ -322,7 +322,8 @@ const ProductManagement: React.FC = () => {
         formData.append('image', file);
         formData.append('type', 'products');
 
-        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/upload/image`, {
+        const apiUrl = import.meta.env?.VITE_API_URL || 'http://localhost:3001/api';
+        const response = await fetch(`${apiUrl}/upload/image`, {
           method: 'POST',
           body: formData,
         });
