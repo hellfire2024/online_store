@@ -19,12 +19,12 @@ const pagesDir = path.join(uploadsDir, "pages");
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const type = req.body.type || "products";
+  destination: (_req, _file, cb) => {
+    const type = _req.body.type || "products";
     const dir = type === "pages" ? pagesDir : productsDir;
     cb(null, dir);
   },
-  filename: (req, file, cb) => {
+  filename: (_req, file, cb) => {
     const ext = path.extname(file.originalname);
     const filename = `${randomUUID()}${ext}`;
     cb(null, filename);
@@ -36,7 +36,7 @@ const upload = multer({
   limits: {
     fileSize: 10 * 1024 * 1024, // 10MB limit
   },
-  fileFilter: (req, file, cb) => {
+  fileFilter: (_req, file, cb) => {
     const allowedTypes = /jpeg|jpg|png|gif|webp/;
     const extname = allowedTypes.test(
       path.extname(file.originalname).toLowerCase(),
