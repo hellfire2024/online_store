@@ -106,28 +106,33 @@ const Footer: React.FC = () => {
           <div key={item.id}>
             <h4 className="font-semibold mb-4">{item.title}</h4>
             <ul className="space-y-2 text-sm text-gray-400">
-              {menu.items.map((menuItem) => (
-                <li key={menuItem.id}>
-                  {menuItem.type === 'external' ? (
-                    <a
-                      href={menuItem.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="hover:text-white transition"
-                    >
-                      {menuItem.label}
-                    </a>
-                  ) : (
-                    <a
-                      href={menuItem.url}
-                      onClick={(e) => handleLinkClick(e, menuItem.url)}
-                      className="hover:text-white transition cursor-pointer"
-                    >
-                      {menuItem.label}
-                    </a>
-                  )}
-                </li>
-              ))}
+              {menu.items.map((menuItem) => {
+                // Check if external link (starts with http:// or https://)
+                const isExternal = menuItem.url.startsWith('http://') || menuItem.url.startsWith('https://');
+                
+                return (
+                  <li key={menuItem.id}>
+                    {isExternal ? (
+                      <a
+                        href={menuItem.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="hover:text-white transition"
+                      >
+                        {menuItem.text}
+                      </a>
+                    ) : (
+                      <a
+                        href={menuItem.url}
+                        onClick={(e) => handleLinkClick(e, menuItem.url)}
+                        className="hover:text-white transition cursor-pointer"
+                      >
+                        {menuItem.text}
+                      </a>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           </div>
         );
