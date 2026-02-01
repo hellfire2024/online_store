@@ -11,7 +11,8 @@ const router = Router();
 router.get('/', async (_req: Request, res: Response) => {
   try {
     const [rows] = await pool.query<RowDataPacket[]>(
-      `SELECT id, username, email, role, is_active as isActive, 
+      `SELECT id, first_name as firstName, last_name as lastName, phone,
+              username, email, role, is_active as isActive, 
               created_at as createdAt, last_login as lastLogin
        FROM admins ORDER BY created_at DESC`
     );
@@ -26,7 +27,8 @@ router.get('/', async (_req: Request, res: Response) => {
 router.get('/:id', async (req: Request, res: Response) => {
   try {
     const [rows] = await pool.query<RowDataPacket[]>(
-      `SELECT id, username, email, role, permissions, is_active as isActive,
+      `SELECT id, first_name as firstName, last_name as lastName, phone,
+              username, email, role, permissions, is_active as isActive,
               created_at as createdAt, last_login as lastLogin
        FROM admins WHERE id = ?`,
       [req.params.id]
@@ -61,7 +63,7 @@ router.post(
     }
 
     try {
-      const { username, email, password, role } = req.body;
+      const { firstName, lastName, phone, username, email, password, role } = req.body;
 
       // Check if username exists
       const [existing] = await pool.query<RowDataPacket[]>(
@@ -77,13 +79,26 @@ router.post(
       const passwordHash = await bcrypt.hash(password, parseInt(process.env.BCRYPT_ROUNDS || '10'));
 
       await pool.query(
-        `INSERT INTO admins (id, username, email, password_hash, role, permissions, is_active)
-         VALUES (?, ?, ?, ?, ?, ?, TRUE)`,
-        [id, username, email, passwordHash, role, JSON.stringify([])]
+        `INSERT INTO admins (id, first_name, last_name, phone, username, email, password_hash, role, permissions, is_active)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, TRUE)`,
+        [
+          id,
+          firstName || null,
+          lastName || null,
+          phone || null,
+          username,
+          email,
+          passwordHash,
+          role,
+          JSON.stringify([]),
+        ]
       );
 
       return res.status(201).json({
         id,
+        firstName: firstName || null,
+        lastName: lastName || null,
+        phone: phone || null,
         username,
         email,
         role,
@@ -100,11 +115,23 @@ router.post(
 // Update admin user
 router.put('/:id', async (req: Request, res: Response) => {
   try {
-    const { username, email, password, role, isActive, permissions } = req.body;
+    const { firstName, lastName, phone, username, email, password, role, isActive, permissions } = req.body;
     
     const updates: string[] = [];
     const values: any[] = [];
 
+    if (firstName !== undefined) {
+      updates.push('first_name = ?');
+      values.push(firstName || null);
+    }
+    if (lastName !== undefined) {
+      updates.push('last_name = ?');
+      values.push(lastName || null);
+    }
+    if (phone !== undefined) {
+      updates.push('phone = ?');
+      values.push(phone || null);
+    }
     if (username !== undefined) {
       updates.push('username = ?');
       values.push(username);
@@ -148,7 +175,8 @@ router.put('/:id', async (req: Request, res: Response) => {
 
     // Return updated user
     const [rows] = await pool.query<RowDataPacket[]>(
-      `SELECT id, username, email, role, is_active as isActive, created_at as createdAt
+      `SELECT id, first_name as firstName, last_name as lastName, phone,
+              username, email, role, is_active as isActive, created_at as createdAt
        FROM admins WHERE id = ?`,
       [req.params.id]
     );

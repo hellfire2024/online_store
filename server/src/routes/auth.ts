@@ -25,8 +25,8 @@ router.post(
       const { username, password } = req.body;
 
       const [rows] = await pool.query<RowDataPacket[]>(
-        'SELECT * FROM admins WHERE username = ? AND is_active = TRUE',
-        [username]
+        'SELECT * FROM admins WHERE (username = ? OR email = ?) AND is_active = TRUE',
+        [username, username]
       );
 
       if (rows.length === 0) {

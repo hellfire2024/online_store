@@ -175,6 +175,9 @@ const UserManagement: React.FC = () => {
     try {
       if (editingUser) {
         await apiClient.adminUsers.update(editingUser.id, {
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          phone: formData.phone,
           username: formData.username,
           email: formData.email,
           ...(formData.password && { password: formData.password }),
@@ -183,6 +186,9 @@ const UserManagement: React.FC = () => {
         addToast('Admin user updated successfully', 'success');
       } else {
         await apiClient.adminUsers.create({
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          phone: formData.phone,
           username: formData.username,
           email: formData.email,
           password: formData.password,

@@ -194,6 +194,9 @@ export interface User {
 // ===== ADMIN TYPES =====
 export interface AdminUser {
   id: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  phone?: string | null;
   username: string;
   email: string;
   role: "super_admin" | "admin" | "manager";

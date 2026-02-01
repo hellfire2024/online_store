@@ -10,6 +10,9 @@ export async function runMigrations(): Promise<void> {
 
 CREATE TABLE IF NOT EXISTS admins (
   id VARCHAR(36) PRIMARY KEY,
+  first_name VARCHAR(100),
+  last_name VARCHAR(100),
+  phone VARCHAR(50),
   username VARCHAR(50) UNIQUE NOT NULL,
   email VARCHAR(255) UNIQUE NOT NULL,
   password_hash VARCHAR(255) NOT NULL,
@@ -21,6 +24,11 @@ CREATE TABLE IF NOT EXISTS admins (
   INDEX idx_email (email),
   INDEX idx_username (username)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+ALTER TABLE admins
+  ADD COLUMN IF NOT EXISTS first_name VARCHAR(100),
+  ADD COLUMN IF NOT EXISTS last_name VARCHAR(100),
+  ADD COLUMN IF NOT EXISTS phone VARCHAR(50);
 
 CREATE TABLE IF NOT EXISTS customers (
   id VARCHAR(36) PRIMARY KEY,
