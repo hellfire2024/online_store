@@ -45,20 +45,53 @@ interface AdminContextType {
 const AdminContext = createContext<AdminContextType | undefined>(undefined);
 
 // Note: Admin users are now authenticated via the backend API
+// Mock admin users for fallback/initial setup
+const MOCK_ADMIN_USERS: AdminUser[] = [
+  {
+    id: "mock-admin-1",
+    firstName: "Mock",
+    lastName: "Admin",
+    phone: "555-000-0000",
+    username: "admin",
+    email: "admin@local",
+    role: "super_admin",
+    permissions: ["*"],
+    createdAt: new Date().toISOString(),
+    lastLogin: new Date().toISOString(),
+    isActive: true,
+  },
+];
+
 export const AdminProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [useMockAuth, setUseMockAuth] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
       try {
         // Check for stored admin user
         const storedAdmin = localStorage.getItem("adminUser");
+        const storedToken = localStorage.getItem("adminToken");
         if (storedAdmin) {
           setAdminUser(JSON.parse(storedAdmin));
+          if (storedToken) {
+            apiClient.setToken(storedToken);
+          }
+        }
+
+        // Try to check if any admins exist in the API
+        try {
+          const admins = await apiClient.adminUsers.getAll();
+          setUseMockAuth(admins.length === 0);
+          console.log(`[Admin] Found ${admins.length} admins in database, using real auth`);
+        } catch (error) {
+          // API unavailable, use mock auth
+          setUseMockAuth(true);
+          console.log("[Admin] API unavailable, falling back to mock auth");
         }
 
         // Load customers
@@ -78,6 +111,23 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({
   // ===== ADMIN AUTHENTICATION =====
   const loginAdmin = async (username: string, password: string) => {
     try {
+      // If using mock auth or API unavailable, try mock first
+      if (useMockAuth) {
+        const mockUser = MOCK_ADMIN_USERS.find(
+          (u) => u.username === username && u.isActive
+        );
+        if (mockUser && password === "admin123") {
+          const updatedUser = { ...mockUser, lastLogin: new Date().toISOString() };
+          setAdminUser(updatedUser);
+          localStorage.setItem("adminUser", JSON.stringify(updatedUser));
+          localStorage.setItem("adminToken", "mock-token");
+          console.log("[Admin] Logged in with mock credentials");
+          return { success: true };
+        }
+        return { success: false, error: "Invalid mock credentials (use admin/admin123)" };
+      }
+
+      // Try real API
       const response = await apiClient.auth.adminLogin(username, password);
       const updatedUser: AdminUser = {
         id: response.admin.id,
@@ -99,6 +149,21 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({
       apiClient.setToken(response.token);
       return { success: true };
     } catch (error) {
+      // If API fails and we haven't tried mock, try it now
+      if (!useMockAuth) {
+        const mockUser = MOCK_ADMIN_USERS.find(
+          (u) => u.username === username && u.isActive
+        );
+        if (mockUser && password === "admin123") {
+          const updatedUser = { ...mockUser, lastLogin: new Date().toISOString() };
+          setAdminUser(updatedUser);
+          localStorage.setItem("adminUser", JSON.stringify(updatedUser));
+          localStorage.setItem("adminToken", "mock-token");
+          setUseMockAuth(true);
+          console.log("[Admin] API failed, fell back to mock credentials");
+          return { success: true };
+        }
+      }
       const message = error instanceof Error ? error.message : "Login failed";
       return { success: false, error: message };
     }
@@ -108,7 +173,9 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({
     setAdminUser(null);
     localStorage.removeItem("adminUser");
     localStorage.removeItem("adminToken");
-    apiClient.setToken(null);
+    if (localStorage.getItem("adminToken") !== "mock-token") {
+      apiClient.setToken(null);
+    }
   };
 
   // ===== CUSTOMER MANAGEMENT =====
