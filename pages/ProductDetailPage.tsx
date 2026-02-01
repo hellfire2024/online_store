@@ -176,12 +176,14 @@ const ProductDetailPage: React.FC = () => {
     let price = Number(product.price);
     if (product.optionLists) {
       product.optionLists.forEach((list) => {
-        const selectedOptionId = selectedOptions[list.id];
-        if (selectedOptionId) {
-          const option = list.options.find((o) => o.id === selectedOptionId);
-          if (option) {
-            price += Number(option.priceDelta);
-          }
+        const selectedOptionIds = selectedOptions[list.id] || [];
+        if (Array.isArray(selectedOptionIds)) {
+          selectedOptionIds.forEach((optionId) => {
+            const option = list.options.find((o) => o.id === optionId);
+            if (option) {
+              price += Number(option.priceDelta);
+            }
+          });
         }
       });
     }
