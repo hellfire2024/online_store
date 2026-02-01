@@ -30,6 +30,12 @@ import { CSS } from '@dnd-kit/utilities';
 import { useEditor, EditorContent, Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Image from "@tiptap/extension-image";
+import TextStyle from "@tiptap/extension-text-style";
+import Color from "@tiptap/extension-color";
+import FontFamily from "@tiptap/extension-font-family";
+import Underline from "@tiptap/extension-underline";
+import TextAlign from "@tiptap/extension-text-align";
+import Highlight from "@tiptap/extension-highlight";
 import ImageUploadInput from "../../components/admin/ImageUploadInput";
 
 // Page type templates with required fields and defaults
@@ -96,6 +102,8 @@ const MenuBar: React.FC<{ editor: Editor | null }> = ({ editor }) => {
   }
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showColorPicker, setShowColorPicker] = useState(false);
+  const [showFontPicker, setShowFontPicker] = useState(false);
 
   const addImageFromFile = useCallback(() => {
     fileInputRef.current?.click();
@@ -129,14 +137,119 @@ const MenuBar: React.FC<{ editor: Editor | null }> = ({ editor }) => {
   }, [editor]);
 
   const buttonClass = (isActive: boolean) =>
-    `p-2 rounded-md transition-colors ${
+    `p-2 rounded-md transition-colors text-sm ${
       isActive
         ? "bg-slate-700 text-sky-400"
         : "text-gray-400 hover:bg-slate-700"
     }`;
 
+  const colors = [
+    { name: 'Black', value: '#000000' },
+    { name: 'White', value: '#FFFFFF' },
+    { name: 'Gray', value: '#6B7280' },
+    { name: 'Red', value: '#EF4444' },
+    { name: 'Orange', value: '#F97316' },
+    { name: 'Yellow', value: '#EAB308' },
+    { name: 'Green', value: '#22C55E' },
+    { name: 'Blue', value: '#3B82F6' },
+    { name: 'Sky', value: '#0EA5E9' },
+    { name: 'Purple', value: '#A855F7' },
+    { name: 'Pink', value: '#EC4899' },
+  ];
+
+  const fonts = [
+    'Arial',
+    'Helvetica',
+    'Times New Roman',
+    'Georgia',
+    'Courier New',
+    'Verdana',
+    'Comic Sans MS',
+    'Impact',
+    'Trebuchet MS',
+  ];
+
   return (
     <div className="flex flex-wrap items-center gap-2 p-2 bg-slate-800 border-b border-slate-700">
+      {/* Font Family */}
+      <div className="relative">
+        <button
+          type="button"
+          onClick={() => setShowFontPicker(!showFontPicker)}
+          className={buttonClass(false)}
+        >
+          Font
+        </button>
+        {showFontPicker && (
+          <div className="absolute top-full left-0 mt-1 bg-slate-800 border border-slate-700 rounded-md shadow-lg z-10 max-h-60 overflow-y-auto">
+            {fonts.map((font) => (
+              <button
+                key={font}
+                type="button"
+                onClick={() => {
+                  editor.chain().focus().setFontFamily(font).run();
+                  setShowFontPicker(false);
+                }}
+                className="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-slate-700"
+                style={{ fontFamily: font }}
+              >
+                {font}
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={() => {
+                editor.chain().focus().unsetFontFamily().run();
+                setShowFontPicker(false);
+              }}
+              className="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-slate-700 border-t border-slate-700"
+            >
+              Reset Font
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Text Color */}
+      <div className="relative">
+        <button
+          type="button"
+          onClick={() => setShowColorPicker(!showColorPicker)}
+          className={buttonClass(false)}
+        >
+          Color
+        </button>
+        {showColorPicker && (
+          <div className="absolute top-full left-0 mt-1 bg-slate-800 border border-slate-700 rounded-md shadow-lg z-10 p-2">
+            <div className="grid grid-cols-4 gap-2">
+              {colors.map((color) => (
+                <button
+                  key={color.value}
+                  type="button"
+                  onClick={() => {
+                    editor.chain().focus().setColor(color.value).run();
+                    setShowColorPicker(false);
+                  }}
+                  className="w-8 h-8 rounded border-2 border-slate-600 hover:border-sky-400"
+                  style={{ backgroundColor: color.value }}
+                  title={color.name}
+                />
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                editor.chain().focus().unsetColor().run();
+                setShowColorPicker(false);
+              }}
+              className="w-full mt-2 px-2 py-1 text-sm text-gray-300 hover:bg-slate-700 rounded"
+            >
+              Reset Color
+            </button>
+          </div>
+        )}
+      </div>
+
       <button
         type="button"
         onClick={() => editor.chain().focus().toggleBold().run()}
@@ -153,10 +266,52 @@ const MenuBar: React.FC<{ editor: Editor | null }> = ({ editor }) => {
       </button>
       <button
         type="button"
+        onClick={() => editor.chain().focus().toggleUnderline().run()}
+        className={buttonClass(editor.isActive("underline"))}
+      >
+        Underline
+      </button>
+      <button
+        type="button"
+        onClick={() => editor.chain().focus().toggleHighlight().run()}
+        className={buttonClass(editor.isActive("highlight"))}
+      >
+        Highlight
+      </button>
+      <button
+        type="button"
         onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
         className={buttonClass(editor.isActive("heading", { level: 2 }))}
       >
         H2
+      </button>
+      <button
+        type="button"
+        onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+        className={buttonClass(editor.isActive("heading", { level: 3 }))}
+      >
+        H3
+      </button>
+      <button
+        type="button"
+        onClick={() => editor.chain().focus().setTextAlign("left").run()}
+        className={buttonClass(editor.isActive({ textAlign: "left" }))}
+      >
+        Left
+      </button>
+      <button
+        type="button"
+        onClick={() => editor.chain().focus().setTextAlign("center").run()}
+        className={buttonClass(editor.isActive({ textAlign: "center" }))}
+      >
+        Center
+      </button>
+      <button
+        type="button"
+        onClick={() => editor.chain().focus().setTextAlign("right").run()}
+        className={buttonClass(editor.isActive({ textAlign: "right" }))}
+      >
+        Right
       </button>
       <button
         type="button"
@@ -216,7 +371,20 @@ const PageEditor: React.FC = () => {
   const isNewPage = !pageId;
 
   const editor = useEditor({
-    extensions: [StarterKit, Image],
+    extensions: [
+      StarterKit,
+      Image,
+      TextStyle,
+      Color,
+      FontFamily,
+      Underline,
+      TextAlign.configure({
+        types: ['heading', 'paragraph'],
+      }),
+      Highlight.configure({
+        multicolor: false,
+      }),
+    ],
     content: "",
     editorProps: {
       attributes: {
