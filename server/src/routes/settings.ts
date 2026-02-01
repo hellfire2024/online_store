@@ -15,8 +15,14 @@ router.get('/', async (_req: Request, res: Response) => {
       return res.json({});
     }
     
-    return res.json(rows[0].settings);
+    // Parse JSON if it's stored as a string
+    const settings = typeof rows[0].settings === 'string' 
+      ? JSON.parse(rows[0].settings) 
+      : rows[0].settings;
+    
+    return res.json(settings);
   } catch (error) {
+    console.error('Error fetching settings:', error);
     return res.status(500).json({ error: 'Failed to fetch settings' });
   }
 });
@@ -24,13 +30,18 @@ router.get('/', async (_req: Request, res: Response) => {
 // Update settings
 router.put('/', async (req: Request, res: Response) => {
   try {
+    const settingsJson = JSON.stringify(req.body);
+    
     await pool.query(
       `INSERT INTO site_settings (id, settings) VALUES (1, ?)
        ON DUPLICATE KEY UPDATE settings = ?`,
-      [JSON.stringify(req.body), JSON.stringify(req.body)]
+      [settingsJson, settingsJson]
     );
+    
+    console.log('Settings saved successfully');
     return res.json(req.body);
   } catch (error) {
+    console.error('Error updating settings:', error);
     return res.status(500).json({ error: 'Failed to update settings' });
   }
 });

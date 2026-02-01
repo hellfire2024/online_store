@@ -7,6 +7,7 @@ import React, {
 } from "react";
 import { SiteSettings } from "../types";
 import * as mockApi from "../services/mockApi";
+import { apiClient } from "../services/apiClient";
 
 // Create a default, empty state that matches the SiteSettings type.
 const defaultSettings: SiteSettings = {
@@ -121,9 +122,20 @@ export const SiteSettingsProvider: React.FC<{ children: ReactNode }> = ({
     const loadData = async () => {
       setIsLoading(true);
       try {
-        setSiteSettings(await mockApi.fetchSiteSettings());
+        // Try to load from API first
+        const apiSettings = await apiClient.settings.get();
+        
+        // Merge API settings with defaults to ensure all fields exist
+        setSiteSettings({ ...defaultSettings, ...apiSettings });
       } catch (error) {
-        console.error("Failed to load site settings", error);
+        console.error("Failed to load site settings from API, using mock data", error);
+        // Fallback to mock API if real API fails
+        try {
+          setSiteSettings(await mockApi.fetchSiteSettings());
+        } catch (mockError) {
+          console.error("Failed to load mock settings", mockError);
+          setSiteSettings(defaultSettings);
+        }
       } finally {
         setIsLoading(false);
       }
@@ -132,8 +144,20 @@ export const SiteSettingsProvider: React.FC<{ children: ReactNode }> = ({
   }, []);
 
   const updateSiteSettings = async (newSettings: Partial<SiteSettings>) => {
-    const updatedSettings = await mockApi.updateSiteSettings(newSettings);
-    setSiteSettings(updatedSettings);
+    try {
+      // Merge new settings with existing settings
+      const updatedSettings = { ...siteSettings, ...newSettings };
+      
+      // Try to save to API first
+      const savedSettings = await apiClient.settings.update(updatedSettings);
+      setSiteSettings(savedSettings);
+    } catch (error) {
+      console.error("Failed to save settings to API, falling back to mock", error);
+      // Fallback to mock API if real API fails
+      const updatedSettings = await mockApi.updateSiteSettings(newSettings);
+      setSiteSettings(updatedSettings);
+      throw error; // Re-throw so the UI can show an error
+    }
   };
 
   const uploadFavicon = async (file: File): Promise<string> => {
