@@ -30,7 +30,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { useEditor, EditorContent, Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Image from "@tiptap/extension-image";
-import TextStyle from "@tiptap/extension-text-style";
+import { TextStyle } from "@tiptap/extension-text-style";
 import Color from "@tiptap/extension-color";
 import FontFamily from "@tiptap/extension-font-family";
 import Underline from "@tiptap/extension-underline";
@@ -97,13 +97,13 @@ const PAGE_TEMPLATES = {
 
 // --- Toolbar Component ---
 const MenuBar: React.FC<{ editor: Editor | null }> = ({ editor }) => {
-  if (!editor) {
-    return null;
-  }
-
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [showFontPicker, setShowFontPicker] = useState(false);
+
+  if (!editor) {
+    return null;
+  }
 
   const addImageFromFile = useCallback(() => {
     fileInputRef.current?.click();
@@ -411,7 +411,7 @@ const PageEditor: React.FC = () => {
         return newPage;
       });
     },
-  });
+  }, []);
 
   const hasUnsavedChanges =
     JSON.stringify(page) !== JSON.stringify(originalPage);
@@ -511,7 +511,7 @@ const PageEditor: React.FC = () => {
         }
       }
     }
-  }, [pageId, pages, editor, siteSettings?.siteBackgroundImageUrl]);
+  }, [pageId, pages, siteSettings?.siteBackgroundImageUrl]);
 
   const handleSave = async () => {
     if (page) {
