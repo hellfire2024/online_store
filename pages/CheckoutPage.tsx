@@ -50,9 +50,17 @@ const CheckoutPage: React.FC = () => {
         let optionsDelta = 0;
         if (item.selectedOptions && item.product.optionLists) {
           item.product.optionLists.forEach((list) => {
-            const selectedOptionId = item.selectedOptions?.[list.id];
-            if (selectedOptionId) {
-              const option = list.options.find((o) => o.id === selectedOptionId);
+            const selectedOptionIds = item.selectedOptions?.[list.id] || [];
+            if (Array.isArray(selectedOptionIds)) {
+              selectedOptionIds.forEach((optionId) => {
+                const option = list.options.find((o) => o.id === optionId);
+                if (option) {
+                  optionsDelta += option.priceDelta;
+                }
+              });
+            } else {
+              // Fallback for old single-select format
+              const option = list.options.find((o) => o.id === selectedOptionIds);
               if (option) {
                 optionsDelta += option.priceDelta;
               }
@@ -185,9 +193,18 @@ const CheckoutPage: React.FC = () => {
           if (item.selectedOptions && item.product.optionLists) {
             const optionParts: string[] = [];
             item.product.optionLists.forEach((list) => {
-              const selectedOptionId = item.selectedOptions?.[list.id];
-              if (selectedOptionId) {
-                const option = list.options.find((o) => o.id === selectedOptionId);
+              const selectedOptionIds = item.selectedOptions?.[list.id] || [];
+              if (Array.isArray(selectedOptionIds)) {
+                selectedOptionIds.forEach((optionId) => {
+                  const option = list.options.find((o) => o.id === optionId);
+                  if (option) {
+                    optionsDelta += option.priceDelta;
+                    optionParts.push(`${list.name}: ${option.name}`);
+                  }
+                });
+              } else {
+                // Fallback for old single-select format
+                const option = list.options.find((o) => o.id === selectedOptionIds);
                 if (option) {
                   optionsDelta += option.priceDelta;
                   optionParts.push(`${list.name}: ${option.name}`);

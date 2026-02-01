@@ -16,15 +16,24 @@ const TrashIcon: React.FC = () => (
 const CartItemRow: React.FC<{ item: CartItem }> = ({ item }) => {
     const { updateQuantity, removeFromCart } = useCart();
     
-    // Calculate total price delta from all selected options
+    // Calculate total price delta from all selected options (now supporting multiple selections per list)
     let optionsDelta = 0;
     const selectedOptionDetails: { listName: string; optionName: string }[] = [];
     
     if (item.selectedOptions && item.product.optionLists) {
       item.product.optionLists.forEach((list) => {
-        const selectedOptionId = item.selectedOptions?.[list.id];
-        if (selectedOptionId) {
-          const option = list.options.find((o) => o.id === selectedOptionId);
+        const selectedOptionIds = item.selectedOptions?.[list.id] || [];
+        if (Array.isArray(selectedOptionIds)) {
+          selectedOptionIds.forEach((optionId) => {
+            const option = list.options.find((o) => o.id === optionId);
+            if (option) {
+              optionsDelta += Number(option.priceDelta);
+              selectedOptionDetails.push({ listName: list.name, optionName: option.name });
+            }
+          });
+        } else {
+          // Fallback for old single-select format (for backwards compatibility)
+          const option = list.options.find((o) => o.id === selectedOptionIds);
           if (option) {
             optionsDelta += Number(option.priceDelta);
             selectedOptionDetails.push({ listName: list.name, optionName: option.name });

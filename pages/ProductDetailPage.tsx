@@ -40,7 +40,7 @@ const ProductDetailPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState<CustomizationTab>('gallery');
-  const [selectedOptions, setSelectedOptions] = useState<{ [listId: string]: string }>({});
+  const [selectedOptions, setSelectedOptions] = useState<{ [listId: string]: string[] }>({});
   
   const [selectedGalleryImage, setSelectedGalleryImage] = useState<GalleryImage | null>(null);
   
@@ -57,16 +57,13 @@ const ProductDetailPage: React.FC = () => {
       const foundProduct = products.find(p => p.id === id);
       if (foundProduct) {
         setProduct(foundProduct);
-        // Initialize selected options with first option from each list only if not already set
+        // Initialize selected options - allow multiple selections per list
         if (foundProduct.optionLists?.length && Object.keys(selectedOptions).length === 0) {
-          const initialSelections: { [listId: string]: string } = {};
+          const initialSelections: { [listId: string]: string[] } = {};
           foundProduct.optionLists
             .sort((a, b) => a.order - b.order)
             .forEach((list) => {
-              const sortedOptions = [...list.options].sort((a, b) => a.order - b.order);
-              if (sortedOptions.length > 0) {
-                initialSelections[list.id] = sortedOptions[0].id;
-              }
+              initialSelections[list.id] = []; // Start with empty array for multi-select
             });
           setSelectedOptions(initialSelections);
         }
@@ -96,18 +93,20 @@ const ProductDetailPage: React.FC = () => {
   const handleAddToCart = () => {
     if (!product) return;
     
-    // Calculate total price delta from all selected options
+    // Calculate total price delta from all selected options (now supporting multiple selections per list)
     let totalPriceDelta = 0;
     if (product.optionLists) {
       product.optionLists.forEach((list) => {
-        const selectedOptionId = selectedOptions[list.id];
-        if (selectedOptionId) {
-          const option = list.options.find((o) => o.id === selectedOptionId);
-          if (option) {
-            totalPriceDelta += option.priceDelta;
-          }
+        const selectedOptionIds = selectedOptions[list.id] || [];
+        if (selectedOptionIds.length > 0) {
+          selectedOptionIds.forEach((optionId) => {
+            const option = list.options.find((o) => o.id === optionId);
+            if (option) {
+              totalPriceDelta += option.priceDelta;
+            }
+          });
         } else if (list.required) {
-          alert(`Please select an option for ${list.name}`);
+          alert(`Please select at least one option for ${list.name}`);
           return;
         }
       });
@@ -236,23 +235,37 @@ const ProductDetailPage: React.FC = () => {
                 .sort((a, b) => a.order - b.order)
                 .map((list) => {
                   const sortedOptions = [...list.options].sort((a, b) => a.order - b.order);
+                  const listSelectedOptions = selectedOptions[list.id] || [];
                   return (
                     <div key={list.id}>
                       <label className="block text-sm font-medium text-gray-300 mb-2">
                         {list.name} {list.required && <span className="text-red-400">*</span>}
                       </label>
-                      <select
-                        className="w-full p-3 bg-slate-700 border border-slate-600 rounded-md text-white"
-                        value={selectedOptions[list.id] || ''}
-                        onChange={(e) => setSelectedOptions({ ...selectedOptions, [list.id]: e.target.value })}
-                      >
-                        {!list.required && <option value="">None</option>}
-                        {sortedOptions.map((opt) => (
-                          <option key={opt.id} value={opt.id}>
-                            {opt.name} {Number(opt.priceDelta) !== 0 ? `(+$${Number(opt.priceDelta).toFixed(2)})` : ""}
-                          </option>
-                        ))}
-                      </select>
+                      <div className="space-y-2 p-3 bg-slate-700 border border-slate-600 rounded-md">
+                        {sortedOptions.length > 0 ? (
+                          sortedOptions.map((opt) => (
+                            <label key={opt.id} className="flex items-center text-gray-200 cursor-pointer hover:text-white">
+                              <input
+                                type="checkbox"
+                                checked={listSelectedOptions.includes(opt.id)}
+                                onChange={(e) => {
+                                  const newSelected = e.target.checked
+                                    ? [...listSelectedOptions, opt.id]
+                                    : listSelectedOptions.filter(id => id !== opt.id);
+                                  setSelectedOptions({ ...selectedOptions, [list.id]: newSelected });
+                                }}
+                                className="mr-3 w-4 h-4 bg-slate-600 border border-slate-500 rounded checked:bg-sky-500 checked:border-sky-500"
+                              />
+                              <span>{opt.name}</span>
+                              {Number(opt.priceDelta) !== 0 && (
+                                <span className="ml-2 text-sky-400">(+${Number(opt.priceDelta).toFixed(2)})</span>
+                              )}
+                            </label>
+                          ))
+                        ) : (
+                          <p className="text-gray-400 text-sm">No options available</p>
+                        )}
+                      </div>
                     </div>
                   );
                 })}
