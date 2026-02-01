@@ -10,7 +10,20 @@ router.get('/', async (_req: Request, res: Response) => {
     const [rows] = await pool.query<RowDataPacket[]>(
       'SELECT * FROM pages ORDER BY created_at DESC'
     );
-    return res.json(rows || []);
+    
+    // Transform snake_case to camelCase for API response
+    const transformedRows = (rows || []).map((row: any) => ({
+      id: row.id,
+      title: row.title,
+      path: row.path,
+      pageType: row.page_type,
+      content: row.content,
+      contentData: typeof row.content_data === 'string' ? JSON.parse(row.content_data) : row.content_data,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+    }));
+    
+    return res.json(transformedRows);
   } catch (error) {
     console.error('Error fetching pages:', error);
     return res.status(500).json({ error: 'Failed to fetch pages' });
@@ -29,11 +42,18 @@ router.get('/:id', async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Page not found' });
     }
     
-    const page = rows[0];
-    // Parse JSON fields if they're stored as strings
-    if (typeof page.contentData === 'string') {
-      page.contentData = JSON.parse(page.contentData);
-    }
+    const row = rows[0];
+    // Transform snake_case to camelCase for API response
+    const page = {
+      id: row.id,
+      title: row.title,
+      path: row.path,
+      pageType: row.page_type,
+      content: row.content,
+      contentData: typeof row.content_data === 'string' ? JSON.parse(row.content_data) : row.content_data,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+    };
     
     return res.json(page);
   } catch (error) {
@@ -45,7 +65,7 @@ router.get('/:id', async (req: Request, res: Response) => {
 // Create page
 router.post('/', async (req: Request, res: Response) => {
   try {
-    const { id, pageType, name, content, contentData } = req.body;
+    const { id, pageType, title, path, content, contentData } = req.body;
     
     if (!id || !pageType) {
       return res.status(400).json({ error: 'id and pageType are required' });
@@ -54,12 +74,12 @@ router.post('/', async (req: Request, res: Response) => {
     const contentDataJson = typeof contentData === 'string' ? contentData : JSON.stringify(contentData || {});
     
     await pool.query(
-      `INSERT INTO pages (id, pageType, name, content, contentData, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, NOW(), NOW())`,
-      [id, pageType, name || '', content || '', contentDataJson]
+      `INSERT INTO pages (id, title, path, page_type, content, content_data, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+      [id, title || '', path || '/', pageType, content || '', contentDataJson]
     );
     
-    return res.status(201).json({ id, pageType, name, content, contentData });
+    return res.status(201).json({ id, pageType, title, path, content, contentData });
   } catch (error) {
     console.error('Error creating page:', error);
     return res.status(500).json({ error: 'Failed to create page' });
@@ -69,21 +89,21 @@ router.post('/', async (req: Request, res: Response) => {
 // Update page
 router.put('/:id', async (req: Request, res: Response) => {
   try {
-    const { pageType, name, content, contentData } = req.body;
+    const { pageType, title, path, content, contentData } = req.body;
     
     const contentDataJson = typeof contentData === 'string' ? contentData : JSON.stringify(contentData || {});
     
     const [result] = await pool.query(
-      `UPDATE pages SET pageType = ?, name = ?, content = ?, contentData = ?, updated_at = NOW()
+      `UPDATE pages SET title = ?, path = ?, page_type = ?, content = ?, content_data = ?, updated_at = NOW()
        WHERE id = ?`,
-      [pageType, name || '', content || '', contentDataJson, req.params.id]
+      [title || '', path || '/', pageType, content || '', contentDataJson, req.params.id]
     );
     
     if ((result as any).affectedRows === 0) {
       return res.status(404).json({ error: 'Page not found' });
     }
     
-    return res.json({ id: req.params.id, pageType, name, content, contentData });
+    return res.json({ id: req.params.id, pageType, title, path, content, contentData });
   } catch (error) {
     console.error('Error updating page:', error);
     return res.status(500).json({ error: 'Failed to update page' });
