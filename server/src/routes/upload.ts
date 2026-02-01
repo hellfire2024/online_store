@@ -20,9 +20,9 @@ const pagesDir = path.join(uploadsDir, "pages");
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => {
-    const type = _req.body.type || "products";
-    const dir = type === "pages" ? pagesDir : productsDir;
-    cb(null, dir);
+    // Default to products if type not specified
+    const dir = pagesDir; // We'll determine this from the field name or type form field
+    cb(null, productsDir);
   },
   filename: (_req, file, cb) => {
     const ext = path.extname(file.originalname);
@@ -58,7 +58,7 @@ router.post("/image", upload.single("image"), (req: Request, res: Response) => {
       return res.status(400).json({ error: "No file uploaded" });
     }
 
-    const type = req.body.type || "products";
+    const type = (req.body?.type as string) || "products";
     const imageUrl = `/uploads/${type}/${req.file.filename}`;
 
     return res.json({
