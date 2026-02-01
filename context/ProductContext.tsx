@@ -14,6 +14,7 @@ interface ProductContextType {
   isLoading: boolean;
   addProduct: (product: Omit<Product, "id">) => Promise<Product>;
   updateProduct: (product: Product) => Promise<Product>;
+  fetchProducts: () => Promise<void>;
   deleteProduct: (productId: string) => Promise<void>;
 }
 
@@ -25,25 +26,26 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const loadProducts = async () => {
-      setIsLoading(true);
+  const fetchProducts = async () => {
+    setIsLoading(true);
+    try {
+      const productsData = await apiClient.products.getAll();
+      setProducts(Array.isArray(productsData) ? productsData : []);
+    } catch (error) {
+      console.error("Failed to load products from API, using mock data", error);
       try {
-        const productsData = await apiClient.products.getAll();
-        setProducts(Array.isArray(productsData) ? productsData : []);
-      } catch (error) {
-        console.error("Failed to load products from API, using mock data", error);
-        try {
-          const mockProductsData = await mockApi.fetchProducts();
-          setProducts(mockProductsData);
-        } catch (mockError) {
-          console.error("Failed to load mock products", mockError);
-        }
-      } finally {
-        setIsLoading(false);
+        const mockProductsData = await mockApi.fetchProducts();
+        setProducts(mockProductsData);
+      } catch (mockError) {
+        console.error("Failed to load mock products", mockError);
       }
-    };
-    loadProducts();
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProducts();
   }, []);
 
   const addProduct = async (product: Omit<Product, "id">) => {
@@ -69,6 +71,7 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({
       setProducts((prev) =>
         prev.map((p) => (p.id === resolvedProduct.id ? resolvedProduct : p)),
       );
+      await fetchProducts();
       return resolvedProduct;
     } catch (error) {
       console.error("Failed to update product via API, using mock", error);
@@ -93,7 +96,7 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({
 
   return (
     <ProductContext.Provider
-      value={{ products, isLoading, addProduct, updateProduct, deleteProduct }}
+      value={{ products, isLoading, addProduct, updateProduct, fetchProducts, deleteProduct }}
     >
       {children}
     </ProductContext.Provider>

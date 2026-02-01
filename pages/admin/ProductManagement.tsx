@@ -220,7 +220,7 @@ const SortableOption: React.FC<SortableOptionProps> = ({
 };
 
 const ProductManagement: React.FC = () => {
-  const { products, isLoading, addProduct, updateProduct, deleteProduct } =
+  const { products, isLoading, addProduct, updateProduct, fetchProducts, deleteProduct } =
     useProducts();
   const { galleries, galleryImages, fetchGalleryImages } = useGalleries();
   const [newProduct, setNewProduct] = useState<Omit<Product, "id"> | null>(
@@ -543,6 +543,7 @@ const ProductManagement: React.FC = () => {
         savedProduct = await updateProduct(editingProduct);
         addToast("Product updated!", "success");
       }
+      await fetchProducts();
       if (savedProduct) {
         setImageVersions((prev) => ({
           ...prev,
