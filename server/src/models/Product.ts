@@ -31,18 +31,10 @@ interface ProductOption {
   order: number;
 }
 
-// Helper function to sanitize base64 images
-// Base64 images are too large for database storage and should use file/blob storage
+// Helper function to sanitize image URLs
+// Now accepts both base64 data URLs and file paths
 function sanitizeImageUrl(imageUrl?: string): string | null {
   if (!imageUrl) {
-    return null;
-  }
-
-  if (typeof imageUrl === "string" && imageUrl.startsWith("data:")) {
-    console.warn(
-      "⚠️ Base64 image detected in product imageUrl - this will not be persisted. Use the upload endpoint instead.",
-    );
-    // Return null to prevent database bloat; client should upload images to /api/upload/image
     return null;
   }
 

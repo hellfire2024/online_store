@@ -1,44 +1,18 @@
 import { Router, Request, Response } from "express";
 import multer from "multer";
-import path from "path";
 import fs from "fs";
-import { randomUUID } from "crypto";
 
 const router = Router();
 
-// Ensure upload directories exist
-const uploadsDir = path.join(process.cwd(), "public", "uploads");
-const productsDir = path.join(uploadsDir, "products");
-const pagesDir = path.join(uploadsDir, "pages");
-
-[uploadsDir, productsDir, pagesDir].forEach((dir) => {
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
-});
-
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => {
-    cb(null, productsDir);
-  },
-  filename: (_req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    const filename = `${randomUUID()}${ext}`;
-    cb(null, filename);
-  },
-});
-
+// Use memory storage instead of disk storage
 const upload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   limits: {
     fileSize: 10 * 1024 * 1024, // 10MB limit
   },
   fileFilter: (_req, file, cb) => {
     const allowedTypes = /jpeg|jpg|png|gif|webp/;
-    const extname = allowedTypes.test(
-      path.extname(file.originalname).toLowerCase(),
-    );
+    const extname = allowedTypes.test(file.originalname.toLowerCase());
     const mimetype = allowedTypes.test(file.mimetype);
 
     if (extname && mimetype) {
@@ -49,20 +23,22 @@ const upload = multer({
   },
 });
 
-// Upload single image
+// Upload single image - returns base64 data URL
 router.post("/image", upload.single("image"), (req: Request, res: Response) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: "No file uploaded" });
     }
 
-    const type = (req.body?.type as string) || "products";
-    const imageUrl = `/uploads/${type}/${req.file.filename}`;
+    // Convert buffer to base64
+    const base64 = req.file.buffer.toString("base64");
+    const mimeType = req.file.mimetype;
+    const imageUrl = `data:${mimeType};base64,${base64}`;
 
     return res.json({
       success: true,
       imageUrl,
-      filename: req.file.filename,
+      filename: req.file.originalname,
     });
   } catch (error) {
     console.error("Error uploading image:", error);
@@ -70,23 +46,10 @@ router.post("/image", upload.single("image"), (req: Request, res: Response) => {
   }
 });
 
-// Delete image
-router.delete("/image", (req: Request, res: Response) => {
+// Delete image - no-op for database storage
+router.delete("/image", (_req: Request, res: Response) => {
   try {
-    const { imageUrl } = req.body;
-
-    if (!imageUrl || !imageUrl.startsWith("/uploads/")) {
-      return res.status(400).json({ error: "Invalid image URL" });
-    }
-
-    const filePath = path.join(process.cwd(), "public", imageUrl);
-
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
-      return res.json({ success: true });
-    } else {
-      return res.status(404).json({ error: "Image not found" });
-    }
+    return res.json({ success: true });
   } catch (error) {
     console.error("Error deleting image:", error);
     return res.status(500).json({ error: "Failed to delete image" });
