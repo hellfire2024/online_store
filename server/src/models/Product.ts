@@ -31,6 +31,22 @@ interface ProductOption {
   order: number;
 }
 
+// Helper function to sanitize base64 images
+// Base64 images are too large for database storage and should use file/blob storage
+function sanitizeImageUrl(imageUrl?: string): string | null {
+  if (!imageUrl) {
+    return null;
+  }
+  
+  if (typeof imageUrl === 'string' && imageUrl.startsWith('data:')) {
+    console.warn('⚠️ Base64 image detected in product imageUrl - this will not be persisted. Use a URL or implement image upload.');
+    // Return null to prevent database bloat; client should use gallery images instead
+    return null;
+  }
+  
+  return imageUrl || null;
+}
+
 export async function findAll(): Promise<Product[]> {
   const [rows] = await pool.query<RowDataPacket[]>(
     `SELECT id, name, description, price, image_url as imageUrl, inventory, 
@@ -97,6 +113,7 @@ async function findOptionLists(productId: string): Promise<ProductOptionList[]> 
 export async function create(data: Partial<Product>): Promise<Product> {
   return withTransaction(async (connection) => {
     const id = uuidv4();
+    const sanitizedImageUrl = sanitizeImageUrl(data.imageUrl);
 
     await connection.query(
       `INSERT INTO products (id, name, description, price, image_url, inventory,
@@ -107,7 +124,7 @@ export async function create(data: Partial<Product>): Promise<Product> {
         data.name,
         data.description || null,
         data.price,
-        data.imageUrl || null,
+        sanitizedImageUrl,
         data.inventory || 0,
         data.lowStockThreshold || 20,
         data.customizable || false,
@@ -130,6 +147,8 @@ export async function create(data: Partial<Product>): Promise<Product> {
 
 export async function update(id: string, data: Partial<Product>): Promise<Product | null> {
   return withTransaction(async (connection) => {
+    const sanitizedImageUrl = sanitizeImageUrl(data.imageUrl);
+    
     const [result] = await connection.query<ResultSetHeader>(
       `UPDATE products SET name = ?, description = ?, price = ?, image_url = ?,
                           inventory = ?, low_stock_threshold = ?, customizable = ?,
@@ -139,7 +158,7 @@ export async function update(id: string, data: Partial<Product>): Promise<Produc
         data.name,
         data.description || null,
         data.price,
-        data.imageUrl || null,
+        sanitizedImageUrl,
         data.inventory,
         data.lowStockThreshold || 20,
         data.customizable || false,

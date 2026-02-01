@@ -4,6 +4,28 @@ import { RowDataPacket } from 'mysql2';
 
 const router = Router();
 
+// Helper function to sanitize base64 images from content data
+// Base64 images are too large for database storage and should use file/blob storage
+function sanitizeContentData(contentData: any): any {
+  if (!contentData || typeof contentData !== 'object') {
+    return contentData;
+  }
+
+  const sanitized = { ...contentData };
+  
+  // Check for heroBackgroundImageUrl starting with data:
+  if (sanitized.heroBackgroundImageUrl && typeof sanitized.heroBackgroundImageUrl === 'string') {
+    if (sanitized.heroBackgroundImageUrl.startsWith('data:')) {
+      console.warn('⚠️ Base64 image detected in heroBackgroundImageUrl - this will not be persisted. Use a URL or implement image upload.');
+      // For now, remove base64 images to prevent database bloat
+      // In production, these should be uploaded to blob storage (S3, etc.)
+      delete sanitized.heroBackgroundImageUrl;
+    }
+  }
+  
+  return sanitized;
+}
+
 // Get all pages
 router.get('/', async (_req: Request, res: Response) => {
   try {
@@ -71,7 +93,9 @@ router.post('/', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'id and pageType are required' });
     }
     
-    const contentDataJson = typeof contentData === 'string' ? contentData : JSON.stringify(contentData || {});
+    // Sanitize content data to remove base64 images
+    const sanitizedContentData = sanitizeContentData(contentData);
+    const contentDataJson = typeof sanitizedContentData === 'string' ? sanitizedContentData : JSON.stringify(sanitizedContentData || {});
     
     await pool.query(
       `INSERT INTO pages (id, title, path, page_type, content, content_data, created_at, updated_at)
@@ -79,7 +103,7 @@ router.post('/', async (req: Request, res: Response) => {
       [id, title || '', path || '/', pageType, content || '', contentDataJson]
     );
     
-    return res.status(201).json({ id, pageType, title, path, content, contentData });
+    return res.status(201).json({ id, pageType, title, path, content, contentData: sanitizedContentData });
   } catch (error) {
     console.error('Error creating page:', error);
     return res.status(500).json({ error: 'Failed to create page' });
@@ -91,7 +115,9 @@ router.put('/:id', async (req: Request, res: Response) => {
   try {
     const { pageType, title, path, content, contentData } = req.body;
     
-    const contentDataJson = typeof contentData === 'string' ? contentData : JSON.stringify(contentData || {});
+    // Sanitize content data to remove base64 images
+    const sanitizedContentData = sanitizeContentData(contentData);
+    const contentDataJson = typeof sanitizedContentData === 'string' ? sanitizedContentData : JSON.stringify(sanitizedContentData || {});
     
     const [result] = await pool.query(
       `UPDATE pages SET title = ?, path = ?, page_type = ?, content = ?, content_data = ?, updated_at = NOW()
@@ -103,7 +129,7 @@ router.put('/:id', async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Page not found' });
     }
     
-    return res.json({ id: req.params.id, pageType, title, path, content, contentData });
+    return res.json({ id: req.params.id, pageType, title, path, content, contentData: sanitizedContentData });
   } catch (error) {
     console.error('Error updating page:', error);
     return res.status(500).json({ error: 'Failed to update page' });
