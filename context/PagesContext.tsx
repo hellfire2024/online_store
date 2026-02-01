@@ -7,6 +7,7 @@ import React, {
 } from "react";
 import { Page, Menu, HomePageContent, AboutPageContent } from "../types";
 import * as mockApi from "../services/mockApi";
+import { apiClient } from "../services/apiClient";
 import { useSiteSettings } from "./SiteSettingsContext";
 import { useToast } from "../hooks/useToast";
 
@@ -41,10 +42,21 @@ export const PagesProvider: React.FC<{ children: ReactNode }> = ({
     const loadData = async () => {
       setIsLoading(true);
       try {
-        const [pagesData, menusData] = await Promise.all([
-          mockApi.fetchPages(),
-          mockApi.fetchMenus(),
-        ]);
+        let pagesData: Page[];
+        let menusData: Menu[];
+        
+        try {
+          [pagesData, menusData] = await Promise.all([
+            apiClient.pages.getAll(),
+            mockApi.fetchMenus(), // Menus still from mock - no menu API yet
+          ]);
+        } catch (apiError) {
+          console.error("Failed to load pages from API, using mock data", apiError);
+          [pagesData, menusData] = await Promise.all([
+            mockApi.fetchPages(),
+            mockApi.fetchMenus(),
+          ]);
+        }
 
         // Ensure Home and About Us pages exist
         let currentSiteSettings = siteSettings; // Get current settings from context

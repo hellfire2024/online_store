@@ -7,6 +7,7 @@ import React, {
 } from "react";
 import { Review } from "../types";
 import * as mockApi from "../services/mockApi";
+import { apiClient } from "../services/apiClient";
 
 interface ReviewsContextType {
   reviews: Review[];
@@ -28,9 +29,16 @@ export const ReviewsProvider: React.FC<{ children: ReactNode }> = ({
     const loadData = async () => {
       setIsLoading(true);
       try {
-        setReviews(await mockApi.fetchReviews());
+        const reviewsData = await apiClient.reviews.getAll();
+        setReviews(reviewsData);
       } catch (error) {
-        console.error("Failed to load reviews", error);
+        console.error("Failed to load reviews from API, using mock data", error);
+        try {
+          const mockReviewsData = await mockApi.fetchReviews();
+          setReviews(mockReviewsData);
+        } catch (mockError) {
+          console.error("Failed to load mock reviews", mockError);
+        }
       } finally {
         setIsLoading(false);
       }
@@ -39,20 +47,40 @@ export const ReviewsProvider: React.FC<{ children: ReactNode }> = ({
   }, []);
 
   const addReview = async (review: Omit<Review, "id">) => {
-    const newReview = await mockApi.addReview(review);
-    setReviews((prev) => [...prev, newReview]);
+    try {
+      const newReview = await apiClient.reviews.create(review);
+      setReviews((prev) => [...prev, newReview]);
+    } catch (error) {
+      console.error("Failed to add review via API, using mock", error);
+      const newReview = await mockApi.addReview(review);
+      setReviews((prev) => [...prev, newReview]);
+    }
   };
 
   const updateReview = async (review: Review) => {
-    const updatedReview = await mockApi.updateReview(review);
-    setReviews((prev) =>
-      prev.map((r) => (r.id === updatedReview.id ? updatedReview : r)),
-    );
+    try {
+      const updatedReview = await apiClient.reviews.update(review.id, review);
+      setReviews((prev) =>
+        prev.map((r) => (r.id === updatedReview.id ? updatedReview : r)),
+      );
+    } catch (error) {
+      console.error("Failed to update review via API, using mock", error);
+      const updatedReview = await mockApi.updateReview(review);
+      setReviews((prev) =>
+        prev.map((r) => (r.id === updatedReview.id ? updatedReview : r)),
+      );
+    }
   };
 
   const deleteReview = async (reviewId: string) => {
-    await mockApi.deleteReview(reviewId);
-    setReviews((prev) => prev.filter((r) => r.id !== reviewId));
+    try {
+      await apiClient.reviews.delete(reviewId);
+      setReviews((prev) => prev.filter((r) => r.id !== reviewId));
+    } catch (error) {
+      console.error("Failed to delete review via API, using mock", error);
+      await mockApi.deleteReview(reviewId);
+      setReviews((prev) => prev.filter((r) => r.id !== reviewId));
+    }
   };
 
   return (

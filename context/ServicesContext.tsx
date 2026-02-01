@@ -7,6 +7,7 @@ import React, {
 } from "react";
 import { Service } from "../types";
 import * as mockApi from "../services/mockApi";
+import { apiClient } from "../services/apiClient";
 
 interface ServicesContextType {
   services: Service[];
@@ -30,9 +31,16 @@ export const ServicesProvider: React.FC<{ children: ReactNode }> = ({
     const loadData = async () => {
       setIsLoading(true);
       try {
-        setServices(await mockApi.fetchServices());
+        const servicesData = await apiClient.services.getAll();
+        setServices(servicesData);
       } catch (error) {
-        console.error("Failed to load services", error);
+        console.error("Failed to load services from API, using mock data", error);
+        try {
+          const mockServicesData = await mockApi.fetchServices();
+          setServices(mockServicesData);
+        } catch (mockError) {
+          console.error("Failed to load mock services", mockError);
+        }
       } finally {
         setIsLoading(false);
       }

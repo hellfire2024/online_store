@@ -7,6 +7,7 @@ import React, {
 } from "react";
 import { Product } from "../types";
 import * as mockApi from "../services/mockApi";
+import { apiClient } from "../services/apiClient";
 
 interface ProductContextType {
   products: Product[];
@@ -28,10 +29,16 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({
     const loadProducts = async () => {
       setIsLoading(true);
       try {
-        const productsData = await mockApi.fetchProducts();
+        const productsData = await apiClient.products.getAll();
         setProducts(productsData);
       } catch (error) {
-        console.error("Failed to load products", error);
+        console.error("Failed to load products from API, using mock data", error);
+        try {
+          const mockProductsData = await mockApi.fetchProducts();
+          setProducts(mockProductsData);
+        } catch (mockError) {
+          console.error("Failed to load mock products", mockError);
+        }
       } finally {
         setIsLoading(false);
       }
@@ -40,20 +47,40 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({
   }, []);
 
   const addProduct = async (product: Omit<Product, "id">) => {
-    const newProduct = await mockApi.addProduct(product);
-    setProducts((prev) => [...prev, newProduct]);
+    try {
+      const newProduct = await apiClient.products.create(product);
+      setProducts((prev) => [...prev, newProduct]);
+    } catch (error) {
+      console.error("Failed to add product via API, using mock", error);
+      const newProduct = await mockApi.addProduct(product);
+      setProducts((prev) => [...prev, newProduct]);
+    }
   };
 
   const updateProduct = async (product: Product) => {
-    const updatedProduct = await mockApi.updateProduct(product);
-    setProducts((prev) =>
-      prev.map((p) => (p.id === updatedProduct.id ? updatedProduct : p)),
-    );
+    try {
+      const updatedProduct = await apiClient.products.update(product.id, product);
+      setProducts((prev) =>
+        prev.map((p) => (p.id === updatedProduct.id ? updatedProduct : p)),
+      );
+    } catch (error) {
+      console.error("Failed to update product via API, using mock", error);
+      const updatedProduct = await mockApi.updateProduct(product);
+      setProducts((prev) =>
+        prev.map((p) => (p.id === updatedProduct.id ? updatedProduct : p)),
+      );
+    }
   };
 
   const deleteProduct = async (productId: string) => {
-    await mockApi.deleteProduct(productId);
-    setProducts((prev) => prev.filter((p) => p.id !== productId));
+    try {
+      await apiClient.products.delete(productId);
+      setProducts((prev) => prev.filter((p) => p.id !== productId));
+    } catch (error) {
+      console.error("Failed to delete product via API, using mock", error);
+      await mockApi.deleteProduct(productId);
+      setProducts((prev) => prev.filter((p) => p.id !== productId));
+    }
   };
 
   return (
