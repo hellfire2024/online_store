@@ -30,6 +30,11 @@ ALTER TABLE admins
   ADD COLUMN IF NOT EXISTS last_name VARCHAR(100),
   ADD COLUMN IF NOT EXISTS phone VARCHAR(50);
 
+-- Backfill existing admins: Set first_name from username if not already set
+UPDATE admins
+  SET first_name = CONCAT(UPPER(SUBSTRING(username, 1, 1)), LOWER(SUBSTRING(username, 2)))
+  WHERE first_name IS NULL OR first_name = '';
+
 CREATE TABLE IF NOT EXISTS customers (
   id VARCHAR(36) PRIMARY KEY,
   name VARCHAR(255) NOT NULL,
