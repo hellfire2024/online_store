@@ -30,7 +30,7 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({
       setIsLoading(true);
       try {
         const productsData = await apiClient.products.getAll();
-        setProducts(productsData);
+        setProducts(Array.isArray(productsData) ? productsData : []);
       } catch (error) {
         console.error("Failed to load products from API, using mock data", error);
         try {

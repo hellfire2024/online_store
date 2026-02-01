@@ -30,7 +30,7 @@ export const ReviewsProvider: React.FC<{ children: ReactNode }> = ({
       setIsLoading(true);
       try {
         const reviewsData = await apiClient.reviews.getAll();
-        setReviews(reviewsData);
+        setReviews(Array.isArray(reviewsData) ? reviewsData : []);
       } catch (error) {
         console.error("Failed to load reviews from API, using mock data", error);
         try {

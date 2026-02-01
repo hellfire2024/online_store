@@ -32,7 +32,7 @@ export const ServicesProvider: React.FC<{ children: ReactNode }> = ({
       setIsLoading(true);
       try {
         const servicesData = await apiClient.services.getAll();
-        setServices(servicesData);
+        setServices(Array.isArray(servicesData) ? servicesData : []);
       } catch (error) {
         console.error("Failed to load services from API, using mock data", error);
         try {

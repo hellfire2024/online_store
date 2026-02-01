@@ -30,7 +30,7 @@ export const StaffProvider: React.FC<{ children: ReactNode }> = ({
       setIsLoading(true);
       try {
         const staffData = await apiClient.staff.getAll();
-        setStaff(staffData);
+        setStaff(Array.isArray(staffData) ? staffData : []);
       } catch (error) {
         console.error("Failed to load staff from API, using mock data", error);
         try {

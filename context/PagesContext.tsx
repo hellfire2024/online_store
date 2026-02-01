@@ -42,14 +42,14 @@ export const PagesProvider: React.FC<{ children: ReactNode }> = ({
     const loadData = async () => {
       setIsLoading(true);
       try {
-        let pagesData: Page[];
-        let menusData: Menu[];
+        let pagesData: Page[] = [];
+        let menusData: Menu[] = [];
         
         try {
-          [pagesData, menusData] = await Promise.all([
-            apiClient.pages.getAll(),
-            mockApi.fetchMenus(), // Menus still from mock - no menu API yet
-          ]);
+          const apiPages = await apiClient.pages.getAll();
+          // Ensure we always have an array
+          pagesData = Array.isArray(apiPages) ? apiPages : [];
+          menusData = await mockApi.fetchMenus(); // Menus still from mock - no menu API yet
         } catch (apiError) {
           console.error("Failed to load pages from API, using mock data", apiError);
           [pagesData, menusData] = await Promise.all([
