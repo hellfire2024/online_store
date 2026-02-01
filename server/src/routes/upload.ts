@@ -1,6 +1,5 @@
 import { Router, Request, Response } from "express";
 import multer from "multer";
-import fs from "fs";
 
 const router = Router();
 
