@@ -76,22 +76,34 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({
         // Check for stored admin user
         const storedAdmin = localStorage.getItem("adminUser");
         const storedToken = localStorage.getItem("adminToken");
-        if (storedAdmin) {
+        if (storedAdmin && storedToken !== "mock-token") {
           setAdminUser(JSON.parse(storedAdmin));
           if (storedToken) {
             apiClient.setToken(storedToken);
           }
         }
 
-        // Try to check if any admins exist in the API
+        // Check if any REAL admins exist in the database
         try {
           const admins = await apiClient.adminUsers.getAll();
-          setUseMockAuth(admins.length === 0);
-          console.log(`[Admin] Found ${admins.length} admins in database, using real auth`);
+          const shouldUseMock = admins.length === 0;
+          setUseMockAuth(shouldUseMock);
+          if (shouldUseMock) {
+            console.log("[Admin] No admins in database, using mock auth for initial setup");
+          } else {
+            console.log(`[Admin] Found ${admins.length} real admins, using real auth`);
+          }
         } catch (error) {
-          // API unavailable, use mock auth
-          setUseMockAuth(true);
-          console.log("[Admin] API unavailable, falling back to mock auth");
+          // API unavailable - check if we have a stored token
+          // If stored token exists (and is real), use real auth
+          // If no token, fallback to mock
+          const hasToken = storedToken && storedToken !== "mock-token";
+          setUseMockAuth(!hasToken);
+          if (hasToken) {
+            console.log("[Admin] API temporarily unavailable, but using stored real token");
+          } else {
+            console.log("[Admin] API unavailable and no stored token, falling back to mock auth");
+          }
         }
 
         // Load customers
@@ -111,63 +123,85 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({
   // ===== ADMIN AUTHENTICATION =====
   const loginAdmin = async (username: string, password: string) => {
     try {
-      // If using mock auth or API unavailable, try mock first
-      if (useMockAuth) {
-        const mockUser = MOCK_ADMIN_USERS.find(
-          (u) => u.username === username && u.isActive
-        );
-        if (mockUser && password === "admin123") {
-          const updatedUser = { ...mockUser, lastLogin: new Date().toISOString() };
-          setAdminUser(updatedUser);
-          localStorage.setItem("adminUser", JSON.stringify(updatedUser));
-          localStorage.setItem("adminToken", "mock-token");
-          console.log("[Admin] Logged in with mock credentials");
-          return { success: true };
+      // ALWAYS try real API first (even if useMockAuth is true, in case admins were just added)
+      try {
+        const response = await apiClient.auth.adminLogin(username, password);
+        const updatedUser: AdminUser = {
+          id: response.admin.id,
+          firstName: response.admin.firstName,
+          lastName: response.admin.lastName,
+          phone: response.admin.phone,
+          username: response.admin.username,
+          email: response.admin.email,
+          role: response.admin.role,
+          permissions: response.admin.permissions || [],
+          createdAt: response.admin.createdAt,
+          lastLogin: new Date().toISOString(),
+          isActive: response.admin.isActive,
+        };
+
+        setAdminUser(updatedUser);
+        localStorage.setItem("adminToken", response.token);
+        localStorage.setItem("adminUser", JSON.stringify(updatedUser));
+        apiClient.setToken(response.token);
+        setUseMockAuth(false);
+        console.log("[Admin] Real API login successful");
+        return { success: true };
+      } catch (apiError) {
+        // Real API failed - only try mock if no admins configured
+        if (useMockAuth) {
+          const mockUser = MOCK_ADMIN_USERS.find(
+            (u) => u.username === username && u.isActive
+          );
+          if (mockUser && password === "admin123") {
+            const updatedUser = { ...mockUser, lastLogin: new Date().toISOString() };
+            setAdminUser(updatedUser);
+            localStorage.setItem("adminUser", JSON.stringify(updatedUser));
+            localStorage.setItem("adminToken", "mock-token");
+            console.log("[Admin] Mock login successful (no real admins configured)");
+            return { success: true };
+          }
+          return { success: false, error: "Invalid credentials" };
         }
-        return { success: false, error: "Invalid mock credentials (use admin/admin123)" };
+        throw apiError;
       }
-
-      // Try real API
-      const response = await apiClient.auth.adminLogin(username, password);
-      const updatedUser: AdminUser = {
-        id: response.admin.id,
-        firstName: response.admin.firstName,
-        lastName: response.admin.lastName,
-        phone: response.admin.phone,
-        username: response.admin.username,
-        email: response.admin.email,
-        role: response.admin.role,
-        permissions: response.admin.permissions || [],
-        createdAt: response.admin.createdAt,
-        lastLogin: new Date().toISOString(),
-        isActive: response.admin.isActive,
-      };
-
-      setAdminUser(updatedUser);
-      localStorage.setItem("adminToken", response.token);
-      localStorage.setItem("adminUser", JSON.stringify(updatedUser));
-      apiClient.setToken(response.token);
-      return { success: true };
     } catch (error) {
-      // If API fails and we haven't tried mock, try it now
-      if (!useMockAuth) {
-        const mockUser = MOCK_ADMIN_USERS.find(
-          (u) => u.username === username && u.isActive
-        );
-        if (mockUser && password === "admin123") {
-          const updatedUser = { ...mockUser, lastLogin: new Date().toISOString() };
-          setAdminUser(updatedUser);
-          localStorage.setItem("adminUser", JSON.stringify(updatedUser));
-          localStorage.setItem("adminToken", "mock-token");
-          setUseMockAuth(true);
-          console.log("[Admin] API failed, fell back to mock credentials");
-          return { success: true };
-        }
-      }
       const message = error instanceof Error ? error.message : "Login failed";
       return { success: false, error: message };
     }
   };
+
+  // ===== AUTO-LOGOUT AFTER 30 MIN INACTIVITY =====
+  useEffect(() => {
+    if (!adminUser) return;
+
+    const TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
+    let timeoutId: NodeJS.Timeout;
+
+    const resetTimeout = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        console.log("[Admin] Session expired due to inactivity");
+        logoutAdmin();
+      }, TIMEOUT_MS);
+    };
+
+    // Activity events that reset the timeout
+    const events = ["mousedown", "keydown", "scroll", "touchstart", "click"];
+    events.forEach((event) => {
+      document.addEventListener(event, resetTimeout);
+    });
+
+    // Initialize timeout
+    resetTimeout();
+
+    return () => {
+      clearTimeout(timeoutId);
+      events.forEach((event) => {
+        document.removeEventListener(event, resetTimeout);
+      });
+    };
+  }, [adminUser]);
 
   const logoutAdmin = () => {
     setAdminUser(null);
