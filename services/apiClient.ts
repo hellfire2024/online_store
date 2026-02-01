@@ -65,7 +65,7 @@ class ApiClient {
     }
 
     const execute = async (): Promise<T> => {
-      const maxRetries = 3;
+      const maxRetries = 1;
       let attempt = 0;
 
       while (true) {
@@ -91,13 +91,20 @@ class ApiClient {
           return data as T;
         }
 
+        if (response.status === 429 || response.status === 503) {
+          const cachedFallback = method === 'GET' ? this.cache.get(cacheKey) : undefined;
+          if (cachedFallback) {
+            return cachedFallback.data as T;
+          }
+        }
+
         if ((response.status === 429 || response.status === 503) && attempt < maxRetries) {
           attempt += 1;
           const retryAfterHeader = response.headers.get('Retry-After');
           const retryAfterSeconds = retryAfterHeader ? parseInt(retryAfterHeader, 10) : NaN;
           const delayMs = Number.isFinite(retryAfterSeconds)
             ? retryAfterSeconds * 1000
-            : Math.min(1000 * Math.pow(2, attempt), 5000);
+            : Math.min(300 * Math.pow(2, attempt), 1500);
           await new Promise((resolve) => setTimeout(resolve, delayMs));
           continue;
         }
