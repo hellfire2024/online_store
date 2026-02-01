@@ -260,10 +260,13 @@ const ProductManagement: React.FC = () => {
     }
   };
 
-  const lowStockProducts = products.filter(
+  // Filter out any null/undefined products and ensure valid data
+  const validProducts = products.filter((p): p is Product => p != null);
+  
+  const lowStockProducts = validProducts.filter(
     (p) => (p.lowStockThreshold ?? 0) > 0 && p.inventory <= (p.lowStockThreshold ?? 0)
   );
-  const outOfStockProducts = products.filter((p) => p.inventory <= 0);
+  const outOfStockProducts = validProducts.filter((p) => p.inventory <= 0);
 
   useEffect(() => {
     setHasUnsavedChanges(hasUnsavedChanges);
@@ -561,7 +564,7 @@ const ProductManagement: React.FC = () => {
         </div>
         <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
           <p className="text-sm text-gray-400 mb-1">Total Products</p>
-          <p className="text-2xl font-bold text-sky-300">{products.length}</p>
+          <p className="text-2xl font-bold text-sky-300">{validProducts.length}</p>
           <p className="text-xs text-gray-500">Catalog items</p>
         </div>
       </div>
@@ -578,7 +581,7 @@ const ProductManagement: React.FC = () => {
             </tr>
           </thead>
           <tbody>
-            {(itemsPerPage === -1 ? products : products.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)).map((product) => {
+            {(itemsPerPage === -1 ? validProducts : validProducts.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)).map((product) => {
               const isOut = product.inventory <= 0;
               const isLow = (product.lowStockThreshold ?? 0) > 0 && product.inventory <= (product.lowStockThreshold ?? 0) && !isOut;
               return (
@@ -635,7 +638,7 @@ const ProductManagement: React.FC = () => {
 
       <Pagination
         currentPage={currentPage}
-        totalItems={products.length}
+        totalItems={validProducts.length}
         itemsPerPage={itemsPerPage}
         onPageChange={setCurrentPage}
         onItemsPerPageChange={setItemsPerPage}
