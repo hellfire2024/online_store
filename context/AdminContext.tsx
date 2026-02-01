@@ -7,6 +7,7 @@ import React, {
 } from "react";
 import { AdminUser, Customer } from "../types";
 import Spinner from "../components/Spinner";
+import { apiClient } from "../services/apiClient";
 
 interface AdminContextType {
   adminUser: AdminUser | null;
@@ -43,29 +44,7 @@ interface AdminContextType {
 
 const AdminContext = createContext<AdminContextType | undefined>(undefined);
 
-// Mock admin users - in production, these would be from a database
-const MOCK_ADMIN_USERS: AdminUser[] = [
-  {
-    id: "admin-1",
-    username: "admin",
-    email: "admin@customthreads.com",
-    role: "super_admin",
-    permissions: ["*"],
-    createdAt: new Date().toISOString(),
-    lastLogin: new Date().toISOString(),
-    isActive: true,
-  },
-  {
-    id: "admin-2",
-    username: "manager",
-    email: "manager@customthreads.com",
-    role: "admin",
-    permissions: ["products", "orders", "customers", "galleries"],
-    createdAt: new Date().toISOString(),
-    isActive: true,
-  },
-];
-
+// Note: Admin users are now authenticated via the backend API
 export const AdminProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
@@ -99,26 +78,37 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({
   // ===== ADMIN AUTHENTICATION =====
   const loginAdmin = async (username: string, password: string) => {
     try {
-      const user = MOCK_ADMIN_USERS.find(
-        (u) => u.username === username && u.isActive,
-      );
+      const response = await apiClient.auth.adminLogin(username, password);
+      const updatedUser: AdminUser = {
+        id: response.admin.id,
+        firstName: response.admin.firstName,
+        lastName: response.admin.lastName,
+        phone: response.admin.phone,
+        username: response.admin.username,
+        email: response.admin.email,
+        role: response.admin.role,
+        permissions: response.admin.permissions || [],
+        createdAt: response.admin.createdAt,
+        lastLogin: new Date().toISOString(),
+        isActive: response.admin.isActive,
+      };
 
-      if (!user || password !== "admin123") {
-        return { success: false, error: "Invalid username or password" };
-      }
-
-      const updatedUser = { ...user, lastLogin: new Date().toISOString() };
       setAdminUser(updatedUser);
+      localStorage.setItem("adminToken", response.token);
       localStorage.setItem("adminUser", JSON.stringify(updatedUser));
+      apiClient.setToken(response.token);
       return { success: true };
     } catch (error) {
-      return { success: false, error: "Login failed" };
+      const message = error instanceof Error ? error.message : "Login failed";
+      return { success: false, error: message };
     }
   };
 
   const logoutAdmin = () => {
     setAdminUser(null);
     localStorage.removeItem("adminUser");
+    localStorage.removeItem("adminToken");
+    apiClient.setToken(null);
   };
 
   // ===== CUSTOMER MANAGEMENT =====
