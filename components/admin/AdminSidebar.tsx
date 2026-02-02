@@ -146,7 +146,7 @@ const AdminSidebar: React.FC = () => {
                 </PromptedNavLink>
               )}
               {can('customers') && (
-                <PromptedNavLink to="/admin/customers" className={getNavLinkClass}>
+                <PromptedNavLink to="/admin/customers" end className={getNavLinkClass}>
                   <StaffIcon className="w-6 h-6 mr-3" />
                   Customers
                 </PromptedNavLink>
