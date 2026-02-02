@@ -166,18 +166,42 @@ router.put("/:id", async (req: Request, res: Response) => {
         );
 
         if ((fallbackResult as any).affectedRows === 0) {
-          return res.status(404).json({ error: "Page not found" });
-        }
-
-        const [rows] = await pool.query<RowDataPacket[]>(
-          `SELECT id FROM pages WHERE ${whereClause} LIMIT 1`,
-          [whereValue],
-        );
-        if (rows && rows.length > 0) {
-          updatedId = rows[0].id;
+          await pool.query(
+            `INSERT INTO pages (id, title, path, page_type, content, content_data, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+            [
+              req.params.id,
+              title || "",
+              path || "/",
+              pageType,
+              content || "",
+              contentDataJson,
+            ],
+          );
+          updatedId = req.params.id;
+        } else {
+          const [rows] = await pool.query<RowDataPacket[]>(
+            `SELECT id FROM pages WHERE ${whereClause} LIMIT 1`,
+            [whereValue],
+          );
+          if (rows && rows.length > 0) {
+            updatedId = rows[0].id;
+          }
         }
       } else {
-        return res.status(404).json({ error: "Page not found" });
+        await pool.query(
+          `INSERT INTO pages (id, title, path, page_type, content, content_data, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+          [
+            req.params.id,
+            title || "",
+            path || "/",
+            pageType,
+            content || "",
+            contentDataJson,
+          ],
+        );
+        updatedId = req.params.id;
       }
     }
 
