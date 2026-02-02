@@ -14,7 +14,9 @@ router.get('/', async (_req: Request, res: Response) => {
       `SELECT c.id, c.first_name as firstName, c.last_name as lastName, c.name, c.email, c.phone, c.is_active as isActive,
               c.created_at as createdAt, c.last_login as lastLogin,
               COUNT(DISTINCT o.id) as orderCount,
-              COALESCE(SUM(o.total), 0) as totalSpent
+              COALESCE(SUM(o.total), 0) as totalSpent,
+              CASE WHEN COUNT(DISTINCT o.id) > 0 THEN COALESCE(SUM(o.total), 0) / COUNT(DISTINCT o.id) ELSE 0 END as averageOrderValue,
+              MAX(o.created_at) as lastOrderDate
        FROM customers c
        LEFT JOIN orders o ON c.id = o.customer_id
        GROUP BY c.id

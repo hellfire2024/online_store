@@ -66,71 +66,13 @@ const CustomerManagement: React.FC = () => {
       try {
         setIsLoading(true);
         const data = await apiClient.customers.getAll();
-        setCustomers(data);
-        setFilteredCustomers(data);
+        setCustomers(data || []);
+        setFilteredCustomers(data || []);
       } catch (error) {
-        const mockCustomers: Customer[] = [
-          {
-            id: '1', firstName: 'John', lastName: 'Doe', email: 'john.doe@email.com',
-            phone: '555-012-3456', isActive: true, orderCount: 5, totalSpent: 287.50,
-            averageOrderValue: 57.50, lastOrderDate: '2026-01-20T12:00:00Z',
-            createdAt: '2024-02-10T12:00:00Z', lastLogin: '2026-01-25T14:30:00Z',
-            orders: [
-              { id: 'o1', orderNumber: 'AGIS-0000000001', date: '2026-01-20T12:00:00Z', total: 75.50, status: 'delivered', trackingNumber: 'TRK123', items: [{ product: { id: 'p1', name: 'T-Shirt', price: 25.00 }, quantity: 3 }] },
-              { id: 'o2', orderNumber: 'AGIS-0000000002', date: '2026-01-15T10:30:00Z', total: 50.00, status: 'shipped', items: [{ product: { id: 'p2', name: 'Mug', price: 25.00 }, quantity: 2 }] },
-              { id: 'o3', orderNumber: 'AGIS-0000000003', date: '2026-01-10T14:00:00Z', total: 162.00, status: 'delivered', items: [{ product: { id: 'p3', name: 'Hoodie', price: 54.00 }, quantity: 3 }] },
-            ],
-          },
-          {
-            id: '2', firstName: 'Jane', lastName: 'Smith', email: 'jane.smith@email.com',
-            phone: '555-045-6789', isActive: true, orderCount: 12, totalSpent: 1450.75,
-            averageOrderValue: 120.90, lastOrderDate: '2026-01-24T15:30:00Z',
-            createdAt: '2023-11-05T08:15:00Z', lastLogin: '2026-01-26T09:00:00Z',
-            orders: [
-              { id: 'o4', orderNumber: 'AGIS-0000000004', date: '2026-01-24T15:30:00Z', total: 120.00, status: 'processing', items: [{ product: { id: 'p4', name: 'Backpack', price: 60.00 }, quantity: 2 }] },
-              { id: 'o5', orderNumber: 'AGIS-0000000005', date: '2026-01-20T09:00:00Z', total: 180.00, status: 'delivered', trackingNumber: 'TRK456', items: [{ product: { id: 'p5', name: 'Jacket', price: 90.00 }, quantity: 2 }] },
-              { id: 'o16', orderNumber: 'AGIS-0000000016', date: '2026-01-19T14:20:00Z', total: 145.50, status: 'delivered', trackingNumber: 'TRK303', items: [{ product: { id: 'p16', name: 'Sweater', price: 72.75 }, quantity: 2 }] },
-              { id: 'o17', orderNumber: 'AGIS-0000000017', date: '2026-01-17T10:45:00Z', total: 98.00, status: 'shipped', items: [{ product: { id: 'p17', name: 'Jeans', price: 98.00 }, quantity: 1 }] },
-              { id: 'o18', orderNumber: 'AGIS-0000000018', date: '2026-01-14T15:15:00Z', total: 225.00, status: 'delivered', trackingNumber: 'TRK404', items: [{ product: { id: 'p18', name: 'Boots', price: 112.50 }, quantity: 2 }] },
-              { id: 'o19', orderNumber: 'AGIS-0000000019', date: '2026-01-10T09:30:00Z', total: 155.75, status: 'delivered', items: [{ product: { id: 'p19', name: 'Shirt', price: 51.92 }, quantity: 3 }] },
-              { id: 'o20', orderNumber: 'AGIS-0000000020', date: '2025-12-30T12:00:00Z', total: 89.50, status: 'cancelled', items: [{ product: { id: 'p20', name: 'Socks', price: 22.38 }, quantity: 4 }] },
-              { id: 'o21', orderNumber: 'AGIS-0000000021', date: '2025-12-22T16:45:00Z', total: 210.00, status: 'delivered', trackingNumber: 'TRK505', items: [{ product: { id: 'p21', name: 'Coat', price: 105.00 }, quantity: 2 }] },
-              { id: 'o22', orderNumber: 'AGIS-0000000022', date: '2025-12-15T13:20:00Z', total: 165.25, status: 'delivered', items: [{ product: { id: 'p22', name: 'Dress', price: 82.63 }, quantity: 2 }] },
-              { id: 'o23', orderNumber: 'AGIS-0000000023', date: '2025-12-08T10:10:00Z', total: 127.50, status: 'processing', trackingNumber: 'TRK606', items: [{ product: { id: 'p23', name: 'Blouse', price: 63.75 }, quantity: 2 }] },
-              { id: 'o24', orderNumber: 'AGIS-0000000024', date: '2025-12-01T11:30:00Z', total: 99.75, status: 'delivered', trackingNumber: 'TRK707', items: [{ product: { id: 'p24', name: 'Pants', price: 49.88 }, quantity: 2 }] },
-              { id: 'o25', orderNumber: 'AGIS-0000000025', date: '2025-11-24T14:00:00Z', total: 142.25, status: 'shipped', items: [{ product: { id: 'p25', name: 'Shorts', price: 35.56 }, quantity: 4 }] },
-            ],
-          },
-          {
-            id: '3', firstName: 'Bob', lastName: 'Johnson', email: 'bob.johnson@email.com',
-            phone: '555-098-7654', isActive: false, orderCount: 2, totalSpent: 89.99,
-            averageOrderValue: 45.00, lastOrderDate: '2025-11-15T10:00:00Z',
-            createdAt: '2025-08-22T16:45:00Z', lastLogin: '2025-12-01T10:20:00Z',
-            orders: [
-              { id: 'o6', orderNumber: 'AGIS-0000000006', date: '2025-11-15T10:00:00Z', total: 44.99, status: 'cancelled', items: [{ product: { id: 'p6', name: 'Cap', price: 22.50 }, quantity: 2 }] },
-              { id: 'o7', orderNumber: 'AGIS-0000000007', date: '2025-10-20T12:00:00Z', total: 45.00, status: 'delivered', items: [{ product: { id: 'p7', name: 'Socks Pack', price: 15.00 }, quantity: 3 }] },
-            ],
-          },
-          {
-            id: '4', firstName: 'Alice', lastName: 'Williams', email: 'alice.w@email.com',
-            phone: '555-078-9123', isActive: true, orderCount: 8, totalSpent: 623.40,
-            averageOrderValue: 77.93, lastOrderDate: '2026-01-22T11:15:00Z',
-            createdAt: '2024-05-17T11:30:00Z', lastLogin: '2026-01-24T15:10:00Z',
-            orders: [
-              { id: 'o8', orderNumber: 'AGIS-0000000008', date: '2026-01-22T11:15:00Z', total: 95.00, status: 'shipped', trackingNumber: 'TRK789', items: [{ product: { id: 'p8', name: 'Sneakers', price: 95.00 }, quantity: 1 }] },
-              { id: 'o9', orderNumber: 'AGIS-0000000009', date: '2026-01-18T16:00:00Z', total: 135.00, status: 'delivered', items: [{ product: { id: 'p9', name: 'Watch', price: 135.00 }, quantity: 1 }] },
-              { id: 'o10', orderNumber: 'AGIS-0000000010', date: '2026-01-12T13:30:00Z', total: 160.00, status: 'delivered', items: [{ product: { id: 'p10', name: 'Wallet', price: 40.00 }, quantity: 4 }] },
-              { id: 'o11', orderNumber: 'AGIS-0000000011', date: '2026-01-08T10:20:00Z', total: 45.00, status: 'delivered', trackingNumber: 'TRK101', items: [{ product: { id: 'p11', name: 'Belt', price: 45.00 }, quantity: 1 }] },
-              { id: 'o12', orderNumber: 'AGIS-0000000012', date: '2025-12-28T14:45:00Z', total: 72.00, status: 'delivered', items: [{ product: { id: 'p12', name: 'Scarf', price: 36.00 }, quantity: 2 }] },
-              { id: 'o13', orderNumber: 'AGIS-0000000013', date: '2025-12-20T09:15:00Z', total: 28.40, status: 'processing', items: [{ product: { id: 'p13', name: 'Socks', price: 7.10 }, quantity: 4 }] },
-              { id: 'o14', orderNumber: 'AGIS-0000000014', date: '2025-12-15T16:30:00Z', total: 55.00, status: 'delivered', trackingNumber: 'TRK202', items: [{ product: { id: 'p14', name: 'Hat', price: 27.50 }, quantity: 2 }] },
-              { id: 'o15', orderNumber: 'AGIS-0000000015', date: '2025-12-05T11:00:00Z', total: 33.00, status: 'cancelled', items: [{ product: { id: 'p15', name: 'Gloves', price: 16.50 }, quantity: 2 }] },
-            ],
-          },
-        ];
-        setCustomers(mockCustomers);
-        setFilteredCustomers(mockCustomers);
-        addToast('Using demo data - backend not connected', 'info');
+        console.error('Failed to fetch customers:', error);
+        addToast('Failed to load customers from server', 'error');
+        setCustomers([]);
+        setFilteredCustomers([]);
       } finally {
         setIsLoading(false);
       }
