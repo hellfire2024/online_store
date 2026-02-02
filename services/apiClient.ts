@@ -172,6 +172,10 @@ class ApiClient {
       method: 'POST',
       body: JSON.stringify(data),
     }),
+    updateImage: (galleryId: string, imageId: string, data: any) => this.request<any>(`/galleries/${galleryId}/images/${imageId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
     delete: (id: string) => this.request<void>(`/galleries/${id}`, {
       method: 'DELETE',
     }),
@@ -179,6 +183,23 @@ class ApiClient {
       this.request<void>(`/galleries/${galleryId}/images/${imageId}`, {
         method: 'DELETE',
       }),
+  };
+
+  // Upload
+  upload = {
+    image: (file: File) => {
+      const formData = new FormData();
+      formData.append('image', file);
+      
+      return fetch(`${this.baseUrl}/upload/image`, {
+        method: 'POST',
+        headers: this.token ? { 'Authorization': `Bearer ${this.token}` } : {},
+        body: formData,
+      }).then(res => {
+        if (!res.ok) throw new Error('Upload failed');
+        return res.json();
+      });
+    },
   };
 
   // Settings

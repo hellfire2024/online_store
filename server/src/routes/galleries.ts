@@ -75,4 +75,40 @@ router.delete('/:galleryId/images/:imageId', async (req: Request, res: Response)
   }
 });
 
+// Update image
+router.put('/:galleryId/images/:imageId', async (req: Request, res: Response) => {
+  try {
+    const updates: string[] = [];
+    const values: any[] = [];
+
+    if (req.body.name !== undefined) {
+      updates.push('name = ?');
+      values.push(req.body.name);
+    }
+    if (req.body.imageUrl !== undefined) {
+      updates.push('image_url = ?');
+      values.push(req.body.imageUrl);
+    }
+
+    if (updates.length === 0) {
+      return res.status(400).json({ error: 'No fields to update' });
+    }
+
+    values.push(req.params.imageId);
+
+    await pool.query(
+      `UPDATE gallery_images SET ${updates.join(', ')} WHERE id = ?`,
+      values
+    );
+
+    return res.json({ 
+      id: req.params.imageId, 
+      name: req.body.name, 
+      imageUrl: req.body.imageUrl 
+    });
+  } catch (error) {
+    return res.status(500).json({ error: 'Failed to update image' });
+  }
+});
+
 export default router;

@@ -3,6 +3,9 @@ import { useGalleries } from '../../context/GalleryContext';
 import { TrashIcon, PlusIcon, EditIcon } from '../../components/Icons';
 import { useToast } from '../../hooks/useToast';
 import Pagination from '../../components/Pagination';
+import * as apiClient from '../../services/apiClient';
+
+const api = apiClient.default || (apiClient as any);
 
 const GalleriesManagement: React.FC = () => {
     const { galleries, galleryImages, addGallery, deleteGallery, fetchGalleryImages, addGalleryImage, updateGalleryImage, deleteGalleryImage: delImg } = useGalleries();
@@ -75,19 +78,24 @@ const GalleriesManagement: React.FC = () => {
         }
         
         try {
-            // Convert file to base64
-            const reader = new FileReader();
-            reader.onload = async (event) => {
-                const imageUrl = event.target?.result as string;
-                await addGalleryImage(selectedGalleryId, { name: trimmedImageName, imageUrl });
-                addToast("Image added!", "success");
-                setNewImageName('');
-                setNewImageFile(null);
-            };
-            reader.readAsDataURL(newImageFile);
+            // Upload the image and get the base64 URL
+            const uploadResponse = await api.upload.image(newImageFile);
+            
+            if (!uploadResponse.success || !uploadResponse.imageUrl) {
+                throw new Error("Upload failed");
+            }
+
+            // Add the image to the gallery with the name
+            await addGalleryImage(selectedGalleryId, { 
+                name: trimmedImageName, 
+                imageUrl: uploadResponse.imageUrl 
+            });
+            addToast("Image uploaded successfully!", "success");
+            setNewImageName('');
+            setNewImageFile(null);
         } catch (error) {
             console.error("Failed to add image:", error);
-            addToast("Failed to add image.", "error");
+            addToast("Failed to upload image.", "error");
         }
     };
 

@@ -6,7 +6,9 @@ import React, {
   useEffect,
 } from "react";
 import { Gallery, GalleryImage } from "../types";
-import * as mockApi from "../services/mockApi";
+import * as apiClient from "../services/apiClient";
+
+const api = apiClient.default || (apiClient as any);
 
 interface GalleryContextType {
   galleries: Gallery[];
@@ -42,7 +44,7 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({
     const loadGalleries = async () => {
       setIsLoading(true);
       try {
-        const galleriesData = await mockApi.fetchGalleries();
+        const galleriesData = await api.galleries.getAll();
         setGalleries(galleriesData);
       } catch (error) {
         console.error("Failed to load galleries", error);
@@ -54,18 +56,17 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({
   }, []);
 
   const addGallery = async (galleryData: Omit<Gallery, "id">) => {
-    const newGallery = await mockApi.addGallery(galleryData);
+    const newGallery = await api.galleries.create(galleryData);
     setGalleries((prev) => [...prev, newGallery]);
   };
 
   const deleteGallery = async (galleryId: string) => {
-    await mockApi.deleteGallery(galleryId);
+    await api.galleries.delete(galleryId);
     setGalleries((prev) => prev.filter((g) => g.id !== galleryId));
-    // Also update products context if a product was using this gallery, though that's an advanced case for later.
   };
 
   const fetchGalleryImages = async (galleryId: string) => {
-    const images = await mockApi.fetchGalleryImages(galleryId);
+    const images = await api.galleries.getImages(galleryId);
     setGalleryImages((prev) => ({ ...prev, [galleryId]: images }));
   };
 
@@ -73,7 +74,7 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({
     galleryId: string,
     imageData: Omit<GalleryImage, "id">,
   ) => {
-    const newImage = await mockApi.addGalleryImage(galleryId, imageData);
+    const newImage = await api.galleries.addImage(galleryId, imageData);
     setGalleryImages((prev) => ({
       ...prev,
       [galleryId]: [...(prev[galleryId] || []), newImage],
@@ -81,7 +82,7 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({
   };
 
   const deleteGalleryImage = async (galleryId: string, imageId: string) => {
-    await mockApi.deleteGalleryImage(galleryId, imageId);
+    await api.galleries.deleteImage(galleryId, imageId);
     setGalleryImages((prev) => ({
       ...prev,
       [galleryId]: prev[galleryId].filter((img) => img.id !== imageId),
@@ -93,7 +94,7 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({
     imageId: string,
     updates: Partial<Omit<GalleryImage, "id">>,
   ) => {
-    await mockApi.updateGalleryImage(galleryId, imageId, updates);
+    await api.galleries.updateImage(galleryId, imageId, updates);
     setGalleryImages((prev) => ({
       ...prev,
       [galleryId]: prev[galleryId].map((img) =>
