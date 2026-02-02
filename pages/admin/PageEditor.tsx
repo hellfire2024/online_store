@@ -617,15 +617,6 @@ const PageEditor: React.FC = () => {
           finalImageUrl = previewImageUrl;
         }
 
-        // Warn if trying to use base64 image (won't be persisted)
-        if (finalImageUrl.startsWith("data:")) {
-          addToast(
-            "⚠️ Base64 images cannot be persisted. Please use a URL or implement proper image upload.",
-            "error",
-          );
-          return;
-        }
-
         pageToSave.contentData = {
           ...(pageToSave.contentData as HomePageContent),
           heroBackgroundImageUrl: finalImageUrl,
