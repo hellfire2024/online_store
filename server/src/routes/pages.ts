@@ -4,31 +4,10 @@ import { RowDataPacket } from "mysql2";
 
 const router = Router();
 
-// Helper function to sanitize base64 images from content data
-// Base64 images are too large for database storage and should use file/blob storage
+// Helper function to sanitize content data
+// Base64 images are allowed and stored in the database
 function sanitizeContentData(contentData: any): any {
-  if (!contentData || typeof contentData !== "object") {
-    return contentData;
-  }
-
-  const sanitized = { ...contentData };
-
-  // Check for heroBackgroundImageUrl starting with data:
-  if (
-    sanitized.heroBackgroundImageUrl &&
-    typeof sanitized.heroBackgroundImageUrl === "string"
-  ) {
-    if (sanitized.heroBackgroundImageUrl.startsWith("data:")) {
-      console.warn(
-        "⚠️ Base64 image detected in heroBackgroundImageUrl - this will not be persisted. Use a URL or implement image upload.",
-      );
-      // For now, remove base64 images to prevent database bloat
-      // In production, these should be uploaded to blob storage (S3, etc.)
-      delete sanitized.heroBackgroundImageUrl;
-    }
-  }
-
-  return sanitized;
+  return contentData;
 }
 
 // Get all pages
@@ -158,12 +137,52 @@ router.put("/:id", async (req: Request, res: Response) => {
       ],
     );
 
+    let updatedId = req.params.id;
+
     if ((result as any).affectedRows === 0) {
-      return res.status(404).json({ error: "Page not found" });
+      let whereClause = "";
+      let whereValue: string | undefined;
+
+      if (pageType) {
+        whereClause = "page_type = ?";
+        whereValue = pageType;
+      } else if (path) {
+        whereClause = "path = ?";
+        whereValue = path;
+      }
+
+      if (whereClause && whereValue) {
+        const [fallbackResult] = await pool.query(
+          `UPDATE pages SET title = ?, path = ?, page_type = ?, content = ?, content_data = ?, updated_at = NOW()
+           WHERE ${whereClause}`,
+          [
+            title || "",
+            path || "/",
+            pageType,
+            content || "",
+            contentDataJson,
+            whereValue,
+          ],
+        );
+
+        if ((fallbackResult as any).affectedRows === 0) {
+          return res.status(404).json({ error: "Page not found" });
+        }
+
+        const [rows] = await pool.query<RowDataPacket[]>(
+          `SELECT id FROM pages WHERE ${whereClause} LIMIT 1`,
+          [whereValue],
+        );
+        if (rows && rows.length > 0) {
+          updatedId = rows[0].id;
+        }
+      } else {
+        return res.status(404).json({ error: "Page not found" });
+      }
     }
 
     return res.json({
-      id: req.params.id,
+      id: updatedId,
       pageType,
       title,
       path,
