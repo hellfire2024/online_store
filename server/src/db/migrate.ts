@@ -58,6 +58,8 @@ CREATE TABLE IF NOT EXISTS customer_addresses (
   id VARCHAR(36) PRIMARY KEY,
   customer_id VARCHAR(36) NOT NULL,
   type ENUM('shipping', 'billing') NOT NULL,
+  first_name VARCHAR(255),
+  last_name VARCHAR(255),
   full_name VARCHAR(255) NOT NULL,
   street_address VARCHAR(500) NOT NULL,
   city VARCHAR(100) NOT NULL,
@@ -71,6 +73,11 @@ CREATE TABLE IF NOT EXISTS customer_addresses (
   FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE,
   INDEX idx_customer (customer_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Add first_name and last_name to existing customer_addresses table
+ALTER TABLE customer_addresses 
+  ADD COLUMN IF NOT EXISTS first_name VARCHAR(255),
+  ADD COLUMN IF NOT EXISTS last_name VARCHAR(255);
 
 -- ============================================
 -- PRODUCTS & INVENTORY

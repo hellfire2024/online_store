@@ -48,7 +48,7 @@ router.get('/:id', async (req: Request, res: Response) => {
 
     // Get customer's addresses
     const [addresses] = await pool.query<RowDataPacket[]>(
-      `SELECT id, type, full_name, street_address, city, state, zip_code, 
+      `SELECT id, type, first_name, last_name, full_name, street_address, city, state, zip_code, 
               country, phone, is_default FROM customer_addresses WHERE customer_id = ?`,
       [req.params.id]
     );

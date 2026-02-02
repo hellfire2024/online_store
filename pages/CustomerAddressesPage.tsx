@@ -19,6 +19,8 @@ const CustomerAddressesPage: React.FC = () => {
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [formData, setFormData] = useState<Omit<CustomerAddress, "id">>({
     type: "shipping",
+    firstName: "",
+    lastName: "",
     fullName: "",
     streetAddress: "",
     city: "",
@@ -28,6 +30,7 @@ const CustomerAddressesPage: React.FC = () => {
     phone: "",
     isDefault: false,
   });
+  const [saveAddress, setSaveAddress] = useState(true);
 
   if (!customer) {
     return (
@@ -38,17 +41,41 @@ const CustomerAddressesPage: React.FC = () => {
   }
 
   const handleAddAddress = async () => {
-    if (!formData.fullName || !formData.streetAddress || !formData.city) {
+    if (!formData.firstName || !formData.lastName || !formData.streetAddress || !formData.city) {
       addToast("Please fill in all required fields", "error");
       return;
     }
 
-    const result = await addAddress(formData);
-    if (result.success) {
-      addToast("Address added successfully", "success");
+    if (saveAddress) {
+      const result = await addAddress({
+        ...formData,
+        fullName: `${formData.firstName} ${formData.lastName}`,
+      });
+      if (result.success) {
+        addToast("Address added successfully", "success");
+        setIsAdding(false);
+        setFormData({
+          type: "shipping",
+          firstName: "",
+          lastName: "",
+          fullName: "",
+          streetAddress: "",
+          city: "",
+          state: "",
+          zipCode: "",
+          country: "USA",
+          phone: "",
+          isDefault: false,
+        });
+        setSaveAddress(true);
+      }
+    } else {
+      addToast("One-time address entered (not saved)", "info");
       setIsAdding(false);
       setFormData({
         type: "shipping",
+        firstName: "",
+        lastName: "",
         fullName: "",
         streetAddress: "",
         city: "",
@@ -58,13 +85,20 @@ const CustomerAddressesPage: React.FC = () => {
         phone: "",
         isDefault: false,
       });
+      setSaveAddress(true);
     }
   };
 
   const handleEditAddress = (address: CustomerAddress) => {
+    const nameParts = address.fullName.split(' ');
+    const firstName = nameParts[0] || '';
+    const lastName = nameParts.slice(1).join(' ') || '';
+    
     setEditingId(address.id);
     setFormData({
       type: address.type,
+      firstName,
+      lastName,
       fullName: address.fullName,
       streetAddress: address.streetAddress,
       city: address.city,
@@ -77,7 +111,7 @@ const CustomerAddressesPage: React.FC = () => {
   };
 
   const handleUpdateAddress = async () => {
-    if (!formData.fullName || !formData.streetAddress || !formData.city) {
+    if (!formData.firstName || !formData.lastName || !formData.streetAddress || !formData.city) {
       addToast("Please fill in all required fields", "error");
       return;
     }
@@ -87,12 +121,15 @@ const CustomerAddressesPage: React.FC = () => {
     const result = await updateAddress({
       id: editingId,
       ...formData,
+      fullName: `${formData.firstName} ${formData.lastName}`,
     });
     if (result.success) {
       addToast("Address updated successfully", "success");
       setEditingId(null);
       setFormData({
         type: "shipping",
+        firstName: "",
+        lastName: "",
         fullName: "",
         streetAddress: "",
         city: "",
@@ -110,6 +147,8 @@ const CustomerAddressesPage: React.FC = () => {
     setIsAdding(false);
     setFormData({
       type: "shipping",
+      firstName: "",
+      lastName: "",
       fullName: "",
       streetAddress: "",
       city: "",
@@ -119,6 +158,7 @@ const CustomerAddressesPage: React.FC = () => {
       phone: "",
       isDefault: false,
     });
+    setSaveAddress(true);
   };
 
 
@@ -179,13 +219,40 @@ const CustomerAddressesPage: React.FC = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-gray-300 text-sm font-medium mb-1">Full Name *</label>
+                <label className="block text-gray-300 text-sm font-medium mb-1">First Name *</label>
                 <input
                   type="text"
-                  placeholder="Full Name"
-                  value={formData.fullName}
+                  placeholder="First Name"
+                  value={formData.firstName}
                   onChange={(e) =>
-                    setFormData({ ...formData, fullName: e.target.value })
+                    setFormData({ ...formData, firstName: e.target.value })
+                  }
+                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white placeholder-gray-400"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-gray-300 text-sm font-medium mb-1">Last Name *</label>
+                <input
+                  type="text"
+                  placeholder="Last Name"
+                  value={formData.lastName}
+                  onChange={(e) =>
+                    setFormData({ ...formData, lastName: e.target.value })
+                  }
+                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white placeholder-gray-400"
+                />
+              </div>
+              <div>
+                <label className="block text-gray-300 text-sm font-medium mb-1">Phone</label>
+                <input
+                  type="tel"
+                  placeholder="Phone"
+                  value={formData.phone}
+                  onChange={(e) =>
+                    setFormData({ ...formData, phone: e.target.value })
                   }
                   className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white placeholder-gray-400"
                 />
@@ -244,31 +311,31 @@ const CustomerAddressesPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-gray-300 text-sm font-medium mb-1">Country</label>
-                <input
-                  type="text"
-                  placeholder="Country"
-                  value={formData.country}
-                  onChange={(e) =>
-                    setFormData({ ...formData, country: e.target.value })
-                  }
-                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white placeholder-gray-400"
-                />
-              </div>
-              <div>
-                <label className="block text-gray-300 text-sm font-medium mb-1">Phone</label>
-                <input
-                  type="tel"
-                  placeholder="Phone"
-                  value={formData.phone}
-                  onChange={(e) =>
-                    setFormData({ ...formData, phone: e.target.value })
-                  }
-                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white placeholder-gray-400"
-                />
-              </div>
+            <div>
+              <label className="block text-gray-300 text-sm font-medium mb-1">Country</label>
+              <input
+                type="text"
+                placeholder="Country"
+                value={formData.country}
+                onChange={(e) =>
+                  setFormData({ ...formData, country: e.target.value })
+                }
+                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white placeholder-gray-400"
+              />
+            </div>
+
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="saveAddress"
+                checked={saveAddress}
+                onChange={(e) => setSaveAddress(e.target.checked)}
+                className="w-4 h-4 text-sky-500 bg-slate-700 border-slate-600 rounded focus:ring-sky-500 focus:ring-2"
+                disabled={!!editingId}
+              />
+              <label htmlFor="saveAddress" className="ml-2 text-sm text-gray-300">
+                Save this address for future use
+              </label>
             </div>
 
             <div className="flex gap-3">

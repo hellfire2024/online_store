@@ -83,7 +83,9 @@ export interface ShippingRateRequest {
 export interface CustomerAddress {
   id: string;
   type: "shipping" | "billing";
-  fullName: string;
+  firstName: string;
+  lastName: string;
+  fullName: string; // Computed from firstName + lastName for backward compatibility
   streetAddress: string;
   city: string;
   state: string;
