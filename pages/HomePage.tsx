@@ -38,15 +38,7 @@ const HomePage: React.FC = () => {
     [homePage]
   );
 
-  if (productsLoading || reviewsLoading || pagesLoading || servicesLoading || !homePage) {
-    return (
-      <div className="flex justify-center items-center min-h-[60vh]">
-        <Spinner />
-      </div>
-    );
-  }
-
-  // Carousel rotation effect
+  // Carousel rotation effect - must be before early return to avoid hook ordering issues
   useEffect(() => {
     if (!homeContent.galleryRotationEnabled || !homeContent.galleryRotationId || galleriesLoading) {
       return;
@@ -62,6 +54,14 @@ const HomePage: React.FC = () => {
 
     return () => clearInterval(timer);
   }, [homeContent, galleryImages, galleriesLoading]);
+
+  if (productsLoading || reviewsLoading || pagesLoading || servicesLoading || !homePage) {
+    return (
+      <div className="flex justify-center items-center min-h-[60vh]">
+        <Spinner />
+      </div>
+    );
+  }
 
   const featuredProducts = products.slice(0, 4);
   const approvedReviews = reviews.filter((r) => r.status === "approved");
