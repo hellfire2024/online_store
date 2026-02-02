@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import ProductCard from "../components/ProductCard";
 import { useProducts } from "../context/ProductContext";
 import { useReviews } from "../context/ReviewsContext";
@@ -6,6 +6,7 @@ import { usePages } from "../context/PagesContext";
 import { useSiteSettings } from "../context/SiteSettingsContext";
 import { useCustomerAuth } from "../context/CustomerAuthContext";
 import { useServices } from "../context/ServicesContext";
+import { useGalleries } from "../context/GalleryContext";
 import { HomePageContent } from "../types";
 import Spinner from "../components/Spinner";
 import { useToast } from "../hooks/useToast";
@@ -16,14 +17,17 @@ const HomePage: React.FC = () => {
   const { reviews, isLoading: reviewsLoading, addReview } = useReviews();
   const { pages, isLoading: pagesLoading } = usePages();
   const { services, isLoading: servicesLoading } = useServices();
+  const { galleryImages, isLoading: galleriesLoading } = useGalleries();
   const { siteSettings } = useSiteSettings();
   const { addToast } = useToast();
     const { isAuthenticated } = useCustomerAuth();
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [reviewForm, setReviewForm] = useState({ author: "", email: "", text: "", rating: 5 });
   const [reviewImages, setReviewImages] = useState<string[]>([]);
+  const [carouselIndex, setCarouselIndex] = useState(0);
 
   const homePage = pages.find((page) => page.pageType === "home");
+  const homeContent = (homePage?.contentData as HomePageContent) || {};
 
   if (productsLoading || reviewsLoading || pagesLoading || servicesLoading || !homePage) {
     return (
@@ -33,11 +37,28 @@ const HomePage: React.FC = () => {
     );
   }
 
+  // Carousel rotation effect
+  useEffect(() => {
+    if (!homeContent.galleryRotationEnabled || !homeContent.galleryRotationId || galleriesLoading) {
+      return;
+    }
+
+    const filteredImages = galleryImages.filter((img) => img.galleryId === homeContent.galleryRotationId);
+    if (filteredImages.length === 0) return;
+
+    const interval = homeContent.galleryRotationInterval || 5;
+    const timer = setInterval(() => {
+      setCarouselIndex((prev) => (prev + 1) % filteredImages.length);
+    }, interval * 1000);
+
+    return () => clearInterval(timer);
+  }, [homeContent.galleryRotationEnabled, homeContent.galleryRotationId, homeContent.galleryRotationInterval, galleryImages, galleriesLoading]);
+
   const featuredProducts = products.slice(0, 4);
   const approvedReviews = reviews.filter((r) => r.status === "approved");
   const maxReviews = siteSettings?.maxReviewsDisplayed || 5;
   const featuredReviews = approvedReviews.slice(0, maxReviews);
-  const pageFont = (homePage.contentData as HomePageContent)?.pageFont;
+  const pageFont = homeContent?.pageFont;
 
   const handleSubmitReview = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -113,20 +134,52 @@ const HomePage: React.FC = () => {
       {homePage.pageType === "home" && homePage.contentData && (
         <div className="relative text-center text-white bg-slate-900 rounded-lg overflow-hidden h-96">
           <img
-            src={(homePage.contentData as HomePageContent).heroBackgroundImageUrl}
+            src={homeContent.heroBackgroundImageUrl}
             alt="Hero background"
             className="absolute inset-0 w-full h-full object-cover opacity-30"
           />
           <div className="relative isolate px-6 pt-14 lg:px-8 h-full flex items-center justify-center">
             <div className="mx-auto max-w-2xl py-32 sm:py-48 lg:py-56">
               <h1 className="text-4xl font-bold tracking-tight sm:text-6xl">
-                {(homePage.contentData as HomePageContent).heroTitle}
+                {homeContent.heroTitle}
               </h1>
               <p className="mt-6 text-lg leading-8 text-gray-300">
-                {(homePage.contentData as HomePageContent).heroSubtitle}
+                {homeContent.heroSubtitle}
               </p>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Gallery Carousel */}
+      {homeContent.galleryRotationEnabled && homeContent.galleryRotationId && !galleriesLoading && (
+        <div>
+          <h2 className="text-3xl font-bold text-white text-center mb-8">Gallery</h2>
+          {(() => {
+            const carouselImages = galleryImages.filter((img) => img.galleryId === homeContent.galleryRotationId);
+            if (carouselImages.length === 0) return null;
+            const currentImage = carouselImages[carouselIndex];
+            return (
+              <div className="relative bg-slate-800 rounded-lg overflow-hidden">
+                <img
+                  src={currentImage.imageUrl}
+                  alt={currentImage.name}
+                  className="w-full h-96 object-cover"
+                />
+                <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2">
+                  {carouselImages.map((_, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setCarouselIndex(idx)}
+                      className={`w-2 h-2 rounded-full transition-colors ${
+                        idx === carouselIndex ? "bg-white" : "bg-gray-500"
+                      }`}
+                    />
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
         </div>
       )}
 

@@ -285,6 +285,9 @@ export interface HomePageContent {
   pageFont?: string; // Page-specific font override
   pageTitleFont?: string; // Page title font override
   pageTitleColor?: string; // Page title color override
+  galleryRotationEnabled?: boolean; // Enable gallery rotation
+  galleryRotationId?: string; // Selected gallery ID for rotation
+  galleryRotationInterval?: number; // Rotation interval in seconds
 }
 
 export interface AboutPageContent {
