@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import ProductCard from "../components/ProductCard";
+import RecentCreationsGallery from "../components/RecentCreationsGallery";
 import { useProducts } from "../context/ProductContext";
 import { useReviews } from "../context/ReviewsContext";
 import { usePages } from "../context/PagesContext";
@@ -190,6 +191,15 @@ const HomePage: React.FC = () => {
             );
           })()}
         </div>
+      )}
+
+      {/* Recent Creations Section */}
+      {homeContent.recentCreationsGalleryId && !galleriesLoading && (
+        <RecentCreationsGallery
+          galleryImages={galleryImages.filter((img: any) => img.galleryId === homeContent.recentCreationsGalleryId)}
+          autoScroll={homeContent.recentCreationsAutoScroll !== false} // Default to true
+          autoScrollInterval={homeContent.recentCreationsInterval || 5}
+        />
       )}
 
       {/* Featured Products */}

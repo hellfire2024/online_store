@@ -288,6 +288,9 @@ export interface HomePageContent {
   galleryRotationEnabled?: boolean; // Enable gallery rotation
   galleryRotationId?: string; // Selected gallery ID for rotation
   galleryRotationInterval?: number; // Rotation interval in seconds
+  recentCreationsGalleryId?: string; // Selected gallery ID for recent creations section
+  recentCreationsAutoScroll?: boolean; // Enable auto-scroll for recent creations
+  recentCreationsInterval?: number; // Auto-scroll interval in seconds
 }
 
 export interface AboutPageContent {

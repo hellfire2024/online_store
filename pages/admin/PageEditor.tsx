@@ -899,6 +899,62 @@ const PageEditor: React.FC = () => {
             </div>
           </>
         )}
+
+        <hr className="border-slate-600 my-6" />
+        <h3 className="text-lg font-semibold text-white mb-4">Recent Creations Gallery</h3>
+        
+        <div>
+          <label className="block text-sm font-medium text-gray-300 mb-1">
+            Select Gallery
+          </label>
+          <select
+            value={content.recentCreationsGalleryId || ""}
+            onChange={(e) => handleHomePageContentChange({
+              target: { name: "recentCreationsGalleryId", value: e.target.value }
+            } as any)}
+            className="w-full p-2 bg-slate-700 border-2 border-slate-600 rounded-md text-white"
+          >
+            <option value="">Choose a gallery...</option>
+            {galleries.map((gallery) => (
+              <option key={gallery.id} value={gallery.id}>
+                {gallery.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {content.recentCreationsGalleryId && (
+          <>
+            <div className="mt-4">
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-300">
+                <input
+                  type="checkbox"
+                  checked={content.recentCreationsAutoScroll !== false}
+                  onChange={(e) => handleHomePageContentChange({
+                    target: { name: "recentCreationsAutoScroll", value: e.target.checked }
+                  } as any)}
+                  className="w-4 h-4 rounded"
+                />
+                Enable Auto-scroll
+              </label>
+            </div>
+
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                Auto-scroll Interval (seconds)
+              </label>
+              <input
+                type="number"
+                name="recentCreationsInterval"
+                min="1"
+                max="60"
+                value={content.recentCreationsInterval || 5}
+                onChange={handleHomePageContentChange}
+                className="w-full p-2 bg-slate-700 border-2 border-slate-600 rounded-md text-white"
+              />
+            </div>
+          </>
+        )}
       </div>
     );
   };
