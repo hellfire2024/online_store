@@ -19,6 +19,11 @@ interface GalleryContextType {
     galleryId: string,
     image: Omit<GalleryImage, "id">,
   ) => Promise<void>;
+  updateGalleryImage: (
+    galleryId: string,
+    imageId: string,
+    updates: Partial<Omit<GalleryImage, "id">>,
+  ) => Promise<void>;
   deleteGalleryImage: (galleryId: string, imageId: string) => Promise<void>;
 }
 
@@ -83,6 +88,20 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({
     }));
   };
 
+  const updateGalleryImage = async (
+    galleryId: string,
+    imageId: string,
+    updates: Partial<Omit<GalleryImage, "id">>,
+  ) => {
+    await mockApi.updateGalleryImage(galleryId, imageId, updates);
+    setGalleryImages((prev) => ({
+      ...prev,
+      [galleryId]: prev[galleryId].map((img) =>
+        img.id === imageId ? { ...img, ...updates } : img,
+      ),
+    }));
+  };
+
   return (
     <GalleryContext.Provider
       value={{
@@ -93,6 +112,7 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({
         addGallery,
         deleteGallery,
         addGalleryImage,
+        updateGalleryImage,
         deleteGalleryImage,
       }}
     >

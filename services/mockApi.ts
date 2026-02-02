@@ -647,6 +647,26 @@ export const deleteGalleryImage = (
     }, apiDelay);
   });
 
+export const updateGalleryImage = (
+  galleryId: string,
+  imageId: string,
+  updates: Partial<{ name: string; imageUrl: string }>,
+): Promise<any> =>
+  new Promise((res) => {
+    setTimeout(() => {
+      if (mockGalleryImages[galleryId]) {
+        const image = mockGalleryImages[galleryId].find(
+          (img) => img.id === imageId,
+        );
+        if (image) {
+          Object.assign(image, updates);
+          res(image);
+        }
+      }
+      res(null);
+    }, apiDelay);
+  });
+
 // Site Settings
 export const fetchSiteSettings = (): Promise<SiteSettings> =>
   new Promise((res) =>
