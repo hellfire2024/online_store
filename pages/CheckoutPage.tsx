@@ -17,10 +17,12 @@ const CheckoutPage: React.FC = () => {
   const [shippingZip, setShippingZip] = useState('');
   const [isCalculatingTax, setIsCalculatingTax] = useState(false);
   const [checkoutMode, setCheckoutMode] = useState<'guest' | 'account' | null>(null);
+  const [selectedAddressId, setSelectedAddressId] = useState<string>('');
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
     email: '',
+    phone: '',
     address: '',
     city: '',
   });
@@ -31,6 +33,81 @@ const CheckoutPage: React.FC = () => {
     taxAmount: 0,
     total: 0,
   });
+
+  // Auto-populate customer data when logged in
+  React.useEffect(() => {
+    if (customer) {
+      setFormData({
+        firstName: customer.firstName || '',
+        lastName: customer.lastName || '',
+        email: customer.email || '',
+        phone: customer.phone || '',
+        address: '',
+        city: '',
+      });
+      
+      // If customer has a default shipping address, select it
+      const defaultShippingAddress = customer.addresses?.find(
+        addr => addr.type === 'shipping' && addr.isDefault
+      );
+      
+      if (defaultShippingAddress) {
+        setSelectedAddressId(defaultShippingAddress.id);
+        // Parse full name into first/last
+        const nameParts = defaultShippingAddress.fullName.split(' ');
+        const firstName = nameParts[0] || '';
+        const lastName = nameParts.slice(1).join(' ') || '';
+        
+        setFormData({
+          firstName,
+          lastName,
+          email: customer.email || '',
+          phone: defaultShippingAddress.phone || customer.phone || '',
+          address: defaultShippingAddress.streetAddress || '',
+          city: defaultShippingAddress.city || '',
+        });
+        setShippingState(defaultShippingAddress.state || '');
+        setShippingZip(defaultShippingAddress.zipCode || '');
+      }
+    }
+  }, [customer]);
+
+  // Handle address selection
+  const handleAddressSelect = (addressId: string) => {
+    if (addressId === 'new') {
+      setSelectedAddressId('');
+      setFormData({
+        firstName: customer?.firstName || '',
+        lastName: customer?.lastName || '',
+        email: customer?.email || '',
+        phone: customer?.phone || '',
+        address: '',
+        city: '',
+      });
+      setShippingState('');
+      setShippingZip('');
+    } else {
+      setSelectedAddressId(addressId);
+      const address = customer?.addresses?.find(addr => addr.id === addressId);
+      if (address) {
+        // Parse full name into first/last
+        const nameParts = address.fullName.split(' ');
+        const firstName = nameParts[0] || '';
+        const lastName = nameParts.slice(1).join(' ') || '';
+        
+        setFormData({
+          firstName,
+          lastName,
+          email: customer?.email || '',
+          phone: address.phone || customer?.phone || '',
+          address: address.streetAddress || '',
+          city: address.city || '',
+        });
+        setShippingState(address.state || '');
+        setShippingZip(address.zipCode || '');
+      }
+    }
+  };
 
   // Redirect to cart if empty (must be in effect to avoid setState during render)
   // But only if we're still on the checkout page
@@ -245,7 +322,7 @@ const CheckoutPage: React.FC = () => {
           state: shippingState,
           zip: shippingZip,
           country: 'US',
-          phone: '',
+          phone: formData.phone || '',
         },
       };
 
@@ -372,6 +449,7 @@ const CheckoutPage: React.FC = () => {
                     firstName: '',
                     lastName: '',
                     email: '',
+                    phone: '',
                     address: '',
                     city: '',
                   });
@@ -393,6 +471,32 @@ const CheckoutPage: React.FC = () => {
         <div className="lg:col-span-3 bg-slate-800 p-8 rounded-lg shadow-2xl border border-slate-700">
           <form onSubmit={handlePlaceOrder}>
             <h2 className="text-2xl font-semibold text-white mb-6">Shipping Information</h2>
+            
+            {/* Address Selection for Logged-in Users */}
+            {customer && customer.addresses && customer.addresses.length > 0 && (
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Select Shipping Address
+                </label>
+                <select
+                  value={selectedAddressId}
+                  onChange={(e) => handleAddressSelect(e.target.value)}
+                  className={inputClasses}
+                >
+                  <option value="">Choose an address...</option>
+                  {customer.addresses
+                    .filter(addr => addr.type === 'shipping')
+                    .map((addr) => (
+                      <option key={addr.id} value={addr.id}>
+                        {addr.fullName} - {addr.streetAddress}, {addr.city}, {addr.state} {addr.zipCode}
+                        {addr.isDefault ? ' (Default)' : ''}
+                      </option>
+                    ))}
+                  <option value="new">+ Add New Address</option>
+                </select>
+              </div>
+            )}
+            
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <input 
@@ -419,6 +523,13 @@ const CheckoutPage: React.FC = () => {
                 onChange={(e) => setFormData({...formData, email: e.target.value})}
                 className={inputClasses} 
                 required 
+              />
+              <input 
+                type="tel" 
+                placeholder="Phone Number" 
+                value={formData.phone}
+                onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                className={inputClasses} 
               />
               <input 
                 type="text" 
