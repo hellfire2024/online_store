@@ -204,20 +204,21 @@ const CustomerAddressesPage: React.FC = () => {
             {editingId ? "Edit Address" : "Add New Address"}
           </h2>
           <div className="space-y-4">
+            <div>
+              <label className="block text-gray-300 text-sm font-medium mb-1">Address Type</label>
+              <select
+                value={formData.type}
+                onChange={(e) =>
+                  setFormData({ ...formData, type: e.target.value as "shipping" | "billing" })
+                }
+                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white"
+              >
+                <option value="shipping">Shipping</option>
+                <option value="billing">Billing</option>
+              </select>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-gray-300 text-sm font-medium mb-1">Address Type</label>
-                <select
-                  value={formData.type}
-                  onChange={(e) =>
-                    setFormData({ ...formData, type: e.target.value as "shipping" | "billing" })
-                  }
-                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white"
-                >
-                  <option value="shipping">Shipping</option>
-                  <option value="billing">Billing</option>
-                </select>
-              </div>
               <div>
                 <label className="block text-gray-300 text-sm font-medium mb-1">First Name *</label>
                 <input
@@ -230,9 +231,6 @@ const CustomerAddressesPage: React.FC = () => {
                   className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white placeholder-gray-400"
                 />
               </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-gray-300 text-sm font-medium mb-1">Last Name *</label>
                 <input
@@ -245,18 +243,19 @@ const CustomerAddressesPage: React.FC = () => {
                   className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white placeholder-gray-400"
                 />
               </div>
-              <div>
-                <label className="block text-gray-300 text-sm font-medium mb-1">Phone</label>
-                <input
-                  type="tel"
-                  placeholder="Phone"
-                  value={formData.phone}
-                  onChange={(e) =>
-                    setFormData({ ...formData, phone: e.target.value })
-                  }
-                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white placeholder-gray-400"
-                />
-              </div>
+            </div>
+
+            <div>
+              <label className="block text-gray-300 text-sm font-medium mb-1">Phone</label>
+              <input
+                type="tel"
+                placeholder="Phone"
+                value={formData.phone}
+                onChange={(e) =>
+                  setFormData({ ...formData, phone: e.target.value })
+                }
+                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white placeholder-gray-400"
+              />
             </div>
 
             <div>
