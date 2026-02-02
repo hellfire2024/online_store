@@ -17,7 +17,7 @@ const HomePage: React.FC = () => {
   const { reviews, isLoading: reviewsLoading, addReview } = useReviews();
   const { pages, isLoading: pagesLoading } = usePages();
   const { services, isLoading: servicesLoading } = useServices();
-  const { galleryImages = [], isLoading: galleriesLoading } = useGalleries();
+  const { galleryImages: galleryImagesRecord = {}, isLoading: galleriesLoading } = useGalleries();
   const { siteSettings } = useSiteSettings();
   const { addToast } = useToast();
   const { isAuthenticated } = useCustomerAuth();
@@ -25,6 +25,9 @@ const HomePage: React.FC = () => {
   const [reviewForm, setReviewForm] = useState({ author: "", email: "", text: "", rating: 5 });
   const [reviewImages, setReviewImages] = useState<string[]>([]);
   const [carouselIndex, setCarouselIndex] = useState(0);
+
+  // Flatten gallery images from Record into array
+  const galleryImages = Object.values(galleryImagesRecord).flat();
 
   const homePage = pages.find((page) => page.pageType === "home");
   const homeContent = (homePage?.contentData as HomePageContent) || {};
@@ -43,7 +46,7 @@ const HomePage: React.FC = () => {
       return;
     }
 
-    const filteredImages = (galleryImages || []).filter((img: any) => img.galleryId === homeContent.galleryRotationId);
+    const filteredImages = galleryImages.filter((img: any) => img.galleryId === homeContent.galleryRotationId);
     if (filteredImages.length === 0) return;
 
     const interval = homeContent.galleryRotationInterval || 5;
@@ -156,7 +159,7 @@ const HomePage: React.FC = () => {
         <div>
           <h2 className="text-3xl font-bold text-white text-center mb-8">Gallery</h2>
           {(() => {
-            const carouselImages = galleryImages.filter((img) => img.galleryId === homeContent.galleryRotationId);
+            const carouselImages = galleryImages.filter((img: any) => img.galleryId === homeContent.galleryRotationId);
             if (carouselImages.length === 0) return null;
             const currentImage = carouselImages[carouselIndex];
             return (

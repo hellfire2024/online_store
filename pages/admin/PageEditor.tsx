@@ -428,7 +428,6 @@ const PageEditor: React.FC = () => {
   const { pageId } = useParams<{ pageId: string }>();
   const navigate = useNavigate();
   const { pages, addPage, updatePage } = usePages();
-  const { galleries } = useGalleries();
   const { addToast } = useToast();
   const { siteSettings } = useSiteSettings();
   const [page, setPage] = useState<Omit<Page, "id"> | Page | null>(null);
