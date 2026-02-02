@@ -106,7 +106,7 @@ const RegisterPage: React.FC = () => {
     }
 
     setIsLoading(true);
-    const result = await register(`${firstName} ${lastName}`, email, password);
+    const result = await register(firstName, lastName, email, password, phone);
 
     if (result.success) {
       clearFormData();

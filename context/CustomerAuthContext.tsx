@@ -6,6 +6,7 @@ import React, {
   useEffect,
 } from "react";
 import { Customer, CustomerAddress, CustomerOrder } from "../types";
+import { apiClient } from "../services/apiClient";
 
 interface CustomerAuthContextType {
   customer: Customer | null;
@@ -14,9 +15,11 @@ interface CustomerAuthContextType {
 
   // Authentication
   register: (
-    name: string,
+    firstName: string,
+    lastName: string,
     email: string,
     password: string,
+    phone?: string,
   ) => Promise<{ success: boolean; error?: string }>;
   login: (
     email: string,
@@ -26,7 +29,8 @@ interface CustomerAuthContextType {
 
   // Account Management
   updateProfile: (
-    name: string,
+    firstName: string,
+    lastName: string,
     phone?: string,
   ) => Promise<{ success: boolean; error?: string }>;
 
@@ -92,32 +96,45 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
     }
   }, []);
 
-  const register = async (name: string, email: string, _password: string) => {
+  const register = async (firstName: string, lastName: string, email: string, password: string, phone?: string) => {
     setIsLoading(true);
     try {
-      // In a real app, this would be an API call
-      const newCustomer: Customer = {
-        id: `cust-${Date.now()}`,
-        name,
+      const result = await apiClient.customers.register({
+        firstName,
+        lastName,
         email,
-        phone: "",
-        createdAt: new Date().toISOString(),
-        lastLogin: new Date().toISOString(),
-        addresses: [],
-        orders: [],
-        emailPreferences: {
-          marketing: true,
-          orderUpdates: true,
-          announcements: true,
-        },
-        isActive: true,
-      };
+        password,
+        phone: phone || undefined,
+      });
 
-      setCustomer(newCustomer);
-      localStorage.setItem("customer", JSON.stringify(newCustomer));
-      return { success: true };
-    } catch (error) {
+      if (result && result.id) {
+        const newCustomer: Customer = {
+          id: result.id,
+          name: `${firstName} ${lastName}`,
+          firstName,
+          lastName,
+          email,
+          phone: phone || "",
+          createdAt: result.createdAt || new Date().toISOString(),
+          lastLogin: new Date().toISOString(),
+          addresses: [],
+          orders: [],
+          emailPreferences: result.emailPreferences || {
+            marketing: true,
+            orderUpdates: true,
+            announcements: true,
+          },
+          isActive: true,
+        };
+
+        setCustomer(newCustomer);
+        localStorage.setItem("customer", JSON.stringify(newCustomer));
+        return { success: true };
+      }
       return { success: false, error: "Registration failed" };
+    } catch (error: any) {
+      console.error("Registration error:", error);
+      return { success: false, error: error.message || "Registration failed" };
     } finally {
       setIsLoading(false);
     }
@@ -160,16 +177,33 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
     localStorage.removeItem("customer");
   };
 
-  const updateProfile = async (name: string, phone?: string) => {
+  const updateProfile = async (firstName: string, lastName: string, phone?: string) => {
     if (!customer) return { success: false, error: "Not authenticated" };
 
     try {
-      const updated = { ...customer, name, phone: phone || customer.phone };
-      setCustomer(updated);
-      localStorage.setItem("customer", JSON.stringify(updated));
-      return { success: true };
-    } catch (error) {
+      const result = await apiClient.customers.update(customer.id, {
+        firstName,
+        lastName,
+        name: `${firstName} ${lastName}`,
+        phone: phone || undefined,
+      });
+
+      if (result && result.id) {
+        const updated = { 
+          ...customer, 
+          firstName,
+          lastName,
+          name: `${firstName} ${lastName}`,
+          phone: phone || customer.phone 
+        };
+        setCustomer(updated);
+        localStorage.setItem("customer", JSON.stringify(updated));
+        return { success: true };
+      }
       return { success: false, error: "Profile update failed" };
+    } catch (error: any) {
+      console.error("Profile update error:", error);
+      return { success: false, error: error.message || "Profile update failed" };
     }
   };
 

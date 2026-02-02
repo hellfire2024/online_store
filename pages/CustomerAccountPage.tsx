@@ -9,7 +9,8 @@ const CustomerAccountPage: React.FC = () => {
   const navigate = useNavigate();
   const { addToast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
-  const [name, setName] = useState(customer?.name || "");
+  const [firstName, setFirstName] = useState(customer?.firstName || "");
+  const [lastName, setLastName] = useState(customer?.lastName || "");
   const [phone, setPhone] = useState(customer?.phone || "");
   const [preferences, setPreferences] = useState(
     customer?.emailPreferences || {
@@ -28,7 +29,7 @@ const CustomerAccountPage: React.FC = () => {
   }
 
   const handleProfileUpdate = async () => {
-    const result = await updateProfile(name, phone);
+    const result = await updateProfile(firstName, lastName, phone);
     if (result.success) {
       addToast("Profile updated successfully", "success");
       setIsEditing(false);
@@ -78,17 +79,33 @@ const CustomerAccountPage: React.FC = () => {
 
           <div>
             <label className="block text-sm font-medium text-gray-300">
-              Full Name
+              First Name
             </label>
             {isEditing ? (
               <input
                 type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
                 className="mt-1 block w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white"
               />
             ) : (
-              <p className="mt-1 text-white">{customer.name}</p>
+              <p className="mt-1 text-white">{customer.firstName || "-"}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-300">
+              Last Name
+            </label>
+            {isEditing ? (
+              <input
+                type="text"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                className="mt-1 block w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white"
+              />
+            ) : (
+              <p className="mt-1 text-white">{customer.lastName || "-"}</p>
             )}
           </div>
 

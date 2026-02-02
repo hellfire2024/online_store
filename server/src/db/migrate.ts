@@ -37,6 +37,8 @@ UPDATE admins
 
 CREATE TABLE IF NOT EXISTS customers (
   id VARCHAR(36) PRIMARY KEY,
+  first_name VARCHAR(255),
+  last_name VARCHAR(255),
   name VARCHAR(255) NOT NULL,
   email VARCHAR(255) UNIQUE NOT NULL,
   password_hash VARCHAR(255) NOT NULL,
@@ -47,6 +49,10 @@ CREATE TABLE IF NOT EXISTS customers (
   last_login TIMESTAMP NULL,
   INDEX idx_email (email)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+ALTER TABLE customers
+  ADD COLUMN IF NOT EXISTS first_name VARCHAR(255),
+  ADD COLUMN IF NOT EXISTS last_name VARCHAR(255);
 
 CREATE TABLE IF NOT EXISTS customer_addresses (
   id VARCHAR(36) PRIMARY KEY,

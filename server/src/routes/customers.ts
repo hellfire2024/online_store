@@ -3,6 +3,7 @@ import { body, validationResult } from 'express-validator';
 import { pool } from '../db/connection.js';
 import { RowDataPacket, ResultSetHeader } from 'mysql2';
 import { v4 as uuidv4 } from 'uuid';
+import bcrypt from 'bcrypt';
 
 const router = Router();
 
@@ -10,7 +11,7 @@ const router = Router();
 router.get('/', async (_req: Request, res: Response) => {
   try {
     const [rows] = await pool.query<RowDataPacket[]>(
-      `SELECT c.id, c.name, c.email, c.phone, c.is_active as isActive,
+      `SELECT c.id, c.first_name as firstName, c.last_name as lastName, c.name, c.email, c.phone, c.is_active as isActive,
               c.created_at as createdAt, c.last_login as lastLogin,
               COUNT(DISTINCT o.id) as orderCount,
               COALESCE(SUM(o.total), 0) as totalSpent
@@ -30,7 +31,7 @@ router.get('/', async (_req: Request, res: Response) => {
 router.get('/:id', async (req: Request, res: Response) => {
   try {
     const [customerRows] = await pool.query<RowDataPacket[]>(
-      `SELECT id, name, email, phone, email_preferences as emailPreferences,
+      `SELECT id, first_name as firstName, last_name as lastName, name, email, phone, email_preferences as emailPreferences,
               is_active as isActive, created_at as createdAt, last_login as lastLogin
        FROM customers WHERE id = ?`,
       [req.params.id]
@@ -59,10 +60,79 @@ router.get('/:id', async (req: Request, res: Response) => {
   }
 });
 
-// Create customer (admin)
+// Register customer (customer-facing endpoint)
+router.post(
+  '/register',
+  [
+    body('firstName').trim().notEmpty().withMessage('First name is required'),
+    body('lastName').trim().notEmpty().withMessage('Last name is required'),
+    body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
+    body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
+    body('phone').optional().trim(),
+  ],
+  async (req: Request, res: Response) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    try {
+      const { firstName, lastName, email, password, phone } = req.body;
+
+      // Check if email exists
+      const [existing] = await pool.query<RowDataPacket[]>(
+        'SELECT id FROM customers WHERE email = ?',
+        [email]
+      );
+
+      if (existing.length > 0) {
+        return res.status(400).json({ error: 'Email already in use' });
+      }
+
+      const id = uuidv4();
+      const fullName = `${firstName} ${lastName}`;
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      await pool.query(
+        `INSERT INTO customers (id, first_name, last_name, name, email, phone, password_hash, email_preferences, is_active)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, TRUE)`,
+        [
+          id,
+          firstName,
+          lastName,
+          fullName,
+          email,
+          phone || null,
+          hashedPassword,
+          JSON.stringify({ marketing: true, orderUpdates: true, announcements: true }),
+        ]
+      );
+
+      return res.status(201).json({
+        id,
+        firstName,
+        lastName,
+        name: fullName,
+        email,
+        phone: phone || null,
+        isActive: true,
+        orderCount: 0,
+        totalSpent: 0,
+        createdAt: new Date().toISOString(),
+      });
+    } catch (error) {
+      console.error('Error registering customer:', error);
+      return res.status(500).json({ error: 'Failed to register customer' });
+    }
+  }
+);
+
+// Create customer (admin - without password requirement for admin-created accounts)
 router.post(
   '/',
   [
+    body('firstName').optional().trim(),
+    body('lastName').optional().trim(),
     body('name').trim().notEmpty().withMessage('Name is required'),
     body('email').isEmail().normalizeEmail(),
     body('phone').optional().trim(),
@@ -74,7 +144,7 @@ router.post(
     }
 
     try {
-      const { name, email, phone } = req.body;
+      const { firstName, lastName, name, email, phone } = req.body;
 
       // Check if email exists
       const [existing] = await pool.query<RowDataPacket[]>(
@@ -89,10 +159,12 @@ router.post(
       const id = uuidv4();
 
       await pool.query(
-        `INSERT INTO customers (id, name, email, phone, password_hash, email_preferences, is_active)
-         VALUES (?, ?, ?, ?, ?, ?, TRUE)`,
+        `INSERT INTO customers (id, first_name, last_name, name, email, phone, password_hash, email_preferences, is_active)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, TRUE)`,
         [
           id,
+          firstName || null,
+          lastName || null,
           name,
           email,
           phone || null,
@@ -103,6 +175,8 @@ router.post(
 
       return res.status(201).json({
         id,
+        firstName: firstName || null,
+        lastName: lastName || null,
         name,
         email,
         phone: phone || null,
@@ -121,11 +195,19 @@ router.post(
 // Update customer
 router.put('/:id', async (req: Request, res: Response) => {
   try {
-    const { name, email, phone, isActive, emailPreferences } = req.body;
+    const { firstName, lastName, name, email, phone, isActive, emailPreferences } = req.body;
 
     const updates: string[] = [];
     const values: any[] = [];
 
+    if (firstName !== undefined) {
+      updates.push('first_name = ?');
+      values.push(firstName || null);
+    }
+    if (lastName !== undefined) {
+      updates.push('last_name = ?');
+      values.push(lastName || null);
+    }
     if (name !== undefined) {
       updates.push('name = ?');
       values.push(name);
@@ -164,7 +246,7 @@ router.put('/:id', async (req: Request, res: Response) => {
 
     // Return updated customer
     const [rows] = await pool.query<RowDataPacket[]>(
-      `SELECT id, name, email, phone, is_active as isActive FROM customers WHERE id = ?`,
+      `SELECT id, first_name as firstName, last_name as lastName, name, email, phone, is_active as isActive FROM customers WHERE id = ?`,
       [req.params.id]
     );
 

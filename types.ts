@@ -174,6 +174,8 @@ export interface CustomerOrder {
 export interface Customer {
   id: string;
   name: string;
+  firstName?: string;
+  lastName?: string;
   email: string;
   password?: string; // Never stored in state, only for API
   phone?: string;

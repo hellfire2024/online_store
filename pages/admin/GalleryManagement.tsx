@@ -121,12 +121,12 @@ const GalleriesManagement: React.FC = () => {
     const currentImages = selectedGalleryId ? galleryImages[selectedGalleryId] || [] : [];
 
     return (
-        <div>
+        <div className="flex flex-col h-screen">
             <h1 className="text-3xl font-bold text-white mb-8">Galleries Management</h1>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 flex-1 overflow-hidden">
                 {/* Gallery List */}
-                <div className="lg:col-span-1 bg-slate-800 p-6 rounded-lg border border-slate-700 self-start">
+                <div className="lg:col-span-1 bg-slate-800 p-6 rounded-lg border border-slate-700 self-start overflow-y-auto">
                     <h2 className="text-xl font-semibold text-white mb-4">Galleries</h2>
                     <div className="mb-4">
                         <div className="flex gap-2 mb-2">
@@ -146,9 +146,9 @@ const GalleriesManagement: React.FC = () => {
                 </div>
 
                 {/* Image Management for Selected Gallery */}
-                <div className="lg:col-span-2">
+                <div className="lg:col-span-2 bg-slate-800 p-6 rounded-lg border border-slate-700 overflow-y-auto flex flex-col">
                     {selectedGalleryId ? (
-                        <div className="bg-slate-800 p-6 rounded-lg border border-slate-700">
+                        <div className="flex flex-col h-full">
                             <h2 className="text-xl font-semibold text-white mb-4">Images in "{galleries.find(g => g.id === selectedGalleryId)?.name}"</h2>
                              <form onSubmit={handleAddImage} className="flex flex-col gap-4 mb-6">
                                 <input 
@@ -184,8 +184,8 @@ const GalleriesManagement: React.FC = () => {
                                 : currentImages.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
                               
                               return (
-                                <>
-                                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                <div className="flex flex-col flex-1 overflow-hidden">
+                                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 flex-1 overflow-y-auto">
                                     {paginatedImages.map(image => (
                                     <div key={image.id} className="relative group">
                                         <img src={image.imageUrl} alt={image.name} className="w-full h-32 object-cover rounded-lg" />
@@ -244,23 +244,25 @@ const GalleriesManagement: React.FC = () => {
                                     {paginatedImages.length === 0 && <p className="text-gray-400 col-span-full text-center py-4">This gallery has no images. Add one above.</p>}
                                   </div>
                                   {currentImages.length > 0 && (
-                                    <Pagination
-                                      currentPage={currentPage}
-                                      totalItems={currentImages.length}
-                                      itemsPerPage={itemsPerPage}
-                                      onPageChange={setCurrentPage}
-                                      onItemsPerPageChange={(value) => {
-                                        setItemsPerPage(value);
-                                        setCurrentPage(1);
-                                      }}
-                                    />
+                                    <div className="mt-4 flex-shrink-0">
+                                      <Pagination
+                                        currentPage={currentPage}
+                                        totalItems={currentImages.length}
+                                        itemsPerPage={itemsPerPage}
+                                        onPageChange={setCurrentPage}
+                                        onItemsPerPageChange={(value) => {
+                                          setItemsPerPage(value);
+                                          setCurrentPage(1);
+                                        }}
+                                      />
+                                    </div>
                                   )}
-                                </>
+                                </div>
                               );
                             })()}
                         </div>
                     ) : (
-                        <div className="bg-slate-800 p-6 rounded-lg border border-slate-700 flex items-center justify-center h-full min-h-80">
+                        <div className="flex items-center justify-center h-full">
                             <p className="text-gray-400">Select a gallery on the left to manage its images, or create a new one.</p>
                         </div>
                     )}

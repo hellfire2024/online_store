@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { pool } from '../db/connection.js';
 import { RowDataPacket } from 'mysql2';
+import { randomUUID } from 'crypto';
 
 const router = Router();
 
@@ -39,16 +40,17 @@ router.get('/:id', async (req: Request, res: Response) => {
 // Create service
 router.post('/', async (req: Request, res: Response) => {
   try {
-    const { id, title, description, icon } = req.body;
+    const { title, description, icon } = req.body;
+    const id = randomUUID();
     
-    if (!id || !title) {
-      return res.status(400).json({ error: 'id and title are required' });
+    if (!title) {
+      return res.status(400).json({ error: 'title is required' });
     }
     
     await pool.query(
       `INSERT INTO services (id, title, description, icon, created_at)
        VALUES (?, ?, ?, ?, NOW())`,
-      [id, title, description || '', icon || '']
+      [id, title, description || '', icon || 'service']
     );
     
     return res.status(201).json({ id, title, description, icon });

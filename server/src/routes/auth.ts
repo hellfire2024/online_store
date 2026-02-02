@@ -73,9 +73,11 @@ router.post(
 router.post(
   '/customer/register',
   [
-    body('name').trim().notEmpty(),
+    body('firstName').trim().notEmpty().withMessage('First name is required'),
+    body('lastName').trim().notEmpty().withMessage('Last name is required'),
     body('email').isEmail().normalizeEmail(),
-    body('password').isLength({ min: 6 }),
+    body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
+    body('phone').optional().trim(),
   ],
   async (req: Request, res: Response) => {
     const errors = validationResult(req);
@@ -84,7 +86,7 @@ router.post(
     }
 
     try {
-      const { name, email, password } = req.body;
+      const { firstName, lastName, email, password, phone } = req.body;
 
       // Check if email exists
       const [existing] = await pool.query<RowDataPacket[]>(
@@ -98,13 +100,14 @@ router.post(
 
       // Hash password
       const passwordHash = await bcrypt.hash(password, parseInt(process.env.BCRYPT_ROUNDS || '10'));
+      const fullName = `${firstName} ${lastName}`;
 
       // Create customer
       const id = crypto.randomUUID();
       await pool.query(
-        `INSERT INTO customers (id, name, email, password_hash, email_preferences)
-         VALUES (?, ?, ?, ?, ?)`,
-        [id, name, email, passwordHash, JSON.stringify({ marketing: false, orderUpdates: true, announcements: false })]
+        `INSERT INTO customers (id, first_name, last_name, name, email, phone, password_hash, email_preferences)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [id, firstName, lastName, fullName, email, phone || null, passwordHash, JSON.stringify({ marketing: true, orderUpdates: true, announcements: true })]
       );
 
       // Generate JWT
@@ -115,7 +118,7 @@ router.post(
 
       return res.status(201).json({
         token,
-        customer: { id, name, email },
+        customer: { id, firstName, lastName, name: fullName, email, phone: phone || null },
       });
     } catch (error) {
       console.error('Registration error:', error);
@@ -173,8 +176,11 @@ router.post(
         token,
         customer: {
           id: customer.id,
+          firstName: customer.first_name,
+          lastName: customer.last_name,
           name: customer.name,
           email: customer.email,
+          phone: customer.phone,
         },
       });
     } catch (error) {

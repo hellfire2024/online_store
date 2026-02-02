@@ -235,6 +235,10 @@ class ApiClient {
   customers = {
     getAll: () => this.request<any[]>('/customers'),
     getById: (id: string) => this.request<any>(`/customers/${id}`),
+    register: (data: any) => this.request<any>('/customers/register', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
     create: (data: any) => this.request<any>('/customers', {
       method: 'POST',
       body: JSON.stringify(data),
