@@ -356,6 +356,36 @@ const CheckoutPage: React.FC = () => {
         </div>
       )}
 
+      {/* Show logged-in user info with option to switch to guest */}
+      {customer && (
+        <div className="bg-slate-800 p-6 rounded-lg shadow-lg border border-slate-700 mb-8">
+          <div className="flex justify-between items-center">
+            <div>
+              <p className="text-gray-400 text-sm">Checking out as</p>
+              <p className="text-white font-semibold">{customer.name} ({customer.email})</p>
+            </div>
+            <button
+              onClick={() => {
+                if (window.confirm('Switch to guest checkout? You will need to re-enter shipping information.')) {
+                  // Clear form data when switching to guest
+                  setFormData({
+                    firstName: '',
+                    lastName: '',
+                    email: '',
+                    address: '',
+                    city: '',
+                  });
+                  setCheckoutMode('guest');
+                }
+              }}
+              className="text-sky-400 hover:text-sky-300 text-sm underline"
+            >
+              Checkout as guest instead
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Show checkout form if authenticated or guest mode selected */}
       {(customer || checkoutMode === 'guest') && (
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-12">
