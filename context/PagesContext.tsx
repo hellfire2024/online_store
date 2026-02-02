@@ -153,6 +153,21 @@ export const PagesProvider: React.FC<{ children: ReactNode }> = ({
       await apiClient.pages.update(page.id, page);
       setPages((prev) => prev.map((p) => (p.id === page.id ? page : p)));
     } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (message.includes("Page not found") || message.includes("HTTP 404")) {
+        try {
+          const createdPage = await apiClient.pages.create(page);
+          setPages((prev) => {
+            const exists = prev.some((p) => p.id === createdPage.id);
+            return exists
+              ? prev.map((p) => (p.id === createdPage.id ? createdPage : p))
+              : [...prev, createdPage];
+          });
+          return;
+        } catch (createError) {
+          console.error("Failed to create page after update 404", createError);
+        }
+      }
       console.error("Failed to update page via API, using mock", error);
       await mockApi.updatePage(page);
       setPages((prev) => prev.map((p) => (p.id === page.id ? page : p)));
