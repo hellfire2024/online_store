@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import ProductCard from "../components/ProductCard";
 import { useProducts } from "../context/ProductContext";
 import { useReviews } from "../context/ReviewsContext";
@@ -27,10 +27,16 @@ const HomePage: React.FC = () => {
   const [carouselIndex, setCarouselIndex] = useState(0);
 
   // Flatten gallery images from Record into array
-  const galleryImages = Object.values(galleryImagesRecord).flat();
+  const galleryImages = useMemo(
+    () => Object.values(galleryImagesRecord).flat(),
+    [galleryImagesRecord]
+  );
 
   const homePage = pages.find((page) => page.pageType === "home");
-  const homeContent = (homePage?.contentData as HomePageContent) || {};
+  const homeContent = useMemo(
+    () => (homePage?.contentData as HomePageContent) || {},
+    [homePage]
+  );
 
   if (productsLoading || reviewsLoading || pagesLoading || servicesLoading || !homePage) {
     return (
@@ -55,7 +61,7 @@ const HomePage: React.FC = () => {
     }, interval * 1000);
 
     return () => clearInterval(timer);
-  }, [homeContent.galleryRotationEnabled, homeContent.galleryRotationId, homeContent.galleryRotationInterval, galleryImages, galleriesLoading]);
+  }, [homeContent, galleryImages, galleriesLoading]);
 
   const featuredProducts = products.slice(0, 4);
   const approvedReviews = reviews.filter((r) => r.status === "approved");
