@@ -280,7 +280,7 @@ const ProductDetailPage: React.FC = () => {
               <div className="flex gap-1 bg-slate-800 rounded-lg p-1 mb-4">
                 <TabButton tab="gallery" label="Choose from Gallery" activeTab={activeTab} setActiveTab={setActiveTab} />
                 <TabButton tab="upload" label="Upload Your Own" activeTab={activeTab} setActiveTab={setActiveTab} />
-                {product.enableAIIdeas && <TabButton tab="ideas" label="Get AI Ideas" activeTab={activeTab} setActiveTab={setActiveTab} />}
+                {!!product.enableAIIdeas && <TabButton tab="ideas" label="Get AI Ideas" activeTab={activeTab} setActiveTab={setActiveTab} />}
               </div>
               
               <div className="p-4 bg-slate-700 rounded-lg min-h-75">
