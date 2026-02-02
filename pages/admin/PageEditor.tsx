@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { usePages } from "../../context/PagesContext";
 import { useSiteSettings } from "../../context/SiteSettingsContext";
+import { useGalleries } from "../../context/GalleryContext";
 import {
   Page,
   HomePageContent,
@@ -427,6 +428,7 @@ const PageEditor: React.FC = () => {
   const { pageId } = useParams<{ pageId: string }>();
   const navigate = useNavigate();
   const { pages, addPage, updatePage } = usePages();
+  const { galleries } = useGalleries();
   const { addToast } = useToast();
   const { siteSettings } = useSiteSettings();
   const [page, setPage] = useState<Omit<Page, "id"> | Page | null>(null);
@@ -873,7 +875,7 @@ const PageEditor: React.FC = () => {
                 } as any)}
                 className="w-full p-2 bg-slate-700 border-2 border-slate-600 rounded-md text-white"
               >
-                <option value="">Choose a gallery...</option>
+                <option value="">Choose: any a gallery...</option>
                 {galleries.map((gallery) => (
                   <option key={gallery.id} value={gallery.id}>
                     {gallery.name}

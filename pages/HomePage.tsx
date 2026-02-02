@@ -17,10 +17,10 @@ const HomePage: React.FC = () => {
   const { reviews, isLoading: reviewsLoading, addReview } = useReviews();
   const { pages, isLoading: pagesLoading } = usePages();
   const { services, isLoading: servicesLoading } = useServices();
-  const { galleryImages, isLoading: galleriesLoading } = useGalleries();
+  const { galleryImages = [], isLoading: galleriesLoading } = useGalleries();
   const { siteSettings } = useSiteSettings();
   const { addToast } = useToast();
-    const { isAuthenticated } = useCustomerAuth();
+  const { isAuthenticated } = useCustomerAuth();
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [reviewForm, setReviewForm] = useState({ author: "", email: "", text: "", rating: 5 });
   const [reviewImages, setReviewImages] = useState<string[]>([]);
@@ -43,7 +43,7 @@ const HomePage: React.FC = () => {
       return;
     }
 
-    const filteredImages = galleryImages.filter((img) => img.galleryId === homeContent.galleryRotationId);
+    const filteredImages = (galleryImages || []).filter((img: any) => img.galleryId === homeContent.galleryRotationId);
     if (filteredImages.length === 0) return;
 
     const interval = homeContent.galleryRotationInterval || 5;
@@ -167,7 +167,7 @@ const HomePage: React.FC = () => {
                   className="w-full h-96 object-cover"
                 />
                 <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2">
-                  {carouselImages.map((_, idx) => (
+                  {carouselImages.map((_: any, idx: number) => (
                     <button
                       key={idx}
                       onClick={() => setCarouselIndex(idx)}
