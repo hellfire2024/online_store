@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useCustomerAuth } from "../context/CustomerAuthContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useToast } from "../hooks/useToast";
 import { CustomerOrder } from "../types";
 import Pagination from "../components/Pagination";
@@ -318,7 +318,7 @@ const CustomerOrdersPage: React.FC = () => {
       {!customer || customer.orders.length === 0 ? (
         <div className="bg-slate-800 p-8 rounded-lg border border-slate-700 text-center">
           <p className="text-gray-400 mb-4">No orders yet. Start shopping to place your first order!</p>
-          <a href="/store" className="px-4 py-2 bg-sky-600 text-white rounded hover:bg-sky-700">Browse Products</a>
+          <Link to="/store" className="inline-block px-4 py-2 bg-sky-600 text-white rounded hover:bg-sky-700">Browse Products</Link>
         </div>
       ) : (() => {
         const filteredOrders = getFilteredOrders();
