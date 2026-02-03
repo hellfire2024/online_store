@@ -6,7 +6,6 @@ import React, {
   useEffect,
 } from "react";
 import { SiteSettings } from "../types";
-import { DEFAULT_INVOICE_TEMPLATE } from "../services/invoiceService";
 import * as mockApi from "../services/mockApi";
 import { apiClient } from "../services/apiClient";
 
@@ -65,7 +64,19 @@ const defaultSettings: SiteSettings = {
   supportEmail: "support@adaptivegis.com",
   supportSubjectPrefix: "Support Request",
   supportTicketSuffix: "SUP-001-001",
-  invoiceTemplateHtml: DEFAULT_INVOICE_TEMPLATE,
+  invoiceTemplate: {
+    id: 'default',
+    name: 'Professional Invoice',
+    companyName: 'Your Store',
+    invoiceTitle: 'INVOICE',
+    includeItems: true,
+    includeTotals: true,
+    footerText: 'Thank you for your business!',
+    accentColor: '#0ea5e9',
+    backgroundColor: '#ffffff',
+    textColor: '#1e293b',
+    borderColor: '#cbd5e1',
+  },
   shippingCarriers: {
     easypost: {
       enabled: false,
