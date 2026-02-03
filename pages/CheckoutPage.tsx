@@ -334,7 +334,7 @@ const CheckoutPage: React.FC = () => {
           return {
             name: item.product.name,
             quantity: item.quantity,
-            price: item.product.price + optionsDelta + customTextCost,
+            price: toNumber(item.product.price) + optionsDelta + customTextCost,
             productImage: item.product.imageUrl,
             customization: item.customization ? {
               type: item.customization.type,
