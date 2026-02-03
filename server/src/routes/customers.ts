@@ -53,7 +53,21 @@ router.get('/:id', async (req: Request, res: Response) => {
       [req.params.id]
     );
 
-    customer.addresses = addresses;
+    // Normalize address fields to camelCase
+    customer.addresses = addresses.map((addr: any) => ({
+      id: addr.id,
+      type: addr.type,
+      firstName: addr.first_name,
+      lastName: addr.last_name,
+      fullName: addr.full_name,
+      streetAddress: addr.street_address,
+      city: addr.city,
+      state: addr.state,
+      zipCode: addr.zip_code,
+      country: addr.country,
+      phone: addr.phone,
+      isDefault: !!addr.is_default,
+    }));
 
     return res.json(customer);
   } catch (error) {
