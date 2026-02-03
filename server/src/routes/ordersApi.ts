@@ -3,6 +3,7 @@ import { pool } from '../db/connection.js';
 import { RowDataPacket } from 'mysql2';
 import { v4 as uuidv4 } from 'uuid';
 import { sendOrderConfirmationEmail, sendShippingNotificationEmail } from '../services/emailService.js';
+import { requireCustomer, AuthenticatedRequest } from '../middleware/auth.js';
 
 const router = Router();
 
@@ -39,9 +40,17 @@ router.get('/', async (_req: Request, res: Response) => {
 });
 
 // GET orders for a specific customer
-router.get('/customer/:customerId', async (req: Request, res: Response) => {
+router.get('/customer/:customerId', requireCustomer, async (req: Request, res: Response): Promise<void> => {
   try {
     const { customerId } = req.params;
+    const authUser = (req as AuthenticatedRequest).authUser;
+    
+    // Security: only allow customers to see their own orders
+    if (authUser && authUser.id !== customerId) {
+      res.status(403).json({ error: 'Forbidden' });
+      return;
+    }
+
     const [rows] = await pool.query<OrderRow[]>(
       `SELECT * FROM orders WHERE customer_id = ? ORDER BY created_at DESC LIMIT 100`,
       [customerId]

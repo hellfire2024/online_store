@@ -35,6 +35,31 @@ const CheckoutPage: React.FC = () => {
     total: 0,
   });
 
+  const toNumber = (value: unknown, fallback = 0) => {
+    const num = Number(value);
+    return Number.isFinite(num) ? num : fallback;
+  };
+
+  const sanitizeTaxResult = (
+    result: any,
+    fallbackSubtotal: number,
+    shippingCost: number,
+  ) => {
+    const subtotal = toNumber(result?.subtotal, fallbackSubtotal);
+    const taxableAmount = toNumber(result?.taxableAmount, subtotal);
+    const taxRate = toNumber(result?.taxRate, 0);
+    const taxAmount = toNumber(result?.taxAmount, 0);
+    const total = toNumber(result?.total, subtotal + shippingCost + taxAmount);
+
+    return {
+      subtotal,
+      taxableAmount,
+      taxRate,
+      taxAmount,
+      total,
+    };
+  };
+
   // Auto-populate customer data when logged in
   React.useEffect(() => {
     if (customer) {
@@ -121,7 +146,7 @@ const CheckoutPage: React.FC = () => {
   // Calculate tax when state/zip changes
   useMemo(() => {
     const calculateTaxAsync = async () => {
-      const shippingCost = siteSettings?.shippingFlatRate || 5;
+      const shippingCost = toNumber(siteSettings?.shippingFlatRate, 5);
 
       // Calculate subtotal first
       const subtotal = cartItems.reduce((total, item) => {
@@ -133,29 +158,37 @@ const CheckoutPage: React.FC = () => {
               selectedOptionIds.forEach((optionId) => {
                 const option = list.options.find((o) => o.id === optionId);
                 if (option) {
-                  optionsDelta += option.priceDelta;
+                  optionsDelta += toNumber(option.priceDelta);
                 }
               });
             } else {
               // Fallback for old single-select format
               const option = list.options.find((o) => o.id === selectedOptionIds);
               if (option) {
-                optionsDelta += option.priceDelta;
+                optionsDelta += toNumber(option.priceDelta);
               }
             }
           });
         }
-        return total + (item.product.price + optionsDelta) * item.quantity;
+        const itemPrice = toNumber(item.product.price);
+        const quantity = toNumber(item.quantity);
+        return total + (itemPrice + optionsDelta) * quantity;
       }, 0);
 
       if (!siteSettings || !siteSettings.taxConfig || !shippingState) {
-        setTaxCalculation({
-          subtotal: subtotal,
-          taxableAmount: subtotal,
-          taxRate: 0,
-          taxAmount: 0,
-          total: subtotal + shippingCost,
-        });
+        setTaxCalculation(
+          sanitizeTaxResult(
+            {
+              subtotal,
+              taxableAmount: subtotal,
+              taxRate: 0,
+              taxAmount: 0,
+              total: subtotal + shippingCost,
+            },
+            subtotal,
+            shippingCost,
+          ),
+        );
         return;
       }
 
@@ -203,7 +236,7 @@ const CheckoutPage: React.FC = () => {
           }
 
           const result = await response.json();
-          setTaxCalculation(result);
+          setTaxCalculation(sanitizeTaxResult(result, subtotal, shippingCost));
         } catch (error) {
           console.error(`${provider} tax calculation failed, falling back to manual:`, error);
           const manualTax = calculateTax(
@@ -212,7 +245,7 @@ const CheckoutPage: React.FC = () => {
             shippingState,
             siteSettings.taxConfig,
           );
-          setTaxCalculation(manualTax);
+          setTaxCalculation(sanitizeTaxResult(manualTax, subtotal, shippingCost));
           addToast('Using fallback tax calculation', 'info');
         } finally {
           setIsCalculatingTax(false);
@@ -225,7 +258,7 @@ const CheckoutPage: React.FC = () => {
           shippingState,
           siteSettings.taxConfig,
         );
-        setTaxCalculation(manualTax);
+        setTaxCalculation(sanitizeTaxResult(manualTax, subtotal, shippingCost));
       }
     };
 
@@ -587,17 +620,17 @@ const CheckoutPage: React.FC = () => {
           <div className="space-y-3 text-gray-300">
             <div className="flex justify-between">
               <span>Subtotal</span>
-              <span>${Number(taxCalculation.subtotal).toFixed(2)}</span>
+              <span>${toNumber(taxCalculation.subtotal).toFixed(2)}</span>
             </div>
             <div className="flex justify-between">
               <span>Shipping</span>
-              <span>${(siteSettings.shippingFlatRate || 5).toFixed(2)}</span>
+              <span>${toNumber(siteSettings?.shippingFlatRate, 5).toFixed(2)}</span>
             </div>
             {siteSettings.taxConfig.enableTaxCollection && shippingState && (
               <>
                 <div className="flex justify-between text-gray-400">
-                  <span>{isCalculatingTax ? 'Calculating tax...' : `Tax (${taxCalculation.taxRate}%)`}</span>
-                  <span>{isCalculatingTax ? '...' : `$${Number(taxCalculation.taxAmount).toFixed(2)}`}</span>
+                  <span>{isCalculatingTax ? 'Calculating tax...' : `Tax (${toNumber(taxCalculation.taxRate)}%)`}</span>
+                  <span>{isCalculatingTax ? '...' : `$${toNumber(taxCalculation.taxAmount).toFixed(2)}`}</span>
                 </div>
                 <div className="text-xs text-gray-500 mt-2">
                   {siteSettings.taxConfig.provider === "stripe" ? (
@@ -621,7 +654,7 @@ const CheckoutPage: React.FC = () => {
             <div className="border-t border-slate-700 my-3"></div>
             <div className="flex justify-between text-xl font-bold text-white">
               <span>Total</span>
-              <span>${Number(taxCalculation.total).toFixed(2)}</span>
+              <span>${toNumber(taxCalculation.total).toFixed(2)}</span>
             </div>
           </div>
         </div>

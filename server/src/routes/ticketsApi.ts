@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { pool } from '../db/connection.js';
 import { RowDataPacket, ResultSetHeader } from 'mysql2';
 import { sendTicketEmail } from '../services/emailService.js';
+import { requireCustomer, AuthenticatedRequest } from '../middleware/auth.js';
 
 const router = Router();
 
@@ -28,10 +29,20 @@ interface ReplyRow extends RowDataPacket {
   created_at: Date;
 }
 
-// GET all tickets (admin)
-router.get('/', async (req: Request, res: Response) => {
+// GET all tickets (admin or customer-filtered)
+router.get('/', async (req: Request, res: Response): Promise<void> => {
   try {
     const { customerId } = req.query;
+    
+    // If customerId filter is provided, verify authentication
+    if (customerId) {
+      const authUser = (req as AuthenticatedRequest).authUser;
+      if (!authUser || authUser.id !== customerId) {
+        res.status(403).json({ error: 'Forbidden' });
+        return;
+      }
+    }
+    
     const whereClause = customerId ? 'WHERE customer_id = ?' : '';
     const params = customerId ? [customerId] : [];
 
@@ -133,7 +144,7 @@ router.get('/:id', async (req: Request, res: Response) => {
 });
 
 // POST create new ticket
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', requireCustomer, async (req: Request, res: Response): Promise<void> => {
   try {
     const {
       ticketNumber,
@@ -145,6 +156,14 @@ router.post('/', async (req: Request, res: Response) => {
       orderId,
       priority = 'medium',
     } = req.body;
+    
+    const authUser = (req as AuthenticatedRequest).authUser;
+    
+    // Security: only allow customers to create tickets for themselves
+    if (authUser && customerId && authUser.id !== customerId) {
+      res.status(403).json({ error: 'Forbidden' });
+      return;
+    }
     
     if (!ticketNumber || !customerName || !customerEmail || !subject || !message) {
       res.status(400).json({ error: 'Missing required fields' });
@@ -277,10 +296,11 @@ router.put('/:id', async (req: Request, res: Response) => {
 });
 
 // POST add reply to ticket
-router.post('/:id/replies', async (req: Request, res: Response) => {
+router.post('/:id/replies', requireCustomer, async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
     const { author, message } = req.body;
+    const authUser = (req as AuthenticatedRequest).authUser;
     
     if (!author || !message) {
       res.status(400).json({ error: 'Missing required fields' });
@@ -290,6 +310,18 @@ router.post('/:id/replies', async (req: Request, res: Response) => {
     if (author !== 'customer' && author !== 'support') {
       res.status(400).json({ error: 'Invalid author type' });
       return;
+    }
+    
+    // Security: verify customer owns this ticket
+    if (author === 'customer' && authUser) {
+      const [tickets] = await pool.query<TicketRow[]>(
+        'SELECT customer_id FROM support_tickets WHERE id = ?',
+        [id]
+      );
+      if (tickets.length === 0 || tickets[0].customer_id !== authUser.id) {
+        res.status(403).json({ error: 'Forbidden' });
+        return;
+      }
     }
     
     const replyId = `reply_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;

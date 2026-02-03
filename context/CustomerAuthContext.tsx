@@ -87,11 +87,18 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
   // Initialize from localStorage
   useEffect(() => {
     const storedCustomer = localStorage.getItem("customer");
-    if (storedCustomer) {
+    const storedToken = localStorage.getItem("auth_token");
+    
+    if (storedCustomer && storedToken) {
       try {
+        // Restore JWT token first
+        apiClient.setToken(storedToken);
         setCustomer(JSON.parse(storedCustomer));
       } catch (error) {
         console.error("Failed to restore customer session", error);
+        // Clear invalid session
+        localStorage.removeItem("customer");
+        localStorage.removeItem("auth_token");
       }
     }
   }, []);
@@ -99,27 +106,24 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
   const register = async (firstName: string, lastName: string, email: string, password: string, phone?: string) => {
     setIsLoading(true);
     try {
-      const result = await apiClient.customers.register({
-        firstName,
-        lastName,
-        email,
-        password,
-        phone: phone || undefined,
-      });
+      const result = await apiClient.auth.customerRegister(firstName, lastName, email, password, phone);
 
-      if (result && result.id) {
+      if (result && result.customer && result.token) {
+        // Store JWT token
+        apiClient.setToken(result.token);
+        
         const newCustomer: Customer = {
-          id: result.id,
-          name: `${firstName} ${lastName}`,
-          firstName,
-          lastName,
-          email,
-          phone: phone || "",
-          createdAt: result.createdAt || new Date().toISOString(),
+          id: result.customer.id,
+          name: result.customer.name || `${firstName} ${lastName}`,
+          firstName: result.customer.firstName || firstName,
+          lastName: result.customer.lastName || lastName,
+          email: result.customer.email || email,
+          phone: result.customer.phone || phone || "",
+          createdAt: result.customer.createdAt || new Date().toISOString(),
           lastLogin: new Date().toISOString(),
           addresses: [],
           orders: [],
-          emailPreferences: result.emailPreferences || {
+          emailPreferences: result.customer.emailPreferences || {
             marketing: true,
             orderUpdates: true,
             announcements: true,
@@ -140,33 +144,42 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
     }
   };
 
-  const login = async (email: string, _password: string) => {
+  const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      // In a real app, this would be an API call with authentication
-      // For now, mock implementation
-      const mockCustomer: Customer = {
-        id: `cust-${email.replace(/[^a-z0-9]/g, "")}`,
-        name: email.split("@")[0],
-        email,
-        phone: "",
-        createdAt: new Date().toISOString(),
-        lastLogin: new Date().toISOString(),
-        addresses: [],
-        orders: [],
-        emailPreferences: {
-          marketing: true,
-          orderUpdates: true,
-          announcements: true,
-        },
-        isActive: true,
-      };
+      const result = await apiClient.auth.customerLogin(email, password);
 
-      setCustomer(mockCustomer);
-      localStorage.setItem("customer", JSON.stringify(mockCustomer));
-      return { success: true };
-    } catch (error) {
+      if (result && result.customer && result.token) {
+        // Store JWT token
+        apiClient.setToken(result.token);
+        
+        const loggedInCustomer: Customer = {
+          id: result.customer.id,
+          name: `${result.customer.firstName || ""} ${result.customer.lastName || ""}`.trim() || result.customer.email.split("@")[0],
+          firstName: result.customer.firstName || "",
+          lastName: result.customer.lastName || "",
+          email: result.customer.email,
+          phone: result.customer.phone || "",
+          createdAt: result.customer.createdAt || new Date().toISOString(),
+          lastLogin: new Date().toISOString(),
+          addresses: [],
+          orders: [],
+          emailPreferences: result.customer.emailPreferences || {
+            marketing: true,
+            orderUpdates: true,
+            announcements: true,
+          },
+          isActive: true,
+        };
+
+        setCustomer(loggedInCustomer);
+        localStorage.setItem("customer", JSON.stringify(loggedInCustomer));
+        return { success: true };
+      }
       return { success: false, error: "Login failed" };
+    } catch (error: any) {
+      console.error("Login error:", error);
+      return { success: false, error: error.message || "Invalid email or password" };
     } finally {
       setIsLoading(false);
     }
@@ -175,6 +188,7 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
   const logout = () => {
     setCustomer(null);
     localStorage.removeItem("customer");
+    apiClient.setToken(null); // Clear JWT token
   };
 
   const updateProfile = async (firstName: string, lastName: string, phone?: string) => {

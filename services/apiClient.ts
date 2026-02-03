@@ -260,10 +260,10 @@ class ApiClient {
         method: 'POST',
         body: JSON.stringify({ username, password }),
       }),
-    customerRegister: (name: string, email: string, password: string) =>
+    customerRegister: (firstName: string, lastName: string, email: string, password: string, phone?: string) =>
       this.request<{ token: string; customer: any }>('/auth/customer/register', {
         method: 'POST',
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ firstName, lastName, email, password, phone }),
       }),
     customerLogin: (email: string, password: string) =>
       this.request<{ token: string; customer: any }>('/auth/customer/login', {
