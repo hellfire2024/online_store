@@ -254,6 +254,22 @@ class ApiClient {
       method: 'PATCH',
     }),
   };
+
+  // Customer Addresses
+  customerAddresses = {
+    getAll: (customerId: string) => this.request<any[]>(`/customer-addresses/${customerId}`),
+    add: (customerId: string, address: any) => this.request<any>(`/customer-addresses/${customerId}`, {
+      method: 'POST',
+      body: JSON.stringify(address),
+    }),
+    update: (customerId: string, addressId: string, address: any) => this.request<any>(`/customer-addresses/${customerId}/${addressId}`, {
+      method: 'PUT',
+      body: JSON.stringify(address),
+    }),
+    delete: (customerId: string, addressId: string) => this.request<void>(`/customer-addresses/${customerId}/${addressId}`, {
+      method: 'DELETE',
+    }),
+  };
   auth = {
     adminLogin: (username: string, password: string) => 
       this.request<{ token: string; admin: any }>('/auth/admin/login', {

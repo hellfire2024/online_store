@@ -271,21 +271,22 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
     if (!customer) return { success: false, error: "Not authenticated" };
 
     try {
-      const newAddress: CustomerAddress = {
-        ...address,
-        id: `addr-${Date.now()}`,
-      };
+      const result = await apiClient.customerAddresses.add(customer.id, address);
 
-      const updated = {
-        ...customer,
-        addresses: [...customer.addresses, newAddress],
-      };
+      if (result && result.id) {
+        const newCustomer = {
+          ...customer,
+          addresses: [...customer.addresses, result],
+        };
 
-      setCustomer(updated);
-      localStorage.setItem("customer", JSON.stringify(updated));
-      return { success: true };
-    } catch (error) {
+        setCustomer(newCustomer);
+        localStorage.setItem("customer", JSON.stringify(newCustomer));
+        return { success: true };
+      }
       return { success: false, error: "Failed to add address" };
+    } catch (error: any) {
+      console.error("Add address error:", error);
+      return { success: false, error: error.message || "Failed to add address" };
     }
   };
 
@@ -293,18 +294,24 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
     if (!customer) return { success: false, error: "Not authenticated" };
 
     try {
-      const updated = {
-        ...customer,
-        addresses: customer.addresses.map((a) =>
-          a.id === address.id ? address : a,
-        ),
-      };
+      const result = await apiClient.customerAddresses.update(customer.id, address.id, address);
 
-      setCustomer(updated);
-      localStorage.setItem("customer", JSON.stringify(updated));
-      return { success: true };
-    } catch (error) {
+      if (result) {
+        const updated = {
+          ...customer,
+          addresses: customer.addresses.map((a) =>
+            a.id === address.id ? result : a,
+          ),
+        };
+
+        setCustomer(updated);
+        localStorage.setItem("customer", JSON.stringify(updated));
+        return { success: true };
+      }
       return { success: false, error: "Failed to update address" };
+    } catch (error: any) {
+      console.error("Update address error:", error);
+      return { success: false, error: error.message || "Failed to update address" };
     }
   };
 
@@ -312,6 +319,8 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
     if (!customer) return { success: false, error: "Not authenticated" };
 
     try {
+      await apiClient.customerAddresses.delete(customer.id, addressId);
+
       const updated = {
         ...customer,
         addresses: customer.addresses.filter((a) => a.id !== addressId),
@@ -320,8 +329,9 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
       setCustomer(updated);
       localStorage.setItem("customer", JSON.stringify(updated));
       return { success: true };
-    } catch (error) {
-      return { success: false, error: "Failed to delete address" };
+    } catch (error: any) {
+      console.error("Delete address error:", error);
+      return { success: false, error: error.message || "Failed to delete address" };
     }
   };
 
@@ -332,24 +342,39 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
     if (!customer) return { success: false, error: "Not authenticated" };
 
     try {
-      const updated = {
-        ...customer,
-        addresses: customer.addresses.map((a) => ({
-          ...a,
-          isDefault:
-            a.id === addressId && a.type === type
-              ? true
-              : a.type !== type
-                ? a.isDefault
-                : false,
-        })),
-      };
+      // Update the address with isDefault flag via backend
+      const addressToUpdate = customer.addresses.find(a => a.id === addressId);
+      if (!addressToUpdate) {
+        return { success: false, error: "Address not found" };
+      }
 
-      setCustomer(updated);
-      localStorage.setItem("customer", JSON.stringify(updated));
-      return { success: true };
-    } catch (error) {
+      const result = await apiClient.customerAddresses.update(customer.id, addressId, {
+        ...addressToUpdate,
+        isDefault: true,
+      });
+
+      if (result) {
+        const updated = {
+          ...customer,
+          addresses: customer.addresses.map((a) => ({
+            ...a,
+            isDefault:
+              a.id === addressId && a.type === type
+                ? true
+                : a.type !== type
+                  ? a.isDefault
+                  : false,
+          })),
+        };
+
+        setCustomer(updated);
+        localStorage.setItem("customer", JSON.stringify(updated));
+        return { success: true };
+      }
       return { success: false, error: "Failed to set default address" };
+    } catch (error: any) {
+      console.error("Set default address error:", error);
+      return { success: false, error: error.message || "Failed to set default address" };
     }
   };
 
