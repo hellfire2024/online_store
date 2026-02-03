@@ -434,7 +434,23 @@ export interface SiteSettings {
   // Order Configuration
   orderPrefix?: string; // e.g., "AGIS"
   orderNumberLength?: number; // e.g., 10 for AGIS-0000000001
-  invoiceTemplateHtml?: string; // HTML template for PDF receipts/invoices
+  invoiceTemplateHtml?: string; // HTML template for PDF receipts/invoices (deprecated)
+  invoiceTemplate?: {
+    id: string;
+    name: string;
+    companyName: string;
+    companyEmail?: string;
+    companyPhone?: string;
+    companyAddress?: string;
+    invoiceTitle: string;
+    includeItems: boolean;
+    includeTotals: boolean;
+    footerText?: string;
+    accentColor: string;
+    backgroundColor: string;
+    textColor: string;
+    borderColor: string;
+  };
 
   // Support & Ticketing Configuration
   supportEmail?: string; // e.g., "support@adaptivegis.com"

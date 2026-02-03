@@ -5,7 +5,7 @@ import { useToast } from "../hooks/useToast";
 import { useSiteSettings } from "../context/SiteSettingsContext";
 import { CustomerOrder } from "../types";
 import Pagination from "../components/Pagination";
-import { downloadInvoicePDF, InvoiceData } from "../services/invoiceService";
+import { downloadInvoicePDF, InvoiceData, DEFAULT_TEMPLATE } from "../services/pdfInvoiceGenerator";
 
 const CustomerOrdersPage: React.FC = () => {
   const { customer, isAuthenticated, fetchOrders } = useCustomerAuth();
@@ -83,7 +83,8 @@ const CustomerOrdersPage: React.FC = () => {
       paymentMethod: 'Credit Card',
       notes: `Order Status: ${order.status}`,
     };
-    await downloadInvoicePDF(invoiceData, siteSettings?.invoiceTemplateHtml);
+    const template = siteSettings?.invoiceTemplate || DEFAULT_TEMPLATE;
+    await downloadInvoicePDF(invoiceData, template);
   };
 
   const exportOrdersToCSV = () => {
