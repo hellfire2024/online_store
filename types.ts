@@ -434,6 +434,7 @@ export interface SiteSettings {
   // Order Configuration
   orderPrefix?: string; // e.g., "AGIS"
   orderNumberLength?: number; // e.g., 10 for AGIS-0000000001
+  invoiceTemplateHtml?: string; // HTML template for PDF receipts/invoices
 
   // Support & Ticketing Configuration
   supportEmail?: string; // e.g., "support@adaptivegis.com"

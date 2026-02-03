@@ -6,6 +6,7 @@ import React, {
   useEffect,
 } from "react";
 import { SiteSettings } from "../types";
+import { DEFAULT_INVOICE_TEMPLATE } from "../services/invoiceService";
 import * as mockApi from "../services/mockApi";
 import { apiClient } from "../services/apiClient";
 
@@ -64,6 +65,7 @@ const defaultSettings: SiteSettings = {
   supportEmail: "support@adaptivegis.com",
   supportSubjectPrefix: "Support Request",
   supportTicketSuffix: "SUP-001-001",
+  invoiceTemplateHtml: DEFAULT_INVOICE_TEMPLATE,
   shippingCarriers: {
     easypost: {
       enabled: false,

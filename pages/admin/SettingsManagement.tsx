@@ -3,6 +3,7 @@ import { useSiteSettings } from "../../context/SiteSettingsContext";
 import { usePages } from "../../context/PagesContext";
 import { useToast } from "../../hooks/useToast";
 import { SiteSettings, Menu, MenuItem, FooterItem, FooterColumn, TaxRule } from "../../types";
+import { DEFAULT_INVOICE_TEMPLATE } from "../../services/invoiceService";
 import { useUnsavedChanges } from "../../context/UnsavedChangesContext";
 import MenuEditor from "../../components/admin/MenuEditor"; // Correctly import the isolated component
 import ImageUploadInput from "../../components/admin/ImageUploadInput";
@@ -2090,6 +2091,52 @@ const SettingsManagement: React.FC = () => {
                   className={`mt-4 ${buttonClasses}`}
                 >
                   Save Order Settings
+                </button>
+              </div>
+            </div>
+
+            <div className="bg-slate-700 p-6 rounded-lg border border-slate-600">
+              <h3 className="text-xl font-semibold text-white mb-4">Invoice / Receipt PDF Template</h3>
+              <p className="text-sm text-gray-300 mb-4">
+                Customize the HTML template used to generate customer receipts. Available placeholders:
+                <span className="block text-gray-400 mt-1">
+                  {"{{orderNumber}}"}, {"{{orderDate}}"}, {"{{storeName}}"}, {"{{customerName}}"}, {"{{customerEmail}}"}, {"{{customerPhone}}"}, {"{{shippingStreet}}"}, {"{{shippingCity}}"}, {"{{shippingState}}"}, {"{{shippingZip}}"}, {"{{shippingCountry}}"}, {"{{items}}"}, {"{{subtotal}}"}, {"{{tax}}"}, {"{{shipping}}"}, {"{{total}}"}, {"{{trackingBlock}}"}, {"{{paymentBlock}}"}, {"{{notesBlock}}"}
+                </span>
+              </p>
+              <textarea
+                value={settings.invoiceTemplateHtml || DEFAULT_INVOICE_TEMPLATE}
+                onChange={(e) =>
+                  setSettings((prev) => ({
+                    ...prev!,
+                    invoiceTemplateHtml: e.target.value,
+                  }))
+                }
+                rows={14}
+                className="w-full p-3 bg-slate-900 border border-slate-600 rounded-md text-gray-200 font-mono text-xs"
+              />
+              <div className="flex gap-3 mt-4">
+                <button
+                  onClick={() =>
+                    setSettings((prev) => ({
+                      ...prev!,
+                      invoiceTemplateHtml: DEFAULT_INVOICE_TEMPLATE,
+                    }))
+                  }
+                  className="bg-slate-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-slate-500"
+                >
+                  Reset to Default
+                </button>
+                <button
+                  onClick={() => {
+                    updateSiteSettings({
+                      invoiceTemplateHtml:
+                        settings.invoiceTemplateHtml || DEFAULT_INVOICE_TEMPLATE,
+                    });
+                    addToast('Invoice template saved', 'success');
+                  }}
+                  className={buttonClasses}
+                >
+                  Save Invoice Template
                 </button>
               </div>
             </div>

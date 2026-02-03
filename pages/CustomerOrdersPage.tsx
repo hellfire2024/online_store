@@ -2,14 +2,16 @@ import React, { useEffect, useState } from "react";
 import { useCustomerAuth } from "../context/CustomerAuthContext";
 import { useNavigate, Link } from "react-router-dom";
 import { useToast } from "../hooks/useToast";
+import { useSiteSettings } from "../context/SiteSettingsContext";
 import { CustomerOrder } from "../types";
 import Pagination from "../components/Pagination";
-import { downloadInvoiceHTML, InvoiceData } from "../services/invoiceService";
+import { downloadInvoicePDF, InvoiceData } from "../services/invoiceService";
 
 const CustomerOrdersPage: React.FC = () => {
   const { customer, isAuthenticated, fetchOrders } = useCustomerAuth();
   const navigate = useNavigate();
   const { addToast } = useToast();
+  const { siteSettings } = useSiteSettings();
   const [selectedOrder, setSelectedOrder] = useState<CustomerOrder | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
@@ -51,10 +53,11 @@ const CustomerOrdersPage: React.FC = () => {
     }
   };
 
-  const handleDownloadInvoice = (order: CustomerOrder) => {
+  const handleDownloadInvoice = async (order: CustomerOrder) => {
     const invoiceData: InvoiceData = {
       orderNumber: order.orderNumber,
       orderDate: order.date,
+      storeName: `${siteSettings?.logoText || 'Your'} ${siteSettings?.logoTextAccent || 'Store'}`.trim(),
       customerName: order.shippingAddress.fullName,
       customerEmail: customer?.email || 'N/A',
       customerPhone: order.shippingAddress.phone,
@@ -80,7 +83,7 @@ const CustomerOrdersPage: React.FC = () => {
       paymentMethod: 'Credit Card',
       notes: `Order Status: ${order.status}`,
     };
-    downloadInvoiceHTML(invoiceData);
+    await downloadInvoicePDF(invoiceData, siteSettings?.invoiceTemplateHtml);
   };
 
   const exportOrdersToCSV = () => {
