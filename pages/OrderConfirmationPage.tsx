@@ -106,6 +106,15 @@ const OrderConfirmationPage: React.FC = () => {
     const stateData = (location.state as OrderDetails) || null;
     if (stateData && stateData.orderNumber) {
       console.log('Found order in location.state:', stateData.orderNumber);
+      console.log('Order items:', stateData.items);
+      stateData.items.forEach((item, idx) => {
+        console.log(`Item ${idx}:`, {
+          name: item.name,
+          price: item.price,
+          priceType: typeof item.price,
+          quantity: item.quantity,
+        });
+      });
       setOrderDetails(stateData);
       setIsLoaded(true);
       return;
