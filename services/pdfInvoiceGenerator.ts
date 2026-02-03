@@ -87,8 +87,8 @@ export const generateInvoiceHTML = (
         </tr>
       </thead>
       <tbody>
-        ${invoice.items.map(item => `
-          <tr style="background-color: ${item.id % 2 === 0 ? '#f8fafc' : '#ffffff'};">
+        ${invoice.items.map((item, idx) => `
+          <tr style="background-color: ${idx % 2 === 0 ? '#f8fafc' : '#ffffff'};">
             <td style="padding: 12px; border: 1px solid ${template.borderColor}; color: ${template.textColor};">${item.name}</td>
             <td style="padding: 12px; text-align: right; border: 1px solid ${template.borderColor}; color: ${template.textColor};">${item.quantity}</td>
             <td style="padding: 12px; text-align: right; border: 1px solid ${template.borderColor}; color: ${template.textColor};">${formatCurrency(item.price)}</td>

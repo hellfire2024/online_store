@@ -3,7 +3,6 @@ import { useSiteSettings } from "../../context/SiteSettingsContext";
 import { usePages } from "../../context/PagesContext";
 import { useToast } from "../../hooks/useToast";
 import { SiteSettings, Menu, MenuItem, FooterItem, FooterColumn, TaxRule } from "../../types";
-import { DEFAULT_INVOICE_TEMPLATE } from "../../services/pdfInvoiceGenerator";
 import InvoiceTemplateEditor from "../../components/admin/InvoiceTemplateEditor";
 import { useUnsavedChanges } from "../../context/UnsavedChangesContext";
 import MenuEditor from "../../components/admin/MenuEditor"; // Correctly import the isolated component

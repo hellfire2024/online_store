@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { InvoiceTemplate, DEFAULT_TEMPLATE, generateInvoiceHTML } from '../../services/pdfInvoiceGenerator';
 
 interface InvoiceTemplateEditorProps {
@@ -11,7 +11,6 @@ export const InvoiceTemplateEditor: React.FC<InvoiceTemplateEditorProps> = ({
   onTemplateChange,
 }) => {
   const currentTemplate = template || DEFAULT_TEMPLATE;
-  const [showPreview, setShowPreview] = useState(false);
 
   const handleChange = (field: keyof InvoiceTemplate, value: any) => {
     const updated = { ...currentTemplate, [field]: value };
