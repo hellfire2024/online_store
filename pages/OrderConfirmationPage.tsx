@@ -1,5 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
+import { useSiteSettings } from '../context/SiteSettingsContext';
+import { downloadInvoicePDF, DEFAULT_TEMPLATE } from '../services/pdfInvoiceGenerator';
 
 interface OrderDetails {
   orderNumber: string;
@@ -96,6 +98,7 @@ const WatermarkedOrderImage: React.FC<{ src: string }> = ({ src }) => {
 const OrderConfirmationPage: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { siteSettings } = useSiteSettings();
   
   // Use an effect to load order details from location state or sessionStorage
   const [orderDetails, setOrderDetails] = React.useState<OrderDetails | null>(null);
@@ -185,68 +188,39 @@ const OrderConfirmationPage: React.FC = () => {
     );
   }
 
-  const handleDownloadReceipt = () => {
-    // Generate receipt content
-    const receiptContent = `
-═══════════════════════════════════════════
-           CUSTOM THREADS
-        ORDER CONFIRMATION
-═══════════════════════════════════════════
-
-Order Number: ${orderDetails.orderNumber}
-Date: ${new Date().toLocaleDateString()}
-
-═══════════════════════════════════════════
-SHIPPING INFORMATION
-═══════════════════════════════════════════
-${orderDetails.shippingAddress.firstName} ${orderDetails.shippingAddress.lastName}
-${orderDetails.shippingAddress.email}
-${orderDetails.shippingAddress.street1}
-${orderDetails.shippingAddress.city}, ${orderDetails.shippingAddress.state} ${orderDetails.shippingAddress.zip}
-
-═══════════════════════════════════════════
-ORDER ITEMS
-═══════════════════════════════════════════
-${orderDetails.items.map((item, idx) => 
-  `${item.name}\n  Qty: ${item.quantity} × $${Number(item.price).toFixed(2)} = $${(item.quantity * Number(item.price)).toFixed(2)}${
-    item.selectedOptions ? `\n  Options: ${item.selectedOptions}` : ''
-  }${
-    item.customText ? `\n  Custom Text: "${item.customText}"\n  (${item.customTextCharCount} characters • +$${item.customTextCost?.toFixed(2)})` : ''
-  }${
-    item.customization ? `\n  Customization: ${item.customization.type === 'gallery' ? 'Gallery Design' : 'Uploaded Design'}${item.customization.fileName ? ` (${item.customization.fileName})` : ''}\n  Image: See attachment ${idx + 1}` : ''
-  }`
-).join('\n\n')}
-
-═══════════════════════════════════════════
-ORDER SUMMARY
-═══════════════════════════════════════════
-Subtotal:        $${Number(orderDetails.subtotal).toFixed(2)}
-Shipping:        $${Number(orderDetails.shipping).toFixed(2)}
-Tax:             $${Number(orderDetails.tax).toFixed(2)}
-───────────────────────────────────────────
-TOTAL:           $${Number(orderDetails.total).toFixed(2)}
-
-═══════════════════════════════════════════
-
-Thank you for your order!
-
-This is a demo receipt. In a production system,
-this would be an official order receipt.
-
-Questions? Contact us at support@customthreads.com
-═══════════════════════════════════════════
-    `.trim();
-
-    // Create blob and download
-    const blob = new Blob([receiptContent], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `receipt-${orderDetails.orderNumber}.txt`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+  const handleDownloadReceipt = async () => {
+    if (!orderDetails) return;
+    
+    const invoiceData = {
+      orderNumber: orderDetails.orderNumber,
+      orderDate: new Date().toISOString(),
+      storeName: `${siteSettings?.logoText || 'Your'} ${siteSettings?.logoTextAccent || 'Store'}`.trim(),
+      customerName: `${orderDetails.shippingAddress.firstName} ${orderDetails.shippingAddress.lastName}`,
+      customerEmail: orderDetails.shippingAddress.email,
+      customerPhone: orderDetails.shippingAddress.phone,
+      shippingAddress: {
+        street: orderDetails.shippingAddress.street1,
+        city: orderDetails.shippingAddress.city,
+        state: orderDetails.shippingAddress.state,
+        zip: orderDetails.shippingAddress.zip,
+        country: orderDetails.shippingAddress.country,
+      },
+      items: orderDetails.items.map(item => ({
+        id: item.name,
+        name: item.name,
+        quantity: item.quantity,
+        price: Number(item.basePrice || item.price) || 0,
+        total: item.quantity * (Number(item.basePrice || item.price) || 0),
+      })),
+      subtotal: orderDetails.subtotal,
+      tax: orderDetails.tax,
+      shipping: orderDetails.shipping,
+      total: orderDetails.total,
+      notes: `Order Date: ${new Date().toLocaleDateString()}`,
+    };
+    
+    const template = siteSettings?.invoiceTemplate || DEFAULT_TEMPLATE;
+    await downloadInvoicePDF(invoiceData, template);
   };
 
   return (
