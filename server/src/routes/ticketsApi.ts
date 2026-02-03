@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import { pool } from '../db/connection.js';
 import { RowDataPacket, ResultSetHeader } from 'mysql2';
 import { sendTicketEmail } from '../services/emailService.js';
-import { requireCustomer, AuthenticatedRequest } from '../middleware/auth.js';
+import { requireCustomer, AuthenticatedRequest, getAuthUser } from '../middleware/auth.js';
 
 const router = Router();
 
@@ -34,10 +34,25 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
   try {
     const { customerId } = req.query;
     
-    // If customerId filter is provided, verify authentication
+    const authUser = getAuthUser(req);
+
+    // If customerId filter is provided, verify customer authentication
     if (customerId) {
-      const authUser = (req as AuthenticatedRequest).authUser;
-      if (!authUser || authUser.id !== customerId) {
+      if (!authUser) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+      if (authUser.type !== 'customer' || authUser.id !== customerId) {
+        res.status(403).json({ error: 'Forbidden' });
+        return;
+      }
+    } else {
+      // Unfiltered access is admin-only
+      if (!authUser) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+      if (authUser.type !== 'admin') {
         res.status(403).json({ error: 'Forbidden' });
         return;
       }

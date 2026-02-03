@@ -93,7 +93,22 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
       try {
         // Restore JWT token first
         apiClient.setToken(storedToken);
-        setCustomer(JSON.parse(storedCustomer));
+        const parsed = JSON.parse(storedCustomer);
+        setCustomer(parsed);
+
+        // Refresh customer profile to pull addresses
+        if (parsed?.id) {
+          apiClient.customers
+            .getById(parsed.id)
+            .then((profile) => {
+              const normalized = mapCustomer(profile);
+              setCustomer(normalized);
+              localStorage.setItem("customer", JSON.stringify(normalized));
+            })
+            .catch((error) => {
+              console.warn("Failed to refresh customer profile", error);
+            });
+        }
       } catch (error) {
         console.error("Failed to restore customer session", error);
         // Clear invalid session
@@ -103,6 +118,55 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
     }
   }, []);
 
+    const mapAddress = (address: any): CustomerAddress => {
+      const firstName = address.firstName ?? address.first_name ?? '';
+      const lastName = address.lastName ?? address.last_name ?? '';
+      const fullName =
+        address.fullName ??
+        address.full_name ??
+        `${firstName} ${lastName}`.trim();
+
+      return {
+        id: address.id,
+        type: address.type,
+        firstName,
+        lastName,
+        fullName,
+        streetAddress: address.streetAddress ?? address.street_address ?? '',
+        city: address.city ?? '',
+        state: address.state ?? '',
+        zipCode: address.zipCode ?? address.zip_code ?? '',
+        country: address.country ?? 'US',
+        phone: address.phone ?? '',
+        isDefault: Boolean(address.isDefault ?? address.is_default),
+      };
+    };
+
+    const mapCustomer = (data: any): Customer => {
+      const firstName = data.firstName ?? data.first_name ?? '';
+      const lastName = data.lastName ?? data.last_name ?? '';
+      const name = data.name ?? `${firstName} ${lastName}`.trim();
+
+      return {
+        id: data.id,
+        name,
+        firstName,
+        lastName,
+        email: data.email ?? '',
+        phone: data.phone ?? '',
+        createdAt: data.createdAt ?? data.created_at ?? new Date().toISOString(),
+        lastLogin: data.lastLogin ?? data.last_login ?? new Date().toISOString(),
+        addresses: Array.isArray(data.addresses) ? data.addresses.map(mapAddress) : [],
+        orders: data.orders ?? [],
+        emailPreferences: data.emailPreferences ?? data.email_preferences ?? {
+          marketing: true,
+          orderUpdates: true,
+          announcements: true,
+        },
+        isActive: data.isActive ?? data.is_active ?? true,
+      };
+    };
+
   const register = async (firstName: string, lastName: string, email: string, password: string, phone?: string) => {
     setIsLoading(true);
     try {
@@ -111,25 +175,16 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
       if (result && result.customer && result.token) {
         // Store JWT token
         apiClient.setToken(result.token);
-        
-        const newCustomer: Customer = {
-          id: result.customer.id,
-          name: result.customer.name || `${firstName} ${lastName}`,
-          firstName: result.customer.firstName || firstName,
-          lastName: result.customer.lastName || lastName,
-          email: result.customer.email || email,
-          phone: result.customer.phone || phone || "",
-          createdAt: result.customer.createdAt || new Date().toISOString(),
-          lastLogin: new Date().toISOString(),
-          addresses: [],
-          orders: [],
-          emailPreferences: result.customer.emailPreferences || {
-            marketing: true,
-            orderUpdates: true,
-            announcements: true,
-          },
-          isActive: true,
-        };
+
+        let newCustomer: Customer = mapCustomer(result.customer);
+
+        // Fetch full profile to include addresses
+        try {
+          const profile = await apiClient.customers.getById(result.customer.id);
+          newCustomer = mapCustomer(profile);
+        } catch (error) {
+          console.warn("Failed to load customer profile after registration", error);
+        }
 
         setCustomer(newCustomer);
         localStorage.setItem("customer", JSON.stringify(newCustomer));
@@ -152,25 +207,16 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
       if (result && result.customer && result.token) {
         // Store JWT token
         apiClient.setToken(result.token);
-        
-        const loggedInCustomer: Customer = {
-          id: result.customer.id,
-          name: `${result.customer.firstName || ""} ${result.customer.lastName || ""}`.trim() || result.customer.email.split("@")[0],
-          firstName: result.customer.firstName || "",
-          lastName: result.customer.lastName || "",
-          email: result.customer.email,
-          phone: result.customer.phone || "",
-          createdAt: result.customer.createdAt || new Date().toISOString(),
-          lastLogin: new Date().toISOString(),
-          addresses: [],
-          orders: [],
-          emailPreferences: result.customer.emailPreferences || {
-            marketing: true,
-            orderUpdates: true,
-            announcements: true,
-          },
-          isActive: true,
-        };
+
+        let loggedInCustomer: Customer = mapCustomer(result.customer);
+
+        // Fetch full profile to include addresses
+        try {
+          const profile = await apiClient.customers.getById(result.customer.id);
+          loggedInCustomer = mapCustomer(profile);
+        } catch (error) {
+          console.warn("Failed to load customer profile after login", error);
+        }
 
         setCustomer(loggedInCustomer);
         localStorage.setItem("customer", JSON.stringify(loggedInCustomer));
