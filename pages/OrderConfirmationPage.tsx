@@ -11,6 +11,12 @@ interface OrderDetails {
     name: string;
     quantity: number;
     price: number;
+    basePrice?: number;
+    optionsCost?: number;
+    optionsBreakdown?: Array<{
+      label: string;
+      priceDelta: number;
+    }>;
     productImage: string;
     customization?: {
       type: 'gallery' | 'upload';
@@ -296,6 +302,26 @@ Questions? Contact us at support@customthreads.com
                   <p className="text-gray-400 text-sm">Quantity: {item.quantity}</p>
                   {item.selectedOptions && (
                     <p className="text-sky-400 text-xs mt-1">{item.selectedOptions}</p>
+                  )}
+                  {typeof item.basePrice === 'number' && (
+                    <p className="text-gray-300 text-sm mt-2">
+                      Base price (each): ${item.basePrice.toFixed(2)}
+                    </p>
+                  )}
+                  {item.optionsBreakdown && item.optionsBreakdown.length > 0 && (
+                    <div className="mt-2 space-y-1">
+                      <p className="text-gray-300 text-sm">Options (each):</p>
+                      {item.optionsBreakdown.map((opt, optIndex) => (
+                        <p key={optIndex} className="text-gray-400 text-xs">
+                          {opt.label} • +${opt.priceDelta.toFixed(2)}
+                        </p>
+                      ))}
+                      {typeof item.optionsCost === 'number' && item.optionsCost > 0 && (
+                        <p className="text-gray-300 text-xs">
+                          Options total (each): +${item.optionsCost.toFixed(2)}
+                        </p>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>

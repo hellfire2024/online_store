@@ -300,6 +300,7 @@ const CheckoutPage: React.FC = () => {
         items: cartItems.map(item => {
           let optionsDelta = 0;
           let selectedOptionsText = '';
+          const optionsBreakdown: Array<{ label: string; priceDelta: number }> = [];
           
           if (item.selectedOptions && item.product.optionLists) {
             const optionParts: string[] = [];
@@ -311,6 +312,10 @@ const CheckoutPage: React.FC = () => {
                   if (option) {
                     optionsDelta += option.priceDelta;
                     optionParts.push(`${list.name}: ${option.name}`);
+                    optionsBreakdown.push({
+                      label: `${list.name}: ${option.name}`,
+                      priceDelta: option.priceDelta,
+                    });
                   }
                 });
               } else {
@@ -319,6 +324,10 @@ const CheckoutPage: React.FC = () => {
                 if (option) {
                   optionsDelta += option.priceDelta;
                   optionParts.push(`${list.name}: ${option.name}`);
+                  optionsBreakdown.push({
+                    label: `${list.name}: ${option.name}`,
+                    priceDelta: option.priceDelta,
+                  });
                 }
               }
             });
@@ -331,10 +340,15 @@ const CheckoutPage: React.FC = () => {
             customTextCost = item.customText.length * item.product.customTextPricePerChar;
           }
 
+          const basePrice = toNumber(item.product.price);
+
           return {
             name: item.product.name,
             quantity: item.quantity,
-            price: toNumber(item.product.price) + optionsDelta + customTextCost,
+            price: basePrice + optionsDelta + customTextCost,
+            basePrice,
+            optionsCost: optionsDelta,
+            optionsBreakdown: optionsBreakdown.length > 0 ? optionsBreakdown : undefined,
             productImage: item.product.imageUrl,
             customization: item.customization ? {
               type: item.customization.type,
