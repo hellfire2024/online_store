@@ -106,15 +106,6 @@ const OrderConfirmationPage: React.FC = () => {
     const stateData = (location.state as OrderDetails) || null;
     if (stateData && stateData.orderNumber) {
       console.log('Found order in location.state:', stateData.orderNumber);
-      console.log('Order items:', stateData.items);
-      stateData.items.forEach((item, idx) => {
-        console.log(`Item ${idx}:`, {
-          name: item.name,
-          price: item.price,
-          priceType: typeof item.price,
-          quantity: item.quantity,
-        });
-      });
       setOrderDetails(stateData);
       setIsLoaded(true);
       return;
@@ -307,7 +298,6 @@ Questions? Contact us at support@customthreads.com
                     <p className="text-sky-400 text-xs mt-1">{item.selectedOptions}</p>
                   )}
                 </div>
-                <p className="text-white font-semibold">${(item.quantity * (Number(item.price) || 0)).toFixed(2)}</p>
               </div>
               {item.customText && (
                 <div className="mt-3 bg-slate-700 p-3 rounded-lg">

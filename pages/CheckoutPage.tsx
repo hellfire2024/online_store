@@ -330,22 +330,11 @@ const CheckoutPage: React.FC = () => {
           if (item.customText && item.product.customTextPricePerChar) {
             customTextCost = item.customText.length * item.product.customTextPricePerChar;
           }
-          
-          const calculatedPrice = toNumber(item.product.price) + optionsDelta + customTextCost;
-          console.log('Item price calculation:', {
-            productName: item.product.name,
-            basePrice: item.product.price,
-            basePriceType: typeof item.product.price,
-            toNumberResult: toNumber(item.product.price),
-            optionsDelta,
-            customTextCost,
-            calculatedPrice,
-          });
-          
+
           return {
             name: item.product.name,
             quantity: item.quantity,
-            price: calculatedPrice,
+            price: toNumber(item.product.price) + optionsDelta + customTextCost,
             productImage: item.product.imageUrl,
             customization: item.customization ? {
               type: item.customization.type,
