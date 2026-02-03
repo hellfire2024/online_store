@@ -310,11 +310,12 @@ const CheckoutPage: React.FC = () => {
                 selectedOptionIds.forEach((optionId) => {
                   const option = list.options.find((o) => o.id === optionId);
                   if (option) {
-                    optionsDelta += option.priceDelta;
+                    const priceDelta = toNumber(option.priceDelta);
+                    optionsDelta += priceDelta;
                     optionParts.push(`${list.name}: ${option.name}`);
                     optionsBreakdown.push({
                       label: `${list.name}: ${option.name}`,
-                      priceDelta: option.priceDelta,
+                      priceDelta,
                     });
                   }
                 });
@@ -322,11 +323,12 @@ const CheckoutPage: React.FC = () => {
                 // Fallback for old single-select format
                 const option = list.options.find((o) => o.id === selectedOptionIds);
                 if (option) {
-                  optionsDelta += option.priceDelta;
+                  const priceDelta = toNumber(option.priceDelta);
+                  optionsDelta += priceDelta;
                   optionParts.push(`${list.name}: ${option.name}`);
                   optionsBreakdown.push({
                     label: `${list.name}: ${option.name}`,
-                    priceDelta: option.priceDelta,
+                    priceDelta,
                   });
                 }
               }

@@ -15,10 +15,14 @@ const TrashIcon: React.FC = () => (
 
 const CartItemRow: React.FC<{ item: CartItem }> = ({ item }) => {
     const { updateQuantity, removeFromCart } = useCart();
+  const toNumber = (value: unknown, fallback = 0) => {
+    const num = Number(value);
+    return Number.isFinite(num) ? num : fallback;
+  };
     
     // Calculate total price delta from all selected options (now supporting multiple selections per list)
     let optionsDelta = 0;
-    const selectedOptionDetails: { listName: string; optionName: string }[] = [];
+  const selectedOptionDetails: { listName: string; optionName: string; priceDelta: number }[] = [];
     
     if (item.selectedOptions && item.product.optionLists) {
       item.product.optionLists.forEach((list) => {
@@ -27,16 +31,18 @@ const CartItemRow: React.FC<{ item: CartItem }> = ({ item }) => {
           selectedOptionIds.forEach((optionId) => {
             const option = list.options.find((o) => o.id === optionId);
             if (option) {
-              optionsDelta += Number(option.priceDelta);
-              selectedOptionDetails.push({ listName: list.name, optionName: option.name });
+              const priceDelta = toNumber(option.priceDelta);
+              optionsDelta += priceDelta;
+              selectedOptionDetails.push({ listName: list.name, optionName: option.name, priceDelta });
             }
           });
         } else {
           // Fallback for old single-select format (for backwards compatibility)
           const option = list.options.find((o) => o.id === selectedOptionIds);
           if (option) {
-            optionsDelta += Number(option.priceDelta);
-            selectedOptionDetails.push({ listName: list.name, optionName: option.name });
+            const priceDelta = toNumber(option.priceDelta);
+            optionsDelta += priceDelta;
+            selectedOptionDetails.push({ listName: list.name, optionName: option.name, priceDelta });
           }
         }
       });
@@ -45,10 +51,11 @@ const CartItemRow: React.FC<{ item: CartItem }> = ({ item }) => {
     // Add custom text cost
     let customTextCost = 0;
     if (item.customText && item.product.customTextPricePerChar) {
-      customTextCost = item.customText.length * Number(item.product.customTextPricePerChar);
+      customTextCost = item.customText.length * toNumber(item.product.customTextPricePerChar);
     }
-    
-    const finalPrice = Number(item.product.price) + optionsDelta + customTextCost;
+
+    const basePrice = toNumber(item.product.price);
+    const finalPrice = basePrice + optionsDelta + customTextCost;
 
     return (
         <div className="flex items-start py-5 border-b border-slate-700 gap-4">
@@ -57,16 +64,19 @@ const CartItemRow: React.FC<{ item: CartItem }> = ({ item }) => {
             </div>
             <div className="grow">
                 <h3 className="font-semibold text-white">{item.product.name}</h3>
-                <p className="text-sm text-gray-400">${finalPrice.toFixed(2)}</p>
-                {selectedOptionDetails.length > 0 && (
-                    <div className="mt-1 space-y-0.5">
-                        {selectedOptionDetails.map((detail, idx) => (
-                            <p key={idx} className="text-xs text-sky-400">
-                                {detail.listName}: {detail.optionName}
-                            </p>
-                        ))}
-                    </div>
-                )}
+              <p className="text-sm text-gray-300">Base price (each): ${basePrice.toFixed(2)}</p>
+              {selectedOptionDetails.length > 0 && (
+                <div className="mt-1 space-y-0.5">
+                  <p className="text-xs text-gray-300">Options (each):</p>
+                  {selectedOptionDetails.map((detail, idx) => (
+                    <p key={idx} className="text-xs text-sky-400">
+                      {detail.listName}: {detail.optionName} • +${detail.priceDelta.toFixed(2)}
+                    </p>
+                  ))}
+                  <p className="text-xs text-gray-300">Options total (each): +${optionsDelta.toFixed(2)}</p>
+                </div>
+              )}
+              <p className="text-sm text-gray-400 mt-1">Item total (each): ${finalPrice.toFixed(2)}</p>
                 {item.customization && (
                     <div className="mt-2 bg-slate-700 p-2 rounded-lg">
                         <div className="flex items-center gap-2">
