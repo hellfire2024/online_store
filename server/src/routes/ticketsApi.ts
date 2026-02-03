@@ -29,10 +29,15 @@ interface ReplyRow extends RowDataPacket {
 }
 
 // GET all tickets (admin)
-router.get('/', async (_req: Request, res: Response) => {
+router.get('/', async (req: Request, res: Response) => {
   try {
+    const { customerId } = req.query;
+    const whereClause = customerId ? 'WHERE customer_id = ?' : '';
+    const params = customerId ? [customerId] : [];
+
     const [tickets] = await pool.query<TicketRow[]>(
-      `SELECT * FROM support_tickets ORDER BY created_at DESC LIMIT 200`
+      `SELECT * FROM support_tickets ${whereClause} ORDER BY created_at DESC LIMIT 200`,
+      params
     );
     
     // Get replies for all tickets

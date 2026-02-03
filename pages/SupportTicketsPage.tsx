@@ -3,6 +3,7 @@ import { useCustomerAuth } from '../context/CustomerAuthContext';
 import { useSiteSettings } from '../context/SiteSettingsContext';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../hooks/useToast';
+import apiClient from '../services/apiClient';
 
 interface SupportTicket {
   id: string;
@@ -33,39 +34,25 @@ const SupportTicketsPage: React.FC = () => {
   const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
   const [formData, setFormData] = useState({ subject: '', message: '', orderId: '', priority: 'medium' });
   const [replyMessage, setReplyMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    if (isAuthenticated) {
-      const mockTickets: SupportTicket[] = [
-        {
-          id: '1',
-          ticketNumber: 'TKT-2026-001',
-          subject: 'Question about product customization',
-          message: 'Can I add metallic ink to my design?',
-          orderId: 'AGIS-0000000001',
-          status: 'in_progress',
-          priority: 'medium',
-          createdAt: '2026-01-24T10:30:00Z',
-          updatedAt: '2026-01-26T14:00:00Z',
-          replies: [
-            {
-              id: '1',
-              author: 'customer',
-              message: 'Can I add metallic ink to my design?',
-              timestamp: '2026-01-24T10:30:00Z',
-            },
-            {
-              id: '2',
-              author: 'support',
-              message: 'Yes, we offer metallic ink options. The cost is $5.00 per color.',
-              timestamp: '2026-01-25T09:15:00Z',
-            },
-          ],
-        },
-      ];
-      setTickets(mockTickets);
-    }
-  }, [isAuthenticated]);
+    const loadTickets = async () => {
+      if (!isAuthenticated || !customer?.id) return;
+      try {
+        setIsLoading(true);
+        const apiTickets = await apiClient.tickets.getForCustomer(customer.id);
+        setTickets(Array.isArray(apiTickets) ? apiTickets : []);
+      } catch (error) {
+        console.error('Failed to load tickets:', error);
+        addToast('Failed to load support tickets', 'error');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadTickets();
+  }, [isAuthenticated, customer?.id, addToast]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,25 +61,30 @@ const SupportTicketsPage: React.FC = () => {
       return;
     }
 
-    const newTicket: SupportTicket = {
-      id: String(tickets.length + 1),
-      ticketNumber: `TKT-2026-${String(tickets.length + 1).padStart(3, '0')}`,
-      subject: formData.subject,
-      message: formData.message,
-      orderId: formData.orderId || undefined,
-      status: 'open',
-      priority: formData.priority as any,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      replies: [
-        {
-          id: '1',
-          author: 'customer',
-          message: formData.message,
-          timestamp: new Date().toISOString(),
-        },
-      ],
-    };
+    if (!customer) {
+      addToast('Please sign in to submit a ticket', 'error');
+      return;
+    }
+
+    const ticketNumber = `TKT-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`;
+    let createdTicket: SupportTicket | null = null;
+
+    try {
+      createdTicket = await apiClient.tickets.create({
+        ticketNumber,
+        customerId: customer.id,
+        customerName: customer.name,
+        customerEmail: customer.email,
+        subject: formData.subject,
+        message: formData.message,
+        orderId: formData.orderId || null,
+        priority: formData.priority,
+      });
+    } catch (error) {
+      console.error('Error creating ticket:', error);
+      addToast('Failed to create support ticket', 'error');
+      return;
+    }
 
     // Send email to support with ticket information
     try {
@@ -110,24 +102,20 @@ const SupportTicketsPage: React.FC = () => {
       const emailSubject = `${subjectPrefix} | ${formData.subject}${orderInfo} | ${ticketDate} | ${ticketSuffix}`;
       const supportEmail = siteSettings?.supportEmail || 'support@adaptivegis.com';
       
-      const response = await fetch('/api/send-ticket-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          to: supportEmail,
-          subject: emailSubject,
-          ticketNumber: newTicket.ticketNumber,
-          orderId: formData.orderId,
-          priority: formData.priority,
-          message: formData.message,
-          customerInfo: {
-            subject: formData.subject,
-            date: ticketDate,
-          },
-        }),
+      const response = await apiClient.tickets.sendEmail({
+        to: supportEmail,
+        subject: emailSubject,
+        ticketNumber: createdTicket?.ticketNumber || ticketNumber,
+        orderId: formData.orderId,
+        priority: formData.priority,
+        message: formData.message,
+        customerInfo: {
+          subject: formData.subject,
+          date: ticketDate,
+        },
       });
 
-      if (response.ok) {
+      if (response?.success) {
         console.log('Support ticket email sent successfully');
       } else {
         console.warn('Failed to send support ticket email');
@@ -136,38 +124,44 @@ const SupportTicketsPage: React.FC = () => {
       console.error('Error sending support ticket email:', error);
     }
 
-    setTickets([newTicket, ...tickets]);
+    if (createdTicket) {
+      setTickets([createdTicket, ...tickets]);
+    }
     setFormData({ subject: '', message: '', orderId: '', priority: 'medium' });
     addToast('Support ticket created successfully', 'success');
     setActiveTab('tickets');
   };
 
-  const handleReply = (e: React.FormEvent) => {
+  const handleReply = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedTicket || !replyMessage.trim()) return;
 
-    const updated = tickets.map(t => {
-      if (t.id === selectedTicket.id) {
-        return {
-          ...t,
-          replies: [
-            ...t.replies,
-            {
-              id: String(t.replies.length + 1),
-              author: 'customer' as const,
-              message: replyMessage,
-              timestamp: new Date().toISOString(),
-            },
-          ],
-          updatedAt: new Date().toISOString(),
-        };
-      }
-      return t;
-    });
-    setTickets(updated);
-    setSelectedTicket(updated.find(t => t.id === selectedTicket.id) || null);
-    setReplyMessage('');
-    addToast('Reply sent', 'success');
+    try {
+      const reply = await apiClient.tickets.addReply(
+        selectedTicket.id,
+        'customer',
+        replyMessage,
+      );
+
+      const updated = tickets.map(t => {
+        if (t.id === selectedTicket.id) {
+          return {
+            ...t,
+            replies: [...t.replies, reply],
+            updatedAt: new Date().toISOString(),
+          };
+        }
+        return t;
+      });
+
+      setTickets(updated);
+      setSelectedTicket(updated.find(t => t.id === selectedTicket.id) || null);
+      setReplyMessage('');
+      addToast('Reply sent', 'success');
+    } catch (error) {
+      console.error('Failed to send reply:', error);
+      addToast('Failed to send reply', 'error');
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -296,7 +290,11 @@ const SupportTicketsPage: React.FC = () => {
         </form>
       ) : (
         <div className="space-y-4">
-          {tickets.length === 0 ? (
+          {isLoading ? (
+            <div className="text-center py-12 bg-slate-800 rounded-lg">
+              <p className="text-gray-400">Loading tickets...</p>
+            </div>
+          ) : tickets.length === 0 ? (
             <div className="text-center py-12 bg-slate-800 rounded-lg">
               <p className="text-gray-400">No support tickets yet</p>
             </div>

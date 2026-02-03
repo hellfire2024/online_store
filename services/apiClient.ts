@@ -295,11 +295,29 @@ class ApiClient {
   reviews = this.createCrud('reviews');
   staff = this.createCrud('staff');
   services = this.createCrud('services');
-  orders = this.createCrud('orders');
+  orders = {
+    getAll: () => this.request<any[]>('/orders'),
+    getById: (id: string) => this.request<any>(`/orders/${id}`),
+    getForCustomer: (customerId: string) =>
+      this.request<any[]>(`/orders/customer/${customerId}`),
+    create: (data: any) => this.request<any>('/orders', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+    update: (id: string, data: any) => this.request<any>(`/orders/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+    delete: (id: string) => this.request<void>(`/orders/${id}`, {
+      method: 'DELETE',
+    }),
+  };
   
   // Tickets with custom methods
   tickets = {
     getAll: () => this.request<any[]>('/tickets'),
+    getForCustomer: (customerId: string) =>
+      this.request<any[]>(`/tickets?customerId=${encodeURIComponent(customerId)}`),
     getById: (id: string) => this.request<any>(`/tickets/${id}`),
     create: (data: any) => this.request<any>('/tickets', {
       method: 'POST',

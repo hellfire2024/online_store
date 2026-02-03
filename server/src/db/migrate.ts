@@ -130,8 +130,11 @@ CREATE TABLE IF NOT EXISTS product_options (
 
 CREATE TABLE IF NOT EXISTS orders (
   id VARCHAR(36) PRIMARY KEY,
-  customer_id VARCHAR(36) NOT NULL,
+  customer_id VARCHAR(36),
+  customer_email VARCHAR(255),
+  customer_name VARCHAR(255),
   order_number VARCHAR(50) UNIQUE NOT NULL,
+  order_data LONGTEXT,
   total DECIMAL(10,2) NOT NULL,
   status ENUM('pending', 'processing', 'shipped', 'delivered', 'cancelled') DEFAULT 'pending',
   shipping_address_id VARCHAR(36),
@@ -139,9 +142,10 @@ CREATE TABLE IF NOT EXISTS orders (
   tax_amount DECIMAL(10,2),
   shipping_cost DECIMAL(10,2),
   tracking_number VARCHAR(100),
+  shipper VARCHAR(100),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE,
+  FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE SET NULL,
   FOREIGN KEY (shipping_address_id) REFERENCES customer_addresses(id) ON DELETE SET NULL,
   INDEX idx_customer (customer_id),
   INDEX idx_shipping_address (shipping_address_id),
@@ -149,6 +153,13 @@ CREATE TABLE IF NOT EXISTS orders (
   INDEX idx_status (status),
   INDEX idx_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+ALTER TABLE orders
+  MODIFY COLUMN customer_id VARCHAR(36) NULL,
+  ADD COLUMN IF NOT EXISTS customer_email VARCHAR(255),
+  ADD COLUMN IF NOT EXISTS customer_name VARCHAR(255),
+  ADD COLUMN IF NOT EXISTS order_data LONGTEXT,
+  ADD COLUMN IF NOT EXISTS shipper VARCHAR(100);
 
 CREATE TABLE IF NOT EXISTS order_items (
   id VARCHAR(36) PRIMARY KEY,

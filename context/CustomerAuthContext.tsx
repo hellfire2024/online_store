@@ -351,8 +351,58 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
     if (!customer) return;
 
     try {
-      // In a real app, this would fetch from API
-      // For now, use cached orders from customer
+      const apiOrders = await apiClient.orders.getForCustomer(customer.id);
+      const ordersArray = Array.isArray(apiOrders) ? apiOrders : [];
+
+      const mappedOrders = ordersArray.map((order: any) => {
+        let orderData: any = order.order_data;
+        if (typeof orderData === "string") {
+          try {
+            orderData = JSON.parse(orderData);
+          } catch {
+            orderData = {};
+          }
+        }
+
+        const shipping = orderData?.shippingAddress || {};
+        const shippingAddress = {
+          id: `order-${order.order_number}-shipping`,
+          type: "shipping" as const,
+          firstName: shipping.firstName || "",
+          lastName: shipping.lastName || "",
+          fullName: `${shipping.firstName || ""} ${shipping.lastName || ""}`.trim(),
+          streetAddress: shipping.street1 || "",
+          city: shipping.city || "",
+          state: shipping.state || "",
+          zipCode: shipping.zip || "",
+          country: shipping.country || "US",
+          phone: shipping.phone || "",
+          isDefault: false,
+        };
+
+        return {
+          id: order.id?.toString() || order.order_number,
+          orderNumber: order.order_number || orderData.orderNumber || "",
+          date: order.created_at || new Date().toISOString(),
+          subtotal: Number(order.subtotal ?? orderData.subtotal ?? 0),
+          shippingCost: Number(order.shipping_cost ?? orderData.shipping ?? 0),
+          taxAmount: Number(order.tax_amount ?? orderData.tax ?? 0),
+          total: Number(order.total ?? orderData.total ?? 0),
+          status: order.status || "pending",
+          shippingAddress,
+          items: Array.isArray(orderData.items) ? orderData.items : [],
+          trackingNumber: order.tracking_number || undefined,
+          appliedTaxRate: orderData.appliedTaxRate ?? undefined,
+        };
+      });
+
+      const updatedCustomer = {
+        ...customer,
+        orders: mappedOrders,
+      };
+
+      setCustomer(updatedCustomer);
+      localStorage.setItem("customer", JSON.stringify(updatedCustomer));
     } catch (error) {
       console.error("Failed to fetch orders", error);
     }

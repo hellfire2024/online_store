@@ -12,7 +12,7 @@ import { testConnection } from "./db/connection.js";
 import productRoutes from "./routes/products.js";
 import customerRoutes from "./routes/customers.js";
 import adminUserRoutes from "./routes/admin-users.js";
-import orderRoutes from "./routes/orders.js";
+import orderRoutes from "./routes/ordersApi.js";
 import galleryRoutes from "./routes/galleries.js";
 import pageRoutes from "./routes/pages.js";
 import reviewRoutes from "./routes/reviews.js";

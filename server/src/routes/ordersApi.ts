@@ -1,16 +1,22 @@
 import { Router, Request, Response } from 'express';
 import { pool } from '../db/connection.js';
 import { RowDataPacket } from 'mysql2';
+import { v4 as uuidv4 } from 'uuid';
 import { sendOrderConfirmationEmail, sendShippingNotificationEmail } from '../services/emailService.js';
 
 const router = Router();
 
 interface OrderRow extends RowDataPacket {
-  id: number;
+  id: string;
+  customer_id: string | null;
+  customer_email: string | null;
+  customer_name: string | null;
   order_number: string;
-  customer_email: string;
-  customer_name: string;
-  order_data: string;
+  order_data: string | null;
+  subtotal: number | null;
+  tax_amount: number | null;
+  shipping_cost: number | null;
+  total: number;
   status: string;
   tracking_number: string | null;
   shipper: string | null;
@@ -32,6 +38,21 @@ router.get('/', async (_req: Request, res: Response) => {
   }
 });
 
+// GET orders for a specific customer
+router.get('/customer/:customerId', async (req: Request, res: Response) => {
+  try {
+    const { customerId } = req.params;
+    const [rows] = await pool.query<OrderRow[]>(
+      `SELECT * FROM orders WHERE customer_id = ? ORDER BY created_at DESC LIMIT 100`,
+      [customerId]
+    );
+    res.json(Array.isArray(rows) ? rows : []);
+  } catch (error) {
+    console.error('Error fetching customer orders:', error);
+    res.status(500).json({ error: 'Failed to fetch customer orders' });
+  }
+});
+
 // GET single order
 router.get('/:orderNumber', async (req: Request, res: Response) => {
   try {
@@ -47,7 +68,7 @@ router.get('/:orderNumber', async (req: Request, res: Response) => {
     }
 
     const order = rows[0];
-    const orderData = JSON.parse(order.order_data);
+    const orderData = order.order_data ? JSON.parse(order.order_data) : null;
 
     res.json({
       id: order.id,
@@ -72,6 +93,7 @@ router.post('/', async (req: Request, res: Response) => {
   try {
     const {
       orderNumber,
+      customerId,
       customerEmail,
       customerName,
       orderData,
@@ -82,11 +104,30 @@ router.post('/', async (req: Request, res: Response) => {
       return;
     }
 
+    const orderId = uuidv4();
+    const subtotal = Number(orderData.subtotal || 0);
+    const taxAmount = Number(orderData.tax || 0);
+    const shippingCost = Number(orderData.shipping || 0);
+    const total = Number(orderData.total || 0);
+
     // Insert order into database
     await pool.query(
-      `INSERT INTO orders (order_number, customer_email, customer_name, order_data, status)
-       VALUES (?, ?, ?, ?, 'pending')`,
-      [orderNumber, customerEmail, customerName, JSON.stringify(orderData)]
+      `INSERT INTO orders (
+        id, customer_id, customer_email, customer_name, order_number, order_data,
+        subtotal, tax_amount, shipping_cost, total, status
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
+      [
+        orderId,
+        customerId || null,
+        customerEmail,
+        customerName,
+        orderNumber,
+        JSON.stringify(orderData),
+        subtotal,
+        taxAmount,
+        shippingCost,
+        total,
+      ]
     );
 
     // Send order confirmation email
@@ -141,14 +182,17 @@ router.put('/:orderNumber/ship', async (req: Request, res: Response) => {
     );
 
     // Send shipping notification email
-    const emailResult = await sendShippingNotificationEmail(
-      order.customer_email,
-      order.customer_name,
-      orderNumber,
-      trackingNumber,
-      shipper,
-      shippingUrl
-    );
+    let emailResult = { success: false, message: 'Customer email not available' };
+    if (order.customer_email && order.customer_name) {
+      emailResult = await sendShippingNotificationEmail(
+        order.customer_email,
+        order.customer_name,
+        orderNumber,
+        trackingNumber,
+        shipper,
+        shippingUrl
+      );
+    }
 
     res.json({
       success: true,

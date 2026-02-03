@@ -4,6 +4,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useCustomerAuth } from '../context/CustomerAuthContext';
 import { useSiteSettings } from '../context/SiteSettingsContext';
+import apiClient from '../services/apiClient';
 import { useToast } from '../hooks/useToast';
 import { calculateTax } from '../services/taxService';
 
@@ -335,25 +336,17 @@ const CheckoutPage: React.FC = () => {
       
       // Try to send order to backend API to create order and trigger email
       try {
-        const apiResponse = await fetch('/api/orders', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            orderNumber: orderDetails.orderNumber,
-            customerEmail: formData.email,
-            customerName: `${formData.firstName} ${formData.lastName}`,
-            orderData: orderDetails,
-          }),
+        const result = await apiClient.orders.create({
+          orderNumber: orderDetails.orderNumber,
+          customerId: customer?.id || null,
+          customerEmail: formData.email,
+          customerName: `${formData.firstName} ${formData.lastName}`,
+          orderData: orderDetails,
         });
 
-        if (apiResponse.ok) {
-          const result = await apiResponse.json();
-          console.log('Order sent to backend:', result);
-          if (result.emailSent) {
-            addToast('Order confirmation email sent!', 'success');
-          }
-        } else {
-          console.warn('Backend order creation failed, but continuing with local data');
+        console.log('Order sent to backend:', result);
+        if (result?.emailSent) {
+          addToast('Order confirmation email sent!', 'success');
         }
       } catch (error) {
         console.warn('Could not send order to backend (expected if server is down):', error);
