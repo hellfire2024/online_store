@@ -103,22 +103,21 @@ const ChangePasswordPage: React.FC = () => {
 
   return (
     <div className="max-w-2xl mx-auto p-6">
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold text-white">Change Password</h1>
+        <button
+          onClick={() => navigate("/account")}
+          className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-md transition-colors flex items-center gap-2"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+          Back to Account
+        </button>
+      </div>
+
       <div className="bg-slate-800 p-6 rounded-lg border border-slate-700">
-        <div className="flex justify-between items-start mb-6">
-          <div>
-            <h1 className="text-3xl font-bold text-white mb-2">Change Password</h1>
-            <p className="text-gray-400">Update your account password to keep your account secure</p>
-          </div>
-          <button
-            onClick={() => navigate("/account")}
-            className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-md transition-colors flex items-center gap-2"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-            Back to Account
-          </button>
-        </div>
+        <p className="text-gray-400 mb-6">Update your account password to keep your account secure</p>
 
         <div className="space-y-4">
           {/* Current Password */}
