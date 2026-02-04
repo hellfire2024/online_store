@@ -5,6 +5,7 @@ import { useProducts } from "../context/ProductContext";
 import { useGalleries } from "../context/GalleryContext";
 import { getDesignIdeas } from "../services/geminiService";
 import { useCart } from "../context/CartContext";
+import { generateSlug } from "../services/slugService";
 import Spinner from "../components/Spinner";
 
 type CustomizationTab = "gallery" | "upload" | "ideas";
@@ -34,9 +35,7 @@ const TabButton = ({
 );
 
 const ProductDetailPage: React.FC = () => {
-  const { id, slug } = useParams<{ id?: string; slug?: string }>();
-  // Extract product ID - prefer explicit id param, fall back to slug param
-  const productId = id || slug;
+  const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { products } = useProducts();
   const { galleryImages, fetchGalleryImages } = useGalleries();
@@ -62,8 +61,9 @@ const ProductDetailPage: React.FC = () => {
   const [ideasLoading, setIdeasLoading] = useState(false);
 
   useEffect(() => {
-    if (products.length > 0) {
-      const foundProduct = products.find((p) => p.id === productId);
+    if (products.length > 0 && slug) {
+      // Find product by matching generated slug to URL slug
+      const foundProduct = products.find((p) => generateSlug(p.name) === slug);
       if (foundProduct) {
         setProduct(foundProduct);
         // Initialize selected options - allow multiple selections per list
@@ -87,7 +87,7 @@ const ProductDetailPage: React.FC = () => {
       }
       setLoading(false);
     }
-  }, [productId]);
+  }, [slug]);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
