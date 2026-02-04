@@ -562,7 +562,7 @@ const CheckoutPage: React.FC = () => {
               <p className="text-gray-400 mb-4">
                 Track orders, save addresses, and checkout faster
               </p>
-              <div className="space-y-3">
+              <div className="flex flex-col gap-3">
                 <Link to="/login?redirect=/checkout">
                   <button className="w-full bg-sky-500 text-white font-bold py-3 rounded-lg hover:bg-sky-600 transition-colors">
                     Sign In
