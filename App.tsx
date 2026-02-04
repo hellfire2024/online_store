@@ -141,6 +141,10 @@ const App: React.FC = () => {
                                       element={<StorePage />}
                                     />
                                     <Route
+                                      path="/product/:slug/:id"
+                                      element={<ProductDetailPage />}
+                                    />
+                                    <Route
                                       path="/product/:id"
                                       element={<ProductDetailPage />}
                                     />

@@ -2,6 +2,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Product } from '../types';
+import { getProductUrl } from '../services/slugService';
 
 interface ProductCardProps {
   product: Product;
@@ -12,7 +13,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 
   return (
     <div className="bg-slate-800 rounded-lg overflow-hidden group transition-all duration-300 hover:shadow-2xl hover:shadow-sky-900/50 hover:-translate-y-1 border border-slate-700 hover:border-sky-500">
-      <Link to={`/product/${product.id}`}>
+      <Link to={getProductUrl(product.id, product.name)}>
         <div className="w-full h-64 bg-slate-700 relative overflow-hidden">
           <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
           <div className="absolute inset-0 pointer-events-none select-none">

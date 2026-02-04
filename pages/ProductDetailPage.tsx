@@ -34,7 +34,9 @@ const TabButton = ({
 );
 
 const ProductDetailPage: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
+  const { id, slug } = useParams<{ id?: string; slug?: string }>();
+  // Extract product ID - prefer explicit id param, fall back to slug param
+  const productId = id || slug;
   const navigate = useNavigate();
   const { products } = useProducts();
   const { galleryImages, fetchGalleryImages } = useGalleries();
@@ -61,7 +63,7 @@ const ProductDetailPage: React.FC = () => {
 
   useEffect(() => {
     if (products.length > 0) {
-      const foundProduct = products.find((p) => p.id === id);
+      const foundProduct = products.find((p) => p.id === productId);
       if (foundProduct) {
         setProduct(foundProduct);
         // Initialize selected options - allow multiple selections per list
@@ -85,7 +87,7 @@ const ProductDetailPage: React.FC = () => {
       }
       setLoading(false);
     }
-  }, [id]);
+  }, [productId]);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
