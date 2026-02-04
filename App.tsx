@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, Suspense } from "react";
 import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
 import { CustomerAuthProvider } from "./context/CustomerAuthContext";
 import { CartProvider } from "./context/CartContext";
@@ -15,6 +15,7 @@ import { SiteSettingsProvider } from "./context/SiteSettingsContext";
 
 import Header from "./components/Header";
 import Footer from "./components/Footer";
+import Spinner from "./components/Spinner";
 import HomePage from "./pages/HomePage";
 import AboutPage from "./pages/AboutPage";
 import ContactPage from "./pages/ContactPage";
@@ -25,8 +26,6 @@ import CheckoutPage from "./pages/CheckoutPage";
 import OrderConfirmationPage from "./pages/OrderConfirmationPage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
-import AdminPage from "./pages/admin/AdminPage";
-import PagePreview from "./pages/admin/PagePreview";
 import CustomPage from "./pages/CustomPage";
 import CustomerAccountPage from "./pages/CustomerAccountPage";
 import CustomerAddressesPage from "./pages/CustomerAddressesPage";
@@ -38,6 +37,10 @@ import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import AdminLoginModal from "./components/admin/AdminLoginModal";
 import SiteEffectHandler from "./components/SiteEffectHandler";
 import TestHeroRenderingPage from "./pages/TestHeroRenderingPage";
+
+// Lazy load admin pages for better code splitting
+const AdminPage = React.lazy(() => import("./pages/admin/AdminPage"));
+const PagePreview = React.lazy(() => import("./pages/admin/PagePreview"));
 
 const AdminProtectedRoute: React.FC<{ children: React.ReactNode }> = ({
   children,
@@ -169,7 +172,9 @@ const App: React.FC = () => {
                                       path="/admin/*"
                                       element={
                                         <AdminProtectedRoute>
-                                          <AdminPage />
+                                          <Suspense fallback={<Spinner />}>
+                                            <AdminPage />
+                                          </Suspense>
                                         </AdminProtectedRoute>
                                       }
                                     />
@@ -199,7 +204,11 @@ const App: React.FC = () => {
                                     />
                                     <Route
                                       path="/admin/pages/preview"
-                                      element={<PagePreview />}
+                                      element={
+                                        <Suspense fallback={<Spinner />}>
+                                          <PagePreview />
+                                        </Suspense>
+                                      }
                                     />
                                     <Route path="*" element={<CustomPage />} />
                                   </Routes>
