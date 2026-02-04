@@ -201,22 +201,25 @@ const StaffManagement: React.FC = () => {
               {editingStaff ? "Edit Staff Member" : "Add New Staff Member"}
             </h2>
             <div className="space-y-4">
-              <input
-                type="text"
-                name="name"
-                placeholder="Full Name"
-                value={currentStaff.name}
-                onChange={handleChange}
-                className="w-full p-2 bg-slate-700 border border-slate-600 rounded-md text-white"
-              />
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Full Name</label>
+                <input
+                  type="text"
+                  name="name"
+                  placeholder="Enter full name"
+                  value={currentStaff.name}
+                  onChange={handleChange}
+                  className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                />
+              </div>
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">Role</label>
-                <div className="flex gap-2 mb-2">
+                <div className="flex gap-2">
                   <select
                     name="role"
                     value={currentStaff.role}
                     onChange={handleRoleChange}
-                    className="flex-1 p-2 bg-slate-700 border border-slate-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+                    className="flex-1 px-4 py-2 bg-slate-700 border border-slate-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
                   >
                     <option value="">Select a role...</option>
                     {roleOptions.map(r => (
@@ -225,54 +228,57 @@ const StaffManagement: React.FC = () => {
                   </select>
                   <button
                     onClick={() => setShowNewRoleInput(!showNewRoleInput)}
-                    className="px-3 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-md text-sm font-medium transition-colors"
+                    className="px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-md font-medium transition-colors whitespace-nowrap"
                     title="Add new role"
                   >
-                    +
+                    + Add Role
                   </button>
                 </div>
                 {showNewRoleInput && (
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={newRoleName}
-                      onChange={(e) => setNewRoleName(e.target.value)}
-                      placeholder="New role name"
-                      className="flex-1 p-2 bg-slate-700 border border-slate-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
-                    />
-                    <button
-                      onClick={() => {
-                        if (newRoleName.trim()) {
-                          const newRole: StaffRole = {
-                            key: newRoleName.toLowerCase().replace(/\s+/g, '_'),
-                            label: newRoleName,
-                          };
-                          const updatedRoles = [...roleOptions, newRole];
-                          setRoleOptions(updatedRoles);
-                          saveStaffRoles(updatedRoles);
-                          if (newStaffMember) {
-                            setNewStaffMember({ ...newStaffMember, role: newRole.key });
-                          } else if (editingStaff) {
-                            setEditingStaff({ ...editingStaff, role: newRole.key });
+                  <div className="mt-3 p-4 bg-slate-700/50 rounded-md border border-slate-600">
+                    <p className="text-sm text-gray-300 mb-3 font-medium">Create New Role</p>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={newRoleName}
+                        onChange={(e) => setNewRoleName(e.target.value)}
+                        placeholder="Role name (e.g., Videographer)"
+                        className="flex-1 px-4 py-2 bg-slate-700 border border-slate-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                      />
+                      <button
+                        onClick={() => {
+                          if (newRoleName.trim()) {
+                            const newRole: StaffRole = {
+                              key: newRoleName.toLowerCase().replace(/\s+/g, '_'),
+                              label: newRoleName,
+                            };
+                            const updatedRoles = [...roleOptions, newRole];
+                            setRoleOptions(updatedRoles);
+                            saveStaffRoles(updatedRoles);
+                            if (newStaffMember) {
+                              setNewStaffMember({ ...newStaffMember, role: newRole.key });
+                            } else if (editingStaff) {
+                              setEditingStaff({ ...editingStaff, role: newRole.key });
+                            }
+                            setNewRoleName("");
+                            setShowNewRoleInput(false);
+                            addToast(`Role "${newRoleName}" created successfully`, "success");
                           }
-                          setNewRoleName("");
+                        }}
+                        className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md font-medium transition-colors whitespace-nowrap"
+                      >
+                        Create
+                      </button>
+                      <button
+                        onClick={() => {
                           setShowNewRoleInput(false);
-                          addToast(`Role "${newRoleName}" created successfully`, "success");
-                        }
-                      }}
-                      className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md text-sm font-medium transition-colors"
-                    >
-                      Create
-                    </button>
-                    <button
-                      onClick={() => {
-                        setShowNewRoleInput(false);
-                        setNewRoleName("");
-                      }}
-                      className="px-3 py-2 bg-slate-600 hover:bg-slate-500 text-white rounded-md text-sm font-medium transition-colors"
-                    >
-                      Cancel
-                    </button>
+                          setNewRoleName("");
+                        }}
+                        className="px-4 py-2 bg-slate-600 hover:bg-slate-500 text-white rounded-md font-medium transition-colors whitespace-nowrap"
+                      >
+                        Cancel
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
