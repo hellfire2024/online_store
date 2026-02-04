@@ -85,7 +85,7 @@ const ProductDetailPage: React.FC = () => {
       }
       setLoading(false);
     }
-  }, [id, products, navigate, fetchGalleryImages]);
+  }, [id]);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -99,6 +99,19 @@ const ProductDetailPage: React.FC = () => {
       reader.readAsDataURL(file);
     }
   };
+
+  const handleOptionChange = useCallback((listId: string, optionId: string, isChecked: boolean) => {
+    setSelectedOptions((prev) => {
+      const listSelectedOptions = prev[listId] || [];
+      const newSelected = isChecked
+        ? [...listSelectedOptions, optionId]
+        : listSelectedOptions.filter((id) => id !== optionId);
+      return {
+        ...prev,
+        [listId]: newSelected,
+      };
+    });
+  }, []);
 
   const handleAddToCart = () => {
     if (!product) return;
@@ -340,15 +353,7 @@ const ProductDetailPage: React.FC = () => {
                                 type="checkbox"
                                 checked={listSelectedOptions.includes(opt.id)}
                                 onChange={(e) => {
-                                  const newSelected = e.target.checked
-                                    ? [...listSelectedOptions, opt.id]
-                                    : listSelectedOptions.filter(
-                                        (id) => id !== opt.id,
-                                      );
-                                  setSelectedOptions({
-                                    ...selectedOptions,
-                                    [list.id]: newSelected,
-                                  });
+                                  handleOptionChange(list.id, opt.id, e.target.checked);
                                 }}
                                 className="mr-3 w-4 h-4 bg-slate-600 border border-slate-500 rounded checked:bg-sky-500 checked:border-sky-500"
                               />
