@@ -87,40 +87,61 @@ const StaffManagement: React.FC = () => {
   };
 
   const handleSave = async () => {
+    if (!currentStaff?.name || !currentStaff?.role) {
+      addToast("Please fill in all required fields", "error");
+      return;
+    }
+
     let finalImageUrl = currentStaff?.imageUrl || "";
 
     if (selectedImageFile) {
-      // Simulate image upload - in a real app, this would be an API call
       try {
-        // Replace with actual image upload service call
-        finalImageUrl = await new Promise((resolve) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result as string);
-          reader.readAsDataURL(selectedImageFile);
+        // Upload image to server
+        const formData = new FormData();
+        formData.append("image", selectedImageFile);
+        
+        const response = await fetch("http://localhost:3001/api/upload/image", {
+          method: "POST",
+          body: formData,
         });
+
+        if (!response.ok) {
+          addToast("Image upload failed", "error");
+          return;
+        }
+
+        const result = await response.json();
+        finalImageUrl = result.imageUrl;
         addToast("Image uploaded successfully!", "success");
       } catch (error) {
         addToast("Image upload failed!", "error");
         console.error("Image upload error:", error);
-        return; // Stop save if upload fails
+        return;
       }
     }
 
     const staffToSave = {
-      ...((newStaffMember || editingStaff) as Omit<StaffMember, "id">),
+      id: editingStaff?.id || `staff_${Date.now()}`,
+      name: currentStaff.name,
+      role: currentStaff.role,
       imageUrl: finalImageUrl,
     };
 
-    if (newStaffMember) {
-      addStaff(staffToSave as Omit<StaffMember, "id">);
-      addToast("Staff member added!", "success");
-    } else if (editingStaff) {
-      updateStaff(staffToSave as StaffMember);
-      addToast("Staff member updated!", "success");
+    try {
+      if (newStaffMember) {
+        await addStaff(staffToSave as Omit<StaffMember, "id">);
+        addToast("Staff member added successfully!", "success");
+      } else if (editingStaff) {
+        await updateStaff(staffToSave as StaffMember);
+        addToast("Staff member updated successfully!", "success");
+      }
+      setNewStaffMember(null);
+      setEditingStaff(null);
+      setSelectedImageFile(null);
+    } catch (error) {
+      addToast("Failed to save staff member", "error");
+      console.error("Save error:", error);
     }
-    setNewStaffMember(null);
-    setEditingStaff(null);
-    setSelectedImageFile(null);
   };
 
   // Pagination logic
