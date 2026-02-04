@@ -7,9 +7,13 @@ import Pagination from "../../components/Pagination";
 import { StaffMember } from "../../types";
 import { useUnsavedChanges } from "../../context/UnsavedChangesContext";
 import ImageUploadInput from "../../components/admin/ImageUploadInput";
+import { loadRoles, saveRoles, RoleConfig } from "../../services/rolesConfig";
 
 const StaffManagement: React.FC = () => {
   const { staff, isLoading, addStaff, updateStaff, deleteStaff } = useStaff();
+  const [roleOptions, setRoleOptions] = useState<RoleConfig[]>(loadRoles());
+  const [showNewRoleInput, setShowNewRoleInput] = useState(false);
+  const [newRoleName, setNewRoleName] = useState("");
   const [newStaffMember, setNewStaffMember] = useState<Omit<
     StaffMember,
     "id"
@@ -70,6 +74,15 @@ const StaffManagement: React.FC = () => {
       setNewStaffMember((prev) => ({ ...prev!, [name]: value }));
     } else if (editingStaff) {
       setEditingStaff((prev) => ({ ...prev!, [name]: value }));
+    }
+  };
+
+  const handleRoleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const { value } = e.target;
+    if (newStaffMember) {
+      setNewStaffMember((prev) => ({ ...prev!, role: value }));
+    } else if (editingStaff) {
+      setEditingStaff((prev) => ({ ...prev!, role: value }));
     }
   };
 
@@ -196,14 +209,74 @@ const StaffManagement: React.FC = () => {
                 onChange={handleChange}
                 className="w-full p-2 bg-slate-700 border border-slate-600 rounded-md text-white"
               />
-              <input
-                type="text"
-                name="role"
-                placeholder="Role"
-                value={currentStaff.role}
-                onChange={handleChange}
-                className="w-full p-2 bg-slate-700 border border-slate-600 rounded-md text-white"
-              />
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Role</label>
+                <div className="flex gap-2 mb-2">
+                  <select
+                    name="role"
+                    value={currentStaff.role}
+                    onChange={handleRoleChange}
+                    className="flex-1 p-2 bg-slate-700 border border-slate-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+                  >
+                    <option value="">Select a role...</option>
+                    {roleOptions.map(r => (
+                      <option key={r.key} value={r.key}>{r.label}</option>
+                    ))}
+                  </select>
+                  <button
+                    onClick={() => setShowNewRoleInput(!showNewRoleInput)}
+                    className="px-3 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-md text-sm font-medium transition-colors"
+                    title="Add new role"
+                  >
+                    +
+                  </button>
+                </div>
+                {showNewRoleInput && (
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newRoleName}
+                      onChange={(e) => setNewRoleName(e.target.value)}
+                      placeholder="New role name"
+                      className="flex-1 p-2 bg-slate-700 border border-slate-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+                    />
+                    <button
+                      onClick={() => {
+                        if (newRoleName.trim()) {
+                          const newRole: RoleConfig = {
+                            key: newRoleName.toLowerCase().replace(/\s+/g, '_'),
+                            label: newRoleName,
+                            permissions: []
+                          };
+                          const updatedRoles = [...roleOptions, newRole];
+                          setRoleOptions(updatedRoles);
+                          saveRoles(updatedRoles);
+                          if (newStaffMember) {
+                            setNewStaffMember({ ...newStaffMember, role: newRole.key });
+                          } else if (editingStaff) {
+                            setEditingStaff({ ...editingStaff, role: newRole.key });
+                          }
+                          setNewRoleName("");
+                          setShowNewRoleInput(false);
+                          addToast(`Role "${newRoleName}" created successfully`, "success");
+                        }
+                      }}
+                      className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md text-sm font-medium transition-colors"
+                    >
+                      Create
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowNewRoleInput(false);
+                        setNewRoleName("");
+                      }}
+                      className="px-3 py-2 bg-slate-600 hover:bg-slate-500 text-white rounded-md text-sm font-medium transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                )}
+              </div>
               <ImageUploadInput
                 label="Image"
                 imageUrl={currentStaff.imageUrl}
