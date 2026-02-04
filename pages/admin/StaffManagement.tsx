@@ -7,11 +7,11 @@ import Pagination from "../../components/Pagination";
 import { StaffMember } from "../../types";
 import { useUnsavedChanges } from "../../context/UnsavedChangesContext";
 import ImageUploadInput from "../../components/admin/ImageUploadInput";
-import { loadRoles, saveRoles, RoleConfig } from "../../services/rolesConfig";
+import { loadStaffRoles, saveStaffRoles, StaffRole } from "../../services/staffRolesConfig";
 
 const StaffManagement: React.FC = () => {
   const { staff, isLoading, addStaff, updateStaff, deleteStaff } = useStaff();
-  const [roleOptions, setRoleOptions] = useState<RoleConfig[]>(loadRoles());
+  const [roleOptions, setRoleOptions] = useState<StaffRole[]>(loadStaffRoles());
   const [showNewRoleInput, setShowNewRoleInput] = useState(false);
   const [newRoleName, setNewRoleName] = useState("");
   const [newStaffMember, setNewStaffMember] = useState<Omit<
@@ -243,14 +243,13 @@ const StaffManagement: React.FC = () => {
                     <button
                       onClick={() => {
                         if (newRoleName.trim()) {
-                          const newRole: RoleConfig = {
+                          const newRole: StaffRole = {
                             key: newRoleName.toLowerCase().replace(/\s+/g, '_'),
                             label: newRoleName,
-                            permissions: []
                           };
                           const updatedRoles = [...roleOptions, newRole];
                           setRoleOptions(updatedRoles);
-                          saveRoles(updatedRoles);
+                          saveStaffRoles(updatedRoles);
                           if (newStaffMember) {
                             setNewStaffMember({ ...newStaffMember, role: newRole.key });
                           } else if (editingStaff) {
