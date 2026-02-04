@@ -3,7 +3,9 @@ import { useCustomerAuth } from "../context/CustomerAuthContext";
 import { useNavigate, Link } from "react-router-dom";
 import { useToast } from "../hooks/useToast";
 import { useSiteSettings } from "../context/SiteSettingsContext";
-import { CustomerOrder } from "../types";
+import { useCart } from "../context/CartContext";
+import { useProducts } from "../context/ProductContext";
+import { CustomerOrder, CartItem } from "../types";
 import Pagination from "../components/Pagination";
 import {
   downloadInvoicePDF,
@@ -16,6 +18,8 @@ const CustomerOrdersPage: React.FC = () => {
   const navigate = useNavigate();
   const { addToast } = useToast();
   const { siteSettings } = useSiteSettings();
+  const { addToCart } = useCart();
+  const { products } = useProducts();
   const [selectedOrder, setSelectedOrder] = useState<CustomerOrder | null>(
     null,
   );
@@ -92,6 +96,47 @@ const CustomerOrdersPage: React.FC = () => {
     };
     const template = siteSettings?.invoiceTemplate || DEFAULT_TEMPLATE;
     await downloadInvoicePDF(invoiceData, template);
+  };
+
+  const handleReorder = async (order: CustomerOrder) => {
+    try {
+      let itemsAdded = 0;
+      
+      for (const item of order.items) {
+        // Get the actual item name - could be in item.name (stored format) or item.product.name (alternate format)
+        const itemName = (item as any).name || (item.product && item.product.name) || 'Unknown Item';
+        
+        // Find the product by name in the products list
+        const product = products.find((p) => p.name === itemName);
+        
+        if (!product) {
+          addToast(`Product "${itemName}" is no longer available`, "info");
+          continue;
+        }
+
+        // Reconstruct CartItem from order item
+        const cartItem: CartItem = {
+          product,
+          quantity: item.quantity,
+          selectedOptions: undefined, // Selected options aren't fully stored, just the text representation
+          customization: (item as any).customization,
+          customText: (item as any).customText,
+        };
+
+        addToCart(cartItem);
+        itemsAdded++;
+      }
+
+      if (itemsAdded > 0) {
+        addToast(`${itemsAdded} item(s) added to cart from order #${order.orderNumber}`, "success");
+        navigate("/cart");
+      } else {
+        addToast("No items could be added to cart", "error");
+      }
+    } catch (error) {
+      console.error("Error during reorder:", error);
+      addToast("Failed to reorder items", "error");
+    }
   };
 
   const exportOrdersToCSV = () => {
@@ -580,7 +625,13 @@ const CustomerOrdersPage: React.FC = () => {
                           <button className="flex-1 px-4 py-2 bg-sky-600 text-white rounded hover:bg-sky-700 transition text-sm">
                             📧 Contact Support
                           </button>
-                          <button className="flex-1 px-4 py-2 bg-slate-600 text-white rounded hover:bg-slate-500 transition text-sm">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleReorder(order);
+                            }}
+                            className="flex-1 px-4 py-2 bg-slate-600 text-white rounded hover:bg-slate-500 transition text-sm"
+                          >
                             🔄 Reorder
                           </button>
                           <button
