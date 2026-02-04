@@ -2,7 +2,14 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useSiteSettings } from "../../context/SiteSettingsContext";
 import { usePages } from "../../context/PagesContext";
 import { useToast } from "../../hooks/useToast";
-import { SiteSettings, Menu, MenuItem, FooterItem, FooterColumn, TaxRule } from "../../types";
+import {
+  SiteSettings,
+  Menu,
+  MenuItem,
+  FooterItem,
+  FooterColumn,
+  TaxRule,
+} from "../../types";
 import InvoiceTemplateEditor from "../../components/admin/InvoiceTemplateEditor";
 import { useUnsavedChanges } from "../../context/UnsavedChangesContext";
 import MenuEditor from "../../components/admin/MenuEditor"; // Correctly import the isolated component
@@ -29,12 +36,29 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { TrashIcon } from "../../components/Icons";
 
-type SettingsTab = "general" | "footer" | "menus" | "payment" | "shipping" | "tax" | "orders" | "email" | "support" | "segmentation" | "terms";
+type SettingsTab =
+  | "general"
+  | "footer"
+  | "menus"
+  | "payment"
+  | "shipping"
+  | "tax"
+  | "orders"
+  | "email"
+  | "support"
+  | "segmentation"
+  | "terms";
 
 // --- Draggable Item Component ---
-const DraggableItem: React.FC<{ item: FooterItem, isOverlay?: boolean, onDelete?: (itemId: string) => void }> = ({ item, isOverlay, onDelete }) => {
+const DraggableItem: React.FC<{
+  item: FooterItem;
+  isOverlay?: boolean;
+  onDelete?: (itemId: string) => void;
+}> = ({ item, isOverlay, onDelete }) => {
   return (
-    <div className={`p-2 bg-slate-600 rounded-md text-white border border-slate-500 ${isOverlay ? 'shadow-lg' : ''} flex justify-between items-center group`}>
+    <div
+      className={`p-2 bg-slate-600 rounded-md text-white border border-slate-500 ${isOverlay ? "shadow-lg" : ""} flex justify-between items-center group`}
+    >
       <span>{item.title}</span>
       {onDelete && !isOverlay && (
         <button
@@ -52,9 +76,11 @@ const DraggableItem: React.FC<{ item: FooterItem, isOverlay?: boolean, onDelete?
   );
 };
 
-
 // --- Sortable Item Component ---
-const SortableItem: React.FC<{ item: FooterItem, onDelete?: (itemId: string) => void }> = ({ item, onDelete }) => {
+const SortableItem: React.FC<{
+  item: FooterItem;
+  onDelete?: (itemId: string) => void;
+}> = ({ item, onDelete }) => {
   const {
     attributes,
     listeners,
@@ -77,15 +103,25 @@ const SortableItem: React.FC<{ item: FooterItem, onDelete?: (itemId: string) => 
   );
 };
 
-
 // --- Droppable Column Component ---
-const DroppableColumn: React.FC<{ column: FooterColumn, children: React.ReactNode }> = ({ column, children }) => {
+const DroppableColumn: React.FC<{
+  column: FooterColumn;
+  children: React.ReactNode;
+}> = ({ column, children }) => {
   const { setNodeRef } = useSortable({ id: column.id });
 
   return (
-    <div ref={setNodeRef} className="bg-slate-900 p-4 rounded-lg min-h-50 flex flex-col gap-2">
-      <h3 className="text-lg font-semibold text-white capitalize mb-2">{column.id}</h3>
-      <SortableContext items={column.items.map(i => i.id)} strategy={verticalListSortingStrategy}>
+    <div
+      ref={setNodeRef}
+      className="bg-slate-900 p-4 rounded-lg min-h-50 flex flex-col gap-2"
+    >
+      <h3 className="text-lg font-semibold text-white capitalize mb-2">
+        {column.id}
+      </h3>
+      <SortableContext
+        items={column.items.map((i) => i.id)}
+        strategy={verticalListSortingStrategy}
+      >
         {children}
       </SortableContext>
     </div>
@@ -93,8 +129,8 @@ const DroppableColumn: React.FC<{ column: FooterColumn, children: React.ReactNod
 };
 
 // --- Terms and Conditions Editor Component ---
-const TermsEditor: React.FC<{ 
-  value: string; 
+const TermsEditor: React.FC<{
+  value: string;
   onChange: (value: string) => void;
 }> = ({ value, onChange }) => {
   const editor = useEditor({
@@ -129,7 +165,9 @@ const TermsEditor: React.FC<{
         </button>
         <div className="w-px bg-slate-600"></div>
         <button
-          onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+          onClick={() =>
+            editor.chain().focus().toggleHeading({ level: 2 }).run()
+          }
           className={buttonClass(editor.isActive("heading", { level: 2 }))}
           title="Heading"
         >
@@ -160,8 +198,8 @@ const TermsEditor: React.FC<{
       </div>
       <div className="bg-slate-900 p-4 rounded-b-lg border border-slate-700 border-t-0">
         <div className="prose prose-invert max-w-none">
-          <EditorContent 
-            editor={editor} 
+          <EditorContent
+            editor={editor}
             className="bg-slate-800 text-white p-4 rounded min-h-96 focus:outline-none"
           />
         </div>
@@ -178,7 +216,9 @@ const SettingsManagement: React.FC = () => {
   const [activeTab, setActiveTab] = useState<SettingsTab>("general");
   const { addToast } = useToast();
   const { setHasUnsavedChanges } = useUnsavedChanges();
-  const [selectedFaviconFile, setSelectedFaviconFile] = useState<File | null>(null);
+  const [selectedFaviconFile, setSelectedFaviconFile] = useState<File | null>(
+    null,
+  );
   const [selectedLogoFile, setSelectedLogoFile] = useState<File | null>(null);
   const [activeDragItem, setActiveDragItem] = useState<FooterItem | null>(null);
 
@@ -188,12 +228,18 @@ const SettingsManagement: React.FC = () => {
   const [originalMenu, setOriginalMenu] = useState<Menu | null>(null);
 
   // --- State for Tax Management ---
-  const [taxRules, setTaxRules] = useState<TaxRule[]>(siteSettings.taxConfig?.rules || []);
-  const [enableTax, setEnableTax] = useState(siteSettings.taxConfig?.enableTaxCollection ?? true);
-  const [defaultTaxRate, setDefaultTaxRate] = useState(siteSettings.taxConfig?.defaultTaxRate ?? 0);
+  const [taxRules, setTaxRules] = useState<TaxRule[]>(
+    siteSettings.taxConfig?.rules || [],
+  );
+  const [enableTax, setEnableTax] = useState(
+    siteSettings.taxConfig?.enableTaxCollection ?? true,
+  );
+  const [defaultTaxRate, setDefaultTaxRate] = useState(
+    siteSettings.taxConfig?.defaultTaxRate ?? 0,
+  );
   const [editingTaxId, setEditingTaxId] = useState<string | null>(null);
   const [taxFormData, setTaxFormData] = useState<Partial<TaxRule>>({
-    name: '',
+    name: "",
     states: [],
     taxRate: 0,
     exemptedProductIds: [],
@@ -237,36 +283,37 @@ const SettingsManagement: React.FC = () => {
     }
   }, [selectedMenuId, menus]);
 
-
   const availableFooterItems = useMemo((): FooterItem[] => {
     const defaultItems: FooterItem[] = [
-      { id: 'contactInfo', type: 'contactInfo', title: 'Contact Info' },
-      { id: 'socialLinks', type: 'socialLinks', title: 'Social Links' },
+      { id: "contactInfo", type: "contactInfo", title: "Contact Info" },
+      { id: "socialLinks", type: "socialLinks", title: "Social Links" },
     ];
-    const menuItems: FooterItem[] = menus.map(menu => ({
+    const menuItems: FooterItem[] = menus.map((menu) => ({
       id: `menu_${menu.id}`,
-      type: 'menu',
+      type: "menu",
       menuId: menu.id,
       title: `Menu: ${menu.name}`,
     }));
     return [...defaultItems, ...menuItems];
   }, [menus]);
 
-
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
-    const item = availableFooterItems.find(i => i.id === active.id) || 
-                 settings.footerConfig?.columns.flatMap(c => c.items).find(i => i.id === active.id);
+    const item =
+      availableFooterItems.find((i) => i.id === active.id) ||
+      settings.footerConfig?.columns
+        .flatMap((c) => c.items)
+        .find((i) => i.id === active.id);
     setActiveDragItem(item || null);
   };
 
   const handleDeleteFooterItem = (itemId: string) => {
-    setSettings(prev => {
+    setSettings((prev) => {
       if (!prev || !prev.footerConfig) return prev;
 
-      const newColumns = prev.footerConfig.columns.map(column => ({
+      const newColumns = prev.footerConfig.columns.map((column) => ({
         ...column,
-        items: column.items.filter(item => item.id !== itemId),
+        items: column.items.filter((item) => item.id !== itemId),
       }));
 
       return { ...prev, footerConfig: { columns: newColumns } };
@@ -282,46 +329,50 @@ const SettingsManagement: React.FC = () => {
     const activeId = active.id.toString();
     const overId = over.id.toString();
 
-    setSettings(prev => {
+    setSettings((prev) => {
       if (!prev || !prev.footerConfig) return prev;
 
       const newColumns = [...prev.footerConfig.columns];
 
-      const activeContainer = findContainer(activeId, newColumns) || 'available';
-      const overContainer = findContainer(overId, newColumns) || findColumn(overId, newColumns)?.id;
+      const activeContainer =
+        findContainer(activeId, newColumns) || "available";
+      const overContainer =
+        findContainer(overId, newColumns) || findColumn(overId, newColumns)?.id;
 
       if (!activeContainer || !overContainer) return prev;
 
-      let activeItem = findItem(activeId, newColumns) || availableFooterItems.find(i => i.id === activeId);
+      let activeItem =
+        findItem(activeId, newColumns) ||
+        availableFooterItems.find((i) => i.id === activeId);
       if (!activeItem) return prev;
-
 
       // Moving an item
       if (activeContainer !== overContainer) {
         // Remove from old container
-        if (activeContainer !== 'available') {
-          const oldColumn = newColumns.find(c => c.id === activeContainer);
-          if(oldColumn) oldColumn.items = oldColumn.items.filter(i => i.id !== activeId);
+        if (activeContainer !== "available") {
+          const oldColumn = newColumns.find((c) => c.id === activeContainer);
+          if (oldColumn)
+            oldColumn.items = oldColumn.items.filter((i) => i.id !== activeId);
         }
 
         // Add to new container
-        if (overContainer !== 'available') {
-           const newColumn = newColumns.find(c => c.id === overContainer);
-           if (newColumn) {
-             const overIndex = newColumn.items.findIndex(i => i.id === overId);
-             if (overIndex !== -1) {
-                newColumn.items.splice(overIndex, 0, activeItem!);
-             } else {
-                newColumn.items.push(activeItem!);
-             }
-           }
+        if (overContainer !== "available") {
+          const newColumn = newColumns.find((c) => c.id === overContainer);
+          if (newColumn) {
+            const overIndex = newColumn.items.findIndex((i) => i.id === overId);
+            if (overIndex !== -1) {
+              newColumn.items.splice(overIndex, 0, activeItem!);
+            } else {
+              newColumn.items.push(activeItem!);
+            }
+          }
         }
       } else {
         // Sorting within the same container
-        const column = newColumns.find(c => c.id === activeContainer);
+        const column = newColumns.find((c) => c.id === activeContainer);
         if (column) {
-          const oldIndex = column.items.findIndex(i => i.id === activeId);
-          const newIndex = column.items.findIndex(i => i.id === overId);
+          const oldIndex = column.items.findIndex((i) => i.id === activeId);
+          const newIndex = column.items.findIndex((i) => i.id === overId);
           if (oldIndex !== -1 && newIndex !== -1) {
             column.items = arrayMove(column.items, oldIndex, newIndex);
           }
@@ -333,26 +384,25 @@ const SettingsManagement: React.FC = () => {
   };
 
   const findContainer = (id: string, columns: FooterColumn[]) => {
-    if (availableFooterItems.some(i => i.id === id)) return 'available';
-    return columns.find(c => c.items.some(i => i.id === id))?.id;
+    if (availableFooterItems.some((i) => i.id === id)) return "available";
+    return columns.find((c) => c.items.some((i) => i.id === id))?.id;
   };
 
   const findColumn = (id: string, columns: FooterColumn[]) => {
-    return columns.find(c => c.id === id);
-  }
+    return columns.find((c) => c.id === id);
+  };
 
   const findItem = (id: string, columns: FooterColumn[]) => {
-     return columns.flatMap(c => c.items).find(i => i.id === id);
-  }
+    return columns.flatMap((c) => c.items).find((i) => i.id === id);
+  };
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
         distance: 8,
       },
-    })
+    }),
   );
-
 
   const handleSaveSettings = async () => {
     try {
@@ -381,13 +431,13 @@ const SettingsManagement: React.FC = () => {
         }
       }
 
-      console.log('Attempting to save settings:', finalSettings);
+      console.log("Attempting to save settings:", finalSettings);
       await updateSiteSettings(finalSettings);
       addToast("Settings updated successfully!", "success");
       setSelectedFaviconFile(null);
       setSelectedLogoFile(null);
     } catch (error) {
-      console.error('Failed to save settings:', error);
+      console.error("Failed to save settings:", error);
       addToast("Failed to save settings. Check console for details.", "error");
     }
   };
@@ -399,17 +449,21 @@ const SettingsManagement: React.FC = () => {
   ) => {
     const { name, value, type } = e.target;
     const parsedValue = type === "number" ? parseFloat(value) : value;
-    
+
     // Handle footerConfig nested fields
-    if (name.startsWith('footerContact')) {
-      const fieldName = name.replace('footerContact', '').toLowerCase();
+    if (name.startsWith("footerContact")) {
+      const fieldName = name.replace("footerContact", "").toLowerCase();
       setSettings((prev) => ({
         ...prev,
         footerConfig: {
           columns: prev.footerConfig?.columns || [],
           socialLinks: prev.footerConfig?.socialLinks || [],
           ...prev.footerConfig,
-          [fieldName === 'email' ? 'contactEmail' : fieldName === 'phone' ? 'contactPhone' : 'contactAddress']: parsedValue,
+          [fieldName === "email"
+            ? "contactEmail"
+            : fieldName === "phone"
+              ? "contactPhone"
+              : "contactAddress"]: parsedValue,
         },
       }));
     } else {
@@ -640,7 +694,9 @@ const SettingsManagement: React.FC = () => {
             />
 
             <div className="border-t border-slate-700 pt-6">
-              <h3 className="text-lg font-semibold text-white mb-4">Font Settings</h3>
+              <h3 className="text-lg font-semibold text-white mb-4">
+                Font Settings
+              </h3>
               <div>
                 <label
                   htmlFor="globalFont"
@@ -665,12 +721,17 @@ const SettingsManagement: React.FC = () => {
                   <option value="Impact">Impact</option>
                   <option value="Trebuchet MS">Trebuchet MS</option>
                 </select>
-                <p className="text-xs text-gray-400 mt-1">This font applies to your entire site. Individual pages can override this setting.</p>
+                <p className="text-xs text-gray-400 mt-1">
+                  This font applies to your entire site. Individual pages can
+                  override this setting.
+                </p>
               </div>
             </div>
 
             <div className="border-t border-slate-700 pt-6">
-              <h3 className="text-lg font-semibold text-white mb-4">Review Settings</h3>
+              <h3 className="text-lg font-semibold text-white mb-4">
+                Review Settings
+              </h3>
               <div>
                 <label
                   htmlFor="maxReviewsDisplayed"
@@ -688,7 +749,9 @@ const SettingsManagement: React.FC = () => {
                   onChange={handleInputChange}
                   className={inputClasses}
                 />
-                <p className="text-xs text-gray-400 mt-1">Shows the most recent approved reviews up to this limit</p>
+                <p className="text-xs text-gray-400 mt-1">
+                  Shows the most recent approved reviews up to this limit
+                </p>
               </div>
             </div>
 
@@ -707,15 +770,24 @@ const SettingsManagement: React.FC = () => {
         {activeTab === "footer" && (
           <div className="space-y-8">
             <div>
-              <h2 className="text-2xl font-semibold text-white mb-6">Footer Configuration</h2>
+              <h2 className="text-2xl font-semibold text-white mb-6">
+                Footer Configuration
+              </h2>
             </div>
 
             {/* Contact Information Section */}
             <div className="bg-slate-800 p-6 rounded-lg border border-slate-700">
-              <h3 className="text-lg font-semibold text-white mb-4">Contact Information</h3>
+              <h3 className="text-lg font-semibold text-white mb-4">
+                Contact Information
+              </h3>
               <div className="space-y-4">
                 <div>
-                  <label htmlFor="footerContactEmail" className="block text-sm font-medium text-gray-400 mb-1">Contact Email</label>
+                  <label
+                    htmlFor="footerContactEmail"
+                    className="block text-sm font-medium text-gray-400 mb-1"
+                  >
+                    Contact Email
+                  </label>
                   <input
                     type="email"
                     id="footerContactEmail"
@@ -727,7 +799,12 @@ const SettingsManagement: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label htmlFor="footerContactPhone" className="block text-sm font-medium text-gray-400 mb-1">Contact Phone</label>
+                  <label
+                    htmlFor="footerContactPhone"
+                    className="block text-sm font-medium text-gray-400 mb-1"
+                  >
+                    Contact Phone
+                  </label>
                   <input
                     type="tel"
                     id="footerContactPhone"
@@ -739,7 +816,12 @@ const SettingsManagement: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label htmlFor="footerContactAddress" className="block text-sm font-medium text-gray-400 mb-1">Address</label>
+                  <label
+                    htmlFor="footerContactAddress"
+                    className="block text-sm font-medium text-gray-400 mb-1"
+                  >
+                    Address
+                  </label>
                   <input
                     type="text"
                     id="footerContactAddress"
@@ -755,14 +837,23 @@ const SettingsManagement: React.FC = () => {
 
             {/* Social Links Section */}
             <div className="bg-slate-800 p-6 rounded-lg border border-slate-700">
-              <h3 className="text-lg font-semibold text-white mb-4">Social Links</h3>
+              <h3 className="text-lg font-semibold text-white mb-4">
+                Social Links
+              </h3>
               <div className="space-y-3">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
-                  <label className="block text-sm font-medium text-gray-400">Link Text</label>
-                  <label className="block text-sm font-medium text-gray-400">Link URL</label>
+                  <label className="block text-sm font-medium text-gray-400">
+                    Link Text
+                  </label>
+                  <label className="block text-sm font-medium text-gray-400">
+                    Link URL
+                  </label>
                 </div>
                 {settings.footerConfig?.socialLinks?.map((link) => (
-                  <div key={link.id} className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-2 items-end">
+                  <div
+                    key={link.id}
+                    className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-2 items-end"
+                  >
                     <input
                       type="text"
                       aria-label="Link Text"
@@ -790,7 +881,10 @@ const SettingsManagement: React.FC = () => {
                           footerConfig: {
                             columns: prev.footerConfig?.columns || [],
                             ...prev.footerConfig,
-                            socialLinks: prev.footerConfig?.socialLinks?.filter((l) => l.id !== link.id) || [],
+                            socialLinks:
+                              prev.footerConfig?.socialLinks?.filter(
+                                (l) => l.id !== link.id,
+                              ) || [],
                           },
                         }));
                       }}
@@ -811,9 +905,14 @@ const SettingsManagement: React.FC = () => {
 
             {/* Footer Layout Section */}
             <div className="bg-slate-800 p-6 rounded-lg border border-slate-700">
-              <h3 className="text-lg font-semibold text-white mb-4">Footer Layout & Content</h3>
-              <p className="text-sm text-gray-400 mb-4">Drag items from "Available Items" to the footer columns (Left, Center, Right). Click the ✕ button to remove items.</p>
-              
+              <h3 className="text-lg font-semibold text-white mb-4">
+                Footer Layout & Content
+              </h3>
+              <p className="text-sm text-gray-400 mb-4">
+                Drag items from "Available Items" to the footer columns (Left,
+                Center, Right). Click the ✕ button to remove items.
+              </p>
+
               <DndContext
                 sensors={sensors}
                 collisionDetection={closestCenter}
@@ -823,28 +922,52 @@ const SettingsManagement: React.FC = () => {
                 <div className="grid grid-cols-4 gap-4">
                   {/* Available Items */}
                   <div className="col-span-1">
-                    <h4 className="text-md font-semibold text-white mb-2">Available Items</h4>
+                    <h4 className="text-md font-semibold text-white mb-2">
+                      Available Items
+                    </h4>
                     <div className="space-y-2 p-4 bg-slate-900 rounded-lg">
-                      <SortableContext items={availableFooterItems.map(i => i.id)} strategy={verticalListSortingStrategy}>
+                      <SortableContext
+                        items={availableFooterItems.map((i) => i.id)}
+                        strategy={verticalListSortingStrategy}
+                      >
                         {availableFooterItems
-                           .filter(item => !findItem(item.id, settings.footerConfig?.columns || []))
-                           .map(item => <SortableItem key={item.id} item={item} onDelete={handleDeleteFooterItem} />)
-                        }
+                          .filter(
+                            (item) =>
+                              !findItem(
+                                item.id,
+                                settings.footerConfig?.columns || [],
+                              ),
+                          )
+                          .map((item) => (
+                            <SortableItem
+                              key={item.id}
+                              item={item}
+                              onDelete={handleDeleteFooterItem}
+                            />
+                          ))}
                       </SortableContext>
                     </div>
                   </div>
 
                   {/* Footer Columns */}
                   <div className="col-span-3 grid grid-cols-3 gap-4">
-                    {settings.footerConfig?.columns.map(column => (
+                    {settings.footerConfig?.columns.map((column) => (
                       <DroppableColumn key={column.id} column={column}>
-                        {column.items.map(item => <SortableItem key={item.id} item={item} onDelete={handleDeleteFooterItem} />)}
+                        {column.items.map((item) => (
+                          <SortableItem
+                            key={item.id}
+                            item={item}
+                            onDelete={handleDeleteFooterItem}
+                          />
+                        ))}
                       </DroppableColumn>
                     ))}
                   </div>
                 </div>
                 <DragOverlay>
-                  {activeDragItem ? <DraggableItem item={activeDragItem} isOverlay /> : null}
+                  {activeDragItem ? (
+                    <DraggableItem item={activeDragItem} isOverlay />
+                  ) : null}
                 </DragOverlay>
               </DndContext>
             </div>
@@ -1037,7 +1160,9 @@ const SettingsManagement: React.FC = () => {
 
             {/* From Address */}
             <div className="bg-slate-700 p-6 rounded-lg border border-slate-600">
-              <h3 className="text-lg font-semibold text-white mb-4">Sender Address</h3>
+              <h3 className="text-lg font-semibold text-white mb-4">
+                Sender Address
+              </h3>
               <div className="grid grid-cols-2 gap-4">
                 <input
                   type="text"
@@ -1265,7 +1390,9 @@ const SettingsManagement: React.FC = () => {
 
             {/* Carrier Configuration */}
             <div className="bg-slate-700 p-6 rounded-lg border border-slate-600">
-              <h3 className="text-lg font-semibold text-white mb-4">Carrier Configuration</h3>
+              <h3 className="text-lg font-semibold text-white mb-4">
+                Carrier Configuration
+              </h3>
 
               {/* EasyPost */}
               <div className="mb-6 p-4 bg-slate-600 rounded-lg">
@@ -1273,25 +1400,42 @@ const SettingsManagement: React.FC = () => {
                   <label className="flex items-center space-x-3 flex-1">
                     <input
                       type="checkbox"
-                      checked={settings.shippingCarriers?.easypost?.enabled || false}
+                      checked={
+                        settings.shippingCarriers?.easypost?.enabled || false
+                      }
                       onChange={(e) =>
                         setSettings((prev) => ({
                           ...prev!,
                           shippingCarriers: {
                             easypost: {
-                              ...(prev!.shippingCarriers?.easypost || { enabled: false, apiKey: "" }),
+                              ...(prev!.shippingCarriers?.easypost || {
+                                enabled: false,
+                                apiKey: "",
+                              }),
                               enabled: e.target.checked,
                             },
-                            shippo: prev!.shippingCarriers?.shippo || { enabled: false, apiKey: "" },
-                            shipstation: prev!.shippingCarriers?.shipstation || { enabled: false, apiKey: "", apiSecret: "" },
+                            shippo: prev!.shippingCarriers?.shippo || {
+                              enabled: false,
+                              apiKey: "",
+                            },
+                            shipstation: prev!.shippingCarriers
+                              ?.shipstation || {
+                              enabled: false,
+                              apiKey: "",
+                              apiSecret: "",
+                            },
                           },
                         }))
                       }
                       className="w-4 h-4"
                     />
-                    <span className="text-white font-medium">EasyPost (Multi-carrier)</span>
+                    <span className="text-white font-medium">
+                      EasyPost (Multi-carrier)
+                    </span>
                   </label>
-                  <span className="text-xs text-gray-400">USPS, UPS, FedEx, DHL</span>
+                  <span className="text-xs text-gray-400">
+                    USPS, UPS, FedEx, DHL
+                  </span>
                 </div>
                 {settings.shippingCarriers?.easypost?.enabled && (
                   <input
@@ -1303,11 +1447,21 @@ const SettingsManagement: React.FC = () => {
                         ...prev!,
                         shippingCarriers: {
                           easypost: {
-                            ...(prev!.shippingCarriers?.easypost || { enabled: false, apiKey: "" }),
+                            ...(prev!.shippingCarriers?.easypost || {
+                              enabled: false,
+                              apiKey: "",
+                            }),
                             apiKey: e.target.value,
                           },
-                          shippo: prev!.shippingCarriers?.shippo || { enabled: false, apiKey: "" },
-                          shipstation: prev!.shippingCarriers?.shipstation || { enabled: false, apiKey: "", apiSecret: "" },
+                          shippo: prev!.shippingCarriers?.shippo || {
+                            enabled: false,
+                            apiKey: "",
+                          },
+                          shipstation: prev!.shippingCarriers?.shipstation || {
+                            enabled: false,
+                            apiKey: "",
+                            apiSecret: "",
+                          },
                         },
                       }))
                     }
@@ -1322,25 +1476,42 @@ const SettingsManagement: React.FC = () => {
                   <label className="flex items-center space-x-3 flex-1">
                     <input
                       type="checkbox"
-                      checked={settings.shippingCarriers?.shippo?.enabled || false}
+                      checked={
+                        settings.shippingCarriers?.shippo?.enabled || false
+                      }
                       onChange={(e) =>
                         setSettings((prev) => ({
                           ...prev!,
                           shippingCarriers: {
-                            easypost: prev!.shippingCarriers?.easypost || { enabled: false, apiKey: "" },
+                            easypost: prev!.shippingCarriers?.easypost || {
+                              enabled: false,
+                              apiKey: "",
+                            },
                             shippo: {
-                              ...(prev!.shippingCarriers?.shippo || { enabled: false, apiKey: "" }),
+                              ...(prev!.shippingCarriers?.shippo || {
+                                enabled: false,
+                                apiKey: "",
+                              }),
                               enabled: e.target.checked,
                             },
-                            shipstation: prev!.shippingCarriers?.shipstation || { enabled: false, apiKey: "", apiSecret: "" },
+                            shipstation: prev!.shippingCarriers
+                              ?.shipstation || {
+                              enabled: false,
+                              apiKey: "",
+                              apiSecret: "",
+                            },
                           },
                         }))
                       }
                       className="w-4 h-4"
                     />
-                    <span className="text-white font-medium">Shippo (Multi-carrier)</span>
+                    <span className="text-white font-medium">
+                      Shippo (Multi-carrier)
+                    </span>
                   </label>
-                  <span className="text-xs text-gray-400">USPS, UPS, FedEx, DHL</span>
+                  <span className="text-xs text-gray-400">
+                    USPS, UPS, FedEx, DHL
+                  </span>
                 </div>
                 {settings.shippingCarriers?.shippo?.enabled && (
                   <input
@@ -1351,12 +1522,22 @@ const SettingsManagement: React.FC = () => {
                       setSettings((prev) => ({
                         ...prev!,
                         shippingCarriers: {
-                          easypost: prev!.shippingCarriers?.easypost || { enabled: false, apiKey: "" },
+                          easypost: prev!.shippingCarriers?.easypost || {
+                            enabled: false,
+                            apiKey: "",
+                          },
                           shippo: {
-                            ...(prev!.shippingCarriers?.shippo || { enabled: false, apiKey: "" }),
+                            ...(prev!.shippingCarriers?.shippo || {
+                              enabled: false,
+                              apiKey: "",
+                            }),
                             apiKey: e.target.value,
                           },
-                          shipstation: prev!.shippingCarriers?.shipstation || { enabled: false, apiKey: "", apiSecret: "" },
+                          shipstation: prev!.shippingCarriers?.shipstation || {
+                            enabled: false,
+                            apiKey: "",
+                            apiSecret: "",
+                          },
                         },
                       }))
                     }
@@ -1371,15 +1552,27 @@ const SettingsManagement: React.FC = () => {
                   <label className="flex items-center space-x-3 flex-1">
                     <input
                       type="checkbox"
-                      checked={settings.shippingCarriers?.shipstation?.enabled || false}
+                      checked={
+                        settings.shippingCarriers?.shipstation?.enabled || false
+                      }
                       onChange={(e) =>
                         setSettings((prev) => ({
                           ...prev!,
                           shippingCarriers: {
-                            easypost: prev!.shippingCarriers?.easypost || { enabled: false, apiKey: "" },
-                            shippo: prev!.shippingCarriers?.shippo || { enabled: false, apiKey: "" },
+                            easypost: prev!.shippingCarriers?.easypost || {
+                              enabled: false,
+                              apiKey: "",
+                            },
+                            shippo: prev!.shippingCarriers?.shippo || {
+                              enabled: false,
+                              apiKey: "",
+                            },
                             shipstation: {
-                              ...(prev!.shippingCarriers?.shipstation || { enabled: false, apiKey: "", apiSecret: "" }),
+                              ...(prev!.shippingCarriers?.shipstation || {
+                                enabled: false,
+                                apiKey: "",
+                                apiSecret: "",
+                              }),
                               enabled: e.target.checked,
                             },
                           },
@@ -1387,24 +1580,40 @@ const SettingsManagement: React.FC = () => {
                       }
                       className="w-4 h-4"
                     />
-                    <span className="text-white font-medium">ShipStation (Multi-carrier)</span>
+                    <span className="text-white font-medium">
+                      ShipStation (Multi-carrier)
+                    </span>
                   </label>
-                  <span className="text-xs text-gray-400">USPS, UPS, FedEx, DHL</span>
+                  <span className="text-xs text-gray-400">
+                    USPS, UPS, FedEx, DHL
+                  </span>
                 </div>
                 {settings.shippingCarriers?.shipstation?.enabled && (
                   <div className="space-y-3">
                     <input
                       type="password"
                       placeholder="ShipStation API Key"
-                      value={settings.shippingCarriers?.shipstation?.apiKey || ""}
+                      value={
+                        settings.shippingCarriers?.shipstation?.apiKey || ""
+                      }
                       onChange={(e) =>
                         setSettings((prev) => ({
                           ...prev!,
                           shippingCarriers: {
-                            easypost: prev!.shippingCarriers?.easypost || { enabled: false, apiKey: "" },
-                            shippo: prev!.shippingCarriers?.shippo || { enabled: false, apiKey: "" },
+                            easypost: prev!.shippingCarriers?.easypost || {
+                              enabled: false,
+                              apiKey: "",
+                            },
+                            shippo: prev!.shippingCarriers?.shippo || {
+                              enabled: false,
+                              apiKey: "",
+                            },
                             shipstation: {
-                              ...(prev!.shippingCarriers?.shipstation || { enabled: false, apiKey: "", apiSecret: "" }),
+                              ...(prev!.shippingCarriers?.shipstation || {
+                                enabled: false,
+                                apiKey: "",
+                                apiSecret: "",
+                              }),
                               apiKey: e.target.value,
                             },
                           },
@@ -1415,15 +1624,27 @@ const SettingsManagement: React.FC = () => {
                     <input
                       type="password"
                       placeholder="ShipStation API Secret"
-                      value={settings.shippingCarriers?.shipstation?.apiSecret || ""}
+                      value={
+                        settings.shippingCarriers?.shipstation?.apiSecret || ""
+                      }
                       onChange={(e) =>
                         setSettings((prev) => ({
                           ...prev!,
                           shippingCarriers: {
-                            easypost: prev!.shippingCarriers?.easypost || { enabled: false, apiKey: "" },
-                            shippo: prev!.shippingCarriers?.shippo || { enabled: false, apiKey: "" },
+                            easypost: prev!.shippingCarriers?.easypost || {
+                              enabled: false,
+                              apiKey: "",
+                            },
+                            shippo: prev!.shippingCarriers?.shippo || {
+                              enabled: false,
+                              apiKey: "",
+                            },
                             shipstation: {
-                              ...(prev!.shippingCarriers?.shipstation || { enabled: false, apiKey: "", apiSecret: "" }),
+                              ...(prev!.shippingCarriers?.shipstation || {
+                                enabled: false,
+                                apiKey: "",
+                                apiSecret: "",
+                              }),
                               apiSecret: e.target.value,
                             },
                           },
@@ -1471,12 +1692,16 @@ const SettingsManagement: React.FC = () => {
 
         {activeTab === "tax" && (
           <div className="space-y-6">
-            <h2 className="text-2xl font-semibold text-white mb-4">Tax Configuration</h2>
-            
+            <h2 className="text-2xl font-semibold text-white mb-4">
+              Tax Configuration
+            </h2>
+
             {/* Global Settings */}
             <div className="bg-slate-700 p-6 rounded-lg border border-slate-600">
-              <h3 className="text-xl font-semibold text-white mb-4">Global Settings</h3>
-              
+              <h3 className="text-xl font-semibold text-white mb-4">
+                Global Settings
+              </h3>
+
               <div className="space-y-4">
                 <label className="flex items-center space-x-3">
                   <input
@@ -1491,7 +1716,7 @@ const SettingsManagement: React.FC = () => {
                 <div>
                   <label className="block text-white mb-2">Tax Provider</label>
                   <select
-                    value={settings.taxConfig?.provider || 'stripe'}
+                    value={settings.taxConfig?.provider || "stripe"}
                     onChange={(e) =>
                       setSettings({
                         ...settings,
@@ -1517,12 +1742,16 @@ const SettingsManagement: React.FC = () => {
                 </div>
 
                 {/* Stripe Tax Configuration */}
-                {settings.taxConfig?.provider === 'stripe' && (
+                {settings.taxConfig?.provider === "stripe" && (
                   <div>
-                    <label className="block text-white mb-2">Stripe API Key</label>
+                    <label className="block text-white mb-2">
+                      Stripe API Key
+                    </label>
                     <input
                       type="password"
-                      value={settings.taxConfig?.credentials?.stripeApiKey || ''}
+                      value={
+                        settings.taxConfig?.credentials?.stripeApiKey || ""
+                      }
                       onChange={(e) =>
                         setSettings({
                           ...settings,
@@ -1539,18 +1768,30 @@ const SettingsManagement: React.FC = () => {
                       placeholder="sk_live_..."
                     />
                     <p className="text-sm text-gray-400 mt-1">
-                      Get your API key from <a href="https://dashboard.stripe.com/apikeys" target="_blank" rel="noopener noreferrer" className="text-sky-400 hover:underline">Stripe Dashboard</a>
+                      Get your API key from{" "}
+                      <a
+                        href="https://dashboard.stripe.com/apikeys"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sky-400 hover:underline"
+                      >
+                        Stripe Dashboard
+                      </a>
                     </p>
                   </div>
                 )}
 
                 {/* TaxJar Configuration */}
-                {settings.taxConfig?.provider === 'taxjar' && (
+                {settings.taxConfig?.provider === "taxjar" && (
                   <div>
-                    <label className="block text-white mb-2">TaxJar API Key</label>
+                    <label className="block text-white mb-2">
+                      TaxJar API Key
+                    </label>
                     <input
                       type="password"
-                      value={settings.taxConfig?.credentials?.taxjarApiKey || ''}
+                      value={
+                        settings.taxConfig?.credentials?.taxjarApiKey || ""
+                      }
                       onChange={(e) =>
                         setSettings({
                           ...settings,
@@ -1567,19 +1808,32 @@ const SettingsManagement: React.FC = () => {
                       placeholder="token_..."
                     />
                     <p className="text-sm text-gray-400 mt-1">
-                      Get your API key from <a href="https://app.taxjar.com/api_sign_up/basic" target="_blank" rel="noopener noreferrer" className="text-sky-400 hover:underline">TaxJar Dashboard</a>
+                      Get your API key from{" "}
+                      <a
+                        href="https://app.taxjar.com/api_sign_up/basic"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sky-400 hover:underline"
+                      >
+                        TaxJar Dashboard
+                      </a>
                     </p>
                   </div>
                 )}
 
                 {/* Avalara Configuration */}
-                {settings.taxConfig?.provider === 'avalara' && (
+                {settings.taxConfig?.provider === "avalara" && (
                   <div className="space-y-3">
                     <div>
-                      <label className="block text-white mb-2">Account ID</label>
+                      <label className="block text-white mb-2">
+                        Account ID
+                      </label>
                       <input
                         type="text"
-                        value={settings.taxConfig?.credentials?.avalaraAccountId || ''}
+                        value={
+                          settings.taxConfig?.credentials?.avalaraAccountId ||
+                          ""
+                        }
                         onChange={(e) =>
                           setSettings({
                             ...settings,
@@ -1597,10 +1851,15 @@ const SettingsManagement: React.FC = () => {
                       />
                     </div>
                     <div>
-                      <label className="block text-white mb-2">License Key</label>
+                      <label className="block text-white mb-2">
+                        License Key
+                      </label>
                       <input
                         type="password"
-                        value={settings.taxConfig?.credentials?.avalaraLicenseKey || ''}
+                        value={
+                          settings.taxConfig?.credentials?.avalaraLicenseKey ||
+                          ""
+                        }
                         onChange={(e) =>
                           setSettings({
                             ...settings,
@@ -1618,9 +1877,14 @@ const SettingsManagement: React.FC = () => {
                       />
                     </div>
                     <div>
-                      <label className="block text-white mb-2">Environment</label>
+                      <label className="block text-white mb-2">
+                        Environment
+                      </label>
                       <select
-                        value={settings.taxConfig?.credentials?.avalaraEnvironment || 'sandbox'}
+                        value={
+                          settings.taxConfig?.credentials?.avalaraEnvironment ||
+                          "sandbox"
+                        }
                         onChange={(e) =>
                           setSettings({
                             ...settings,
@@ -1628,7 +1892,9 @@ const SettingsManagement: React.FC = () => {
                               ...settings.taxConfig!,
                               credentials: {
                                 ...settings.taxConfig?.credentials,
-                                avalaraEnvironment: e.target.value as 'sandbox' | 'production',
+                                avalaraEnvironment: e.target.value as
+                                  | "sandbox"
+                                  | "production",
                               },
                             },
                           })
@@ -1640,19 +1906,29 @@ const SettingsManagement: React.FC = () => {
                       </select>
                     </div>
                     <p className="text-sm text-gray-400 mt-1">
-                      Get credentials from <a href="https://developer.avalara.com/" target="_blank" rel="noopener noreferrer" className="text-sky-400 hover:underline">Avalara Dashboard</a>
+                      Get credentials from{" "}
+                      <a
+                        href="https://developer.avalara.com/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sky-400 hover:underline"
+                      >
+                        Avalara Dashboard
+                      </a>
                     </p>
                   </div>
                 )}
 
                 {/* TaxCloud Configuration */}
-                {settings.taxConfig?.provider === 'taxcloud' && (
+                {settings.taxConfig?.provider === "taxcloud" && (
                   <div className="space-y-3">
                     <div>
                       <label className="block text-white mb-2">API Key</label>
                       <input
                         type="password"
-                        value={settings.taxConfig?.credentials?.taxcloudApiKey || ''}
+                        value={
+                          settings.taxConfig?.credentials?.taxcloudApiKey || ""
+                        }
                         onChange={(e) =>
                           setSettings({
                             ...settings,
@@ -1673,7 +1949,9 @@ const SettingsManagement: React.FC = () => {
                       <label className="block text-white mb-2">User ID</label>
                       <input
                         type="text"
-                        value={settings.taxConfig?.credentials?.taxcloudUserId || ''}
+                        value={
+                          settings.taxConfig?.credentials?.taxcloudUserId || ""
+                        }
                         onChange={(e) =>
                           setSettings({
                             ...settings,
@@ -1691,18 +1969,28 @@ const SettingsManagement: React.FC = () => {
                       />
                     </div>
                     <p className="text-sm text-gray-400 mt-1">
-                      Get credentials from <a href="https://taxcloud.net/account" target="_blank" rel="noopener noreferrer" className="text-sky-400 hover:underline">TaxCloud Account</a>
+                      Get credentials from{" "}
+                      <a
+                        href="https://taxcloud.net/account"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sky-400 hover:underline"
+                      >
+                        TaxCloud Account
+                      </a>
                     </p>
                   </div>
                 )}
 
                 {/* Zamp Configuration */}
-                {settings.taxConfig?.provider === 'zamp' && (
+                {settings.taxConfig?.provider === "zamp" && (
                   <div>
-                    <label className="block text-white mb-2">Zamp API Key</label>
+                    <label className="block text-white mb-2">
+                      Zamp API Key
+                    </label>
                     <input
                       type="password"
-                      value={settings.taxConfig?.credentials?.zampApiKey || ''}
+                      value={settings.taxConfig?.credentials?.zampApiKey || ""}
                       onChange={(e) =>
                         setSettings({
                           ...settings,
@@ -1719,18 +2007,28 @@ const SettingsManagement: React.FC = () => {
                       placeholder="Your API Key"
                     />
                     <p className="text-sm text-gray-400 mt-1">
-                      Get your API key from <a href="https://www.zamp.com/" target="_blank" rel="noopener noreferrer" className="text-sky-400 hover:underline">Zamp Dashboard</a>
+                      Get your API key from{" "}
+                      <a
+                        href="https://www.zamp.com/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sky-400 hover:underline"
+                      >
+                        Zamp Dashboard
+                      </a>
                     </p>
                   </div>
                 )}
 
                 {/* Anrok Configuration */}
-                {settings.taxConfig?.provider === 'anrok' && (
+                {settings.taxConfig?.provider === "anrok" && (
                   <div>
-                    <label className="block text-white mb-2">Anrok API Key</label>
+                    <label className="block text-white mb-2">
+                      Anrok API Key
+                    </label>
                     <input
                       type="password"
-                      value={settings.taxConfig?.credentials?.anrokApiKey || ''}
+                      value={settings.taxConfig?.credentials?.anrokApiKey || ""}
                       onChange={(e) =>
                         setSettings({
                           ...settings,
@@ -1747,20 +2045,32 @@ const SettingsManagement: React.FC = () => {
                       placeholder="Your API Key"
                     />
                     <p className="text-sm text-gray-400 mt-1">
-                      Get your API key from <a href="https://www.anrok.com/" target="_blank" rel="noopener noreferrer" className="text-sky-400 hover:underline">Anrok Dashboard</a>
+                      Get your API key from{" "}
+                      <a
+                        href="https://www.anrok.com/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sky-400 hover:underline"
+                      >
+                        Anrok Dashboard
+                      </a>
                     </p>
                   </div>
                 )}
 
                 <div>
-                  <label className="block text-white mb-2">Default Tax Rate (%) - Fallback</label>
+                  <label className="block text-white mb-2">
+                    Default Tax Rate (%) - Fallback
+                  </label>
                   <input
                     type="number"
                     min="0"
                     max="100"
                     step="0.01"
                     value={defaultTaxRate}
-                    onChange={(e) => setDefaultTaxRate(parseFloat(e.target.value))}
+                    onChange={(e) =>
+                      setDefaultTaxRate(parseFloat(e.target.value))
+                    }
                     className={inputClasses}
                   />
                   <p className="text-sm text-gray-400 mt-1">
@@ -1773,17 +2083,18 @@ const SettingsManagement: React.FC = () => {
                     const updatedSettings = {
                       ...settings,
                       taxConfig: {
-                        provider: settings.taxConfig?.provider || 'stripe',
+                        provider: settings.taxConfig?.provider || "stripe",
                         enableTaxCollection: enableTax,
                         defaultTaxRate,
-                        taxIncludedInPrice: settings.taxConfig?.taxIncludedInPrice ?? false,
+                        taxIncludedInPrice:
+                          settings.taxConfig?.taxIncludedInPrice ?? false,
                         credentials: settings.taxConfig?.credentials,
                         rules: taxRules,
                       },
                     };
                     setSettings(updatedSettings);
                     updateSiteSettings(updatedSettings);
-                    addToast('Tax settings saved', 'success');
+                    addToast("Tax settings saved", "success");
                   }}
                   className={buttonClasses}
                 >
@@ -1793,143 +2104,162 @@ const SettingsManagement: React.FC = () => {
             </div>
 
             {/* Add/Edit Rule Form */}
-            {settings.taxConfig?.provider === 'manual' && (
+            {settings.taxConfig?.provider === "manual" && (
               <div className="bg-slate-700 p-6 rounded-lg border border-slate-600">
                 <h3 className="text-xl font-semibold text-white mb-4">
-                  {editingTaxId ? 'Edit Tax Rule' : 'Add New Tax Rule'}
+                  {editingTaxId ? "Edit Tax Rule" : "Add New Tax Rule"}
                 </h3>
                 <p className="text-sm text-gray-400 mb-4">
-                  Manual rules only apply when using Manual tax provider. Stripe Tax handles this automatically.
+                  Manual rules only apply when using Manual tax provider. Stripe
+                  Tax handles this automatically.
                 </p>
 
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-white mb-2">Rule Name</label>
-                  <input
-                    type="text"
-                    placeholder="e.g., California Sales Tax"
-                    value={taxFormData.name || ''}
-                    onChange={(e) => setTaxFormData({ ...taxFormData, name: e.target.value })}
-                    className={inputClasses}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-white mb-2">Tax Rate (%)</label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="100"
-                    step="0.01"
-                    value={taxFormData.taxRate || 0}
-                    onChange={(e) => setTaxFormData({ ...taxFormData, taxRate: parseFloat(e.target.value) })}
-                    className={inputClasses}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-white mb-2">Priority (higher = applies first)</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={taxFormData.priority || 0}
-                    onChange={(e) => setTaxFormData({ ...taxFormData, priority: parseInt(e.target.value) })}
-                    className={inputClasses}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-white mb-2">States (click to select)</label>
-                  <div className="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto bg-slate-600 p-4 rounded-md border border-slate-500">
-                    {US_STATES.map((state) => (
-                      <button
-                        key={state}
-                        type="button"
-                        onClick={() => {
-                          const newStates = taxFormData.states || [];
-                          if (newStates.includes(state)) {
-                            setTaxFormData({
-                              ...taxFormData,
-                              states: newStates.filter((s) => s !== state),
-                            });
-                          } else {
-                            setTaxFormData({
-                              ...taxFormData,
-                              states: [...newStates, state],
-                            });
-                          }
-                        }}
-                        className={`p-2 rounded-md font-semibold transition-colors ${
-                          (taxFormData.states || []).includes(state)
-                            ? 'bg-sky-500 text-white'
-                            : 'bg-slate-500 text-gray-300 hover:bg-slate-400'
-                        }`}
-                      >
-                        {state}
-                      </button>
-                    ))}
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-white mb-2">Rule Name</label>
+                    <input
+                      type="text"
+                      placeholder="e.g., California Sales Tax"
+                      value={taxFormData.name || ""}
+                      onChange={(e) =>
+                        setTaxFormData({ ...taxFormData, name: e.target.value })
+                      }
+                      className={inputClasses}
+                    />
                   </div>
-                  <p className="text-sm text-gray-400 mt-2">
-                    Selected: {(taxFormData.states || []).join(', ') || 'None'}
-                  </p>
-                </div>
 
-                <label className="flex items-center space-x-3">
-                  <input
-                    type="checkbox"
-                    checked={taxFormData.enabled !== false}
-                    onChange={(e) => setTaxFormData({ ...taxFormData, enabled: e.target.checked })}
-                    className="w-4 h-4"
-                  />
-                  <span className="text-white">Enabled</span>
-                </label>
-
-                <div className="flex space-x-2">
-                  <button
-                    onClick={() => {
-                      if (!taxFormData.name || (taxFormData.states || []).length === 0) {
-                        addToast('Rule name and at least one state are required', 'error');
-                        return;
+                  <div>
+                    <label className="block text-white mb-2">
+                      Tax Rate (%)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.01"
+                      value={taxFormData.taxRate || 0}
+                      onChange={(e) =>
+                        setTaxFormData({
+                          ...taxFormData,
+                          taxRate: parseFloat(e.target.value),
+                        })
                       }
+                      className={inputClasses}
+                    />
+                  </div>
 
-                      const newRule: TaxRule = {
-                        id: editingTaxId || Date.now().toString(),
-                        name: taxFormData.name || '',
-                        states: taxFormData.states || [],
-                        taxRate: taxFormData.taxRate || 0,
-                        exemptedProductIds: taxFormData.exemptedProductIds || [],
-                        enabled: taxFormData.enabled !== false,
-                        priority: taxFormData.priority || 0,
-                      };
-
-                      if (editingTaxId) {
-                        setTaxRules(taxRules.map((r) => (r.id === editingTaxId ? newRule : r)));
-                        setEditingTaxId(null);
-                        addToast('Tax rule updated', 'success');
-                      } else {
-                        setTaxRules([...taxRules, newRule]);
-                        addToast('Tax rule added', 'success');
+                  <div>
+                    <label className="block text-white mb-2">
+                      Priority (higher = applies first)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={taxFormData.priority || 0}
+                      onChange={(e) =>
+                        setTaxFormData({
+                          ...taxFormData,
+                          priority: parseInt(e.target.value),
+                        })
                       }
+                      className={inputClasses}
+                    />
+                  </div>
 
-                      setTaxFormData({
-                        name: '',
-                        states: [],
-                        taxRate: 0,
-                        exemptedProductIds: [],
-                        enabled: true,
-                        priority: 0,
-                      });
-                    }}
-                    className={buttonClasses}
-                  >
-                    {editingTaxId ? 'Update Rule' : 'Add Rule'}
-                  </button>
-                  {editingTaxId && (
+                  <div>
+                    <label className="block text-white mb-2">
+                      States (click to select)
+                    </label>
+                    <div className="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto bg-slate-600 p-4 rounded-md border border-slate-500">
+                      {US_STATES.map((state) => (
+                        <button
+                          key={state}
+                          type="button"
+                          onClick={() => {
+                            const newStates = taxFormData.states || [];
+                            if (newStates.includes(state)) {
+                              setTaxFormData({
+                                ...taxFormData,
+                                states: newStates.filter((s) => s !== state),
+                              });
+                            } else {
+                              setTaxFormData({
+                                ...taxFormData,
+                                states: [...newStates, state],
+                              });
+                            }
+                          }}
+                          className={`p-2 rounded-md font-semibold transition-colors ${
+                            (taxFormData.states || []).includes(state)
+                              ? "bg-sky-500 text-white"
+                              : "bg-slate-500 text-gray-300 hover:bg-slate-400"
+                          }`}
+                        >
+                          {state}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-sm text-gray-400 mt-2">
+                      Selected:{" "}
+                      {(taxFormData.states || []).join(", ") || "None"}
+                    </p>
+                  </div>
+
+                  <label className="flex items-center space-x-3">
+                    <input
+                      type="checkbox"
+                      checked={taxFormData.enabled !== false}
+                      onChange={(e) =>
+                        setTaxFormData({
+                          ...taxFormData,
+                          enabled: e.target.checked,
+                        })
+                      }
+                      className="w-4 h-4"
+                    />
+                    <span className="text-white">Enabled</span>
+                  </label>
+
+                  <div className="flex space-x-2">
                     <button
                       onClick={() => {
-                        setEditingTaxId(null);
+                        if (
+                          !taxFormData.name ||
+                          (taxFormData.states || []).length === 0
+                        ) {
+                          addToast(
+                            "Rule name and at least one state are required",
+                            "error",
+                          );
+                          return;
+                        }
+
+                        const newRule: TaxRule = {
+                          id: editingTaxId || Date.now().toString(),
+                          name: taxFormData.name || "",
+                          states: taxFormData.states || [],
+                          taxRate: taxFormData.taxRate || 0,
+                          exemptedProductIds:
+                            taxFormData.exemptedProductIds || [],
+                          enabled: taxFormData.enabled !== false,
+                          priority: taxFormData.priority || 0,
+                        };
+
+                        if (editingTaxId) {
+                          setTaxRules(
+                            taxRules.map((r) =>
+                              r.id === editingTaxId ? newRule : r,
+                            ),
+                          );
+                          setEditingTaxId(null);
+                          addToast("Tax rule updated", "success");
+                        } else {
+                          setTaxRules([...taxRules, newRule]);
+                          addToast("Tax rule added", "success");
+                        }
+
                         setTaxFormData({
-                          name: '',
+                          name: "",
                           states: [],
                           taxRate: 0,
                           exemptedProductIds: [],
@@ -1937,101 +2267,143 @@ const SettingsManagement: React.FC = () => {
                           priority: 0,
                         });
                       }}
-                      className="flex-1 bg-gray-600 text-white font-bold py-2 rounded-lg hover:bg-gray-700 transition-colors"
+                      className={buttonClasses}
                     >
-                      Cancel
+                      {editingTaxId ? "Update Rule" : "Add Rule"}
                     </button>
-                  )}
+                    {editingTaxId && (
+                      <button
+                        onClick={() => {
+                          setEditingTaxId(null);
+                          setTaxFormData({
+                            name: "",
+                            states: [],
+                            taxRate: 0,
+                            exemptedProductIds: [],
+                            enabled: true,
+                            priority: 0,
+                          });
+                        }}
+                        className="flex-1 bg-gray-600 text-white font-bold py-2 rounded-lg hover:bg-gray-700 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
             )}
 
             {/* Tax Rules List */}
-            {settings.taxConfig?.provider === 'manual' && (
-            <div className="bg-slate-700 p-6 rounded-lg border border-slate-600">
-              <h3 className="text-xl font-semibold text-white mb-4">Manual Tax Rules</h3>
-              
-              {taxRules.length === 0 ? (
-                <p className="text-gray-400">No tax rules configured yet.</p>
-              ) : (
-                <div className="space-y-4">
-                  {taxRules.map((rule) => (
-                    <div key={rule.id} className="bg-slate-600 p-4 rounded-lg border border-slate-500">
-                      <div className="flex justify-between items-start mb-2">
-                        <div>
-                          <h4 className="text-white font-semibold">{rule.name}</h4>
-                          <p className="text-gray-400 text-sm">
-                            Rate: {rule.taxRate}% | Priority: {rule.priority} | Status:{' '}
-                            <span className={rule.enabled ? 'text-green-400' : 'text-red-400'}>
-                              {rule.enabled ? 'Enabled' : 'Disabled'}
-                            </span>
-                          </p>
+            {settings.taxConfig?.provider === "manual" && (
+              <div className="bg-slate-700 p-6 rounded-lg border border-slate-600">
+                <h3 className="text-xl font-semibold text-white mb-4">
+                  Manual Tax Rules
+                </h3>
+
+                {taxRules.length === 0 ? (
+                  <p className="text-gray-400">No tax rules configured yet.</p>
+                ) : (
+                  <div className="space-y-4">
+                    {taxRules.map((rule) => (
+                      <div
+                        key={rule.id}
+                        className="bg-slate-600 p-4 rounded-lg border border-slate-500"
+                      >
+                        <div className="flex justify-between items-start mb-2">
+                          <div>
+                            <h4 className="text-white font-semibold">
+                              {rule.name}
+                            </h4>
+                            <p className="text-gray-400 text-sm">
+                              Rate: {rule.taxRate}% | Priority: {rule.priority}{" "}
+                              | Status:{" "}
+                              <span
+                                className={
+                                  rule.enabled
+                                    ? "text-green-400"
+                                    : "text-red-400"
+                                }
+                              >
+                                {rule.enabled ? "Enabled" : "Disabled"}
+                              </span>
+                            </p>
+                          </div>
+                          <div className="space-x-2">
+                            <button
+                              onClick={() => {
+                                setTaxFormData(rule);
+                                setEditingTaxId(rule.id);
+                              }}
+                              className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => {
+                                setTaxRules(
+                                  taxRules.filter((r) => r.id !== rule.id),
+                                );
+                                addToast("Tax rule deleted", "success");
+                              }}
+                              className="px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-sm"
+                            >
+                              Delete
+                            </button>
+                          </div>
                         </div>
-                        <div className="space-x-2">
-                          <button
-                            onClick={() => {
-                              setTaxFormData(rule);
-                              setEditingTaxId(rule.id);
-                            }}
-                            className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => {
-                              setTaxRules(taxRules.filter((r) => r.id !== rule.id));
-                              addToast('Tax rule deleted', 'success');
-                            }}
-                            className="px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-sm"
-                          >
-                            Delete
-                          </button>
-                        </div>
+                        <p className="text-gray-300 text-sm">
+                          States: {rule.states.join(", ")}
+                        </p>
                       </div>
-                      <p className="text-gray-300 text-sm">States: {rule.states.join(', ')}</p>
-                    </div>
-                  ))}
-                </div>
-              )}
+                    ))}
+                  </div>
+                )}
 
-              <button
-                onClick={() => {
-                  const updatedSettings = {
-                    ...settings,
-                    taxConfig: {
-                      provider: settings.taxConfig?.provider || 'stripe',
-                      enableTaxCollection: enableTax,
-                      defaultTaxRate,
-                      taxIncludedInPrice: settings.taxConfig?.taxIncludedInPrice ?? false,
-                      credentials: settings.taxConfig?.credentials,
-                      rules: taxRules,
-                    },
-                  };
-                  setSettings(updatedSettings);
-                  updateSiteSettings(updatedSettings);
-                  addToast('All tax settings saved', 'success');
-                }}
-                className={`mt-4 ${buttonClasses}`}
-              >
-                Save All Tax Rules
-              </button>
-            </div>
+                <button
+                  onClick={() => {
+                    const updatedSettings = {
+                      ...settings,
+                      taxConfig: {
+                        provider: settings.taxConfig?.provider || "stripe",
+                        enableTaxCollection: enableTax,
+                        defaultTaxRate,
+                        taxIncludedInPrice:
+                          settings.taxConfig?.taxIncludedInPrice ?? false,
+                        credentials: settings.taxConfig?.credentials,
+                        rules: taxRules,
+                      },
+                    };
+                    setSettings(updatedSettings);
+                    updateSiteSettings(updatedSettings);
+                    addToast("All tax settings saved", "success");
+                  }}
+                  className={`mt-4 ${buttonClasses}`}
+                >
+                  Save All Tax Rules
+                </button>
+              </div>
             )}
-
           </div>
         )}
 
         {activeTab === "orders" && (
           <div className="space-y-6">
-            <h2 className="text-2xl font-semibold text-white mb-4">Order Configuration</h2>
-            
+            <h2 className="text-2xl font-semibold text-white mb-4">
+              Order Configuration
+            </h2>
+
             <div className="bg-slate-700 p-6 rounded-lg border border-slate-600">
-              <h3 className="text-xl font-semibold text-white mb-4">Order Number Format</h3>
-              
+              <h3 className="text-xl font-semibold text-white mb-4">
+                Order Number Format
+              </h3>
+
               <div className="space-y-4">
                 <div>
-                  <label htmlFor="orderPrefix" className="block text-gray-300 text-sm font-bold mb-1">
+                  <label
+                    htmlFor="orderPrefix"
+                    className="block text-gray-300 text-sm font-bold mb-1"
+                  >
                     Order Prefix
                   </label>
                   <input
@@ -2049,12 +2421,16 @@ const SettingsManagement: React.FC = () => {
                     placeholder="e.g., AGIS, ORD, INV"
                   />
                   <p className="text-sm text-gray-400 mt-1">
-                    Maximum 10 characters. Used at the beginning of order numbers.
+                    Maximum 10 characters. Used at the beginning of order
+                    numbers.
                   </p>
                 </div>
 
                 <div>
-                  <label htmlFor="orderNumberLength" className="block text-gray-300 text-sm font-bold mb-1">
+                  <label
+                    htmlFor="orderNumberLength"
+                    className="block text-gray-300 text-sm font-bold mb-1"
+                  >
                     Order Number Length
                   </label>
                   <input
@@ -2072,21 +2448,32 @@ const SettingsManagement: React.FC = () => {
                     className={inputClasses}
                   />
                   <p className="text-sm text-gray-400 mt-1">
-                    Number of digits used in order numbers (1-15). Currently: {(settings.orderPrefix || "AGIS")}-{String(12345).padStart(settings.orderNumberLength || 10, "0")}
+                    Number of digits used in order numbers (1-15). Currently:{" "}
+                    {settings.orderPrefix || "AGIS"}-
+                    {String(12345).padStart(
+                      settings.orderNumberLength || 10,
+                      "0",
+                    )}
                   </p>
                 </div>
 
                 <div className="bg-slate-600 p-4 rounded-md border border-slate-500">
                   <p className="text-white font-semibold mb-2">Preview:</p>
                   <p className="text-gray-300">
-                    {(settings.orderPrefix || "AGIS")}-{String(Math.floor(Math.random() * Math.pow(10, settings.orderNumberLength || 10))).padStart(settings.orderNumberLength || 10, "0")}
+                    {settings.orderPrefix || "AGIS"}-
+                    {String(
+                      Math.floor(
+                        Math.random() *
+                          Math.pow(10, settings.orderNumberLength || 10),
+                      ),
+                    ).padStart(settings.orderNumberLength || 10, "0")}
                   </p>
                 </div>
 
                 <button
                   onClick={() => {
                     updateSiteSettings(settings);
-                    addToast('Order settings saved', 'success');
+                    addToast("Order settings saved", "success");
                   }}
                   className={`mt-4 ${buttonClasses}`}
                 >
@@ -2096,7 +2483,9 @@ const SettingsManagement: React.FC = () => {
             </div>
 
             <div className="bg-slate-700 p-6 rounded-lg border border-slate-600">
-              <h3 className="text-xl font-semibold text-white mb-4">Invoice / Receipt Template</h3>
+              <h3 className="text-xl font-semibold text-white mb-4">
+                Invoice / Receipt Template
+              </h3>
               <InvoiceTemplateEditor
                 template={settings.invoiceTemplate}
                 onTemplateChange={(template) =>
@@ -2111,7 +2500,7 @@ const SettingsManagement: React.FC = () => {
                   updateSiteSettings({
                     invoiceTemplate: settings.invoiceTemplate,
                   });
-                  addToast('Invoice template saved', 'success');
+                  addToast("Invoice template saved", "success");
                 }}
                 className={`mt-4 ${buttonClasses}`}
               >
@@ -2126,10 +2515,12 @@ const SettingsManagement: React.FC = () => {
             <h2 className="text-2xl font-semibold text-white mb-4">
               Email Configuration
             </h2>
-            
+
             <div className="bg-blue-900 bg-opacity-30 border border-blue-700 rounded-lg p-4 mb-6">
               <p className="text-blue-200 text-sm">
-                <strong>Security Note:</strong> Passwords and API keys are encrypted in the database. Sensitive fields like SMTP passwords and API keys are never logged or displayed in plain text.
+                <strong>Security Note:</strong> Passwords and API keys are
+                encrypted in the database. Sensitive fields like SMTP passwords
+                and API keys are never logged or displayed in plain text.
               </p>
             </div>
 
@@ -2138,14 +2529,14 @@ const SettingsManagement: React.FC = () => {
                 Email Provider
               </label>
               <select
-                value={siteSettings.emailConfig?.provider || 'none'}
+                value={siteSettings.emailConfig?.provider || "none"}
                 onChange={(e) => {
                   const newSettings = { ...siteSettings };
                   if (!newSettings.emailConfig) {
                     newSettings.emailConfig = {
-                      provider: 'none',
-                      fromEmail: '',
-                      fromName: '',
+                      provider: "none",
+                      fromEmail: "",
+                      fromName: "",
                     };
                   }
                   newSettings.emailConfig.provider = e.target.value as any;
@@ -2167,14 +2558,14 @@ const SettingsManagement: React.FC = () => {
                 </label>
                 <input
                   type="email"
-                  value={settings.emailConfig?.fromEmail || ''}
+                  value={settings.emailConfig?.fromEmail || ""}
                   onChange={(e) => {
                     const newSettings = { ...settings };
                     if (!newSettings.emailConfig) {
                       newSettings.emailConfig = {
-                        provider: 'none',
-                        fromEmail: '',
-                        fromName: '',
+                        provider: "none",
+                        fromEmail: "",
+                        fromName: "",
                       };
                     }
                     newSettings.emailConfig.fromEmail = e.target.value;
@@ -2191,14 +2582,14 @@ const SettingsManagement: React.FC = () => {
                 </label>
                 <input
                   type="text"
-                  value={settings.emailConfig?.fromName || ''}
+                  value={settings.emailConfig?.fromName || ""}
                   onChange={(e) => {
                     const newSettings = { ...settings };
                     if (!newSettings.emailConfig) {
                       newSettings.emailConfig = {
-                        provider: 'none',
-                        fromEmail: '',
-                        fromName: '',
+                        provider: "none",
+                        fromEmail: "",
+                        fromName: "",
                       };
                     }
                     newSettings.emailConfig.fromName = e.target.value;
@@ -2210,9 +2601,11 @@ const SettingsManagement: React.FC = () => {
               </div>
             </div>
 
-            {settings.emailConfig?.provider === 'smtp' && (
+            {settings.emailConfig?.provider === "smtp" && (
               <div className="bg-slate-700 p-4 rounded-lg space-y-4">
-                <h3 className="text-lg font-semibold text-white">SMTP Configuration</h3>
+                <h3 className="text-lg font-semibold text-white">
+                  SMTP Configuration
+                </h3>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
@@ -2221,7 +2614,7 @@ const SettingsManagement: React.FC = () => {
                     </label>
                     <input
                       type="text"
-                      value={settings.emailConfig.smtpHost || ''}
+                      value={settings.emailConfig.smtpHost || ""}
                       onChange={(e) => {
                         const newSettings = { ...settings };
                         newSettings.emailConfig!.smtpHost = e.target.value;
@@ -2241,7 +2634,9 @@ const SettingsManagement: React.FC = () => {
                       value={settings.emailConfig.smtpPort || 587}
                       onChange={(e) => {
                         const newSettings = { ...settings };
-                        newSettings.emailConfig!.smtpPort = parseInt(e.target.value);
+                        newSettings.emailConfig!.smtpPort = parseInt(
+                          e.target.value,
+                        );
                         setSettings(newSettings);
                       }}
                       placeholder="587"
@@ -2274,7 +2669,7 @@ const SettingsManagement: React.FC = () => {
                     </label>
                     <input
                       type="text"
-                      value={settings.emailConfig.smtpUsername || ''}
+                      value={settings.emailConfig.smtpUsername || ""}
                       onChange={(e) => {
                         const newSettings = { ...settings };
                         newSettings.emailConfig!.smtpUsername = e.target.value;
@@ -2307,9 +2702,11 @@ const SettingsManagement: React.FC = () => {
               </div>
             )}
 
-            {settings.emailConfig?.provider === 'sendgrid' && (
+            {settings.emailConfig?.provider === "sendgrid" && (
               <div className="bg-slate-700 p-4 rounded-lg space-y-4">
-                <h3 className="text-lg font-semibold text-white">SendGrid Configuration</h3>
+                <h3 className="text-lg font-semibold text-white">
+                  SendGrid Configuration
+                </h3>
 
                 <div>
                   <label className="block text-gray-300 text-sm font-bold mb-2">
@@ -2332,9 +2729,11 @@ const SettingsManagement: React.FC = () => {
               </div>
             )}
 
-            {settings.emailConfig?.provider === 'mailgun' && (
+            {settings.emailConfig?.provider === "mailgun" && (
               <div className="bg-slate-700 p-4 rounded-lg space-y-4">
-                <h3 className="text-lg font-semibold text-white">Mailgun Configuration</h3>
+                <h3 className="text-lg font-semibold text-white">
+                  Mailgun Configuration
+                </h3>
 
                 <div>
                   <label className="block text-gray-300 text-sm font-bold mb-2">
@@ -2342,7 +2741,7 @@ const SettingsManagement: React.FC = () => {
                   </label>
                   <input
                     type="text"
-                    value={settings.emailConfig.mailgunDomain || ''}
+                    value={settings.emailConfig.mailgunDomain || ""}
                     onChange={(e) => {
                       const newSettings = { ...settings };
                       newSettings.emailConfig!.mailgunDomain = e.target.value;
@@ -2378,18 +2777,21 @@ const SettingsManagement: React.FC = () => {
               <button
                 onClick={() => {
                   updateSiteSettings(settings);
-                  addToast('Email configuration saved', 'success');
+                  addToast("Email configuration saved", "success");
                 }}
                 className={buttonClasses}
               >
                 Save Email Configuration
               </button>
 
-              {settings.emailConfig?.provider !== 'none' && (
+              {settings.emailConfig?.provider !== "none" && (
                 <button
                   onClick={() => {
                     // Test email config
-                    addToast('Email configuration test sent (check console for validation)', 'info');
+                    addToast(
+                      "Email configuration test sent (check console for validation)",
+                      "info",
+                    );
                   }}
                   className="bg-slate-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-slate-700"
                 >
@@ -2405,10 +2807,11 @@ const SettingsManagement: React.FC = () => {
             <h2 className="text-2xl font-semibold text-white mb-4">
               Support Configuration
             </h2>
-            
+
             <div className="bg-blue-900 bg-opacity-30 border border-blue-700 rounded-lg p-4 mb-6">
               <p className="text-blue-200 text-sm">
-                <strong>Support Email:</strong> This email address will receive all customer support tickets and inquiries.
+                <strong>Support Email:</strong> This email address will receive
+                all customer support tickets and inquiries.
               </p>
             </div>
 
@@ -2418,7 +2821,7 @@ const SettingsManagement: React.FC = () => {
               </label>
               <input
                 type="email"
-                value={settings.supportEmail || ''}
+                value={settings.supportEmail || ""}
                 onChange={(e) => {
                   setSettings({
                     ...settings,
@@ -2429,7 +2832,8 @@ const SettingsManagement: React.FC = () => {
                 className={inputClasses}
               />
               <p className="text-gray-500 text-sm mt-1">
-                This is where customer support tickets and inquiries will be sent.
+                This is where customer support tickets and inquiries will be
+                sent.
               </p>
             </div>
 
@@ -2440,7 +2844,7 @@ const SettingsManagement: React.FC = () => {
                 </label>
                 <input
                   type="text"
-                  value={settings.supportSubjectPrefix || ''}
+                  value={settings.supportSubjectPrefix || ""}
                   onChange={(e) => {
                     setSettings({
                       ...settings,
@@ -2451,7 +2855,8 @@ const SettingsManagement: React.FC = () => {
                   className={inputClasses}
                 />
                 <p className="text-gray-500 text-sm mt-1">
-                  This prefix will appear at the start of all support ticket subject lines.
+                  This prefix will appear at the start of all support ticket
+                  subject lines.
                 </p>
               </div>
 
@@ -2461,7 +2866,7 @@ const SettingsManagement: React.FC = () => {
                 </label>
                 <input
                   type="text"
-                  value={settings.supportTicketSuffix || ''}
+                  value={settings.supportTicketSuffix || ""}
                   onChange={(e) => {
                     setSettings({
                       ...settings,
@@ -2472,18 +2877,25 @@ const SettingsManagement: React.FC = () => {
                   className={inputClasses}
                 />
                 <p className="text-gray-500 text-sm mt-1">
-                  This suffix will appear at the end of all support ticket subject lines.
+                  This suffix will appear at the end of all support ticket
+                  subject lines.
                 </p>
               </div>
             </div>
 
             <div className="bg-slate-700 p-4 rounded-lg mt-4">
-              <h3 className="text-sm font-semibold text-white mb-2">Subject Line Format Preview</h3>
+              <h3 className="text-sm font-semibold text-white mb-2">
+                Subject Line Format Preview
+              </h3>
               <p className="text-gray-300 text-sm mb-2">
-                {settings.supportSubjectPrefix || '[Subject Prefix]'} | [Subject] | Order: {'[Selected Order]'} | [Date] | {settings.supportTicketSuffix || '[Suffix]'}
+                {settings.supportSubjectPrefix || "[Subject Prefix]"} |
+                [Subject] | Order: {"[Selected Order]"} | [Date] |{" "}
+                {settings.supportTicketSuffix || "[Suffix]"}
               </p>
               <p className="text-gray-400 text-xs">
-                Example: {settings.supportSubjectPrefix || 'Support Request'} | Customization Help | Order: AGIS-0000000001 | 1/30/2026 | {settings.supportTicketSuffix || 'SUP-001-001'}
+                Example: {settings.supportSubjectPrefix || "Support Request"} |
+                Customization Help | Order: AGIS-0000000001 | 1/30/2026 |{" "}
+                {settings.supportTicketSuffix || "SUP-001-001"}
               </p>
             </div>
 
@@ -2501,18 +2913,30 @@ const SettingsManagement: React.FC = () => {
         {activeTab === "segmentation" && (
           <div className="space-y-6">
             <div>
-              <h2 className="text-2xl font-semibold text-white mb-2">Customer Segmentation</h2>
+              <h2 className="text-2xl font-semibold text-white mb-2">
+                Customer Segmentation
+              </h2>
               <p className="text-sm text-gray-400 mb-4">
-                Define customer segments based on spending, order frequency, and inactivity. Segments are applied automatically to customers in analytics.
+                Define customer segments based on spending, order frequency, and
+                inactivity. Segments are applied automatically to customers in
+                analytics.
               </p>
             </div>
 
             {/* Segment Rules */}
             <div className="space-y-4">
-              {((settings.segmentRules && settings.segmentRules.length > 0) ? settings.segmentRules : []).map((rule, index) => (
-                <div key={rule?.id || index} className="bg-slate-700 p-6 rounded-lg border border-slate-600">
+              {(settings.segmentRules && settings.segmentRules.length > 0
+                ? settings.segmentRules
+                : []
+              ).map((rule, index) => (
+                <div
+                  key={rule?.id || index}
+                  className="bg-slate-700 p-6 rounded-lg border border-slate-600"
+                >
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-white">Segment {index + 1}: {rule?.name || 'Unnamed'}</h3>
+                    <h3 className="text-lg font-semibold text-white">
+                      Segment {index + 1}: {rule?.name || "Unnamed"}
+                    </h3>
                     <div className="flex items-center gap-2">
                       <label className="flex items-center space-x-2">
                         <input
@@ -2520,7 +2944,10 @@ const SettingsManagement: React.FC = () => {
                           checked={rule?.enabled ?? false}
                           onChange={(e) => {
                             const updated = [...(settings.segmentRules || [])];
-                            updated[index] = { ...updated[index], enabled: e.target.checked };
+                            updated[index] = {
+                              ...updated[index],
+                              enabled: e.target.checked,
+                            };
                             setSettings({ ...settings, segmentRules: updated });
                           }}
                           className="w-4 h-4"
@@ -2529,9 +2956,11 @@ const SettingsManagement: React.FC = () => {
                       </label>
                       <button
                         onClick={() => {
-                          const updated = (settings.segmentRules || []).filter((_, i) => i !== index);
+                          const updated = (settings.segmentRules || []).filter(
+                            (_, i) => i !== index,
+                          );
                           setSettings({ ...settings, segmentRules: updated });
-                          addToast('Segment removed', 'info');
+                          addToast("Segment removed", "info");
                         }}
                         className="text-red-400 hover:text-red-300 text-sm font-medium"
                       >
@@ -2542,13 +2971,18 @@ const SettingsManagement: React.FC = () => {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">Segment Name</label>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Segment Name
+                      </label>
                       <input
                         type="text"
-                        value={rule?.name || ''}
+                        value={rule?.name || ""}
                         onChange={(e) => {
                           const updated = [...(settings.segmentRules || [])];
-                          updated[index] = { ...updated[index], name: e.target.value };
+                          updated[index] = {
+                            ...updated[index],
+                            name: e.target.value,
+                          };
                           setSettings({ ...settings, segmentRules: updated });
                         }}
                         placeholder="e.g., VIP, At-Risk, Standard"
@@ -2557,77 +2991,125 @@ const SettingsManagement: React.FC = () => {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">Priority (1 = highest)</label>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Priority (1 = highest)
+                      </label>
                       <input
                         type="number"
                         value={rule?.priority ?? 1}
                         onChange={(e) => {
                           const updated = [...(settings.segmentRules || [])];
-                          updated[index] = { ...updated[index], priority: parseInt(e.target.value) || 1 };
+                          updated[index] = {
+                            ...updated[index],
+                            priority: parseInt(e.target.value) || 1,
+                          };
                           setSettings({ ...settings, segmentRules: updated });
                         }}
                         min="1"
                         className={inputClasses}
                       />
-                      <p className="text-gray-500 text-xs mt-1">Lower numbers match first. First matching rule wins.</p>
+                      <p className="text-gray-500 text-xs mt-1">
+                        Lower numbers match first. First matching rule wins.
+                      </p>
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">Minimum Total Spent ($)</label>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Minimum Total Spent ($)
+                      </label>
                       <input
                         type="number"
-                        value={rule?.minTotalSpent ?? ''}
+                        value={rule?.minTotalSpent ?? ""}
                         onChange={(e) => {
                           const updated = [...(settings.segmentRules || [])];
-                          updated[index] = { ...updated[index], minTotalSpent: e.target.value ? parseFloat(e.target.value) : undefined };
+                          updated[index] = {
+                            ...updated[index],
+                            minTotalSpent: e.target.value
+                              ? parseFloat(e.target.value)
+                              : undefined,
+                          };
                           setSettings({ ...settings, segmentRules: updated });
                         }}
                         placeholder="Leave blank to skip this check"
                         className={inputClasses}
                       />
-                      <p className="text-gray-500 text-xs mt-1">Customer must have spent at least this much total</p>
+                      <p className="text-gray-500 text-xs mt-1">
+                        Customer must have spent at least this much total
+                      </p>
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">Minimum Order Count</label>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Minimum Order Count
+                      </label>
                       <input
                         type="number"
-                        value={rule?.minOrderCount ?? ''}
+                        value={rule?.minOrderCount ?? ""}
                         onChange={(e) => {
                           const updated = [...(settings.segmentRules || [])];
-                          updated[index] = { ...updated[index], minOrderCount: e.target.value ? parseInt(e.target.value) : undefined };
+                          updated[index] = {
+                            ...updated[index],
+                            minOrderCount: e.target.value
+                              ? parseInt(e.target.value)
+                              : undefined,
+                          };
                           setSettings({ ...settings, segmentRules: updated });
                         }}
                         placeholder="Leave blank to skip this check"
                         className={inputClasses}
                       />
-                      <p className="text-gray-500 text-xs mt-1">Customer must have placed at least this many orders</p>
+                      <p className="text-gray-500 text-xs mt-1">
+                        Customer must have placed at least this many orders
+                      </p>
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">Max Days Since Order (for At-Risk)</label>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Max Days Since Order (for At-Risk)
+                      </label>
                       <input
                         type="number"
-                        value={rule?.maxDaysSinceOrder ?? ''}
+                        value={rule?.maxDaysSinceOrder ?? ""}
                         onChange={(e) => {
                           const updated = [...(settings.segmentRules || [])];
-                          updated[index] = { ...updated[index], maxDaysSinceOrder: e.target.value ? parseInt(e.target.value) : undefined };
+                          updated[index] = {
+                            ...updated[index],
+                            maxDaysSinceOrder: e.target.value
+                              ? parseInt(e.target.value)
+                              : undefined,
+                          };
                           setSettings({ ...settings, segmentRules: updated });
                         }}
                         placeholder="Leave blank to skip this check"
                         className={inputClasses}
                       />
-                      <p className="text-gray-500 text-xs mt-1">Customer qualifies if they haven't ordered in at least this many days</p>
+                      <p className="text-gray-500 text-xs mt-1">
+                        Customer qualifies if they haven't ordered in at least
+                        this many days
+                      </p>
                     </div>
                   </div>
 
                   <div className="mt-4 p-3 bg-slate-600 rounded text-sm text-gray-300">
-                    <strong>Rule Logic:</strong> A customer is assigned to this segment if:
+                    <strong>Rule Logic:</strong> A customer is assigned to this
+                    segment if:
                     <ul className="mt-2 space-y-1 list-disc list-inside">
-                      {rule?.minTotalSpent !== undefined && <li>Total spending ≥ ${rule.minTotalSpent.toFixed(2)}</li>}
-                      {rule?.minOrderCount !== undefined && <li>Number of orders ≥ {rule.minOrderCount}</li>}
-                      {rule?.maxDaysSinceOrder !== undefined && <li>No orders for ≥ {rule.maxDaysSinceOrder} days</li>}
-                      {!rule?.minTotalSpent && !rule?.minOrderCount && !rule?.maxDaysSinceOrder && <li>No conditions set (applies to all customers)</li>}
+                      {rule?.minTotalSpent !== undefined && (
+                        <li>
+                          Total spending ≥ ${rule.minTotalSpent.toFixed(2)}
+                        </li>
+                      )}
+                      {rule?.minOrderCount !== undefined && (
+                        <li>Number of orders ≥ {rule.minOrderCount}</li>
+                      )}
+                      {rule?.maxDaysSinceOrder !== undefined && (
+                        <li>No orders for ≥ {rule.maxDaysSinceOrder} days</li>
+                      )}
+                      {!rule?.minTotalSpent &&
+                        !rule?.minOrderCount &&
+                        !rule?.maxDaysSinceOrder && (
+                          <li>No conditions set (applies to all customers)</li>
+                        )}
                     </ul>
                   </div>
                 </div>
@@ -2638,7 +3120,7 @@ const SettingsManagement: React.FC = () => {
               onClick={() => {
                 const newSegment = {
                   id: `segment_${Date.now()}`,
-                  name: 'New Segment',
+                  name: "New Segment",
                   priority: ((settings.segmentRules || []).length || 0) + 1,
                   enabled: true,
                 };
@@ -2646,7 +3128,7 @@ const SettingsManagement: React.FC = () => {
                   ...settings,
                   segmentRules: [...(settings.segmentRules || []), newSegment],
                 });
-                addToast('New segment added', 'success');
+                addToast("New segment added", "success");
               }}
               className="px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-500 text-sm font-medium"
             >
@@ -2654,13 +3136,23 @@ const SettingsManagement: React.FC = () => {
             </button>
 
             <div className="bg-slate-700 p-4 rounded-lg border border-slate-600">
-              <h3 className="text-sm font-semibold text-white mb-3">How Segmentation Works</h3>
+              <h3 className="text-sm font-semibold text-white mb-3">
+                How Segmentation Works
+              </h3>
               <ul className="text-sm text-gray-400 space-y-2">
-                <li>• Segments are evaluated by priority (lowest number first)</li>
+                <li>
+                  • Segments are evaluated by priority (lowest number first)
+                </li>
                 <li>• A customer is assigned to the first matching segment</li>
-                <li>• All conditions in a segment must be met for the customer to match</li>
+                <li>
+                  • All conditions in a segment must be met for the customer to
+                  match
+                </li>
                 <li>• Conditions left blank are ignored (not required)</li>
-                <li>• Segments are recalculated and stored when customers are loaded in analytics</li>
+                <li>
+                  • Segments are recalculated and stored when customers are
+                  loaded in analytics
+                </li>
               </ul>
             </div>
 
@@ -2679,20 +3171,30 @@ const SettingsManagement: React.FC = () => {
         {activeTab === "terms" && (
           <div className="space-y-6">
             <div>
-              <h2 className="text-2xl font-semibold text-white mb-2">Terms and Conditions</h2>
+              <h2 className="text-2xl font-semibold text-white mb-2">
+                Terms and Conditions
+              </h2>
               <p className="text-sm text-gray-400 mb-4">
-                Edit the terms and conditions that customers must agree to during registration.
+                Edit the terms and conditions that customers must agree to
+                during registration.
               </p>
             </div>
 
-            <TermsEditor 
-              value={settings.termsAndConditionsContent || ""} 
-              onChange={(value) => setSettings((prev) => ({ ...prev, termsAndConditionsContent: value }))}
+            <TermsEditor
+              value={settings.termsAndConditionsContent || ""}
+              onChange={(value) =>
+                setSettings((prev) => ({
+                  ...prev,
+                  termsAndConditionsContent: value,
+                }))
+              }
             />
 
             <div className="bg-blue-500 bg-opacity-10 border border-blue-500 border-opacity-30 rounded-md p-4">
               <p className="text-blue-200 text-sm">
-                💡 Tip: Use the toolbar to format your text. This rich editor supports bold, italic, headings, and bullet lists. The formatted content will be displayed on the Terms and Conditions page.
+                💡 Tip: Use the toolbar to format your text. This rich editor
+                supports bold, italic, headings, and bullet lists. The formatted
+                content will be displayed on the Terms and Conditions page.
               </p>
             </div>
 

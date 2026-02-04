@@ -35,7 +35,9 @@ const RecentCreationsGallery: React.FC<RecentCreationsGalleryProps> = ({
   const currentImage = galleryImages[currentIndex];
 
   const handlePrevious = () => {
-    setCurrentIndex((prev) => (prev === 0 ? galleryImages.length - 1 : prev - 1));
+    setCurrentIndex((prev) =>
+      prev === 0 ? galleryImages.length - 1 : prev - 1,
+    );
   };
 
   const handleNext = () => {

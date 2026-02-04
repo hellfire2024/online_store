@@ -96,16 +96,14 @@ router.post("/", async (req: Request, res: Response) => {
       [id, title || "", path || "/", pageType, content || "", contentDataJson],
     );
 
-    return res
-      .status(201)
-      .json({
-        id,
-        pageType,
-        title,
-        path,
-        content,
-        contentData: sanitizedContentData,
-      });
+    return res.status(201).json({
+      id,
+      pageType,
+      title,
+      path,
+      content,
+      contentData: sanitizedContentData,
+    });
   } catch (error) {
     console.error("Error creating page:", error);
     return res.status(500).json({ error: "Failed to create page" });

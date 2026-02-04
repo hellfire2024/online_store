@@ -213,19 +213,19 @@ const CustomerAccountPage: React.FC = () => {
         <h2 className="text-2xl font-bold text-white mb-6">Quick Actions</h2>
 
         <div className="space-y-3">
-          <button 
+          <button
             onClick={() => navigate("/account/addresses")}
             className="w-full px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-md text-left transition-colors"
           >
             → Manage Addresses
           </button>
-          <button 
+          <button
             onClick={() => navigate("/account/orders")}
             className="w-full px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-md text-left transition-colors"
           >
             → View Orders
           </button>
-          <button 
+          <button
             onClick={() => navigate("/account/change-password")}
             className="w-full px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-md text-left transition-colors"
           >

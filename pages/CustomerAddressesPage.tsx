@@ -1,10 +1,12 @@
 import React, { useState } from "react";
 import { useCustomerAuth } from "../context/CustomerAuthContext";
 import { useToast } from "../hooks/useToast";
+import { useNavigate } from "react-router-dom";
 import { CustomerAddress } from "../types";
 import Pagination from "../components/Pagination";
 
 const CustomerAddressesPage: React.FC = () => {
+  const navigate = useNavigate();
   const {
     customer,
     addAddress,
@@ -41,7 +43,12 @@ const CustomerAddressesPage: React.FC = () => {
   }
 
   const handleAddAddress = async () => {
-    if (!formData.firstName || !formData.lastName || !formData.streetAddress || !formData.city) {
+    if (
+      !formData.firstName ||
+      !formData.lastName ||
+      !formData.streetAddress ||
+      !formData.city
+    ) {
       addToast("Please fill in all required fields", "error");
       return;
     }
@@ -90,10 +97,10 @@ const CustomerAddressesPage: React.FC = () => {
   };
 
   const handleEditAddress = (address: CustomerAddress) => {
-    const nameParts = address.fullName.split(' ');
-    const firstName = nameParts[0] || '';
-    const lastName = nameParts.slice(1).join(' ') || '';
-    
+    const nameParts = address.fullName.split(" ");
+    const firstName = nameParts[0] || "";
+    const lastName = nameParts.slice(1).join(" ") || "";
+
     setEditingId(address.id);
     setFormData({
       type: address.type,
@@ -111,7 +118,12 @@ const CustomerAddressesPage: React.FC = () => {
   };
 
   const handleUpdateAddress = async () => {
-    if (!formData.firstName || !formData.lastName || !formData.streetAddress || !formData.city) {
+    if (
+      !formData.firstName ||
+      !formData.lastName ||
+      !formData.streetAddress ||
+      !formData.city
+    ) {
       addToast("Please fill in all required fields", "error");
       return;
     }
@@ -161,7 +173,6 @@ const CustomerAddressesPage: React.FC = () => {
     setSaveAddress(true);
   };
 
-
   const handleDeleteAddress = async (addressId: string) => {
     const result = await deleteAddress(addressId);
     if (result.success) {
@@ -182,7 +193,15 @@ const CustomerAddressesPage: React.FC = () => {
   return (
     <div className="max-w-4xl mx-auto p-6">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-white">Addresses</h1>
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => navigate("/account")}
+            className="px-4 py-2 text-sky-400 hover:text-sky-300 rounded-md font-medium transition-colors"
+          >
+            ← Back to Account
+          </button>
+          <h1 className="text-3xl font-bold text-white">Addresses</h1>
+        </div>
         <button
           onClick={() => {
             setIsAdding(!isAdding);
@@ -190,7 +209,9 @@ const CustomerAddressesPage: React.FC = () => {
           }}
           disabled={editingId !== null}
           className={`px-4 py-2 text-white rounded-md font-medium ${
-            editingId ? "bg-gray-600 cursor-not-allowed" : "bg-sky-500 hover:bg-sky-600"
+            editingId
+              ? "bg-gray-600 cursor-not-allowed"
+              : "bg-sky-500 hover:bg-sky-600"
           }`}
         >
           {editingId ? "Finish Editing" : "+ Add Address"}
@@ -205,11 +226,16 @@ const CustomerAddressesPage: React.FC = () => {
           </h2>
           <div className="space-y-4">
             <div>
-              <label className="block text-gray-300 text-sm font-medium mb-1">Address Type</label>
+              <label className="block text-gray-300 text-sm font-medium mb-1">
+                Address Type
+              </label>
               <select
                 value={formData.type}
                 onChange={(e) =>
-                  setFormData({ ...formData, type: e.target.value as "shipping" | "billing" })
+                  setFormData({
+                    ...formData,
+                    type: e.target.value as "shipping" | "billing",
+                  })
                 }
                 className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white"
               >
@@ -220,7 +246,9 @@ const CustomerAddressesPage: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-gray-300 text-sm font-medium mb-1">First Name *</label>
+                <label className="block text-gray-300 text-sm font-medium mb-1">
+                  First Name *
+                </label>
                 <input
                   type="text"
                   placeholder="First Name"
@@ -232,7 +260,9 @@ const CustomerAddressesPage: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-gray-300 text-sm font-medium mb-1">Last Name *</label>
+                <label className="block text-gray-300 text-sm font-medium mb-1">
+                  Last Name *
+                </label>
                 <input
                   type="text"
                   placeholder="Last Name"
@@ -246,7 +276,9 @@ const CustomerAddressesPage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-gray-300 text-sm font-medium mb-1">Phone</label>
+              <label className="block text-gray-300 text-sm font-medium mb-1">
+                Phone
+              </label>
               <input
                 type="tel"
                 placeholder="Phone"
@@ -259,7 +291,9 @@ const CustomerAddressesPage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-gray-300 text-sm font-medium mb-1">Street Address *</label>
+              <label className="block text-gray-300 text-sm font-medium mb-1">
+                Street Address *
+              </label>
               <input
                 type="text"
                 placeholder="Street Address"
@@ -273,7 +307,9 @@ const CustomerAddressesPage: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="block text-gray-300 text-sm font-medium mb-1">City *</label>
+                <label className="block text-gray-300 text-sm font-medium mb-1">
+                  City *
+                </label>
                 <input
                   type="text"
                   placeholder="City"
@@ -285,7 +321,9 @@ const CustomerAddressesPage: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-gray-300 text-sm font-medium mb-1">State</label>
+                <label className="block text-gray-300 text-sm font-medium mb-1">
+                  State
+                </label>
                 <input
                   type="text"
                   placeholder="State"
@@ -297,7 +335,9 @@ const CustomerAddressesPage: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-gray-300 text-sm font-medium mb-1">Zip Code</label>
+                <label className="block text-gray-300 text-sm font-medium mb-1">
+                  Zip Code
+                </label>
                 <input
                   type="text"
                   placeholder="Zip Code"
@@ -311,7 +351,9 @@ const CustomerAddressesPage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-gray-300 text-sm font-medium mb-1">Country</label>
+              <label className="block text-gray-300 text-sm font-medium mb-1">
+                Country
+              </label>
               <input
                 type="text"
                 placeholder="Country"
@@ -332,7 +374,10 @@ const CustomerAddressesPage: React.FC = () => {
                 className="w-4 h-4 text-sky-500 bg-slate-700 border-slate-600 rounded focus:ring-sky-500 focus:ring-2"
                 disabled={!!editingId}
               />
-              <label htmlFor="saveAddress" className="ml-2 text-sm text-gray-300">
+              <label
+                htmlFor="saveAddress"
+                className="ml-2 text-sm text-gray-300"
+              >
                 Save this address for future use
               </label>
             </div>
@@ -366,58 +411,63 @@ const CustomerAddressesPage: React.FC = () => {
         ) : (
           <>
             {(() => {
-              const paginatedAddresses = itemsPerPage === -1 
-                ? customer.addresses 
-                : customer.addresses.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
-              
+              const paginatedAddresses =
+                itemsPerPage === -1
+                  ? customer.addresses
+                  : customer.addresses.slice(
+                      (currentPage - 1) * itemsPerPage,
+                      currentPage * itemsPerPage,
+                    );
+
               return paginatedAddresses.map((address) => (
-            <div
-              key={address.id}
-              className="bg-slate-800 p-6 rounded-lg border border-slate-700"
-            >
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h3 className="text-lg font-bold text-white">
-                    {address.fullName}
-                  </h3>
-                  <p className="text-gray-400 text-sm capitalize">
-                    {address.type} Address {address.isDefault && "(Default)"}
-                  </p>
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => handleEditAddress(address)}
-                    className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDeleteAddress(address.id)}
-                    className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-sm"
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
-
-              <div className="text-gray-300">
-                <p>{address.streetAddress}</p>
-                <p>
-                  {address.city}, {address.state} {address.zipCode}
-                </p>
-                <p>{address.country}</p>
-                <p className="text-sm mt-2">{address.phone}</p>
-              </div>
-
-              {!address.isDefault && (
-                <button
-                  onClick={() => handleSetDefault(address.id, address.type)}
-                  className="mt-4 px-3 py-1 bg-sky-500 hover:bg-sky-600 text-white rounded text-sm"
+                <div
+                  key={address.id}
+                  className="bg-slate-800 p-6 rounded-lg border border-slate-700"
                 >
-                  Set as Default
-                </button>
-              )}
-            </div>
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <h3 className="text-lg font-bold text-white">
+                        {address.fullName}
+                      </h3>
+                      <p className="text-gray-400 text-sm capitalize">
+                        {address.type} Address{" "}
+                        {address.isDefault && "(Default)"}
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleEditAddress(address)}
+                        className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDeleteAddress(address.id)}
+                        className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-sm"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="text-gray-300">
+                    <p>{address.streetAddress}</p>
+                    <p>
+                      {address.city}, {address.state} {address.zipCode}
+                    </p>
+                    <p>{address.country}</p>
+                    <p className="text-sm mt-2">{address.phone}</p>
+                  </div>
+
+                  {!address.isDefault && (
+                    <button
+                      onClick={() => handleSetDefault(address.id, address.type)}
+                      className="mt-4 px-3 py-1 bg-sky-500 hover:bg-sky-600 text-white rounded text-sm"
+                    >
+                      Set as Default
+                    </button>
+                  )}
+                </div>
               ));
             })()}
             <Pagination

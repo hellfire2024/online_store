@@ -597,10 +597,10 @@ const ProductManagement: React.FC = () => {
         savedProduct = await updateProduct(editingProduct);
         addToast("Product updated!", "success");
       }
-      
+
       // Force products to refresh by fetching again
       await fetchProducts();
-      
+
       if (savedProduct) {
         // Update image version for cache busting (though not needed for base64)
         setImageVersions((prev) => ({
@@ -608,7 +608,7 @@ const ProductManagement: React.FC = () => {
           [savedProduct.id]: Date.now(),
         }));
       }
-      
+
       // Clear states
       setImagePreview("");
       setNewProduct(null);

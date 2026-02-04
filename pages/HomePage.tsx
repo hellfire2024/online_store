@@ -18,34 +18,48 @@ const HomePage: React.FC = () => {
   const { reviews, isLoading: reviewsLoading, addReview } = useReviews();
   const { pages, isLoading: pagesLoading } = usePages();
   const { services, isLoading: servicesLoading } = useServices();
-  const { galleryImages: galleryImagesRecord = {}, isLoading: galleriesLoading } = useGalleries();
+  const {
+    galleryImages: galleryImagesRecord = {},
+    isLoading: galleriesLoading,
+  } = useGalleries();
   const { siteSettings } = useSiteSettings();
   const { addToast } = useToast();
   const { isAuthenticated } = useCustomerAuth();
   const [showReviewForm, setShowReviewForm] = useState(false);
-  const [reviewForm, setReviewForm] = useState({ author: "", email: "", text: "", rating: 5 });
+  const [reviewForm, setReviewForm] = useState({
+    author: "",
+    email: "",
+    text: "",
+    rating: 5,
+  });
   const [reviewImages, setReviewImages] = useState<string[]>([]);
   const [carouselIndex, setCarouselIndex] = useState(0);
 
   // Flatten gallery images from Record into array
   const galleryImages = useMemo(
     () => Object.values(galleryImagesRecord).flat(),
-    [galleryImagesRecord]
+    [galleryImagesRecord],
   );
 
   const homePage = pages.find((page) => page.pageType === "home");
   const homeContent = useMemo(
     () => (homePage?.contentData as HomePageContent) || {},
-    [homePage]
+    [homePage],
   );
 
   // Carousel rotation effect - must be before early return to avoid hook ordering issues
   useEffect(() => {
-    if (!homeContent.galleryRotationEnabled || !homeContent.galleryRotationId || galleriesLoading) {
+    if (
+      !homeContent.galleryRotationEnabled ||
+      !homeContent.galleryRotationId ||
+      galleriesLoading
+    ) {
       return;
     }
 
-    const filteredImages = galleryImages.filter((img: any) => img.galleryId === homeContent.galleryRotationId);
+    const filteredImages = galleryImages.filter(
+      (img: any) => img.galleryId === homeContent.galleryRotationId,
+    );
     if (filteredImages.length === 0) return;
 
     const interval = homeContent.galleryRotationInterval || 5;
@@ -56,7 +70,13 @@ const HomePage: React.FC = () => {
     return () => clearInterval(timer);
   }, [homeContent, galleryImages, galleriesLoading]);
 
-  if (productsLoading || reviewsLoading || pagesLoading || servicesLoading || !homePage) {
+  if (
+    productsLoading ||
+    reviewsLoading ||
+    pagesLoading ||
+    servicesLoading ||
+    !homePage
+  ) {
     return (
       <div className="flex justify-center items-center min-h-[60vh]">
         <Spinner />
@@ -72,8 +92,12 @@ const HomePage: React.FC = () => {
 
   const handleSubmitReview = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!reviewForm.author.trim() || !reviewForm.email.trim() || !reviewForm.text.trim()) {
+
+    if (
+      !reviewForm.author.trim() ||
+      !reviewForm.email.trim() ||
+      !reviewForm.text.trim()
+    ) {
       addToast("Please fill in all fields", "error");
       return;
     }
@@ -93,8 +117,11 @@ const HomePage: React.FC = () => {
         createdAt: new Date().toISOString(),
         images: reviewImages.length > 0 ? reviewImages : undefined,
       });
-      
-      addToast("Thank you! Your review has been submitted for approval.", "success");
+
+      addToast(
+        "Thank you! Your review has been submitted for approval.",
+        "success",
+      );
       setReviewForm({ author: "", email: "", text: "", rating: 5 });
       setReviewImages([]);
       setShowReviewForm(false);
@@ -116,26 +143,27 @@ const HomePage: React.FC = () => {
     const filesToProcess = Array.from(files).slice(0, remainingSlots);
 
     filesToProcess.forEach((file) => {
-      if (!file.type.startsWith('image/')) {
+      if (!file.type.startsWith("image/")) {
         addToast("Only image files are allowed", "error");
         return;
       }
 
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+      if (file.size > 5 * 1024 * 1024) {
+        // 5MB limit
         addToast("Image size must be less than 5MB", "error");
         return;
       }
 
       const reader = new FileReader();
       reader.onloadend = () => {
-        setReviewImages(prev => [...prev, reader.result as string]);
+        setReviewImages((prev) => [...prev, reader.result as string]);
       };
       reader.readAsDataURL(file);
     });
   };
 
   const removeImage = (index: number) => {
-    setReviewImages(prev => prev.filter((_, i) => i !== index));
+    setReviewImages((prev) => prev.filter((_, i) => i !== index));
   };
 
   return (
@@ -162,41 +190,50 @@ const HomePage: React.FC = () => {
       )}
 
       {/* Gallery Carousel */}
-      {homeContent.galleryRotationEnabled && homeContent.galleryRotationId && !galleriesLoading && (
-        <div>
-          <h2 className="text-3xl font-bold text-white text-center mb-8">Gallery</h2>
-          {(() => {
-            const carouselImages = galleryImages.filter((img: any) => img.galleryId === homeContent.galleryRotationId);
-            if (carouselImages.length === 0) return null;
-            const currentImage = carouselImages[carouselIndex];
-            return (
-              <div className="relative bg-slate-800 rounded-lg overflow-hidden">
-                <img
-                  src={currentImage.imageUrl}
-                  alt={currentImage.name}
-                  className="w-full h-96 object-cover"
-                />
-                <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2">
-                  {carouselImages.map((_: any, idx: number) => (
-                    <button
-                      key={idx}
-                      onClick={() => setCarouselIndex(idx)}
-                      className={`w-2 h-2 rounded-full transition-colors ${
-                        idx === carouselIndex ? "bg-white" : "bg-gray-500"
-                      }`}
-                    />
-                  ))}
+      {homeContent.galleryRotationEnabled &&
+        homeContent.galleryRotationId &&
+        !galleriesLoading && (
+          <div>
+            <h2 className="text-3xl font-bold text-white text-center mb-8">
+              Gallery
+            </h2>
+            {(() => {
+              const carouselImages = galleryImages.filter(
+                (img: any) => img.galleryId === homeContent.galleryRotationId,
+              );
+              if (carouselImages.length === 0) return null;
+              const currentImage = carouselImages[carouselIndex];
+              return (
+                <div className="relative bg-slate-800 rounded-lg overflow-hidden">
+                  <img
+                    src={currentImage.imageUrl}
+                    alt={currentImage.name}
+                    className="w-full h-96 object-cover"
+                  />
+                  <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2">
+                    {carouselImages.map((_: any, idx: number) => (
+                      <button
+                        key={idx}
+                        onClick={() => setCarouselIndex(idx)}
+                        className={`w-2 h-2 rounded-full transition-colors ${
+                          idx === carouselIndex ? "bg-white" : "bg-gray-500"
+                        }`}
+                      />
+                    ))}
+                  </div>
                 </div>
-              </div>
-            );
-          })()}
-        </div>
-      )}
+              );
+            })()}
+          </div>
+        )}
 
       {/* Recent Creations Section */}
       {homeContent.recentCreationsGalleryId && !galleriesLoading && (
         <RecentCreationsGallery
-          galleryImages={galleryImages.filter((img: any) => img.galleryId === homeContent.recentCreationsGalleryId)}
+          galleryImages={galleryImages.filter(
+            (img: any) =>
+              img.galleryId === homeContent.recentCreationsGalleryId,
+          )}
           autoScroll={homeContent.recentCreationsAutoScroll !== false} // Default to true
           autoScrollInterval={homeContent.recentCreationsInterval || 5}
         />
@@ -222,13 +259,19 @@ const HomePage: React.FC = () => {
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {services.map((service) => {
-              const IconComponent = (Icons as any)[service.icon] || Icons.LayersIcon;
+              const IconComponent =
+                (Icons as any)[service.icon] || Icons.LayersIcon;
               return (
-                <div key={service.id} className="bg-slate-800 p-6 rounded-lg border border-slate-700 text-center">
+                <div
+                  key={service.id}
+                  className="bg-slate-800 p-6 rounded-lg border border-slate-700 text-center"
+                >
                   <div className="flex justify-center mb-4">
                     <IconComponent className="w-12 h-12 text-sky-400" />
                   </div>
-                  <h3 className="text-xl font-bold text-white mb-2">{service.title}</h3>
+                  <h3 className="text-xl font-bold text-white mb-2">
+                    {service.title}
+                  </h3>
                   <p className="text-gray-300">{service.description}</p>
                 </div>
               );
@@ -244,49 +287,64 @@ const HomePage: React.FC = () => {
             What Our Customers Say
           </h2>
           <button
-              onClick={() => {
-                if (!isAuthenticated) {
-                  addToast("Please log in to submit a review", "error");
-                  return;
-                }
-                setShowReviewForm(!showReviewForm);
-              }}
+            onClick={() => {
+              if (!isAuthenticated) {
+                addToast("Please log in to submit a review", "error");
+                return;
+              }
+              setShowReviewForm(!showReviewForm);
+            }}
             className="bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-4 rounded-lg"
           >
             {showReviewForm ? "Cancel" : "Write a Review"}
           </button>
         </div>
 
-          {showReviewForm && isAuthenticated && (
+        {showReviewForm && isAuthenticated && (
           <div className="bg-slate-800 p-6 rounded-lg border border-slate-700 mb-8">
             <form onSubmit={handleSubmitReview} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-gray-300 text-sm font-bold mb-2">Name</label>
+                  <label className="block text-gray-300 text-sm font-bold mb-2">
+                    Name
+                  </label>
                   <input
                     type="text"
                     value={reviewForm.author}
-                    onChange={(e) => setReviewForm({ ...reviewForm, author: e.target.value })}
+                    onChange={(e) =>
+                      setReviewForm({ ...reviewForm, author: e.target.value })
+                    }
                     placeholder="Your name"
                     className="w-full p-2 bg-slate-700 border border-slate-600 rounded text-white"
                   />
                 </div>
                 <div>
-                  <label className="block text-gray-300 text-sm font-bold mb-2">Email</label>
+                  <label className="block text-gray-300 text-sm font-bold mb-2">
+                    Email
+                  </label>
                   <input
                     type="email"
                     value={reviewForm.email}
-                    onChange={(e) => setReviewForm({ ...reviewForm, email: e.target.value })}
+                    onChange={(e) =>
+                      setReviewForm({ ...reviewForm, email: e.target.value })
+                    }
                     placeholder="your@email.com"
                     className="w-full p-2 bg-slate-700 border border-slate-600 rounded text-white"
                   />
                 </div>
               </div>
               <div>
-                <label className="block text-gray-300 text-sm font-bold mb-2">Rating</label>
+                <label className="block text-gray-300 text-sm font-bold mb-2">
+                  Rating
+                </label>
                 <select
                   value={reviewForm.rating}
-                  onChange={(e) => setReviewForm({ ...reviewForm, rating: parseInt(e.target.value) })}
+                  onChange={(e) =>
+                    setReviewForm({
+                      ...reviewForm,
+                      rating: parseInt(e.target.value),
+                    })
+                  }
                   className="w-full p-2 bg-slate-700 border border-slate-600 rounded text-white"
                 >
                   <option value="5">⭐⭐⭐⭐⭐ Excellent (5 stars)</option>
@@ -297,10 +355,14 @@ const HomePage: React.FC = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-gray-300 text-sm font-bold mb-2">Your Review</label>
+                <label className="block text-gray-300 text-sm font-bold mb-2">
+                  Your Review
+                </label>
                 <textarea
                   value={reviewForm.text}
-                  onChange={(e) => setReviewForm({ ...reviewForm, text: e.target.value })}
+                  onChange={(e) =>
+                    setReviewForm({ ...reviewForm, text: e.target.value })
+                  }
                   placeholder="Share your experience with our products..."
                   rows={4}
                   className="w-full p-2 bg-slate-700 border border-slate-600 rounded text-white"
@@ -319,7 +381,8 @@ const HomePage: React.FC = () => {
                   className="w-full p-2 bg-slate-700 border border-slate-600 rounded text-white file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-sky-600 file:text-white hover:file:bg-sky-700 disabled:opacity-50"
                 />
                 <p className="text-xs text-gray-400 mt-1">
-                  Upload photos of your product ({reviewImages.length}/3 used). Max 5MB per image.
+                  Upload photos of your product ({reviewImages.length}/3 used).
+                  Max 5MB per image.
                 </p>
                 {reviewImages.length > 0 && (
                   <div className="grid grid-cols-3 gap-2 mt-3">
@@ -349,7 +412,8 @@ const HomePage: React.FC = () => {
                 Submit Review for Approval
               </button>
               <p className="text-xs text-gray-400 text-center">
-                Your review will be reviewed by our team before appearing on the site.
+                Your review will be reviewed by our team before appearing on the
+                site.
               </p>
             </form>
           </div>
@@ -373,14 +437,20 @@ const HomePage: React.FC = () => {
                             src={img}
                             alt={`Review image ${idx + 1}`}
                             className="w-full h-20 object-cover rounded border border-slate-600 cursor-pointer hover:opacity-80 transition-opacity"
-                            onClick={() => window.open(img, '_blank')}
+                            onClick={() => window.open(img, "_blank")}
                           />
                         ))}
                       </div>
                     )}
-                    <p className="mt-4 font-semibold text-white">- {review.author}</p>
+                    <p className="mt-4 font-semibold text-white">
+                      - {review.author}
+                    </p>
                     <p className="text-xs text-gray-500 mt-1">
-                      {new Date(review.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      {new Date(review.createdAt).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      })}
                     </p>
                   </div>
                   <div className="flex text-yellow-400 shrink-0">

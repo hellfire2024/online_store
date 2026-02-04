@@ -1,7 +1,7 @@
-import { pool } from './connection.js';
+import { pool } from "./connection.js";
 
 export async function runMigrations(): Promise<void> {
-  console.log('🔄 Running database migrations...');
+  console.log("🔄 Running database migrations...");
 
   const schema = `
 -- ============================================
@@ -347,17 +347,17 @@ CREATE TABLE IF NOT EXISTS ticket_replies (
   try {
     // Split schema by semicolons and execute each statement
     const statements = schema
-      .split(';')
-      .map(s => s.trim())
-      .filter(s => s.length > 0);
+      .split(";")
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
 
     for (const statement of statements) {
       await pool.query(statement);
     }
 
-    console.log('✅ Database migrations completed successfully');
+    console.log("✅ Database migrations completed successfully");
   } catch (error) {
-    console.error('❌ Migration failed:', error);
+    console.error("❌ Migration failed:", error);
     throw error;
   }
 }
@@ -365,11 +365,11 @@ CREATE TABLE IF NOT EXISTS ticket_replies (
 if (import.meta.url === `file://${process.argv[1]}`) {
   runMigrations()
     .then(() => {
-      console.log('Migration complete');
+      console.log("Migration complete");
       process.exit(0);
     })
     .catch((error) => {
-      console.error('Migration failed:', error);
+      console.error("Migration failed:", error);
       process.exit(1);
     });
 }

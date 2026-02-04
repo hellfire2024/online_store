@@ -1,14 +1,14 @@
-import { Router, Request, Response } from 'express';
-import { body, validationResult } from 'express-validator';
-import { pool } from '../db/connection.js';
-import { RowDataPacket, ResultSetHeader } from 'mysql2';
-import { v4 as uuidv4 } from 'uuid';
-import bcrypt from 'bcrypt';
+import { Router, Request, Response } from "express";
+import { body, validationResult } from "express-validator";
+import { pool } from "../db/connection.js";
+import { RowDataPacket, ResultSetHeader } from "mysql2";
+import { v4 as uuidv4 } from "uuid";
+import bcrypt from "bcrypt";
 
 const router = Router();
 
 // Get all customers
-router.get('/', async (_req: Request, res: Response) => {
+router.get("/", async (_req: Request, res: Response) => {
   try {
     const [rows] = await pool.query<RowDataPacket[]>(
       `SELECT c.id, c.first_name as firstName, c.last_name as lastName, c.name, c.email, c.phone, c.is_active as isActive,
@@ -20,37 +20,37 @@ router.get('/', async (_req: Request, res: Response) => {
        FROM customers c
        LEFT JOIN orders o ON c.id = o.customer_id
        GROUP BY c.id
-       ORDER BY c.created_at DESC`
+       ORDER BY c.created_at DESC`,
     );
     return res.json(rows);
   } catch (error) {
-    console.error('Error fetching customers:', error);
-    return res.status(500).json({ error: 'Failed to fetch customers' });
+    console.error("Error fetching customers:", error);
+    return res.status(500).json({ error: "Failed to fetch customers" });
   }
 });
 
 // Get single customer with orders
-router.get('/:id', async (req: Request, res: Response) => {
+router.get("/:id", async (req: Request, res: Response) => {
   try {
     const [customerRows] = await pool.query<RowDataPacket[]>(
       `SELECT id, first_name as firstName, last_name as lastName, name, email, phone, email_preferences as emailPreferences,
               is_active as isActive, created_at as createdAt, last_login as lastLogin
        FROM customers WHERE id = ?`,
-      [req.params.id]
+      [req.params.id],
     );
 
     if (customerRows.length === 0) {
-      return res.status(404).json({ error: 'Customer not found' });
+      return res.status(404).json({ error: "Customer not found" });
     }
 
     const customer = customerRows[0];
-    customer.emailPreferences = JSON.parse(customer.emailPreferences || '{}');
+    customer.emailPreferences = JSON.parse(customer.emailPreferences || "{}");
 
     // Get customer's addresses
     const [addresses] = await pool.query<RowDataPacket[]>(
       `SELECT id, type, first_name, last_name, full_name, street_address, city, state, zip_code, 
               country, phone, is_default FROM customer_addresses WHERE customer_id = ?`,
-      [req.params.id]
+      [req.params.id],
     );
 
     // Normalize address fields to camelCase
@@ -71,20 +71,25 @@ router.get('/:id', async (req: Request, res: Response) => {
 
     return res.json(customer);
   } catch (error) {
-    console.error('Error fetching customer:', error);
-    return res.status(500).json({ error: 'Failed to fetch customer' });
+    console.error("Error fetching customer:", error);
+    return res.status(500).json({ error: "Failed to fetch customer" });
   }
 });
 
 // Register customer (customer-facing endpoint)
 router.post(
-  '/register',
+  "/register",
   [
-    body('firstName').trim().notEmpty().withMessage('First name is required'),
-    body('lastName').trim().notEmpty().withMessage('Last name is required'),
-    body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
-    body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
-    body('phone').optional().trim(),
+    body("firstName").trim().notEmpty().withMessage("First name is required"),
+    body("lastName").trim().notEmpty().withMessage("Last name is required"),
+    body("email")
+      .isEmail()
+      .normalizeEmail()
+      .withMessage("Valid email is required"),
+    body("password")
+      .isLength({ min: 8 })
+      .withMessage("Password must be at least 8 characters"),
+    body("phone").optional().trim(),
   ],
   async (req: Request, res: Response) => {
     const errors = validationResult(req);
@@ -97,12 +102,12 @@ router.post(
 
       // Check if email exists
       const [existing] = await pool.query<RowDataPacket[]>(
-        'SELECT id FROM customers WHERE email = ?',
-        [email]
+        "SELECT id FROM customers WHERE email = ?",
+        [email],
       );
 
       if (existing.length > 0) {
-        return res.status(400).json({ error: 'Email already in use' });
+        return res.status(400).json({ error: "Email already in use" });
       }
 
       const id = uuidv4();
@@ -120,8 +125,12 @@ router.post(
           email,
           phone || null,
           hashedPassword,
-          JSON.stringify({ marketing: true, orderUpdates: true, announcements: true }),
-        ]
+          JSON.stringify({
+            marketing: true,
+            orderUpdates: true,
+            announcements: true,
+          }),
+        ],
       );
 
       return res.status(201).json({
@@ -137,21 +146,21 @@ router.post(
         createdAt: new Date().toISOString(),
       });
     } catch (error) {
-      console.error('Error registering customer:', error);
-      return res.status(500).json({ error: 'Failed to register customer' });
+      console.error("Error registering customer:", error);
+      return res.status(500).json({ error: "Failed to register customer" });
     }
-  }
+  },
 );
 
 // Create customer (admin - without password requirement for admin-created accounts)
 router.post(
-  '/',
+  "/",
   [
-    body('firstName').optional().trim(),
-    body('lastName').optional().trim(),
-    body('name').trim().notEmpty().withMessage('Name is required'),
-    body('email').isEmail().normalizeEmail(),
-    body('phone').optional().trim(),
+    body("firstName").optional().trim(),
+    body("lastName").optional().trim(),
+    body("name").trim().notEmpty().withMessage("Name is required"),
+    body("email").isEmail().normalizeEmail(),
+    body("phone").optional().trim(),
   ],
   async (req: Request, res: Response) => {
     const errors = validationResult(req);
@@ -164,12 +173,12 @@ router.post(
 
       // Check if email exists
       const [existing] = await pool.query<RowDataPacket[]>(
-        'SELECT id FROM customers WHERE email = ?',
-        [email]
+        "SELECT id FROM customers WHERE email = ?",
+        [email],
       );
 
       if (existing.length > 0) {
-        return res.status(400).json({ error: 'Email already in use' });
+        return res.status(400).json({ error: "Email already in use" });
       }
 
       const id = uuidv4();
@@ -184,9 +193,13 @@ router.post(
           name,
           email,
           phone || null,
-          '', // Empty password for admin-created users
-          JSON.stringify({ marketing: false, orderUpdates: true, announcements: false }),
-        ]
+          "", // Empty password for admin-created users
+          JSON.stringify({
+            marketing: false,
+            orderUpdates: true,
+            announcements: false,
+          }),
+        ],
       );
 
       return res.status(201).json({
@@ -202,117 +215,125 @@ router.post(
         createdAt: new Date().toISOString(),
       });
     } catch (error) {
-      console.error('Error creating customer:', error);
-      return res.status(500).json({ error: 'Failed to create customer' });
+      console.error("Error creating customer:", error);
+      return res.status(500).json({ error: "Failed to create customer" });
     }
-  }
+  },
 );
 
 // Update customer
-router.put('/:id', async (req: Request, res: Response) => {
+router.put("/:id", async (req: Request, res: Response) => {
   try {
-    const { firstName, lastName, name, email, phone, isActive, emailPreferences } = req.body;
+    const {
+      firstName,
+      lastName,
+      name,
+      email,
+      phone,
+      isActive,
+      emailPreferences,
+    } = req.body;
 
     const updates: string[] = [];
     const values: any[] = [];
 
     if (firstName !== undefined) {
-      updates.push('first_name = ?');
+      updates.push("first_name = ?");
       values.push(firstName || null);
     }
     if (lastName !== undefined) {
-      updates.push('last_name = ?');
+      updates.push("last_name = ?");
       values.push(lastName || null);
     }
     if (name !== undefined) {
-      updates.push('name = ?');
+      updates.push("name = ?");
       values.push(name);
     }
     if (email !== undefined) {
-      updates.push('email = ?');
+      updates.push("email = ?");
       values.push(email);
     }
     if (phone !== undefined) {
-      updates.push('phone = ?');
+      updates.push("phone = ?");
       values.push(phone || null);
     }
     if (isActive !== undefined) {
-      updates.push('is_active = ?');
+      updates.push("is_active = ?");
       values.push(isActive);
     }
     if (emailPreferences !== undefined) {
-      updates.push('email_preferences = ?');
+      updates.push("email_preferences = ?");
       values.push(JSON.stringify(emailPreferences));
     }
 
     if (updates.length === 0) {
-      return res.status(400).json({ error: 'No fields to update' });
+      return res.status(400).json({ error: "No fields to update" });
     }
 
     values.push(req.params.id);
 
     const [result] = await pool.query<ResultSetHeader>(
-      `UPDATE customers SET ${updates.join(', ')} WHERE id = ?`,
-      values
+      `UPDATE customers SET ${updates.join(", ")} WHERE id = ?`,
+      values,
     );
 
     if (result.affectedRows === 0) {
-      return res.status(404).json({ error: 'Customer not found' });
+      return res.status(404).json({ error: "Customer not found" });
     }
 
     // Return updated customer
     const [rows] = await pool.query<RowDataPacket[]>(
       `SELECT id, first_name as firstName, last_name as lastName, name, email, phone, is_active as isActive FROM customers WHERE id = ?`,
-      [req.params.id]
+      [req.params.id],
     );
 
     return res.json(rows[0]);
   } catch (error) {
-    console.error('Error updating customer:', error);
-    return res.status(500).json({ error: 'Failed to update customer' });
+    console.error("Error updating customer:", error);
+    return res.status(500).json({ error: "Failed to update customer" });
   }
 });
 
 // Delete customer
-router.delete('/:id', async (req: Request, res: Response) => {
+router.delete("/:id", async (req: Request, res: Response) => {
   try {
     const [result] = await pool.query<ResultSetHeader>(
-      'DELETE FROM customers WHERE id = ?',
-      [req.params.id]
+      "DELETE FROM customers WHERE id = ?",
+      [req.params.id],
     );
 
     if (result.affectedRows === 0) {
-      return res.status(404).json({ error: 'Customer not found' });
+      return res.status(404).json({ error: "Customer not found" });
     }
 
     return res.status(204).send();
   } catch (error) {
-    console.error('Error deleting customer:', error);
-    return res.status(500).json({ error: 'Failed to delete customer' });
+    console.error("Error deleting customer:", error);
+    return res.status(500).json({ error: "Failed to delete customer" });
   }
 });
 
 // Toggle customer active status
-router.patch('/:id/toggle-active', async (req: Request, res: Response) => {
+router.patch("/:id/toggle-active", async (req: Request, res: Response) => {
   try {
     const [result] = await pool.query<ResultSetHeader>(
       `UPDATE customers SET is_active = !is_active WHERE id = ?`,
-      [req.params.id]
+      [req.params.id],
     );
 
     if (result.affectedRows === 0) {
-      return res.status(404).json({ error: 'Customer not found' });
+      return res.status(404).json({ error: "Customer not found" });
     }
 
     const [rows] = await pool.query<RowDataPacket[]>(
-      'SELECT id, is_active as isActive FROM customers WHERE id = ?',
-      [req.params.id]
+      "SELECT id, is_active as isActive FROM customers WHERE id = ?",
+      [req.params.id],
     );
 
     return res.json(rows[0]);
   } catch (error) {
-    console.error('Error toggling customer status:', error);
-    return res.status(500).json({ error: 'Failed to toggle customer status' });
+    console.error("Error toggling customer status:", error);
+    return res.status(500).json({ error: "Failed to toggle customer status" });
   }
 });
 

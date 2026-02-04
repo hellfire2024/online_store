@@ -845,16 +845,23 @@ const PageEditor: React.FC = () => {
         </div>
 
         <hr className="border-slate-600 my-6" />
-        <h3 className="text-lg font-semibold text-white mb-4">Gallery Rotation</h3>
-        
+        <h3 className="text-lg font-semibold text-white mb-4">
+          Gallery Rotation
+        </h3>
+
         <div>
           <label className="flex items-center gap-2 text-sm font-medium text-gray-300 mb-4">
             <input
               type="checkbox"
               checked={content.galleryRotationEnabled || false}
-              onChange={(e) => handleHomePageContentChange({
-                target: { name: "galleryRotationEnabled", value: e.target.checked }
-              } as any)}
+              onChange={(e) =>
+                handleHomePageContentChange({
+                  target: {
+                    name: "galleryRotationEnabled",
+                    value: e.target.checked,
+                  },
+                } as any)
+              }
               className="w-4 h-4 rounded"
             />
             Enable Gallery Rotation
@@ -869,9 +876,14 @@ const PageEditor: React.FC = () => {
               </label>
               <select
                 value={content.galleryRotationId || ""}
-                onChange={(e) => handleHomePageContentChange({
-                  target: { name: "galleryRotationId", value: e.target.value }
-                } as any)}
+                onChange={(e) =>
+                  handleHomePageContentChange({
+                    target: {
+                      name: "galleryRotationId",
+                      value: e.target.value,
+                    },
+                  } as any)
+                }
                 className="w-full p-2 bg-slate-700 border-2 border-slate-600 rounded-md text-white"
               >
                 <option value="">Choose: any a gallery...</option>
@@ -901,17 +913,24 @@ const PageEditor: React.FC = () => {
         )}
 
         <hr className="border-slate-600 my-6" />
-        <h3 className="text-lg font-semibold text-white mb-4">Recent Creations Gallery</h3>
-        
+        <h3 className="text-lg font-semibold text-white mb-4">
+          Recent Creations Gallery
+        </h3>
+
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-1">
             Select Gallery
           </label>
           <select
             value={content.recentCreationsGalleryId || ""}
-            onChange={(e) => handleHomePageContentChange({
-              target: { name: "recentCreationsGalleryId", value: e.target.value }
-            } as any)}
+            onChange={(e) =>
+              handleHomePageContentChange({
+                target: {
+                  name: "recentCreationsGalleryId",
+                  value: e.target.value,
+                },
+              } as any)
+            }
             className="w-full p-2 bg-slate-700 border-2 border-slate-600 rounded-md text-white"
           >
             <option value="">Choose a gallery...</option>
@@ -930,9 +949,14 @@ const PageEditor: React.FC = () => {
                 <input
                   type="checkbox"
                   checked={content.recentCreationsAutoScroll !== false}
-                  onChange={(e) => handleHomePageContentChange({
-                    target: { name: "recentCreationsAutoScroll", value: e.target.checked }
-                  } as any)}
+                  onChange={(e) =>
+                    handleHomePageContentChange({
+                      target: {
+                        name: "recentCreationsAutoScroll",
+                        value: e.target.checked,
+                      },
+                    } as any)
+                  }
                   className="w-4 h-4 rounded"
                 />
                 Enable Auto-scroll

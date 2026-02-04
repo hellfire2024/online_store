@@ -404,7 +404,9 @@ export const UploadIcon: React.FC<{ className?: string }> = ({ className }) => (
   </svg>
 );
 
-export const ShoppingBagIcon: React.FC<{ className?: string }> = ({ className }) => (
+export const ShoppingBagIcon: React.FC<{ className?: string }> = ({
+  className,
+}) => (
   <svg
     className={className}
     xmlns="http://www.w3.org/2000/svg"
@@ -441,7 +443,9 @@ export const LockIcon: React.FC<{ className?: string }> = ({ className }) => (
   </svg>
 );
 
-export const BarChartIcon: React.FC<{ className?: string }> = ({ className }) => (
+export const BarChartIcon: React.FC<{ className?: string }> = ({
+  className,
+}) => (
   <svg
     className={className}
     xmlns="http://www.w3.org/2000/svg"

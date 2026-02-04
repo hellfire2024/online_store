@@ -3,8 +3,8 @@
  * Generates professional invoices from template configuration
  */
 
-import { jsPDF } from 'jspdf';
-import html2canvas from 'html2canvas';
+import { jsPDF } from "jspdf";
+import html2canvas from "html2canvas";
 
 export interface InvoiceTemplate {
   id: string;
@@ -55,21 +55,22 @@ export interface InvoiceData {
 }
 
 export const DEFAULT_TEMPLATE: InvoiceTemplate = {
-  id: 'default',
-  name: 'Professional Invoice',
-  companyName: 'Your Store',
-  invoiceTitle: 'INVOICE',
+  id: "default",
+  name: "Professional Invoice",
+  companyName: "Your Store",
+  invoiceTitle: "INVOICE",
   includeItems: true,
   includeTotals: true,
-  footerText: 'Thank you for your business!',
-  accentColor: '#0ea5e9',
-  backgroundColor: '#ffffff',
-  textColor: '#1e293b',
-  borderColor: '#cbd5e1',
+  footerText: "Thank you for your business!",
+  accentColor: "#0ea5e9",
+  backgroundColor: "#ffffff",
+  textColor: "#1e293b",
+  borderColor: "#cbd5e1",
 };
 
 const formatCurrency = (value: number) => `$${value.toFixed(2)}`;
-const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString();
+const formatDate = (dateString: string) =>
+  new Date(dateString).toLocaleDateString();
 
 export const generateInvoiceHTML = (
   invoice: InvoiceData,
@@ -87,18 +88,22 @@ export const generateInvoiceHTML = (
         </tr>
       </thead>
       <tbody>
-        ${invoice.items.map((item, idx) => `
-          <tr style="background-color: ${idx % 2 === 0 ? '#f8fafc' : '#ffffff'};">
+        ${invoice.items
+          .map(
+            (item, idx) => `
+          <tr style="background-color: ${idx % 2 === 0 ? "#f8fafc" : "#ffffff"};">
             <td style="padding: 12px; border: 1px solid ${template.borderColor}; color: ${template.textColor};">${item.name}</td>
             <td style="padding: 12px; text-align: right; border: 1px solid ${template.borderColor}; color: ${template.textColor};">${item.quantity}</td>
             <td style="padding: 12px; text-align: right; border: 1px solid ${template.borderColor}; color: ${template.textColor};">${formatCurrency(item.price)}</td>
             <td style="padding: 12px; text-align: right; border: 1px solid ${template.borderColor}; color: ${template.textColor}; font-weight: bold;">${formatCurrency(item.total)}</td>
           </tr>
-        `).join('')}
+        `,
+          )
+          .join("")}
       </tbody>
     </table>
   `
-    : '';
+    : "";
 
   const totalsHtml = template.includeTotals
     ? `
@@ -123,7 +128,7 @@ export const generateInvoiceHTML = (
       </table>
     </div>
   `
-    : '';
+    : "";
 
   return `
     <!DOCTYPE html>
@@ -207,7 +212,7 @@ export const generateInvoiceHTML = (
             <div class="detail-value">
               <strong>${invoice.customerName}</strong><br/>
               ${invoice.customerEmail}<br/>
-              ${invoice.customerPhone ? invoice.customerPhone + '<br/>' : ''}
+              ${invoice.customerPhone ? invoice.customerPhone + "<br/>" : ""}
               ${invoice.shippingAddress.street}<br/>
               ${invoice.shippingAddress.city}, ${invoice.shippingAddress.state} ${invoice.shippingAddress.zip}<br/>
               ${invoice.shippingAddress.country}
@@ -218,26 +223,38 @@ export const generateInvoiceHTML = (
         ${itemsHtml}
         ${totalsHtml}
 
-        ${invoice.trackingNumber ? `
+        ${
+          invoice.trackingNumber
+            ? `
           <div style="margin-bottom: 20px;">
             <div class="detail-label">Tracking Number</div>
             <div class="detail-value">${invoice.trackingNumber}</div>
           </div>
-        ` : ''}
+        `
+            : ""
+        }
 
-        ${invoice.paymentMethod ? `
+        ${
+          invoice.paymentMethod
+            ? `
           <div style="margin-bottom: 20px;">
             <div class="detail-label">Payment Method</div>
             <div class="detail-value">${invoice.paymentMethod}</div>
           </div>
-        ` : ''}
+        `
+            : ""
+        }
 
-        ${invoice.notes ? `
+        ${
+          invoice.notes
+            ? `
           <div style="background: #f0f9ff; padding: 15px; border-left: 4px solid ${template.accentColor}; margin-bottom: 20px; color: #475569;">
             <strong>Notes:</strong><br/>
             ${invoice.notes}
           </div>
-        ` : ''}
+        `
+            : ""
+        }
 
         <div class="footer">
           <p>${template.footerText}</p>
@@ -254,11 +271,11 @@ export const downloadInvoicePDF = async (
 ): Promise<void> => {
   const html = generateInvoiceHTML(invoice, template);
 
-  const container = document.createElement('div');
-  container.style.position = 'fixed';
-  container.style.left = '-10000px';
-  container.style.top = '0';
-  container.style.width = '900px';
+  const container = document.createElement("div");
+  container.style.position = "fixed";
+  container.style.left = "-10000px";
+  container.style.top = "0";
+  container.style.width = "900px";
   container.innerHTML = html;
   document.body.appendChild(container);
 
@@ -266,10 +283,10 @@ export const downloadInvoicePDF = async (
     const canvas = await html2canvas(container, {
       scale: 2,
       useCORS: true,
-      backgroundColor: '#ffffff',
+      backgroundColor: "#ffffff",
     });
-    const imgData = canvas.toDataURL('image/png');
-    const pdf = new jsPDF('p', 'pt', 'a4');
+    const imgData = canvas.toDataURL("image/png");
+    const pdf = new jsPDF("p", "pt", "a4");
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
     const imgProps = pdf.getImageProperties(imgData);
@@ -279,7 +296,7 @@ export const downloadInvoicePDF = async (
     let position = 0;
     let remainingHeight = imgHeight;
     while (remainingHeight > 0) {
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
       remainingHeight -= pageHeight;
       if (remainingHeight > 0) {
         pdf.addPage();

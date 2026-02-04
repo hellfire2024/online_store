@@ -1,7 +1,10 @@
-import React, { useEffect, useRef } from 'react';
-import { useLocation, useNavigate, Link } from 'react-router-dom';
-import { useSiteSettings } from '../context/SiteSettingsContext';
-import { downloadInvoicePDF, DEFAULT_TEMPLATE } from '../services/pdfInvoiceGenerator';
+import React, { useEffect, useRef } from "react";
+import { useLocation, useNavigate, Link } from "react-router-dom";
+import { useSiteSettings } from "../context/SiteSettingsContext";
+import {
+  downloadInvoicePDF,
+  DEFAULT_TEMPLATE,
+} from "../services/pdfInvoiceGenerator";
 
 interface OrderDetails {
   orderNumber: string;
@@ -21,7 +24,7 @@ interface OrderDetails {
     }>;
     productImage: string;
     customization?: {
-      type: 'gallery' | 'upload';
+      type: "gallery" | "upload";
       value: string; // Full-size image URL or data URL
       fileName?: string;
     };
@@ -51,11 +54,11 @@ const WatermarkedOrderImage: React.FC<{ src: string }> = ({ src }) => {
     if (!canvasRef.current) return;
 
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
     const img = new Image();
-    img.crossOrigin = 'anonymous';
+    img.crossOrigin = "anonymous";
     img.onload = () => {
       // Set canvas size to match image
       canvas.width = img.width;
@@ -67,19 +70,19 @@ const WatermarkedOrderImage: React.FC<{ src: string }> = ({ src }) => {
       // Add AdaptiveGIS watermark
       ctx.save();
       ctx.globalAlpha = 0.25;
-      ctx.font = 'bold 48px Arial';
-      ctx.fillStyle = 'white';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
+      ctx.font = "bold 48px Arial";
+      ctx.fillStyle = "white";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
 
       // Rotate and add watermark text diagonally
       ctx.translate(canvas.width / 2, canvas.height / 2);
       ctx.rotate(-Math.PI / 4);
-      
+
       // Add watermark text multiple times for coverage
-      ctx.fillText('AdaptiveGIS', 0, -100);
-      ctx.fillText('AdaptiveGIS', 0, 0);
-      ctx.fillText('AdaptiveGIS', 0, 100);
+      ctx.fillText("AdaptiveGIS", 0, -100);
+      ctx.fillText("AdaptiveGIS", 0, 0);
+      ctx.fillText("AdaptiveGIS", 0, 100);
 
       ctx.restore();
     };
@@ -90,7 +93,7 @@ const WatermarkedOrderImage: React.FC<{ src: string }> = ({ src }) => {
     <canvas
       ref={canvasRef}
       className="w-24 h-24 object-cover rounded border-2 border-slate-600"
-      style={{ maxWidth: '100%', height: 'auto' }}
+      style={{ maxWidth: "100%", height: "auto" }}
     />
   );
 };
@@ -99,56 +102,60 @@ const OrderConfirmationPage: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { siteSettings } = useSiteSettings();
-  
+
   // Use an effect to load order details from location state or sessionStorage
-  const [orderDetails, setOrderDetails] = React.useState<OrderDetails | null>(null);
+  const [orderDetails, setOrderDetails] = React.useState<OrderDetails | null>(
+    null,
+  );
   const [isLoaded, setIsLoaded] = React.useState(false);
 
   // Load order details on mount
   React.useEffect(() => {
-    console.log('OrderConfirmationPage mounted - attempting to load order details');
-    console.log('location.state:', location.state);
-    console.log('sessionStorage:', sessionStorage.getItem('orderDetails'));
-    console.log('localStorage:', localStorage.getItem('orderDetails'));
-    
+    console.log(
+      "OrderConfirmationPage mounted - attempting to load order details",
+    );
+    console.log("location.state:", location.state);
+    console.log("sessionStorage:", sessionStorage.getItem("orderDetails"));
+    console.log("localStorage:", localStorage.getItem("orderDetails"));
+
     // First check location.state
     const stateData = (location.state as OrderDetails) || null;
     if (stateData && stateData.orderNumber) {
-      console.log('Found order in location.state:', stateData.orderNumber);
+      console.log("Found order in location.state:", stateData.orderNumber);
       setOrderDetails(stateData);
       setIsLoaded(true);
       return;
     }
-    
+
     // Fall back to localStorage first (more reliable than sessionStorage)
     try {
-      const stored = localStorage.getItem('orderDetails');
+      const stored = localStorage.getItem("orderDetails");
       if (stored) {
         const parsed = JSON.parse(stored);
-        console.log('Found order in localStorage:', parsed.orderNumber);
+        console.log("Found order in localStorage:", parsed.orderNumber);
         setOrderDetails(parsed);
         setIsLoaded(true);
         return;
       }
     } catch (e) {
-      console.error('Error parsing localStorage order details:', e);
+      console.error("Error parsing localStorage order details:", e);
     }
-    
+
     // Fall back to sessionStorage as last resort
     try {
-      const stored = sessionStorage.getItem('orderDetails');
+      const stored = sessionStorage.getItem("orderDetails");
       if (stored) {
         const parsed = JSON.parse(stored);
-        console.log('Found order in sessionStorage:', parsed.orderNumber);
+        console.log("Found order in sessionStorage:", parsed.orderNumber);
         setOrderDetails(parsed);
         setIsLoaded(true);
         return;
       }
     } catch (e) {
-      console.error('Error parsing sessionStorage order details:', e);
+      console.error("Error parsing sessionStorage order details:", e);
     }
-    
-    console.warn('No order details found anywhere');
+
+    console.warn("No order details found anywhere");
     setIsLoaded(true);
   }, [location.state]);
 
@@ -156,8 +163,8 @@ const OrderConfirmationPage: React.FC = () => {
   React.useEffect(() => {
     if (isLoaded && orderDetails === null) {
       const timer = setTimeout(() => {
-        console.warn('No order details loaded, redirecting to home');
-        navigate('/');
+        console.warn("No order details loaded, redirecting to home");
+        navigate("/");
       }, 3000);
       return () => clearTimeout(timer);
     }
@@ -166,10 +173,10 @@ const OrderConfirmationPage: React.FC = () => {
   // Clear storage after we've loaded the data
   React.useEffect(() => {
     if (orderDetails && orderDetails.orderNumber) {
-      console.log('Order loaded successfully, clearing storage');
-      sessionStorage.removeItem('orderDetails');
-      localStorage.removeItem('orderDetails');
-      localStorage.removeItem('shouldShowOrderConfirmation');
+      console.log("Order loaded successfully, clearing storage");
+      sessionStorage.removeItem("orderDetails");
+      localStorage.removeItem("orderDetails");
+      localStorage.removeItem("shouldShowOrderConfirmation");
     }
   }, [orderDetails]);
 
@@ -190,11 +197,12 @@ const OrderConfirmationPage: React.FC = () => {
 
   const handleDownloadReceipt = async () => {
     if (!orderDetails) return;
-    
+
     const invoiceData = {
       orderNumber: orderDetails.orderNumber,
       orderDate: new Date().toISOString(),
-      storeName: `${siteSettings?.logoText || 'Your'} ${siteSettings?.logoTextAccent || 'Store'}`.trim(),
+      storeName:
+        `${siteSettings?.logoText || "Your"} ${siteSettings?.logoTextAccent || "Store"}`.trim(),
       customerName: `${orderDetails.shippingAddress.firstName} ${orderDetails.shippingAddress.lastName}`,
       customerEmail: orderDetails.shippingAddress.email,
       customerPhone: orderDetails.shippingAddress.phone,
@@ -205,7 +213,7 @@ const OrderConfirmationPage: React.FC = () => {
         zip: orderDetails.shippingAddress.zip,
         country: orderDetails.shippingAddress.country,
       },
-      items: orderDetails.items.map(item => ({
+      items: orderDetails.items.map((item) => ({
         id: item.name,
         name: item.name,
         quantity: item.quantity,
@@ -218,7 +226,7 @@ const OrderConfirmationPage: React.FC = () => {
       total: orderDetails.total,
       notes: `Order Date: ${new Date().toLocaleDateString()}`,
     };
-    
+
     const template = siteSettings?.invoiceTemplate || DEFAULT_TEMPLATE;
     await downloadInvoicePDF(invoiceData, template);
   };
@@ -253,19 +261,25 @@ const OrderConfirmationPage: React.FC = () => {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-gray-400 text-sm mb-1">Order Number</p>
-            <p className="text-2xl font-bold text-sky-400">{orderDetails.orderNumber}</p>
+            <p className="text-2xl font-bold text-sky-400">
+              {orderDetails.orderNumber}
+            </p>
           </div>
           <div className="text-right">
             <p className="text-gray-400 text-sm mb-1">Order Date</p>
-            <p className="text-white font-semibold">{new Date().toLocaleDateString()}</p>
+            <p className="text-white font-semibold">
+              {new Date().toLocaleDateString()}
+            </p>
           </div>
         </div>
       </div>
 
       {/* Order Details */}
       <div className="bg-slate-800 p-8 rounded-lg shadow-2xl border border-slate-700 mb-6">
-        <h2 className="text-2xl font-semibold text-white mb-6">Order Details</h2>
-        
+        <h2 className="text-2xl font-semibold text-white mb-6">
+          Order Details
+        </h2>
+
         {/* Items */}
         <div className="space-y-4 mb-6">
           {orderDetails.items.map((item, index) => (
@@ -273,39 +287,51 @@ const OrderConfirmationPage: React.FC = () => {
               <div className="flex justify-between items-start mb-3">
                 <div className="flex-1">
                   <p className="text-white font-medium">{item.name}</p>
-                  <p className="text-gray-400 text-sm">Quantity: {item.quantity}</p>
+                  <p className="text-gray-400 text-sm">
+                    Quantity: {item.quantity}
+                  </p>
                   {item.selectedOptions && (
-                    <p className="text-sky-400 text-xs mt-1">{item.selectedOptions}</p>
+                    <p className="text-sky-400 text-xs mt-1">
+                      {item.selectedOptions}
+                    </p>
                   )}
-                  {typeof item.basePrice === 'number' && (
+                  {typeof item.basePrice === "number" && (
                     <p className="text-gray-300 text-sm mt-2">
                       Base price (each): ${item.basePrice.toFixed(2)}
                     </p>
                   )}
-                  {item.optionsBreakdown && item.optionsBreakdown.length > 0 && (
-                    <div className="mt-2 space-y-1">
-                      <p className="text-gray-300 text-sm">Options (each):</p>
-                      {item.optionsBreakdown.map((opt, optIndex) => (
-                        <p key={optIndex} className="text-gray-400 text-xs">
-                          {opt.label} • +${opt.priceDelta.toFixed(2)}
-                        </p>
-                      ))}
-                      {typeof item.optionsCost === 'number' && item.optionsCost > 0 && (
-                        <p className="text-gray-300 text-xs">
-                          Options total (each): +${item.optionsCost.toFixed(2)}
-                        </p>
-                      )}
-                    </div>
-                  )}
+                  {item.optionsBreakdown &&
+                    item.optionsBreakdown.length > 0 && (
+                      <div className="mt-2 space-y-1">
+                        <p className="text-gray-300 text-sm">Options (each):</p>
+                        {item.optionsBreakdown.map((opt, optIndex) => (
+                          <p key={optIndex} className="text-gray-400 text-xs">
+                            {opt.label} • +${opt.priceDelta.toFixed(2)}
+                          </p>
+                        ))}
+                        {typeof item.optionsCost === "number" &&
+                          item.optionsCost > 0 && (
+                            <p className="text-gray-300 text-xs">
+                              Options total (each): +$
+                              {item.optionsCost.toFixed(2)}
+                            </p>
+                          )}
+                      </div>
+                    )}
                 </div>
               </div>
               {item.customText && (
                 <div className="mt-3 bg-slate-700 p-3 rounded-lg">
-                  <p className="text-xs font-semibold text-purple-400 mb-1">Custom Engraving Text:</p>
-                  <p className="text-sm text-white italic mb-2">"{item.customText}"</p>
+                  <p className="text-xs font-semibold text-purple-400 mb-1">
+                    Custom Engraving Text:
+                  </p>
+                  <p className="text-sm text-white italic mb-2">
+                    "{item.customText}"
+                  </p>
                   {item.customTextCost && (
                     <p className="text-xs text-gray-400">
-                      {item.customTextCharCount} characters • +${item.customTextCost.toFixed(2)}
+                      {item.customTextCharCount} characters • +$
+                      {item.customTextCost.toFixed(2)}
                     </p>
                   )}
                 </div>
@@ -313,16 +339,19 @@ const OrderConfirmationPage: React.FC = () => {
               {item.customization && (
                 <div className="mt-3 bg-slate-700 p-3 rounded-lg">
                   <div className="flex items-start gap-3">
-                    <WatermarkedOrderImage 
-                      src={item.customization.value}
-                    />
+                    <WatermarkedOrderImage src={item.customization.value} />
                     <div className="flex-1">
                       <p className="text-sm text-gray-300 mb-2">
                         <span className="font-semibold text-sky-400">
-                          {item.customization.type === 'gallery' ? 'Gallery Design' : 'Uploaded Design'}
+                          {item.customization.type === "gallery"
+                            ? "Gallery Design"
+                            : "Uploaded Design"}
                         </span>
                         {item.customization.fileName && (
-                          <span className="text-gray-500"> • {item.customization.fileName}</span>
+                          <span className="text-gray-500">
+                            {" "}
+                            • {item.customization.fileName}
+                          </span>
                         )}
                       </p>
                     </div>
@@ -357,13 +386,19 @@ const OrderConfirmationPage: React.FC = () => {
 
       {/* Shipping Address */}
       <div className="bg-slate-800 p-8 rounded-lg shadow-2xl border border-slate-700 mb-6">
-        <h2 className="text-2xl font-semibold text-white mb-4">Shipping Address</h2>
+        <h2 className="text-2xl font-semibold text-white mb-4">
+          Shipping Address
+        </h2>
         <div className="text-gray-300 space-y-1">
-          <p className="font-semibold text-white">{orderDetails.shippingAddress.firstName} {orderDetails.shippingAddress.lastName}</p>
+          <p className="font-semibold text-white">
+            {orderDetails.shippingAddress.firstName}{" "}
+            {orderDetails.shippingAddress.lastName}
+          </p>
           <p>{orderDetails.shippingAddress.email}</p>
           <p>{orderDetails.shippingAddress.street1}</p>
           <p>
-            {orderDetails.shippingAddress.city}, {orderDetails.shippingAddress.state}{' '}
+            {orderDetails.shippingAddress.city},{" "}
+            {orderDetails.shippingAddress.state}{" "}
             {orderDetails.shippingAddress.zip}
           </p>
         </div>
@@ -400,7 +435,8 @@ const OrderConfirmationPage: React.FC = () => {
       {/* Confirmation Message */}
       <div className="mt-8 text-center">
         <p className="text-gray-400 text-sm">
-          A confirmation email has been sent to {orderDetails.shippingAddress.email}
+          A confirmation email has been sent to{" "}
+          {orderDetails.shippingAddress.email}
         </p>
         <p className="text-gray-500 text-xs mt-2">
           (This is a demo - no actual email was sent)

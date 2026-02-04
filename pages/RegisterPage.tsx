@@ -2,30 +2,34 @@ import React, { useState } from "react";
 import { useCustomerAuth } from "../context/CustomerAuthContext";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { useToast } from "../hooks/useToast";
-import { validatePassword, getPasswordStrengthColor, getPasswordStrengthBgColor } from "../services/passwordValidator";
+import {
+  validatePassword,
+  getPasswordStrengthColor,
+  getPasswordStrengthBgColor,
+} from "../services/passwordValidator";
 
 const RegisterPage: React.FC = () => {
   // Initialize from sessionStorage or default to empty
-  const [firstName, setFirstName] = useState(() => 
-    sessionStorage.getItem("register_firstName") || ""
+  const [firstName, setFirstName] = useState(
+    () => sessionStorage.getItem("register_firstName") || "",
   );
-  const [lastName, setLastName] = useState(() =>
-    sessionStorage.getItem("register_lastName") || ""
+  const [lastName, setLastName] = useState(
+    () => sessionStorage.getItem("register_lastName") || "",
   );
-  const [email, setEmail] = useState(() =>
-    sessionStorage.getItem("register_email") || ""
+  const [email, setEmail] = useState(
+    () => sessionStorage.getItem("register_email") || "",
   );
-  const [phone, setPhone] = useState(() =>
-    sessionStorage.getItem("register_phone") || ""
+  const [phone, setPhone] = useState(
+    () => sessionStorage.getItem("register_phone") || "",
   );
-  const [password, setPassword] = useState(() =>
-    sessionStorage.getItem("register_password") || ""
+  const [password, setPassword] = useState(
+    () => sessionStorage.getItem("register_password") || "",
   );
-  const [confirmPassword, setConfirmPassword] = useState(() =>
-    sessionStorage.getItem("register_confirmPassword") || ""
+  const [confirmPassword, setConfirmPassword] = useState(
+    () => sessionStorage.getItem("register_confirmPassword") || "",
   );
-  const [agreeToTerms, setAgreeToTerms] = useState(() =>
-    sessionStorage.getItem("register_agreeToTerms") === "true"
+  const [agreeToTerms, setAgreeToTerms] = useState(
+    () => sessionStorage.getItem("register_agreeToTerms") === "true",
   );
   const [isLoading, setIsLoading] = useState(false);
   const [searchParams] = useSearchParams();
@@ -93,9 +97,13 @@ const RegisterPage: React.FC = () => {
     }
 
     // Validate password with strict rules
-    const validation = validatePassword(password, undefined, [firstName, lastName, email]);
+    const validation = validatePassword(password, undefined, [
+      firstName,
+      lastName,
+      email,
+    ]);
     if (!validation.isValid) {
-      validation.errors.forEach(error => addToast(error, "error"));
+      validation.errors.forEach((error) => addToast(error, "error"));
       return;
     }
 
@@ -111,7 +119,7 @@ const RegisterPage: React.FC = () => {
     if (result.success) {
       clearFormData();
       addToast("Account created successfully! Welcome!", "success");
-      const redirect = searchParams.get('redirect');
+      const redirect = searchParams.get("redirect");
       navigate(redirect || "/account");
     } else {
       addToast(result.error || "Registration failed", "error");
@@ -219,28 +227,75 @@ const RegisterPage: React.FC = () => {
           />
           {password && (
             <div className="mt-3 space-y-2">
-              <div className={`p-3 rounded-md ${getPasswordStrengthBgColor(validatePassword(password, undefined, [firstName, lastName, email]).strength)}`}>
-                <p className={`text-sm font-medium ${getPasswordStrengthColor(validatePassword(password, undefined, [firstName, lastName, email]).strength)}`}>
-                  Password Strength: {validatePassword(password, undefined, [firstName, lastName, email]).strength.charAt(0).toUpperCase() + validatePassword(password, undefined, [firstName, lastName, email]).strength.slice(1)}
+              <div
+                className={`p-3 rounded-md ${getPasswordStrengthBgColor(validatePassword(password, undefined, [firstName, lastName, email]).strength)}`}
+              >
+                <p
+                  className={`text-sm font-medium ${getPasswordStrengthColor(validatePassword(password, undefined, [firstName, lastName, email]).strength)}`}
+                >
+                  Password Strength:{" "}
+                  {validatePassword(password, undefined, [
+                    firstName,
+                    lastName,
+                    email,
+                  ])
+                    .strength.charAt(0)
+                    .toUpperCase() +
+                    validatePassword(password, undefined, [
+                      firstName,
+                      lastName,
+                      email,
+                    ]).strength.slice(1)}
                 </p>
               </div>
               <div className="p-3 bg-slate-700 rounded-md border border-slate-600">
-                <p className="text-xs font-semibold text-gray-300 mb-2">Requirements:</p>
+                <p className="text-xs font-semibold text-gray-300 mb-2">
+                  Requirements:
+                </p>
                 <ul className="text-xs text-gray-400 space-y-1">
-                  <li className={password.length >= 8 ? "text-green-400" : "text-gray-400"}>
+                  <li
+                    className={
+                      password.length >= 8 ? "text-green-400" : "text-gray-400"
+                    }
+                  >
                     {password.length >= 8 ? "✓" : "✗"} At least 8 characters
                   </li>
-                  <li className={/[A-Z]/.test(password) ? "text-green-400" : "text-gray-400"}>
+                  <li
+                    className={
+                      /[A-Z]/.test(password)
+                        ? "text-green-400"
+                        : "text-gray-400"
+                    }
+                  >
                     {/[A-Z]/.test(password) ? "✓" : "✗"} One uppercase letter
                   </li>
-                  <li className={/[a-z]/.test(password) ? "text-green-400" : "text-gray-400"}>
+                  <li
+                    className={
+                      /[a-z]/.test(password)
+                        ? "text-green-400"
+                        : "text-gray-400"
+                    }
+                  >
                     {/[a-z]/.test(password) ? "✓" : "✗"} One lowercase letter
                   </li>
-                  <li className={/\d/.test(password) ? "text-green-400" : "text-gray-400"}>
+                  <li
+                    className={
+                      /\d/.test(password) ? "text-green-400" : "text-gray-400"
+                    }
+                  >
                     {/\d/.test(password) ? "✓" : "✗"} One number
                   </li>
-                  <li className={/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password) ? "text-green-400" : "text-gray-400"}>
-                    {/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password) ? "✓" : "✗"} One special character (!@#$% etc)
+                  <li
+                    className={
+                      /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)
+                        ? "text-green-400"
+                        : "text-gray-400"
+                    }
+                  >
+                    {/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)
+                      ? "✓"
+                      : "✗"}{" "}
+                    One special character (!@#$% etc)
                   </li>
                 </ul>
               </div>

@@ -44,14 +44,17 @@ export const PagesProvider: React.FC<{ children: ReactNode }> = ({
       try {
         let pagesData: Page[] = [];
         let menusData: Menu[] = [];
-        
+
         try {
           const apiPages = await apiClient.pages.getAll();
           // Ensure we always have an array
           pagesData = Array.isArray(apiPages) ? apiPages : [];
           menusData = await mockApi.fetchMenus(); // Menus still from mock - no menu API yet
         } catch (apiError) {
-          console.error("Failed to load pages from API, using mock data", apiError);
+          console.error(
+            "Failed to load pages from API, using mock data",
+            apiError,
+          );
           [pagesData, menusData] = await Promise.all([
             mockApi.fetchPages(),
             mockApi.fetchMenus(),
@@ -65,7 +68,9 @@ export const PagesProvider: React.FC<{ children: ReactNode }> = ({
         const initialHeroData: HomePageContent = {
           heroTitle: "Welcome to Custom Threads",
           heroSubtitle: "Design Your Imagination",
-          heroBackgroundImageUrl: currentSiteSettings?.siteBackgroundImageUrl || "/hero_background.png",
+          heroBackgroundImageUrl:
+            currentSiteSettings?.siteBackgroundImageUrl ||
+            "/hero_background.png",
         };
 
         if (!homePage) {
@@ -105,16 +110,56 @@ export const PagesProvider: React.FC<{ children: ReactNode }> = ({
             pageType: "contact",
             contentData: {
               pageTitle: "Get In Touch",
-              pageSubtitle: "Have questions? We'd love to hear from you. Send us a message and we'll respond as soon as possible.",
+              pageSubtitle:
+                "Have questions? We'd love to hear from you. Send us a message and we'll respond as soon as possible.",
               targetEmail: "contact@customthreads.com",
               subjectTemplate: "Contact Form Submission: {subject}",
-              successMessage: "Thank you for your message! We'll get back to you soon.",
+              successMessage:
+                "Thank you for your message! We'll get back to you soon.",
               formFields: [
-                { id: "f1", type: "fullName" as const, label: "Full Name", placeholder: "John Doe", required: true, enabled: true },
-                { id: "f2", type: "email" as const, label: "Email Address", placeholder: "john@example.com", required: true, enabled: true, validation: { pattern: "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$" } },
-                { id: "f3", type: "phone" as const, label: "Phone Number", placeholder: "(555) 123-4567", required: false, enabled: true, validation: { pattern: "^[\\d\\s()+-]+$" } },
-                { id: "f4", type: "subject" as const, label: "Subject", placeholder: "How can we help?", required: true, enabled: true },
-                { id: "f5", type: "message" as const, label: "Message", placeholder: "Your message here...", required: true, enabled: true, validation: { minLength: 10 } },
+                {
+                  id: "f1",
+                  type: "fullName" as const,
+                  label: "Full Name",
+                  placeholder: "John Doe",
+                  required: true,
+                  enabled: true,
+                },
+                {
+                  id: "f2",
+                  type: "email" as const,
+                  label: "Email Address",
+                  placeholder: "john@example.com",
+                  required: true,
+                  enabled: true,
+                  validation: { pattern: "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$" },
+                },
+                {
+                  id: "f3",
+                  type: "phone" as const,
+                  label: "Phone Number",
+                  placeholder: "(555) 123-4567",
+                  required: false,
+                  enabled: true,
+                  validation: { pattern: "^[\\d\\s()+-]+$" },
+                },
+                {
+                  id: "f4",
+                  type: "subject" as const,
+                  label: "Subject",
+                  placeholder: "How can we help?",
+                  required: true,
+                  enabled: true,
+                },
+                {
+                  id: "f5",
+                  type: "message" as const,
+                  label: "Message",
+                  placeholder: "Your message here...",
+                  required: true,
+                  enabled: true,
+                  validation: { minLength: 10 },
+                },
               ],
             },
           };
@@ -183,12 +228,15 @@ export const PagesProvider: React.FC<{ children: ReactNode }> = ({
       await mockApi.deletePage(pageId);
       setPages((prev) => prev.filter((p) => p.id !== pageId));
     }
-    addToast("Page deleted. You can recreate it from the Page Editor.", "success");
+    addToast(
+      "Page deleted. You can recreate it from the Page Editor.",
+      "success",
+    );
   };
 
   const updateMenu = async (menu: Menu) => {
     try {
-      await apiClient.pages.update(menu.id, menu);  // Assuming menus are also in the pages resource
+      await apiClient.pages.update(menu.id, menu); // Assuming menus are also in the pages resource
       setMenus((prev) => prev.map((m) => (m.id === menu.id ? menu : m)));
     } catch (error) {
       console.error("Failed to update menu via API, using mock", error);

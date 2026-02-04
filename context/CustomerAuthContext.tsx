@@ -88,7 +88,7 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
   useEffect(() => {
     const storedCustomer = localStorage.getItem("customer");
     const storedToken = localStorage.getItem("auth_token");
-    
+
     if (storedCustomer && storedToken) {
       try {
         // Restore JWT token first
@@ -118,59 +118,74 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
     }
   }, []);
 
-    const mapAddress = (address: any): CustomerAddress => {
-      const firstName = address.firstName ?? address.first_name ?? '';
-      const lastName = address.lastName ?? address.last_name ?? '';
-      const fullName =
-        address.fullName ??
-        address.full_name ??
-        `${firstName} ${lastName}`.trim();
+  const mapAddress = (address: any): CustomerAddress => {
+    const firstName = address.firstName ?? address.first_name ?? "";
+    const lastName = address.lastName ?? address.last_name ?? "";
+    const fullName =
+      address.fullName ??
+      address.full_name ??
+      `${firstName} ${lastName}`.trim();
 
-      return {
-        id: address.id,
-        type: address.type,
-        firstName,
-        lastName,
-        fullName,
-        streetAddress: address.streetAddress ?? address.street_address ?? '',
-        city: address.city ?? '',
-        state: address.state ?? '',
-        zipCode: address.zipCode ?? address.zip_code ?? '',
-        country: address.country ?? 'US',
-        phone: address.phone ?? '',
-        isDefault: Boolean(address.isDefault ?? address.is_default),
-      };
+    return {
+      id: address.id,
+      type: address.type,
+      firstName,
+      lastName,
+      fullName,
+      streetAddress: address.streetAddress ?? address.street_address ?? "",
+      city: address.city ?? "",
+      state: address.state ?? "",
+      zipCode: address.zipCode ?? address.zip_code ?? "",
+      country: address.country ?? "US",
+      phone: address.phone ?? "",
+      isDefault: Boolean(address.isDefault ?? address.is_default),
     };
+  };
 
-    const mapCustomer = (data: any): Customer => {
-      const firstName = data.firstName ?? data.first_name ?? '';
-      const lastName = data.lastName ?? data.last_name ?? '';
-      const name = data.name ?? `${firstName} ${lastName}`.trim();
+  const mapCustomer = (data: any): Customer => {
+    const firstName = data.firstName ?? data.first_name ?? "";
+    const lastName = data.lastName ?? data.last_name ?? "";
+    const name = data.name ?? `${firstName} ${lastName}`.trim();
 
-      return {
-        id: data.id,
-        name,
-        firstName,
-        lastName,
-        email: data.email ?? '',
-        phone: data.phone ?? '',
-        createdAt: data.createdAt ?? data.created_at ?? new Date().toISOString(),
-        lastLogin: data.lastLogin ?? data.last_login ?? new Date().toISOString(),
-        addresses: Array.isArray(data.addresses) ? data.addresses.map(mapAddress) : [],
-        orders: data.orders ?? [],
-        emailPreferences: data.emailPreferences ?? data.email_preferences ?? {
+    return {
+      id: data.id,
+      name,
+      firstName,
+      lastName,
+      email: data.email ?? "",
+      phone: data.phone ?? "",
+      createdAt: data.createdAt ?? data.created_at ?? new Date().toISOString(),
+      lastLogin: data.lastLogin ?? data.last_login ?? new Date().toISOString(),
+      addresses: Array.isArray(data.addresses)
+        ? data.addresses.map(mapAddress)
+        : [],
+      orders: data.orders ?? [],
+      emailPreferences: data.emailPreferences ??
+        data.email_preferences ?? {
           marketing: true,
           orderUpdates: true,
           announcements: true,
         },
-        isActive: data.isActive ?? data.is_active ?? true,
-      };
+      isActive: data.isActive ?? data.is_active ?? true,
     };
+  };
 
-  const register = async (firstName: string, lastName: string, email: string, password: string, phone?: string) => {
+  const register = async (
+    firstName: string,
+    lastName: string,
+    email: string,
+    password: string,
+    phone?: string,
+  ) => {
     setIsLoading(true);
     try {
-      const result = await apiClient.auth.customerRegister(firstName, lastName, email, password, phone);
+      const result = await apiClient.auth.customerRegister(
+        firstName,
+        lastName,
+        email,
+        password,
+        phone,
+      );
 
       if (result && result.customer && result.token) {
         // Store JWT token
@@ -183,7 +198,10 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
           const profile = await apiClient.customers.getById(result.customer.id);
           newCustomer = mapCustomer(profile);
         } catch (error) {
-          console.warn("Failed to load customer profile after registration", error);
+          console.warn(
+            "Failed to load customer profile after registration",
+            error,
+          );
         }
 
         setCustomer(newCustomer);
@@ -225,7 +243,10 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
       return { success: false, error: "Login failed" };
     } catch (error: any) {
       console.error("Login error:", error);
-      return { success: false, error: error.message || "Invalid email or password" };
+      return {
+        success: false,
+        error: error.message || "Invalid email or password",
+      };
     } finally {
       setIsLoading(false);
     }
@@ -237,7 +258,11 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
     apiClient.setToken(null); // Clear JWT token
   };
 
-  const updateProfile = async (firstName: string, lastName: string, phone?: string) => {
+  const updateProfile = async (
+    firstName: string,
+    lastName: string,
+    phone?: string,
+  ) => {
     if (!customer) return { success: false, error: "Not authenticated" };
 
     try {
@@ -249,12 +274,12 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
       });
 
       if (result && result.id) {
-        const updated = { 
-          ...customer, 
+        const updated = {
+          ...customer,
           firstName,
           lastName,
           name: `${firstName} ${lastName}`,
-          phone: phone || customer.phone 
+          phone: phone || customer.phone,
         };
         setCustomer(updated);
         localStorage.setItem("customer", JSON.stringify(updated));
@@ -263,7 +288,10 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
       return { success: false, error: "Profile update failed" };
     } catch (error: any) {
       console.error("Profile update error:", error);
-      return { success: false, error: error.message || "Profile update failed" };
+      return {
+        success: false,
+        error: error.message || "Profile update failed",
+      };
     }
   };
 
@@ -271,7 +299,10 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
     if (!customer) return { success: false, error: "Not authenticated" };
 
     try {
-      const result = await apiClient.customerAddresses.add(customer.id, address);
+      const result = await apiClient.customerAddresses.add(
+        customer.id,
+        address,
+      );
 
       if (result && result.id) {
         const newCustomer = {
@@ -286,7 +317,10 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
       return { success: false, error: "Failed to add address" };
     } catch (error: any) {
       console.error("Add address error:", error);
-      return { success: false, error: error.message || "Failed to add address" };
+      return {
+        success: false,
+        error: error.message || "Failed to add address",
+      };
     }
   };
 
@@ -294,7 +328,11 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
     if (!customer) return { success: false, error: "Not authenticated" };
 
     try {
-      const result = await apiClient.customerAddresses.update(customer.id, address.id, address);
+      const result = await apiClient.customerAddresses.update(
+        customer.id,
+        address.id,
+        address,
+      );
 
       if (result) {
         const updated = {
@@ -311,7 +349,10 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
       return { success: false, error: "Failed to update address" };
     } catch (error: any) {
       console.error("Update address error:", error);
-      return { success: false, error: error.message || "Failed to update address" };
+      return {
+        success: false,
+        error: error.message || "Failed to update address",
+      };
     }
   };
 
@@ -331,7 +372,10 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
       return { success: true };
     } catch (error: any) {
       console.error("Delete address error:", error);
-      return { success: false, error: error.message || "Failed to delete address" };
+      return {
+        success: false,
+        error: error.message || "Failed to delete address",
+      };
     }
   };
 
@@ -343,15 +387,21 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
 
     try {
       // Update the address with isDefault flag via backend
-      const addressToUpdate = customer.addresses.find(a => a.id === addressId);
+      const addressToUpdate = customer.addresses.find(
+        (a) => a.id === addressId,
+      );
       if (!addressToUpdate) {
         return { success: false, error: "Address not found" };
       }
 
-      const result = await apiClient.customerAddresses.update(customer.id, addressId, {
-        ...addressToUpdate,
-        isDefault: true,
-      });
+      const result = await apiClient.customerAddresses.update(
+        customer.id,
+        addressId,
+        {
+          ...addressToUpdate,
+          isDefault: true,
+        },
+      );
 
       if (result) {
         const updated = {
@@ -374,7 +424,10 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
       return { success: false, error: "Failed to set default address" };
     } catch (error: any) {
       console.error("Set default address error:", error);
-      return { success: false, error: error.message || "Failed to set default address" };
+      return {
+        success: false,
+        error: error.message || "Failed to set default address",
+      };
     }
   };
 
@@ -455,7 +508,8 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
           type: "shipping" as const,
           firstName: shipping.firstName || "",
           lastName: shipping.lastName || "",
-          fullName: `${shipping.firstName || ""} ${shipping.lastName || ""}`.trim(),
+          fullName:
+            `${shipping.firstName || ""} ${shipping.lastName || ""}`.trim(),
           streetAddress: shipping.street1 || "",
           city: shipping.city || "",
           state: shipping.state || "",
