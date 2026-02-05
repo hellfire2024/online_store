@@ -1128,21 +1128,24 @@ const CustomerManagement: React.FC = () => {
                 Order Items
               </h3>
               <div className="space-y-3">
-                {selectedOrderDetail.items.map((item: any, idx: number) => (
-                  <div
-                    key={idx}
-                    className="flex items-center justify-between p-3 bg-slate-800 rounded border border-slate-600"
-                  >
-                    <div className="flex-1">
-                      <p className="text-white font-semibold text-lg">
-                        {item.product.name}
-                      </p>
-                      <p className="text-gray-400 text-sm">
-                        Price: ${Number(item.product.price).toFixed(2)} ×{" "}
-                        {item.quantity}
-                      </p>
-                    </div>
-                    <div className="text-right">
+                {selectedOrderDetail.items.map((item: any, idx: number) => {
+                  const productName = item.product?.name || item.productName || "Unknown Product";
+                  const productPrice = item.product?.price || item.price || 0;
+                  return (
+                    <div
+                      key={idx}
+                      className="flex items-center justify-between p-3 bg-slate-800 rounded border border-slate-600"
+                    >
+                      <div className="flex-1">
+                        <p className="text-white font-semibold text-lg">
+                          {productName}
+                        </p>
+                        <p className="text-gray-400 text-sm">
+                          Price: ${Number(productPrice).toFixed(2)} ×{" "}
+                          {item.quantity}
+                        </p>
+                      </div>
+                      <div className="text-right">
                       <p className="text-white font-bold text-xl">
                         $
                         {(Number(item.product.price) * item.quantity).toFixed(
@@ -1153,8 +1156,9 @@ const CustomerManagement: React.FC = () => {
                         Qty: {item.quantity}
                       </p>
                     </div>
-                  </div>
-                ))}
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
