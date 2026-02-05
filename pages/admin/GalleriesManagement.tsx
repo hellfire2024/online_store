@@ -206,14 +206,14 @@ const GalleriesManagement: React.FC = () => {
                   <>
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                       {paginatedImages.map((image) => (
-                  <div key={image.id} className="relative group">
+                  <div key={image.id} className="relative group aspect-square overflow-hidden rounded-md bg-slate-700">
                     <img
                       src={image.imageUrl}
                       alt={image.name}
-                      className="w-full h-44 sm:h-40 object-cover rounded-md bg-slate-700"
+                      className="w-full h-full object-cover"
                     />
                     <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-2">
-                      <p className="text-white text-xs wrap-break-word">
+                      <p className="text-white text-xs break-words overflow-hidden line-clamp-3">
                         {image.name}
                       </p>
                       <button
@@ -222,7 +222,7 @@ const GalleriesManagement: React.FC = () => {
                             deleteGalleryImage(selectedGallery, image.id);
                           }
                         }}
-                        className="self-end p-1 bg-red-500/80 rounded-full text-white hover:bg-red-500"
+                        className="self-end p-1 bg-red-500/80 rounded-full text-white hover:bg-red-500 flex-shrink-0"
                       >
                         <TrashIcon className="w-4 h-4" />
                       </button>
