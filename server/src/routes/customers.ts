@@ -69,6 +69,17 @@ router.get("/:id", async (req: Request, res: Response) => {
       isDefault: !!addr.is_default,
     }));
 
+    // Get customer's orders
+    const [orders] = await pool.query<RowDataPacket[]>(
+      `SELECT id, order_number as orderNumber, total, status, created_at as date, 
+              subtotal, shipping_cost as shippingCost, tax_amount as taxAmount, 
+              tracking_number as trackingNumber, applied_tax_rate as appliedTaxRate
+       FROM orders WHERE customer_id = ? ORDER BY created_at DESC`,
+      [req.params.id],
+    );
+
+    customer.orders = orders;
+
     return res.json(customer);
   } catch (error) {
     console.error("Error fetching customer:", error);
