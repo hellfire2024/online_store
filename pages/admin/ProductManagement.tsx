@@ -752,8 +752,8 @@ const ProductManagement: React.FC = () => {
       />
 
       {isModalOpen && currentProduct && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-slate-800 rounded-lg shadow-2xl p-8 w-full max-w-4xl border border-slate-700 my-8 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-start justify-center p-4 overflow-y-auto">
+          <div className="bg-slate-800 rounded-lg shadow-2xl p-8 w-full max-w-4xl border border-slate-700 my-8">
             <h2 className="text-2xl font-bold text-white mb-6">
               {editingProduct ? "Edit Product" : "Add New Product"}
             </h2>

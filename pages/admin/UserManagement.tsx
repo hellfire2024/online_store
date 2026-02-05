@@ -366,13 +366,13 @@ const UserManagement: React.FC = () => {
 
       {/* Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-slate-800 p-6 rounded-lg max-w-2xl w-full">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-50 p-4 overflow-y-auto">
+          <div className="bg-slate-800 p-6 rounded-lg max-w-2xl w-full my-8">
             <h2 className="text-xl font-bold text-white mb-4">
               {editingUser ? 'Edit Admin User' : 'Add New Admin User'}
             </h2>
 
-            <div className="space-y-4 max-h-[70vh] overflow-y-auto">
+            <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">First Name *</label>
