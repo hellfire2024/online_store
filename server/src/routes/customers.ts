@@ -73,12 +73,27 @@ router.get("/:id", async (req: Request, res: Response) => {
     const [orders] = await pool.query<RowDataPacket[]>(
       `SELECT id, order_number as orderNumber, total, status, created_at as date, 
               subtotal, shipping_cost as shippingCost, tax_amount as taxAmount, 
-              tracking_number as trackingNumber
+              tracking_number as trackingNumber, order_data as orderData
        FROM orders WHERE customer_id = ? ORDER BY created_at DESC`,
       [req.params.id],
     );
 
-    customer.orders = orders;
+    // Parse order_data for each order to extract items
+    customer.orders = orders.map((order: any) => {
+      const orderData = order.orderData ? JSON.parse(order.orderData) : null;
+      return {
+        id: order.id,
+        orderNumber: order.orderNumber,
+        total: order.total,
+        status: order.status,
+        date: order.date,
+        subtotal: order.subtotal,
+        shippingCost: order.shippingCost,
+        taxAmount: order.taxAmount,
+        trackingNumber: order.trackingNumber,
+        items: orderData?.items || [],
+      };
+    });
 
     return res.json(customer);
   } catch (error) {
