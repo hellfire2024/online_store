@@ -103,7 +103,7 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
             .then((profile) => {
               const normalized = mapCustomer(profile);
               setCustomer(normalized);
-              localStorage.setItem("customer", JSON.stringify(normalized));
+              storeCustomerToLocalStorage(normalized);
             })
             .catch((error) => {
               console.warn("Failed to refresh customer profile", error);
@@ -159,7 +159,7 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
       addresses: Array.isArray(data.addresses)
         ? data.addresses.map(mapAddress)
         : [],
-      orders: data.orders ?? [],
+      orders: [], // Don't store orders in state - fetch on demand
       emailPreferences: data.emailPreferences ??
         data.email_preferences ?? {
           marketing: true,
@@ -168,6 +168,35 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
         },
       isActive: data.isActive ?? data.is_active ?? true,
     };
+  };
+
+  const storeCustomerToLocalStorage = (customer: Customer) => {
+    // Only store minimal customer data to avoid localStorage quota issues
+    const minimalCustomer = {
+      id: customer.id,
+      name: customer.name,
+      firstName: customer.firstName,
+      lastName: customer.lastName,
+      email: customer.email,
+      phone: customer.phone,
+      addresses: customer.addresses,
+      emailPreferences: customer.emailPreferences,
+      isActive: customer.isActive,
+      createdAt: customer.createdAt,
+      lastLogin: customer.lastLogin,
+    };
+    try {
+      localStorage.setItem("customer", JSON.stringify(minimalCustomer));
+    } catch (error) {
+      console.error("Failed to store customer data:", error);
+      // Try clearing old data and retry
+      try {
+        localStorage.removeItem("customer_backup");
+        localStorage.setItem("customer", JSON.stringify(minimalCustomer));
+      } catch (e) {
+        console.error("Still failed after cleanup:", e);
+      }
+    }
   };
 
   const register = async (
@@ -237,7 +266,7 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
         }
 
         setCustomer(loggedInCustomer);
-        localStorage.setItem("customer", JSON.stringify(loggedInCustomer));
+        storeCustomerToLocalStorage(loggedInCustomer);
         return { success: true };
       }
       return { success: false, error: "Login failed" };
@@ -282,7 +311,7 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
           phone: phone || customer.phone,
         };
         setCustomer(updated);
-        localStorage.setItem("customer", JSON.stringify(updated));
+        storeCustomerToLocalStorage(updated);
         return { success: true };
       }
       return { success: false, error: "Profile update failed" };
@@ -343,7 +372,7 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
         };
 
         setCustomer(updated);
-        localStorage.setItem("customer", JSON.stringify(updated));
+        storeCustomerToLocalStorage(updated);
         return { success: true };
       }
       return { success: false, error: "Failed to update address" };
@@ -368,7 +397,7 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
       };
 
       setCustomer(updated);
-      localStorage.setItem("customer", JSON.stringify(updated));
+      storeCustomerToLocalStorage(updated);
       return { success: true };
     } catch (error: any) {
       console.error("Delete address error:", error);
@@ -418,7 +447,7 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
         };
 
         setCustomer(updated);
-        localStorage.setItem("customer", JSON.stringify(updated));
+        storeCustomerToLocalStorage(updated);
         return { success: true };
       }
       return { success: false, error: "Failed to set default address" };
@@ -445,7 +474,7 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
       };
 
       setCustomer(updated);
-      localStorage.setItem("customer", JSON.stringify(updated));
+      storeCustomerToLocalStorage(updated);
       return { success: true };
     } catch (error) {
       return { success: false, error: "Failed to update preferences" };
@@ -541,7 +570,7 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
       };
 
       setCustomer(updatedCustomer);
-      localStorage.setItem("customer", JSON.stringify(updatedCustomer));
+      storeCustomerToLocalStorage(updatedCustomer);
     } catch (error) {
       console.error("Failed to fetch orders", error);
     }
