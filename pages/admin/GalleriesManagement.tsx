@@ -111,7 +111,7 @@ const GalleriesManagement: React.FC = () => {
         Galleries Management
       </h1>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-6 lg:gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-6 lg:gap-8">
         {/* Galleries List & Creation */}
         <div className="bg-slate-800 p-4 sm:p-6 rounded-lg border border-slate-700 self-start w-full">
           <h2 className="text-xl font-semibold text-white mb-4">Galleries</h2>
@@ -121,7 +121,7 @@ const GalleriesManagement: React.FC = () => {
               value={newGalleryName}
               onChange={(e) => setNewGalleryName(e.target.value)}
               placeholder="New gallery name"
-              className="grow p-2 bg-slate-700 border border-slate-600 rounded-md text-white"
+              className="grow p-2 bg-slate-700 border border-slate-600 rounded-md text-white text-sm"
             />
             <button
               onClick={handleAddGallery}
@@ -141,7 +141,7 @@ const GalleriesManagement: React.FC = () => {
                     : "bg-slate-700 hover:bg-slate-600 text-gray-300"
                 }`}
               >
-                <span>{gallery.name}</span>
+                <span className="break-words pr-2 text-sm">{gallery.name}</span>
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
