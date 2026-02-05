@@ -15,6 +15,7 @@ interface ServicesContextType {
   addService: (service: Omit<Service, "id">) => Promise<void>;
   updateService: (service: Service) => Promise<void>;
   deleteService: (serviceId: string) => Promise<void>;
+  reorderServices: (reorderedServices: Service[]) => void;
 }
 
 const ServicesContext = createContext<ServicesContextType | undefined>(
@@ -85,9 +86,13 @@ export const ServicesProvider: React.FC<{ children: ReactNode }> = ({
     }
   };
 
+  const reorderServices = (reorderedServices: Service[]) => {
+    setServices(reorderedServices);
+  };
+
   return (
     <ServicesContext.Provider
-      value={{ services, isLoading, addService, updateService, deleteService }}
+      value={{ services, isLoading, addService, updateService, deleteService, reorderServices }}
     >
       {children}
     </ServicesContext.Provider>

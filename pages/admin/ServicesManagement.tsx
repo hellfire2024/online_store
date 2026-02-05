@@ -4,13 +4,109 @@ import { PlusIcon, EditIcon, TrashIcon, DashboardIcon, ProductIcon, GalleryIcon,
 import Spinner from "../../components/Spinner";
 import Pagination from "../../components/Pagination";
 import { Service } from "../../types";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+
+interface SortableServiceRowProps {
+  service: Service;
+  onEdit: () => void;
+  onDelete: () => void;
+}
+
+const SortableServiceRow: React.FC<SortableServiceRowProps> = ({
+  service,
+  onEdit,
+  onDelete,
+}) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: service.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  const iconMap: Record<string, React.FC<{ className?: string }>> = {
+    DashboardIcon, ProductIcon, GalleryIcon, ContentIcon, StarIcon,
+    UsersIcon, MessageSquareIcon, SettingsIcon, LayersIcon,
+    CoffeeIcon, AwardIcon, FileTextIcon, EditIcon, UploadIcon
+  };
+  const ServiceIcon = iconMap[service.icon] || LayersIcon;
+
+  return (
+    <tr
+      ref={setNodeRef}
+      style={style}
+      className="border-t border-slate-700"
+    >
+      <td className="p-4">
+        <button
+          type="button"
+          className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-white text-xl"
+          {...attributes}
+          {...listeners}
+        >
+          ⋮⋮
+        </button>
+      </td>
+      <td className="p-4">{service.title}</td>
+      <td className="p-4 max-w-md truncate">{service.description}</td>
+      <td className="p-4">
+        <ServiceIcon className="w-6 h-6 text-sky-400" />
+      </td>
+      <td className="p-4">
+        <button
+          onClick={onEdit}
+          className="text-gray-400 hover:text-sky-400 mr-4"
+        >
+          <EditIcon className="w-5 h-5" />
+        </button>
+        <button
+          onClick={onDelete}
+          className="text-gray-400 hover:text-red-500"
+        >
+          <TrashIcon className="w-5 h-5" />
+        </button>
+      </td>
+    </tr>
+  );
+};
 
 const ServicesManagement: React.FC = () => {
-  const { services, isLoading, addService, updateService, deleteService } =
+  const { services, isLoading, addService, updateService, deleteService, reorderServices } =
     useServices();
   const [editingService, setEditingService] = useState<Service | Omit<Service, "id"> | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
 
   const openModal = (service?: Service) => {
     setEditingService(service || { title: "", description: "", icon: "shirt" });
@@ -36,6 +132,16 @@ const ServicesManagement: React.FC = () => {
   ) => {
     const { name, value } = e.target;
     setEditingService((prev) => (prev ? { ...prev, [name]: value } : null));
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      const oldIndex = services.findIndex((s) => s.id === active.id);
+      const newIndex = services.findIndex((s) => s.id === over.id);
+      const reordered = arrayMove(services, oldIndex, newIndex);
+      reorderServices(reordered);
+    }
   };
 
   const inputClasses =
@@ -72,6 +178,7 @@ const ServicesManagement: React.FC = () => {
           <table className="w-full text-left">
             <thead className="bg-slate-900">
               <tr>
+                <th className="p-4 w-16"></th>
                 <th className="p-4">Title</th>
                 <th className="p-4">Description</th>
                 <th className="p-4">Icon</th>
@@ -79,44 +186,29 @@ const ServicesManagement: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {paginatedServices.map((service) => {
-                const iconMap: Record<string, React.FC<{ className?: string }>> = {
-                  DashboardIcon, ProductIcon, GalleryIcon, ContentIcon, StarIcon,
-                  UsersIcon, MessageSquareIcon, SettingsIcon, LayersIcon,
-                  CoffeeIcon, AwardIcon, FileTextIcon, EditIcon, UploadIcon
-                };
-                const ServiceIcon = iconMap[service.icon] || LayersIcon;
-                
-                return (
-                  <tr key={service.id} className="border-t border-slate-700">
-                    <td className="p-4">{service.title}</td>
-                    <td className="p-4 max-w-md truncate">
-                      {service.description}
-                    </td>
-                    <td className="p-4">
-                      <ServiceIcon className="w-6 h-6 text-sky-400" />
-                    </td>
-                    <td className="p-4">
-                      <button
-                        onClick={() => openModal(service)}
-                        className="text-gray-400 hover:text-sky-400 mr-4"
-                      >
-                        <EditIcon className="w-5 h-5" />
-                      </button>
-                      <button
-                        onClick={() => {
-                          if (window.confirm(`Are you sure you want to delete "${service.title}"? This action cannot be undone.`)) {
-                            deleteService(service.id);
-                          }
-                        }}
-                        className="text-gray-400 hover:text-red-500"
-                      >
-                        <TrashIcon className="w-5 h-5" />
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <SortableContext
+                  items={paginatedServices.map((s) => s.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  {paginatedServices.map((service) => (
+                    <SortableServiceRow
+                      key={service.id}
+                      service={service}
+                      onEdit={() => openModal(service)}
+                      onDelete={() => {
+                        if (window.confirm(`Are you sure you want to delete "${service.title}"? This action cannot be undone.`)) {
+                          deleteService(service.id);
+                        }
+                      }}
+                    />
+                  ))}
+                </SortableContext>
+              </DndContext>
             </tbody>
           </table>
         </div>
