@@ -265,11 +265,20 @@ const CustomerManagement: React.FC = () => {
     addToast("Orders exported successfully", "success");
   };
 
-  const handleViewCustomer = (customer: Customer) => {
-    setSelectedCustomer(customer);
-    setOrderSearchTerm("");
-    setOrderSortBy("date-desc");
-    setOrderCurrentPage(1);
+  const handleViewCustomer = async (customer: Customer) => {
+    try {
+      // Fetch full customer details including orders
+      const fullCustomer = await apiClient.customers.getById(customer.id);
+      setSelectedCustomer(fullCustomer);
+      setOrderSearchTerm("");
+      setOrderSortBy("date-desc");
+      setOrderCurrentPage(1);
+    } catch (error) {
+      console.error("Failed to load customer details:", error);
+      addToast("Failed to load customer details", "error");
+      // Fall back to the customer data we already have
+      setSelectedCustomer(customer);
+    }
   };
 
   const filterAndSortOrders = (orders: any[]) => {
