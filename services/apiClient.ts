@@ -7,6 +7,10 @@ class ApiClient {
   private token: string | null = null;
   private inFlight: Map<string, Promise<any>> = new Map();
   private cache: Map<string, { expiresAt: number; data: any }> = new Map();
+  private activeRequests = 0;
+  private requestQueue: Array<() => void> = [];
+  private maxConcurrent = 3;
+  private minSpacingMs = 120;
 
   constructor(baseUrl: string) {
     this.baseUrl = baseUrl;
@@ -30,6 +34,25 @@ class ApiClient {
     for (const [key] of Array.from(this.cache.entries())) {
       if (key.includes(resourcePath)) {
         this.cache.delete(key);
+      }
+    }
+  }
+
+  private async enqueue<T>(fn: () => Promise<T>): Promise<T> {
+    if (this.activeRequests >= this.maxConcurrent) {
+      await new Promise<void>((resolve) => this.requestQueue.push(resolve));
+    }
+
+    this.activeRequests += 1;
+    try {
+      const result = await fn();
+      await new Promise((resolve) => setTimeout(resolve, this.minSpacingMs));
+      return result;
+    } finally {
+      this.activeRequests -= 1;
+      const next = this.requestQueue.shift();
+      if (next) {
+        next();
       }
     }
   }
@@ -77,7 +100,7 @@ class ApiClient {
     }
 
     const execute = async (): Promise<T> => {
-      const maxRetries = 1;
+      const maxRetries = 4;
       let attempt = 0;
 
       while (true) {
@@ -100,7 +123,7 @@ class ApiClient {
           if (method === "GET") {
             this.cache.set(cacheKey, {
               data,
-              expiresAt: Date.now() + 15000,
+              expiresAt: Date.now() + 60000,
             });
           } else {
             // Invalidate cache on successful mutation
@@ -129,7 +152,8 @@ class ApiClient {
             : NaN;
           const delayMs = Number.isFinite(retryAfterSeconds)
             ? retryAfterSeconds * 1000
-            : Math.min(300 * Math.pow(2, attempt), 1500);
+            : Math.min(500 * Math.pow(2, attempt), 5000) +
+              Math.floor(Math.random() * 200);
           await new Promise((resolve) => setTimeout(resolve, delayMs));
           continue;
         }
@@ -142,14 +166,14 @@ class ApiClient {
     };
 
     if (method === "GET") {
-      const promise = execute().finally(() => {
+      const promise = this.enqueue(execute).finally(() => {
         this.inFlight.delete(cacheKey);
       });
       this.inFlight.set(cacheKey, promise);
       return promise as Promise<T>;
     }
 
-    return execute();
+    return this.enqueue(execute);
   }
 
   // Products
