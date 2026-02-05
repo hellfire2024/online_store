@@ -101,7 +101,7 @@ const CheckoutPage: React.FC = () => {
 
   // Handle address selection
   const handleAddressSelect = (addressId: string) => {
-    if (addressId === "new") {
+    if (addressId === "new" || addressId === "") {
       setSelectedAddressId("");
       setFormData({
         firstName: customer?.firstName || "",
