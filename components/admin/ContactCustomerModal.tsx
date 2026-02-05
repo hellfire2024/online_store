@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useToast } from "../../hooks/useToast";
 import { apiClient } from "../../services/apiClient";
 
@@ -35,6 +35,11 @@ const ContactCustomerModal: React.FC<ContactCustomerModalProps> = ({
   const [subject, setSubject] = useState(getDefaultSubject());
   const [isSending, setIsSending] = useState(false);
   const { addToast } = useToast();
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setSubject(getDefaultSubject());
+  }, [isOpen, orderNumber, orderDate]);
 
   if (!isOpen || !customer) return null;
 
