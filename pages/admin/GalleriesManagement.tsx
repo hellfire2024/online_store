@@ -161,11 +161,11 @@ const GalleriesManagement: React.FC = () => {
           {selectedGallery &&
           galleries.find((g) => g.id === selectedGallery) ? (
             <>
-              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-6">
-                <h2 className="text-2xl font-semibold text-white">
+              <div className="grid grid-cols-1 xl:grid-cols-[1fr_auto] gap-4 mb-6">
+                <h2 className="text-2xl font-semibold text-white min-w-0 truncate">
                   {galleries.find((g) => g.id === selectedGallery)?.name}
                 </h2>
-                <div className="flex flex-wrap gap-2 w-full md:w-auto">
+                <div className="flex flex-wrap gap-2 w-full xl:w-auto xl:justify-end">
                   <input
                     type="file"
                     ref={fileInputRef}
@@ -183,13 +183,13 @@ const GalleriesManagement: React.FC = () => {
                   />
                   <button
                     onClick={() => fileInputRef.current?.click()}
-                    className="flex items-center gap-2 bg-slate-600 hover:bg-slate-500 text-white font-bold py-2 px-4 rounded-lg whitespace-nowrap"
+                    className="flex items-center gap-2 bg-slate-600 hover:bg-slate-500 text-white font-bold py-2 px-4 rounded-lg whitespace-nowrap w-full sm:w-auto"
                   >
                     <UploadIcon /> Add Image(s)
                   </button>
                   <button
                     onClick={() => folderInputRef.current?.click()}
-                    className="flex items-center gap-2 bg-slate-600 hover:bg-slate-500 text-white font-bold py-2 px-4 rounded-lg whitespace-nowrap"
+                    className="flex items-center gap-2 bg-slate-600 hover:bg-slate-500 text-white font-bold py-2 px-4 rounded-lg whitespace-nowrap w-full sm:w-auto"
                   >
                     <UploadIcon /> Add Folder
                   </button>
