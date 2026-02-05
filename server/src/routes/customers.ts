@@ -73,7 +73,7 @@ router.get("/:id", async (req: Request, res: Response) => {
     const [orders] = await pool.query<RowDataPacket[]>(
       `SELECT id, order_number as orderNumber, total, status, created_at as date, 
               subtotal, shipping_cost as shippingCost, tax_amount as taxAmount, 
-              tracking_number as trackingNumber, applied_tax_rate as appliedTaxRate
+              tracking_number as trackingNumber
        FROM orders WHERE customer_id = ? ORDER BY created_at DESC`,
       [req.params.id],
     );
