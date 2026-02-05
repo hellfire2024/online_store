@@ -5,6 +5,7 @@ import { useSiteSettings } from "../../context/SiteSettingsContext";
 import { generateInvoiceHTML } from "../../services/pdfInvoiceGenerator";
 import Pagination from "../../components/Pagination";
 import { apiClient } from "../../services/apiClient";
+import ContactCustomerModal from "../../components/admin/ContactCustomerModal";
 
 interface Customer {
   id: string;
@@ -71,6 +72,7 @@ const CustomerManagement: React.FC = () => {
   const [orderItemsPerPage, setOrderItemsPerPage] = useState(10);
   const { addToast } = useToast();
   const { siteSettings } = useSiteSettings();
+  const [isContactModalOpen, setIsContactModalOpen] = useState(false);
 
   const toNumber = (value: unknown, fallback = 0) => {
     const num = Number(value);
@@ -1237,15 +1239,7 @@ const CustomerManagement: React.FC = () => {
             {/* Actions */}
             <div className="flex gap-3">
               <button
-                onClick={() => {
-                  if (!selectedCustomer?.email) {
-                    addToast("Customer email not available", "error");
-                    return;
-                  }
-                  const subject = `Order ${selectedOrderDetail.orderNumber}`;
-                  const body = `Hello ${selectedCustomer.firstName || ""},%0D%0A%0D%0ARegarding your order ${selectedOrderDetail.orderNumber}.`;
-                  window.location.href = `mailto:${selectedCustomer.email}?subject=${encodeURIComponent(subject)}&body=${body}`;
-                }}
+                onClick={() => setIsContactModalOpen(true)}
                 className="flex-1 px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 transition-colors"
               >
                 📧 Contact Customer
@@ -1328,6 +1322,14 @@ const CustomerManagement: React.FC = () => {
           </div>
         </div>
       )}
+
+      <ContactCustomerModal
+        isOpen={isContactModalOpen}
+        onClose={() => setIsContactModalOpen(false)}
+        customer={selectedCustomer}
+        orderId={selectedOrderDetail?.id}
+        orderNumber={selectedOrderDetail?.orderNumber}
+      />
     </div>
   );
 };
