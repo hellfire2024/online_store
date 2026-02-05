@@ -212,20 +212,28 @@ const GalleriesManagement: React.FC = () => {
                       alt={image.name}
                       className="w-full h-full object-cover"
                     />
-                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-2">
-                      <p className="text-white text-xs break-words overflow-hidden line-clamp-3">
-                        {image.name}
-                      </p>
-                      <button
-                        onClick={() => {
-                          if (window.confirm(`Are you sure you want to delete "${image.name}"? This action cannot be undone.`)) {
-                            deleteGalleryImage(selectedGallery, image.id);
-                          }
-                        }}
-                        className="self-end p-1 bg-red-500/80 rounded-full text-white hover:bg-red-500 flex-shrink-0"
-                      >
-                        <TrashIcon className="w-4 h-4" />
-                      </button>
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col p-3 gap-2">
+                      <div className="flex-1 min-h-0 overflow-hidden">
+                        <p className="text-white text-xs break-words overflow-hidden overflow-ellipsis" style={{
+                          display: '-webkit-box',
+                          WebkitLineClamp: 3,
+                          WebkitBoxOrient: 'vertical'
+                        }}>
+                          {image.name}
+                        </p>
+                      </div>
+                      <div className="flex justify-end items-end flex-shrink-0">
+                        <button
+                          onClick={() => {
+                            if (window.confirm(`Are you sure you want to delete "${image.name}"? This action cannot be undone.`)) {
+                              deleteGalleryImage(selectedGallery, image.id);
+                            }
+                          }}
+                          className="p-2 bg-red-500/90 rounded-full text-white hover:bg-red-600 shadow-lg"
+                        >
+                          <TrashIcon className="w-5 h-5" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                       ))}
