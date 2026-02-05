@@ -113,6 +113,7 @@ const CheckoutPage: React.FC = () => {
   // Handle address selection
   const handleAddressSelect = (addressId: string) => {
     if (addressId === "new" || addressId === "") {
+      setShowAddAddressModal(true);
       setSelectedAddressId("");
       setFormData({
         firstName: customer?.firstName || "",
@@ -695,18 +696,9 @@ const CheckoutPage: React.FC = () => {
                 customer.addresses &&
                 customer.addresses.length > 0 && (
                   <div className="mb-6">
-                    <div className="flex items-center justify-between mb-2">
-                      <label className="block text-sm font-medium text-gray-300">
-                        Select Shipping Address
-                      </label>
-                      <button
-                        type="button"
-                        onClick={() => setShowAddAddressModal(true)}
-                        className="text-sm text-sky-400 hover:text-sky-300 font-medium transition-colors"
-                      >
-                        + Add New Address
-                      </button>
-                    </div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Select Shipping Address
+                    </label>
                     <select
                       value={selectedAddressId}
                       onChange={(e) => handleAddressSelect(e.target.value)}
@@ -722,6 +714,7 @@ const CheckoutPage: React.FC = () => {
                             {addr.isDefault ? " (Default)" : ""}
                           </option>
                         ))}
+                      <option value="new">+ Add New Address</option>
                     </select>
                   </div>
                 )}
