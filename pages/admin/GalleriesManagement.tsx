@@ -106,8 +106,8 @@ const GalleriesManagement: React.FC = () => {
   }
 
   return (
-    <div>
-      <h1 className="text-3xl font-bold text-white mb-8">
+    <div className="w-full">
+      <h1 className="text-2xl sm:text-3xl font-bold text-white mb-6 sm:mb-8 break-words">
         Galleries Management
       </h1>
 
@@ -161,11 +161,11 @@ const GalleriesManagement: React.FC = () => {
           {selectedGallery &&
           galleries.find((g) => g.id === selectedGallery) ? (
             <>
-              <div className="grid grid-cols-1 xl:grid-cols-[1fr_auto] gap-4 mb-6">
-                <h2 className="text-2xl font-semibold text-white min-w-0 truncate">
+              <div className="flex flex-col gap-4 mb-6">
+                <h2 className="text-xl sm:text-2xl font-semibold text-white break-words">
                   {galleries.find((g) => g.id === selectedGallery)?.name}
                 </h2>
-                <div className="flex flex-col sm:flex-row flex-wrap gap-2 w-full xl:w-auto xl:justify-end">
+                <div className="flex flex-col sm:flex-row flex-wrap gap-2">
                   <input
                     type="file"
                     ref={fileInputRef}
