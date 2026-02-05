@@ -80,7 +80,12 @@ router.get("/:id", async (req: Request, res: Response) => {
 
     // Parse order_data for each order to extract items
     customer.orders = orders.map((order: any) => {
-      const orderData = order.orderData ? JSON.parse(order.orderData) : null;
+      let orderData = null;
+      try {
+        orderData = order.orderData ? JSON.parse(order.orderData) : null;
+      } catch (parseError) {
+        console.error("Failed to parse order_data for order", order.id, parseError);
+      }
       return {
         id: order.id,
         orderNumber: order.orderNumber,
@@ -92,6 +97,7 @@ router.get("/:id", async (req: Request, res: Response) => {
         taxAmount: order.taxAmount,
         trackingNumber: order.trackingNumber,
         items: orderData?.items || [],
+        orderData,
       };
     });
 

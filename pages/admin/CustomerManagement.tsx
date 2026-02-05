@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { EditIcon, TrashIcon } from "../../components/Icons";
 import { useToast } from "../../hooks/useToast";
+import { useSiteSettings } from "../../context/SiteSettingsContext";
+import { generateInvoiceHTML } from "../../services/pdfInvoiceGenerator";
 import Pagination from "../../components/Pagination";
 import { apiClient } from "../../services/apiClient";
 
@@ -68,6 +70,47 @@ const CustomerManagement: React.FC = () => {
   const [orderCurrentPage, setOrderCurrentPage] = useState(1);
   const [orderItemsPerPage, setOrderItemsPerPage] = useState(10);
   const { addToast } = useToast();
+  const { siteSettings } = useSiteSettings();
+
+  const toNumber = (value: unknown, fallback = 0) => {
+    const num = Number(value);
+    return Number.isFinite(num) ? num : fallback;
+  };
+
+  const orderStats = useMemo(() => {
+    if (!selectedCustomer) {
+      return {
+        count: 0,
+        totalSpent: 0,
+        averageOrderValue: 0,
+        lastOrderDate: undefined as string | undefined,
+      };
+    }
+
+    const orders = Array.isArray(selectedCustomer.orders)
+      ? selectedCustomer.orders
+      : [];
+    const count = orders.length || toNumber(selectedCustomer.orderCount, 0);
+    const totalSpentFromOrders = orders.reduce(
+      (sum, order) => sum + toNumber(order.total, 0),
+      0,
+    );
+    const totalSpent = Number.isFinite(Number(selectedCustomer.totalSpent))
+      ? toNumber(selectedCustomer.totalSpent, totalSpentFromOrders)
+      : totalSpentFromOrders;
+    const averageOrderValue = count > 0 ? totalSpent / count : 0;
+    const lastOrderDate = orders
+      .map((order) => order.date)
+      .filter(Boolean)
+      .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0];
+
+    return {
+      count,
+      totalSpent,
+      averageOrderValue,
+      lastOrderDate,
+    };
+  }, [selectedCustomer]);
 
   useEffect(() => {
     const loadCustomers = async () => {
@@ -779,13 +822,13 @@ const CustomerManagement: React.FC = () => {
               <div className="bg-slate-700 p-4 rounded-lg">
                 <div className="text-sm text-gray-400 mb-1">Total Orders</div>
                 <div className="text-2xl font-bold text-white">
-                  {selectedCustomer.orderCount}
+                  {orderStats.count}
                 </div>
               </div>
               <div className="bg-slate-700 p-4 rounded-lg">
                 <div className="text-sm text-gray-400 mb-1">Total Spent</div>
                 <div className="text-2xl font-bold text-green-400">
-                  ${Number(selectedCustomer.totalSpent).toFixed(2)}
+                  ${orderStats.totalSpent.toFixed(2)}
                 </div>
               </div>
               <div className="bg-slate-700 p-4 rounded-lg">
@@ -793,7 +836,7 @@ const CustomerManagement: React.FC = () => {
                   Avg Order Value
                 </div>
                 <div className="text-2xl font-bold text-blue-400">
-                  ${Number(selectedCustomer.averageOrderValue).toFixed(2)}
+                  ${orderStats.averageOrderValue.toFixed(2)}
                 </div>
               </div>
               <div className="bg-slate-700 p-4 rounded-lg">
@@ -827,10 +870,8 @@ const CustomerManagement: React.FC = () => {
                 <div>
                   <div className="text-sm text-gray-400">Last Order</div>
                   <div className="text-white">
-                    {selectedCustomer.lastOrderDate
-                      ? new Date(
-                          selectedCustomer.lastOrderDate,
-                        ).toLocaleDateString()
+                    {orderStats.lastOrderDate
+                      ? new Date(orderStats.lastOrderDate).toLocaleDateString()
                       : "No orders yet"}
                   </div>
                 </div>
@@ -841,7 +882,7 @@ const CustomerManagement: React.FC = () => {
                 <h3 className="text-lg font-semibold text-white">
                   Order History
                 </h3>
-                {selectedCustomer.orderCount > 0 && (
+                {orderStats.count > 0 && (
                   <button
                     onClick={() => exportOrdersAsCSV(selectedCustomer)}
                     className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition-colors"
@@ -850,7 +891,7 @@ const CustomerManagement: React.FC = () => {
                   </button>
                 )}
               </div>
-              {selectedCustomer.orderCount === 0 ||
+              {orderStats.count === 0 ||
               !selectedCustomer.orders ||
               selectedCustomer.orders.length === 0 ? (
                 <div className="text-center py-8 border-2 border-dashed border-slate-600 rounded">
@@ -1171,28 +1212,110 @@ const CustomerManagement: React.FC = () => {
                 <div className="flex justify-between text-gray-300">
                   <span>Subtotal</span>
                   <span>
-                    ${(Number(selectedOrderDetail.total) * 0.9).toFixed(2)}
+                    ${toNumber(selectedOrderDetail.subtotal ?? selectedOrderDetail.orderData?.subtotal ?? 0).toFixed(2)}
                   </span>
                 </div>
                 <div className="flex justify-between text-gray-300">
-                  <span>Tax (estimated)</span>
+                  <span>Tax</span>
                   <span>
-                    ${(Number(selectedOrderDetail.total) * 0.1).toFixed(2)}
+                    ${toNumber(selectedOrderDetail.taxAmount ?? selectedOrderDetail.orderData?.tax ?? 0).toFixed(2)}
+                  </span>
+                </div>
+                <div className="flex justify-between text-gray-300">
+                  <span>Shipping</span>
+                  <span>
+                    ${toNumber(selectedOrderDetail.shippingCost ?? selectedOrderDetail.orderData?.shipping ?? 0).toFixed(2)}
                   </span>
                 </div>
                 <div className="border-t border-slate-600 pt-2 flex justify-between text-white font-bold text-lg">
                   <span>Total</span>
-                  <span>${Number(selectedOrderDetail.total).toFixed(2)}</span>
+                  <span>${toNumber(selectedOrderDetail.total ?? selectedOrderDetail.orderData?.total ?? 0).toFixed(2)}</span>
                 </div>
               </div>
             </div>
 
             {/* Actions */}
             <div className="flex gap-3">
-              <button className="flex-1 px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 transition-colors">
+              <button
+                onClick={() => {
+                  if (!selectedCustomer?.email) {
+                    addToast("Customer email not available", "error");
+                    return;
+                  }
+                  const subject = `Order ${selectedOrderDetail.orderNumber}`;
+                  const body = `Hello ${selectedCustomer.firstName || ""},%0D%0A%0D%0ARegarding your order ${selectedOrderDetail.orderNumber}.`;
+                  window.location.href = `mailto:${selectedCustomer.email}?subject=${encodeURIComponent(subject)}&body=${body}`;
+                }}
+                className="flex-1 px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 transition-colors"
+              >
                 📧 Contact Customer
               </button>
-              <button className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
+              <button
+                onClick={() => {
+                  try {
+                    const order = selectedOrderDetail;
+                    const customer = selectedCustomer;
+                    if (!customer) {
+                      addToast("Customer details not available", "error");
+                      return;
+                    }
+                    const invoiceWindow = window.open("", "_blank", "width=900,height=1100");
+                    if (!invoiceWindow) {
+                      addToast("Pop-up blocked. Please allow pop-ups to print the invoice.", "error");
+                      return;
+                    }
+                    const items = (order.items || []).map((item: any, idx: number) => {
+                      const name = item.product?.name || item.productName || `Item ${idx + 1}`;
+                      const price = toNumber(item.product?.price ?? item.price ?? 0, 0);
+                      const quantity = toNumber(item.quantity, 1);
+                      return {
+                        id: String(item.id || idx),
+                        name,
+                        quantity,
+                        price,
+                        total: price * quantity,
+                      };
+                    });
+
+                    const orderData = order.orderData || {};
+                    const shipping = orderData.shippingAddress || {};
+                    const invoiceHtml = generateInvoiceHTML(
+                      {
+                        orderNumber: order.orderNumber,
+                        orderDate: order.date,
+                        storeName: "Your Store",
+                        customerName: `${customer.firstName || ""} ${customer.lastName || ""}`.trim(),
+                        customerEmail: customer.email,
+                        customerPhone: customer.phone,
+                        shippingAddress: {
+                          street: shipping.street || shipping.streetAddress || "",
+                          city: shipping.city || "",
+                          state: shipping.state || "",
+                          zip: shipping.zip || shipping.zipCode || "",
+                          country: shipping.country || "",
+                        },
+                        items,
+                        subtotal: toNumber(order.subtotal ?? orderData.subtotal ?? 0, 0),
+                        tax: toNumber(order.taxAmount ?? orderData.tax ?? 0, 0),
+                        shipping: toNumber(order.shippingCost ?? orderData.shipping ?? 0, 0),
+                        total: toNumber(order.total ?? orderData.total ?? 0, 0),
+                        trackingNumber: order.trackingNumber,
+                      },
+                      siteSettings?.invoiceTemplate,
+                    );
+
+                    invoiceWindow.document.open();
+                    invoiceWindow.document.write(invoiceHtml);
+                    invoiceWindow.document.close();
+                    invoiceWindow.focus();
+                    invoiceWindow.print();
+                  } catch (error) {
+                    console.error("Failed to print invoice:", error);
+                    addToast("Failed to print invoice", "error");
+                  }
+                }}
+                className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+              >
                 📄 Print Invoice
               </button>
               <button
