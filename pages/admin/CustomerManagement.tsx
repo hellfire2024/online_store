@@ -1148,7 +1148,7 @@ const CustomerManagement: React.FC = () => {
                       <div className="text-right">
                       <p className="text-white font-bold text-xl">
                         $
-                        {(Number(item.product.price) * item.quantity).toFixed(
+                        {(Number(item.product?.price ?? item.price ?? 0) * item.quantity).toFixed(
                           2,
                         )}
                       </p>
