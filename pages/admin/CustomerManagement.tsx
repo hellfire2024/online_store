@@ -1108,9 +1108,10 @@ const CustomerManagement: React.FC = () => {
 
       {/* Order Detail Modal */}
       {selectedOrderDetail && (
-        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-60 p-4">
-          <div className="bg-slate-800 p-6 rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto border-2 border-sky-600">
-            <div className="flex justify-between items-start mb-6">
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-60 p-4 overflow-y-auto">
+          <div className="bg-slate-800 rounded-lg max-w-3xl w-full my-8 border-2 border-sky-600 flex flex-col max-h-[95vh]">
+            {/* Fixed Header */}
+            <div className="flex justify-between items-start p-6 border-b border-slate-700 flex-shrink-0">
               <div>
                 <h2 className="text-2xl font-bold text-white">
                   Order #{selectedOrderDetail.orderNumber}
@@ -1121,12 +1122,14 @@ const CustomerManagement: React.FC = () => {
               </div>
               <button
                 onClick={() => setSelectedOrderDetail(null)}
-                className="text-gray-400 hover:text-white text-3xl font-bold"
+                className="text-gray-400 hover:text-white text-3xl font-bold leading-none"
               >
                 ×
               </button>
             </div>
 
+            {/* Scrollable Content */}
+            <div className="overflow-y-auto flex-1 p-6">
             {/* Order Status */}
             <div className="bg-slate-700 p-4 rounded-lg mb-6">
               <div className="flex items-center justify-between">
@@ -1278,7 +1281,7 @@ const CustomerManagement: React.FC = () => {
             </div>
 
             {/* Actions */}
-            <div className="flex gap-3">
+            <div className="flex gap-3 p-6 border-t border-slate-700 flex-shrink-0">
               <button
                 onClick={() => setIsContactModalOpen(true)}
                 className="flex-1 px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 transition-colors"
@@ -1359,6 +1362,7 @@ const CustomerManagement: React.FC = () => {
               >
                 Close
               </button>
+            </div>
             </div>
           </div>
         </div>
