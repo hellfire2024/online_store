@@ -1370,6 +1370,7 @@ const CustomerManagement: React.FC = () => {
         customer={selectedCustomer}
         orderId={selectedOrderDetail?.id}
         orderNumber={selectedOrderDetail?.orderNumber}
+        orderDate={selectedOrderDetail?.date}
       />
     </div>
   );

@@ -13,6 +13,7 @@ interface ContactCustomerModalProps {
   } | null;
   orderId?: string;
   orderNumber?: string;
+  orderDate?: string;
 }
 
 const ContactCustomerModal: React.FC<ContactCustomerModalProps> = ({
@@ -21,11 +22,17 @@ const ContactCustomerModal: React.FC<ContactCustomerModalProps> = ({
   customer,
   orderId,
   orderNumber,
+  orderDate,
 }) => {
   const [message, setMessage] = useState("");
-  const [subject, setSubject] = useState(
-    orderNumber ? `Regarding your order #${orderNumber}` : "Store Support"
-  );
+  const getDefaultSubject = () => {
+    if (orderNumber) {
+      const dateStr = orderDate ? ` from ${new Date(orderDate).toLocaleDateString()}` : "";
+      return `Regarding your order #${orderNumber}${dateStr}`;
+    }
+    return "Store Support";
+  };
+  const [subject, setSubject] = useState(getDefaultSubject());
   const [isSending, setIsSending] = useState(false);
   const { addToast } = useToast();
 
@@ -62,9 +69,7 @@ const ContactCustomerModal: React.FC<ContactCustomerModalProps> = ({
       if (response && response.id) {
         addToast("Message sent to customer successfully", "success");
         setMessage("");
-        setSubject(
-          orderNumber ? `Regarding your order #${orderNumber}` : "Store Support"
-        );
+        setSubject(getDefaultSubject());
         onClose();
       } else {
         addToast("Failed to send message", "error");
