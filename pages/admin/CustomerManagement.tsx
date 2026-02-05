@@ -988,8 +988,8 @@ const CustomerManagement: React.FC = () => {
                               <div className="border-t border-slate-600 pt-2 mt-2">
                                 <div className="space-y-1">
                                   {order.items.map((item: any, idx: number) => {
-                                    const productName = item.product?.name || item.productName || 'Unknown Product';
-                                    const productPrice = item.product?.price || item.price || 0;
+                                    const productName = item.name || item.productName || item.product?.name || 'Unknown Product';
+                                    const productPrice = item.price || item.product?.price || item.basePrice || 0;
                                     return (
                                       <div
                                         key={idx}
@@ -1170,35 +1170,76 @@ const CustomerManagement: React.FC = () => {
               <h3 className="text-lg font-semibold text-white mb-4">
                 Order Items
               </h3>
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {selectedOrderDetail.items.map((item: any, idx: number) => {
-                  const productName = item.product?.name || item.productName || "Unknown Product";
-                  const productPrice = item.product?.price || item.price || 0;
+                  const productName = item.name || item.productName || item.product?.name || "Unknown Product";
+                  const basePrice = item.basePrice || item.price || item.product?.price || 0;
+                  const totalItemPrice = basePrice * item.quantity;
+                  const hasOptions = item.optionsBreakdown && item.optionsBreakdown.length > 0;
+                  const customTextCost = item.customTextCost || 0;
+                  
                   return (
                     <div
                       key={idx}
-                      className="flex items-center justify-between p-3 bg-slate-800 rounded border border-slate-600"
+                      className="bg-slate-800 rounded border border-slate-600 overflow-hidden"
                     >
-                      <div className="flex-1">
-                        <p className="text-white font-semibold text-lg">
-                          {productName}
-                        </p>
-                        <p className="text-gray-400 text-sm">
-                          Price: ${Number(productPrice).toFixed(2)} ×{" "}
-                          {item.quantity}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                      <p className="text-white font-bold text-xl">
-                        $
-                        {(Number(item.product?.price ?? item.price ?? 0) * item.quantity).toFixed(
-                          2,
+                      <div className="flex gap-4 p-4">
+                        {item.productImage && (
+                          <div className="flex-shrink-0">
+                            <img
+                              src={item.productImage}
+                              alt={productName}
+                              className="w-24 h-24 object-cover rounded border border-slate-600"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect fill='%23475569' width='100' height='100'/%3E%3Ctext x='50' y='50' font-size='12' fill='%239ca3af' text-anchor='middle' dy='.3em'%3ENo Image%3C/text%3E%3C/svg%3E";
+                              }}
+                            />
+                          </div>
                         )}
-                      </p>
-                      <p className="text-gray-400 text-xs">
-                        Qty: {item.quantity}
-                      </p>
-                    </div>
+                        <div className="flex-1">
+                          <p className="text-white font-semibold text-lg mb-1">
+                            {productName}
+                          </p>
+                          <div className="text-sm text-gray-400 space-y-1">
+                            <div className="flex justify-between">
+                              <span>Base Price:</span>
+                              <span>${Number(basePrice).toFixed(2)}</span>
+                            </div>
+                            {hasOptions && (
+                              <div className="ml-2 border-l border-slate-600 pl-2 space-y-1">
+                                <div className="font-semibold text-gray-300">Options:</div>
+                                {item.optionsBreakdown.map((option: any, optIdx: number) => (
+                                  <div key={optIdx} className="flex justify-between text-gray-400">
+                                    <span>{option.label}</span>
+                                    <span>+${Number(option.priceDelta).toFixed(2)}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            {item.customText && (
+                              <div className="ml-2 border-l border-slate-600 pl-2">
+                                <div className="font-semibold text-gray-300">Custom Text:</div>
+                                <div className="text-gray-400">"{item.customText}"</div>
+                                {customTextCost > 0 && (
+                                  <div className="flex justify-between text-gray-400 mt-1">
+                                    <span>Text Cost:</span>
+                                    <span>+${Number(customTextCost).toFixed(2)}</span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                            {item.selectedOptions && (
+                              <div className="text-gray-400">
+                                <span className="font-semibold text-gray-300">Selections:</span> {item.selectedOptions}
+                              </div>
+                            )}
+                            <div className="flex justify-between font-semibold text-white pt-2 border-t border-slate-600 mt-2">
+                              <span>Qty: {item.quantity}</span>
+                              <span>${Number(totalItemPrice).toFixed(2)}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   );
                 })}
@@ -1214,24 +1255,24 @@ const CustomerManagement: React.FC = () => {
                 <div className="flex justify-between text-gray-300">
                   <span>Subtotal</span>
                   <span>
-                    ${toNumber(selectedOrderDetail.subtotal ?? selectedOrderDetail.orderData?.subtotal ?? 0).toFixed(2)}
+                    ${toNumber(selectedOrderDetail.orderData?.subtotal ?? selectedOrderDetail.subtotal ?? 0).toFixed(2)}
                   </span>
                 </div>
                 <div className="flex justify-between text-gray-300">
                   <span>Tax</span>
                   <span>
-                    ${toNumber(selectedOrderDetail.taxAmount ?? selectedOrderDetail.orderData?.tax ?? 0).toFixed(2)}
+                    ${toNumber(selectedOrderDetail.orderData?.tax ?? selectedOrderDetail.taxAmount ?? 0).toFixed(2)}
                   </span>
                 </div>
                 <div className="flex justify-between text-gray-300">
                   <span>Shipping</span>
                   <span>
-                    ${toNumber(selectedOrderDetail.shippingCost ?? selectedOrderDetail.orderData?.shipping ?? 0).toFixed(2)}
+                    ${toNumber(selectedOrderDetail.orderData?.shipping ?? selectedOrderDetail.shippingCost ?? 0).toFixed(2)}
                   </span>
                 </div>
                 <div className="border-t border-slate-600 pt-2 flex justify-between text-white font-bold text-lg">
                   <span>Total</span>
-                  <span>${toNumber(selectedOrderDetail.total ?? selectedOrderDetail.orderData?.total ?? 0).toFixed(2)}</span>
+                  <span>${toNumber(selectedOrderDetail.orderData?.total ?? selectedOrderDetail.total ?? 0).toFixed(2)}</span>
                 </div>
               </div>
             </div>
