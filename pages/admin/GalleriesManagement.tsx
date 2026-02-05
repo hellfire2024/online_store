@@ -106,14 +106,14 @@ const GalleriesManagement: React.FC = () => {
   }
 
   return (
-    <div className="w-full">
+    <div className="w-full max-w-full overflow-hidden">
       <h1 className="text-2xl sm:text-3xl font-bold text-white mb-6 sm:mb-8 break-words">
         Galleries Management
       </h1>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-6 lg:gap-8">
+      <div className="grid grid-cols-1 xl:grid-cols-[380px_1fr] gap-4 lg:gap-6">
         {/* Galleries List & Creation */}
-        <div className="bg-slate-800 p-4 sm:p-6 rounded-lg border border-slate-700 self-start w-full">
+        <div className="bg-slate-800 p-4 sm:p-6 rounded-lg border border-slate-700 self-start w-full min-w-0">
           <h2 className="text-xl font-semibold text-white mb-4">Galleries</h2>
           <div className="flex gap-2 mb-4">
             <input
@@ -157,7 +157,7 @@ const GalleriesManagement: React.FC = () => {
         </div>
 
         {/* Selected Gallery Content */}
-        <div className="bg-slate-800 p-4 sm:p-6 rounded-lg border border-slate-700 min-w-0 w-full">
+        <div className="bg-slate-800 p-4 sm:p-6 rounded-lg border border-slate-700 min-w-0 w-full overflow-hidden">
           {selectedGallery &&
           galleries.find((g) => g.id === selectedGallery) ? (
             <>

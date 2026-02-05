@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, Suspense } from "react";
-import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
+import { HashRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { CustomerAuthProvider } from "./context/CustomerAuthContext";
 import { CartProvider } from "./context/CartContext";
 import { ToastProvider } from "./hooks/useToast";
@@ -115,14 +115,36 @@ const App: React.FC = () => {
                                 v7_relativeSplatPath: true,
                               }}
                             >
-                              <div className="flex flex-col min-h-screen">
-                                <AdminLoginModal
-                                  isOpen={isAdminLoginOpen}
-                                  onClose={() => setIsAdminLoginOpen(false)}
-                                />
-                                <Header />
-                                <main className="grow container mx-auto px-4 py-8">
-                                  <Routes>
+                              <AdminLoginModal
+                                isOpen={isAdminLoginOpen}
+                                onClose={() => setIsAdminLoginOpen(false)}
+                              />
+                              <AppContent />
+                            </HashRouter>
+                          </CartProvider>
+                        </PagesProvider>
+                      </ToastProvider>
+                    </ServicesProvider>
+                  </ReviewsProvider>
+                </StaffProvider>
+              </GalleryProvider>
+            </ProductProvider>
+          </SiteSettingsProvider>
+        </UnsavedChangesProvider>
+      </CustomerAuthProvider>
+    </AdminProvider>
+  );
+};
+
+const AppContent: React.FC = () => {
+  const location = useLocation();
+  const isAdminRoute = location.pathname.startsWith('/admin');
+
+  return (
+    <div className="flex flex-col min-h-screen">
+      {!isAdminRoute && <Header />}
+      <main className={isAdminRoute ? "" : "grow container mx-auto px-4 py-8"}>
+        <Routes>
                                     <Route
                                       path="/test-hero"
                                       element={<TestHeroRenderingPage />}
@@ -213,21 +235,8 @@ const App: React.FC = () => {
                                     <Route path="*" element={<CustomPage />} />
                                   </Routes>
                                 </main>
-                                <Footer />
+                                {!isAdminRoute && <Footer />}
                               </div>
-                            </HashRouter>
-                          </CartProvider>
-                        </PagesProvider>
-                      </ToastProvider>
-                    </ServicesProvider>
-                  </ReviewsProvider>
-                </StaffProvider>
-              </GalleryProvider>
-            </ProductProvider>
-          </SiteSettingsProvider>
-        </UnsavedChangesProvider>
-      </CustomerAuthProvider>
-    </AdminProvider>
   );
 };
 
