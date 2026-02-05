@@ -9,7 +9,7 @@ import { calculateTax } from "../services/taxService";
 
 const CheckoutPage: React.FC = () => {
   const { cartItems, clearCart, itemCount } = useCart();
-  const { customer } = useCustomerAuth();
+  const { customer, addAddress } = useCustomerAuth();
   const { siteSettings } = useSiteSettings();
   const { addToast } = useToast();
   const navigate = useNavigate();
@@ -20,6 +20,8 @@ const CheckoutPage: React.FC = () => {
     null,
   );
   const [selectedAddressId, setSelectedAddressId] = useState<string>("");
+  const [showAddAddressModal, setShowAddAddressModal] = useState(false);
+  const [isSavingAddress, setIsSavingAddress] = useState(false);
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -27,6 +29,15 @@ const CheckoutPage: React.FC = () => {
     phone: "",
     address: "",
     city: "",
+  });
+  const [newAddressForm, setNewAddressForm] = useState({
+    firstName: "",
+    lastName: "",
+    streetAddress: "",
+    city: "",
+    state: "",
+    zipCode: "",
+    phone: "",
   });
   const [taxCalculation, setTaxCalculation] = useState({
     subtotal: 0,
@@ -135,6 +146,59 @@ const CheckoutPage: React.FC = () => {
         setShippingState(address.state || "");
         setShippingZip(address.zipCode || "");
       }
+    }
+  };
+
+  // Handle saving a new address
+  const handleSaveNewAddress = async () => {
+    if (
+      !newAddressForm.firstName ||
+      !newAddressForm.lastName ||
+      !newAddressForm.streetAddress ||
+      !newAddressForm.city ||
+      !newAddressForm.state ||
+      !newAddressForm.zipCode
+    ) {
+      addToast("Please fill in all required fields", "error");
+      return;
+    }
+
+    setIsSavingAddress(true);
+    try {
+      const result = await addAddress({
+        type: "shipping",
+        firstName: newAddressForm.firstName,
+        lastName: newAddressForm.lastName,
+        fullName: `${newAddressForm.firstName} ${newAddressForm.lastName}`,
+        streetAddress: newAddressForm.streetAddress,
+        city: newAddressForm.city,
+        state: newAddressForm.state,
+        zipCode: newAddressForm.zipCode,
+        country: "USA",
+        phone: newAddressForm.phone,
+        isDefault: false,
+      });
+
+      if (result.success) {
+        addToast("Address saved successfully", "success");
+        setShowAddAddressModal(false);
+        setNewAddressForm({
+          firstName: "",
+          lastName: "",
+          streetAddress: "",
+          city: "",
+          state: "",
+          zipCode: "",
+          phone: "",
+        });
+        // The customer context will be updated automatically, so the dropdown will refresh
+      } else {
+        addToast(result.error || "Failed to save address", "error");
+      }
+    } catch (error: any) {
+      addToast(error.message || "Failed to save address", "error");
+    } finally {
+      setIsSavingAddress(false);
     }
   };
 
@@ -631,9 +695,18 @@ const CheckoutPage: React.FC = () => {
                 customer.addresses &&
                 customer.addresses.length > 0 && (
                   <div className="mb-6">
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Select Shipping Address
-                    </label>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="block text-sm font-medium text-gray-300">
+                        Select Shipping Address
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setShowAddAddressModal(true)}
+                        className="text-sm text-sky-400 hover:text-sky-300 font-medium transition-colors"
+                      >
+                        + Add New Address
+                      </button>
+                    </div>
                     <select
                       value={selectedAddressId}
                       onChange={(e) => handleAddressSelect(e.target.value)}
@@ -649,7 +722,6 @@ const CheckoutPage: React.FC = () => {
                             {addr.isDefault ? " (Default)" : ""}
                           </option>
                         ))}
-                      <option value="new">+ Add New Address</option>
                     </select>
                   </div>
                 )}
@@ -840,6 +912,136 @@ const CheckoutPage: React.FC = () => {
                 <span>Total</span>
                 <span>${toNumber(taxCalculation.total).toFixed(2)}</span>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add New Address Modal */}
+      {showAddAddressModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-800 rounded-lg shadow-2xl border border-slate-700 max-w-md w-full p-6">
+            <h3 className="text-2xl font-semibold text-white mb-6">
+              Add New Address
+            </h3>
+
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <input
+                  type="text"
+                  placeholder="First Name"
+                  value={newAddressForm.firstName}
+                  onChange={(e) =>
+                    setNewAddressForm({
+                      ...newAddressForm,
+                      firstName: e.target.value,
+                    })
+                  }
+                  className={inputClasses}
+                />
+                <input
+                  type="text"
+                  placeholder="Last Name"
+                  value={newAddressForm.lastName}
+                  onChange={(e) =>
+                    setNewAddressForm({
+                      ...newAddressForm,
+                      lastName: e.target.value,
+                    })
+                  }
+                  className={inputClasses}
+                />
+              </div>
+
+              <input
+                type="text"
+                placeholder="Street Address"
+                value={newAddressForm.streetAddress}
+                onChange={(e) =>
+                  setNewAddressForm({
+                    ...newAddressForm,
+                    streetAddress: e.target.value,
+                  })
+                }
+                className={inputClasses}
+              />
+
+              <div className="grid grid-cols-2 gap-4">
+                <input
+                  type="text"
+                  placeholder="City"
+                  value={newAddressForm.city}
+                  onChange={(e) =>
+                    setNewAddressForm({
+                      ...newAddressForm,
+                      city: e.target.value,
+                    })
+                  }
+                  className={inputClasses}
+                />
+                <select
+                  value={newAddressForm.state}
+                  onChange={(e) =>
+                    setNewAddressForm({
+                      ...newAddressForm,
+                      state: e.target.value,
+                    })
+                  }
+                  className={inputClasses}
+                >
+                  <option value="">State</option>
+                  {usStates.map((state) => (
+                    <option key={state} value={state}>
+                      {state}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <input
+                type="text"
+                placeholder="ZIP Code"
+                value={newAddressForm.zipCode}
+                onChange={(e) =>
+                  setNewAddressForm({
+                    ...newAddressForm,
+                    zipCode: e.target.value,
+                  })
+                }
+                className={inputClasses}
+              />
+
+              <input
+                type="tel"
+                placeholder="Phone Number (Optional)"
+                value={newAddressForm.phone}
+                onChange={(e) =>
+                  setNewAddressForm({
+                    ...newAddressForm,
+                    phone: e.target.value,
+                  })
+                }
+                className={inputClasses}
+              />
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                type="button"
+                onClick={() => setShowAddAddressModal(false)}
+                disabled={isSavingAddress}
+                className="flex-1 bg-slate-700 text-white font-medium py-2 rounded-lg hover:bg-slate-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveNewAddress}
+                disabled={isSavingAddress}
+                className="flex-1 bg-sky-500 text-white font-medium py-2 rounded-lg hover:bg-sky-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSavingAddress ? "Saving..." : "Save Address"}
+              </button>
             </div>
           </div>
         </div>
