@@ -111,9 +111,9 @@ const GalleriesManagement: React.FC = () => {
         Galleries Management
       </h1>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-6 lg:gap-8">
         {/* Galleries List & Creation */}
-        <div className="bg-slate-800 p-6 rounded-lg border border-slate-700 self-start">
+        <div className="bg-slate-800 p-4 sm:p-6 rounded-lg border border-slate-700 self-start w-full">
           <h2 className="text-xl font-semibold text-white mb-4">Galleries</h2>
           <div className="flex gap-2 mb-4">
             <input
@@ -157,7 +157,7 @@ const GalleriesManagement: React.FC = () => {
         </div>
 
         {/* Selected Gallery Content */}
-        <div className="bg-slate-800 p-6 rounded-lg border border-slate-700 min-w-0">
+        <div className="bg-slate-800 p-4 sm:p-6 rounded-lg border border-slate-700 min-w-0 w-full">
           {selectedGallery &&
           galleries.find((g) => g.id === selectedGallery) ? (
             <>
@@ -165,7 +165,7 @@ const GalleriesManagement: React.FC = () => {
                 <h2 className="text-2xl font-semibold text-white min-w-0 truncate">
                   {galleries.find((g) => g.id === selectedGallery)?.name}
                 </h2>
-                <div className="flex flex-wrap gap-2 w-full xl:w-auto xl:justify-end">
+                <div className="flex flex-col sm:flex-row flex-wrap gap-2 w-full xl:w-auto xl:justify-end">
                   <input
                     type="file"
                     ref={fileInputRef}
@@ -183,13 +183,13 @@ const GalleriesManagement: React.FC = () => {
                   />
                   <button
                     onClick={() => fileInputRef.current?.click()}
-                    className="flex items-center gap-2 bg-slate-600 hover:bg-slate-500 text-white font-bold py-2 px-4 rounded-lg whitespace-nowrap w-full sm:w-auto"
+                    className="flex items-center justify-center gap-2 bg-slate-600 hover:bg-slate-500 text-white font-bold py-2 px-4 rounded-lg whitespace-nowrap w-full sm:w-auto"
                   >
                     <UploadIcon /> Add Image(s)
                   </button>
                   <button
                     onClick={() => folderInputRef.current?.click()}
-                    className="flex items-center gap-2 bg-slate-600 hover:bg-slate-500 text-white font-bold py-2 px-4 rounded-lg whitespace-nowrap w-full sm:w-auto"
+                    className="flex items-center justify-center gap-2 bg-slate-600 hover:bg-slate-500 text-white font-bold py-2 px-4 rounded-lg whitespace-nowrap w-full sm:w-auto"
                   >
                     <UploadIcon /> Add Folder
                   </button>
@@ -204,13 +204,13 @@ const GalleriesManagement: React.FC = () => {
                 
                 return (
                   <>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                       {paginatedImages.map((image) => (
                   <div key={image.id} className="relative group">
                     <img
                       src={image.imageUrl}
                       alt={image.name}
-                      className="w-full h-40 object-cover rounded-md bg-slate-700"
+                      className="w-full h-44 sm:h-40 object-cover rounded-md bg-slate-700"
                     />
                     <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-2">
                       <p className="text-white text-xs wrap-break-word">

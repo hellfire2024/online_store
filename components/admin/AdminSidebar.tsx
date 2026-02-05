@@ -68,7 +68,7 @@ const AdminSidebar: React.FC = () => {
 
   return (
     <aside
-      className="w-64 shrink-0 bg-slate-800 p-4 flex flex-col border-r border-slate-700 overflow-y-auto h-screen scrollbar-thin scrollbar-track-slate-800 scrollbar-thumb-slate-700 hover:scrollbar-thumb-slate-600"
+      className="w-full lg:w-64 shrink-0 bg-slate-800 p-4 flex flex-col border-b lg:border-r border-slate-700 lg:overflow-y-auto lg:h-screen scrollbar-thin scrollbar-track-slate-800 scrollbar-thumb-slate-700 hover:scrollbar-thumb-slate-600"
       style={{
         scrollbarWidth: "thin",
         scrollbarColor: "#475569 #1e293b",

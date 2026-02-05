@@ -46,10 +46,10 @@ const AdminPage: React.FC = () => {
   }
 
   return (
-    <div className="flex h-screen bg-slate-900 text-gray-300">
+    <div className="flex flex-col lg:flex-row min-h-screen bg-slate-900 text-gray-300">
       <AdminSidebar />
-      <main className="grow overflow-auto">
-        <div className="max-w-7xl mx-auto p-8">
+      <main className="grow w-full overflow-auto">
+        <div className="w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
           <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route
