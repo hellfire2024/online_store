@@ -944,22 +944,26 @@ const CustomerManagement: React.FC = () => {
                               </div>
                               <div className="border-t border-slate-600 pt-2 mt-2">
                                 <div className="space-y-1">
-                                  {order.items.map((item: any, idx: number) => (
-                                    <div
-                                      key={idx}
-                                      className="flex justify-between text-xs"
-                                    >
-                                      <span className="text-gray-300">
-                                        {item.product.name} × {item.quantity}
-                                      </span>
-                                      <span className="text-gray-400">
-                                        $
-                                        {(
-                                          item.product.price * item.quantity
-                                        ).toFixed(2)}
-                                      </span>
-                                    </div>
-                                  ))}
+                                  {order.items.map((item: any, idx: number) => {
+                                    const productName = item.product?.name || item.productName || 'Unknown Product';
+                                    const productPrice = item.product?.price || item.price || 0;
+                                    return (
+                                      <div
+                                        key={idx}
+                                        className="flex justify-between text-xs"
+                                      >
+                                        <span className="text-gray-300">
+                                          {productName} × {item.quantity}
+                                        </span>
+                                        <span className="text-gray-400">
+                                          $
+                                          {(
+                                            productPrice * item.quantity
+                                          ).toFixed(2)}
+                                        </span>
+                                      </div>
+                                    );
+                                  })}
                                 </div>
                               </div>
                               {order.trackingNumber && (
