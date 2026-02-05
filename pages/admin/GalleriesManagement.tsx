@@ -111,9 +111,9 @@ const GalleriesManagement: React.FC = () => {
         Galleries Management
       </h1>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-8">
         {/* Galleries List & Creation */}
-        <div className="md:col-span-1 bg-slate-800 p-6 rounded-lg border border-slate-700 self-start">
+        <div className="bg-slate-800 p-6 rounded-lg border border-slate-700 self-start">
           <h2 className="text-xl font-semibold text-white mb-4">Galleries</h2>
           <div className="flex gap-2 mb-4">
             <input
@@ -157,7 +157,7 @@ const GalleriesManagement: React.FC = () => {
         </div>
 
         {/* Selected Gallery Content */}
-        <div className="md:col-span-2 bg-slate-800 p-6 rounded-lg border border-slate-700">
+        <div className="bg-slate-800 p-6 rounded-lg border border-slate-700 min-w-0">
           {selectedGallery &&
           galleries.find((g) => g.id === selectedGallery) ? (
             <>
@@ -204,13 +204,13 @@ const GalleriesManagement: React.FC = () => {
                 
                 return (
                   <>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                       {paginatedImages.map((image) => (
                   <div key={image.id} className="relative group">
                     <img
                       src={image.imageUrl}
                       alt={image.name}
-                      className="w-full h-32 object-cover rounded-md bg-slate-700"
+                      className="w-full h-40 object-cover rounded-md bg-slate-700"
                     />
                     <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-2">
                       <p className="text-white text-xs wrap-break-word">
