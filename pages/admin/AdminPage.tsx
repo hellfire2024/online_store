@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Routes, Route, useNavigate, Navigate } from "react-router-dom";
 import { useAdmin } from "../../context/AdminContext";
 import AdminSidebar from "../../components/admin/AdminSidebar";
@@ -34,6 +34,7 @@ const PermissionRoute: React.FC<{
 const AdminPage: React.FC = () => {
   const { isAdminAuthenticated } = useAdmin();
   const navigate = useNavigate();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     if (!isAdminAuthenticated) {
@@ -47,7 +48,18 @@ const AdminPage: React.FC = () => {
 
   return (
     <div className="flex flex-col lg:flex-row min-h-screen bg-slate-900 text-gray-300">
-      <AdminSidebar />
+      {/* Mobile Menu Button */}
+      <button
+        onClick={() => setIsMobileMenuOpen(true)}
+        className="lg:hidden fixed top-4 left-4 z-40 p-2 bg-slate-800 rounded-lg text-white hover:bg-slate-700 shadow-lg"
+        aria-label="Open menu"
+      >
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      </button>
+      
+      <AdminSidebar isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)} />
       <main className="grow w-full overflow-auto">
         <div className="w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
           <Routes>

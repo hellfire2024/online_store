@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import PromptedNavLink from "./PromptedNavLink";
 import {
   DashboardIcon,
@@ -36,13 +36,47 @@ const ChevronIcon: React.FC<{ isOpen: boolean }> = ({ isOpen }) => (
   </svg>
 );
 
-const AdminSidebar: React.FC = () => {
+interface AdminSidebarProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
+const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen = true, onClose }) => {
   const { logoutAdmin } = useAdmin();
   const { can } = usePermissions();
   const navigate = useNavigate();
   const [expandedSections, setExpandedSections] = useState<{
     [key: string]: boolean;
   }>({});
+
+  // Close mobile menu on navigation
+  const handleNavClick = () => {
+    if (onClose && window.innerWidth < 1024) {
+      onClose();
+    }
+  };
+
+  // Close on escape key
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && onClose) {
+        onClose();
+      }
+    };
+    
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscape);
+      // Prevent body scroll when mobile menu is open
+      if (window.innerWidth < 1024) {
+        document.body.style.overflow = 'hidden';
+      }
+    }
+    
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+      document.body.style.overflow = '';
+    };
+  }, [isOpen, onClose]);
 
   const toggleSection = (section: string) => {
     setExpandedSections((prev) => ({
@@ -54,6 +88,7 @@ const AdminSidebar: React.FC = () => {
   const handleLogout = () => {
     logoutAdmin();
     navigate("/");
+    if (onClose) onClose();
   };
 
   const linkClass =
@@ -67,18 +102,49 @@ const AdminSidebar: React.FC = () => {
     "flex items-center justify-between px-3 py-2 cursor-pointer text-xs font-semibold text-gray-400 uppercase tracking-wider hover:text-gray-300 transition-colors";
 
   return (
-    <aside
-      className="w-full lg:w-64 shrink-0 bg-slate-800 p-4 flex flex-col border-b lg:border-r border-slate-700 lg:overflow-y-auto lg:h-screen scrollbar-thin scrollbar-track-slate-800 scrollbar-thumb-slate-700 hover:scrollbar-thumb-slate-600"
-      style={{
-        scrollbarWidth: "thin",
-        scrollbarColor: "#475569 #1e293b",
-      }}
-    >
-      <div className="text-2xl font-bold text-white tracking-wider mb-10 px-2">
-        Admin<span className="text-sky-400">Panel</span>
-      </div>
-      <nav className="grow space-y-1">
-        <PromptedNavLink to="/admin" end className={getNavLinkClass}>
+    <>
+      {/* Mobile Overlay */}
+      {isOpen && onClose && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden transition-opacity"
+          onClick={onClose}
+          aria-hidden="true"
+        />
+      )}
+      
+      {/* Sidebar */}
+      <aside
+        className={`
+          fixed lg:static inset-y-0 left-0 z-50
+          w-72 lg:w-64 shrink-0 bg-slate-800 p-4 flex flex-col 
+          border-r border-slate-700 overflow-y-auto
+          transition-transform duration-300 ease-in-out
+          ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+          scrollbar-thin scrollbar-track-slate-800 scrollbar-thumb-slate-700 hover:scrollbar-thumb-slate-600
+        `}
+        style={{
+          scrollbarWidth: "thin",
+          scrollbarColor: "#475569 #1e293b",
+        }}
+      >
+        {/* Mobile Close Button */}
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="lg:hidden absolute top-4 right-4 p-2 text-gray-400 hover:text-white transition-colors"
+            aria-label="Close menu"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        )}
+        
+        <div className="text-2xl font-bold text-white tracking-wider mb-10 px-2">
+          Admin<span className="text-sky-400">Panel</span>
+        </div>
+        <nav className="grow space-y-1" onClick={handleNavClick}>
+          <PromptedNavLink to="/admin" end className={getNavLinkClass}>
           <DashboardIcon className="w-6 h-6 mr-3" />
           Dashboard
         </PromptedNavLink>
@@ -227,6 +293,7 @@ const AdminSidebar: React.FC = () => {
         </button>
       </div>
     </aside>
+    </>
   );
 };
 
