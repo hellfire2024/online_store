@@ -161,11 +161,11 @@ const GalleriesManagement: React.FC = () => {
           {selectedGallery &&
           galleries.find((g) => g.id === selectedGallery) ? (
             <>
-              <div className="flex justify-between items-center mb-6">
+              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-6">
                 <h2 className="text-2xl font-semibold text-white">
                   {galleries.find((g) => g.id === selectedGallery)?.name}
                 </h2>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2 w-full md:w-auto">
                   <input
                     type="file"
                     ref={fileInputRef}
@@ -183,13 +183,13 @@ const GalleriesManagement: React.FC = () => {
                   />
                   <button
                     onClick={() => fileInputRef.current?.click()}
-                    className="flex items-center gap-2 bg-slate-600 hover:bg-slate-500 text-white font-bold py-2 px-4 rounded-lg"
+                    className="flex items-center gap-2 bg-slate-600 hover:bg-slate-500 text-white font-bold py-2 px-4 rounded-lg whitespace-nowrap"
                   >
                     <UploadIcon /> Add Image(s)
                   </button>
                   <button
                     onClick={() => folderInputRef.current?.click()}
-                    className="flex items-center gap-2 bg-slate-600 hover:bg-slate-500 text-white font-bold py-2 px-4 rounded-lg"
+                    className="flex items-center gap-2 bg-slate-600 hover:bg-slate-500 text-white font-bold py-2 px-4 rounded-lg whitespace-nowrap"
                   >
                     <UploadIcon /> Add Folder
                   </button>
