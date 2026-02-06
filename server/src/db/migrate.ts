@@ -110,6 +110,11 @@ ALTER TABLE products
   ADD COLUMN IF NOT EXISTS allow_custom_image_upload BOOLEAN DEFAULT FALSE,
   ADD COLUMN IF NOT EXISTS custom_image_upload_price DECIMAL(10,2) DEFAULT 0.00;
 
+-- Clean up: Set custom_image_upload_price to NULL for products where feature is disabled
+UPDATE products
+  SET custom_image_upload_price = NULL
+  WHERE allow_custom_image_upload = FALSE AND custom_image_upload_price = 0.00;
+
 CREATE TABLE IF NOT EXISTS product_option_lists (
   id VARCHAR(36) PRIMARY KEY,
   product_id VARCHAR(36) NOT NULL,
