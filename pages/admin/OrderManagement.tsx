@@ -8,6 +8,11 @@ interface OrderItem {
   productName: string;
   quantity: number;
   price: number;
+  customization?: {
+    type: "gallery" | "upload";
+    value: string;
+    fileName?: string;
+  };
 }
 
 interface Order {
@@ -346,10 +351,40 @@ const OrderManagement: React.FC = () => {
           </div>
           <div className="mb-4">
             <p className="text-gray-400 text-sm mb-2">Items</p>
-            <div className="space-y-1">
-              {selectedOrder.items.map((item, idx) => (
-                <p key={idx} className="text-gray-300 text-sm">{item.productName} x {item.quantity} = ${(item.price * item.quantity).toFixed(2)}</p>
-              ))}
+            <div className="space-y-3">
+              {selectedOrder.items.map((item, idx) => {
+                const customUploadImageUrl =
+                  item.customization?.type === "upload"
+                    ? item.customization.value
+                    : undefined;
+                const customUploadFileName =
+                  item.customization?.type === "upload"
+                    ? item.customization.fileName
+                    : undefined;
+
+                return (
+                  <div key={idx} className="text-gray-300 text-sm">
+                    <div>
+                      {item.productName} x {item.quantity} = $
+                      {(item.price * item.quantity).toFixed(2)}
+                    </div>
+                    {customUploadImageUrl && (
+                      <div className="mt-2">
+                        <a
+                          href={customUploadImageUrl}
+                          download={
+                            customUploadFileName ||
+                            `${item.productName}-custom-upload.png`
+                          }
+                          className="text-xs text-sky-300 hover:text-sky-200"
+                        >
+                          Download original upload
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
           <div className="border-t border-slate-600 pt-4">

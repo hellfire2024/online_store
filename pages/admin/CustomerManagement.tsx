@@ -1241,6 +1241,16 @@ const CustomerManagement: React.FC = () => {
                                     "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect fill='%23475569' width='100' height='100'/%3E%3Ctext x='50' y='50' font-size='12' fill='%239ca3af' text-anchor='middle' dy='.3em'%3ENo Image%3C/text%3E%3C/svg%3E";
                                 }}
                               />
+                              <a
+                                href={customUploadImageUrl}
+                                download={
+                                  customUploadFileName ||
+                                  `${productName}-custom-upload.png`
+                                }
+                                className="mt-2 inline-flex text-xs text-sky-300 hover:text-sky-200"
+                              >
+                                Download original
+                              </a>
                             </div>
                           )}
                           {customGalleryImageUrl && (
