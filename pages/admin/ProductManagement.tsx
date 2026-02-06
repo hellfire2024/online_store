@@ -110,9 +110,10 @@ const SortableOptionList: React.FC<SortableOptionListProps> = ({
         <button
           type="button"
           onClick={onDelete}
-          className="text-xs px-3 py-2 bg-red-700/60 border border-red-600 rounded text-red-100 hover:bg-red-700"
+          className="text-gray-400 hover:text-red-500 transition-colors"
+          title="Delete list"
         >
-          Delete List
+          <TrashIcon className="w-4 h-4" />
         </button>
       </div>
 
