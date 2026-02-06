@@ -10,14 +10,7 @@ const TrashIcon: React.FC = () => (
     height="20"
     viewBox="0 0 24 24"
     fill="none"
-  const customImageCost =
-    item.customization?.type === "upload" &&
-    item.product.allowCustomImageUpload &&
-    item.product.customImageUploadPrice
-      ? toNumber(item.product.customImageUploadPrice)
-      : 0;
-
-  const finalPrice = basePrice + optionsDelta + customTextCost + customImageCost;
+    stroke="currentColor"
     strokeWidth="2"
     strokeLinecap="round"
     strokeLinejoin="round"
@@ -49,16 +42,6 @@ const CartItemRow: React.FC<{ item: CartItem }> = ({ item }) => {
       const selectedOptionIds = item.selectedOptions?.[list.id] || [];
       if (Array.isArray(selectedOptionIds)) {
         selectedOptionIds.forEach((optionId) => {
-        {customImageCost > 0 && (
-          <div className="mt-2 bg-slate-700 p-2 rounded-lg">
-            <p className="text-xs font-semibold text-sky-400 mb-1">
-              Custom Image Upload Fee:
-            </p>
-            <p className="text-xs text-gray-300">
-              +${customImageCost.toFixed(2)}
-            </p>
-          </div>
-        )}
           const option = list.options.find((o) => o.id === optionId);
           if (option) {
             const priceDelta = toNumber(option.priceDelta);
@@ -93,12 +76,19 @@ const CartItemRow: React.FC<{ item: CartItem }> = ({ item }) => {
       item.customText.length * toNumber(item.product.customTextPricePerChar);
   }
 
+  const customImageCost =
+    item.customization?.type === "upload" &&
+    item.product.allowCustomImageUpload &&
+    item.product.customImageUploadPrice
+      ? toNumber(item.product.customImageUploadPrice)
+      : 0;
+
   const basePrice = toNumber(item.product.price);
-  const finalPrice = basePrice + optionsDelta + customTextCost;
+  const finalPrice = basePrice + optionsDelta + customTextCost + customImageCost;
 
   return (
     <div className="flex items-start py-5 border-b border-slate-700 gap-4">
-      <div className="flex-shrink-0">
+      <div className="shrink-0">
         <img
           src={item.product.imageUrl}
           alt={item.product.name}
@@ -127,6 +117,16 @@ const CartItemRow: React.FC<{ item: CartItem }> = ({ item }) => {
         <p className="text-sm text-gray-400 mt-1">
           Item total (each): ${finalPrice.toFixed(2)}
         </p>
+        {customImageCost > 0 && (
+          <div className="mt-2 bg-slate-700 p-2 rounded-lg">
+            <p className="text-xs font-semibold text-sky-400 mb-1">
+              Custom Image Upload Fee:
+            </p>
+            <p className="text-xs text-gray-300">
+              +${customImageCost.toFixed(2)}
+            </p>
+          </div>
+        )}
         {item.customization && (
           <div className="mt-2 bg-slate-700 p-2 rounded-lg">
             <div className="flex items-center gap-2">
@@ -165,7 +165,7 @@ const CartItemRow: React.FC<{ item: CartItem }> = ({ item }) => {
           </div>
         )}
       </div>
-      <div className="flex items-center space-x-4 flex-shrink-0">
+      <div className="flex items-center space-x-4 shrink-0">
         <input
           type="number"
           min="1"

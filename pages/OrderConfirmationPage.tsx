@@ -32,6 +32,7 @@ interface OrderDetails {
     customText?: string; // Custom engraving text
     customTextCharCount?: number;
     customTextCost?: number;
+    customImageCost?: number;
   }>;
   shippingAddress: {
     firstName: string;
