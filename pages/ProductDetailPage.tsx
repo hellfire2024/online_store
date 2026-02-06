@@ -259,8 +259,16 @@ const ProductDetailPage: React.FC = () => {
     ) {
       price += customText.length * Number(product.customTextPricePerChar);
     }
+    // Add custom image upload cost
+    if (
+      uploadedImage &&
+      product.allowCustomImageUpload &&
+      product.customImageUploadPrice
+    ) {
+      price += Number(product.customImageUploadPrice);
+    }
     return price;
-  }, [product, selectedOptions, customText]);
+  }, [product, selectedOptions, customText, uploadedImage]);
 
   if (loading || !product) {
     return (
