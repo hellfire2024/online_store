@@ -1247,7 +1247,7 @@ const CustomerManagement: React.FC = () => {
                                   customUploadFileName ||
                                   `${productName}-custom-upload.png`
                                 }
-                                className="mt-2 inline-flex text-xs text-sky-300 hover:text-sky-200"
+                                className="mt-2 inline-flex items-center gap-1 rounded-md border border-slate-600 bg-slate-700 px-2 py-1 text-xs text-sky-300 hover:bg-slate-600 hover:text-sky-200"
                               >
                                 Download original
                               </a>
