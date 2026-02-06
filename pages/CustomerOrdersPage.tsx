@@ -566,39 +566,84 @@ const CustomerOrdersPage: React.FC = () => {
                           <h4 className="text-sm font-semibold text-gray-300 mb-3">
                             Order Items
                           </h4>
-                          <div className="space-y-2 max-h-60 overflow-y-auto">
-                            {order.items.map((item: any, idx) => (
-                              <div
-                                key={idx}
-                                className="flex items-center justify-between p-2 bg-slate-800/50 rounded"
-                              >
-                                <div className="flex-1">
-                                  <p className="text-white font-medium">
-                                    {item.name ||
-                                      (item.product && item.product.name) ||
-                                      "Unknown Item"}
-                                  </p>
-                                  <p className="text-gray-400 text-sm">
-                                    Qty: {item.quantity} × $
-                                    {Number(
-                                      item.price ||
-                                        (item.product && item.product.price) ||
-                                        0,
-                                    ).toFixed(2)}
-                                  </p>
+                          <div className="space-y-3 max-h-60 overflow-y-auto">
+                            {order.items.map((item: any, idx) => {
+                              const productName =
+                                item.name ||
+                                item.productName ||
+                                item.product?.name ||
+                                "Unknown Item";
+                              const basePrice =
+                                item.basePrice || item.price || item.product?.price || 0;
+                              const totalItemPrice = basePrice * (item.quantity || 1);
+                              const hasOptions =
+                                item.optionsBreakdown && item.optionsBreakdown.length > 0;
+                              const customTextCost = item.customTextCost || 0;
+
+                              return (
+                                <div
+                                  key={idx}
+                                  className="bg-slate-800/50 rounded border border-slate-700 p-3"
+                                >
+                                  <div className="flex gap-3">
+                                    {(item.productImage || item.customization?.value) && (
+                                      <div className="flex-shrink-0">
+                                        <img
+                                          src={item.productImage || item.customization?.value}
+                                          alt={productName}
+                                          className="w-16 h-16 object-cover rounded border border-slate-600"
+                                          onError={(e) => {
+                                            (e.target as HTMLImageElement).src =
+                                              "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect fill='%23475569' width='100' height='100'/%3E%3Ctext x='50' y='50' font-size='12' fill='%239ca3af' text-anchor='middle' dy='.3em'%3ENo Image%3C/text%3E%3C/svg%3E";
+                                          }}
+                                        />
+                                      </div>
+                                    )}
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-white font-medium truncate">
+                                        {productName}
+                                      </p>
+                                      <div className="text-gray-400 text-xs space-y-1 mt-1">
+                                        <div className="flex justify-between">
+                                          <span>Base Price:</span>
+                                          <span>${Number(basePrice).toFixed(2)}</span>
+                                        </div>
+                                        {item.selectedOptions && (
+                                          <div className="text-sky-400">
+                                            Selections: {item.selectedOptions}
+                                          </div>
+                                        )}
+                                        {hasOptions && (
+                                          <div className="space-y-1">
+                                            <div className="text-gray-300">Options:</div>
+                                            {item.optionsBreakdown.map(
+                                              (option: any, optIdx: number) => (
+                                                <div key={optIdx} className="flex justify-between">
+                                                  <span>{option.label}</span>
+                                                  <span>+${Number(option.priceDelta).toFixed(2)}</span>
+                                                </div>
+                                              ),
+                                            )}
+                                          </div>
+                                        )}
+                                        {item.customText && (
+                                          <div className="text-gray-300">
+                                            Custom Text: "{item.customText}"
+                                            {customTextCost > 0 && (
+                                              <span className="text-gray-400"> • +${Number(customTextCost).toFixed(2)}</span>
+                                            )}
+                                          </div>
+                                        )}
+                                      </div>
+                                      <div className="flex justify-between font-semibold text-white pt-2 border-t border-slate-600 mt-2 text-sm">
+                                        <span>Qty: {item.quantity}</span>
+                                        <span>${Number(totalItemPrice).toFixed(2)}</span>
+                                      </div>
+                                    </div>
+                                  </div>
                                 </div>
-                                <div className="text-right">
-                                  <p className="text-white font-bold">
-                                    $
-                                    {(
-                                      (item.price ||
-                                        (item.product && item.product.price) ||
-                                        0) * item.quantity
-                                    ).toFixed(2)}
-                                  </p>
-                                </div>
-                              </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         </div>
 
