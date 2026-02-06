@@ -328,7 +328,7 @@ const ProductManagement: React.FC = () => {
       customTextPricePerChar: 0.1,
       customTextMaxLength: 100,
       allowCustomImageUpload: false,
-      customImageUploadPrice: 0,
+      customImageUploadPrice: undefined,
     };
     setNewProduct(newProd);
     setOriginalProduct(newProd);
@@ -402,7 +402,10 @@ const ProductManagement: React.FC = () => {
     >,
   ) => {
     const { name, value, type } = e.target;
-    const parsedValue = type === "number" ? parseFloat(value) : value;
+    let parsedValue: any = value;
+    if (type === "number") {
+      parsedValue = value === "" ? undefined : parseFloat(value);
+    }
 
     if (newProduct) {
       setNewProduct((prev) => ({ ...prev!, [name]: parsedValue }));
