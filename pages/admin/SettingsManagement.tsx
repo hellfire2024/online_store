@@ -888,9 +888,10 @@ const SettingsManagement: React.FC = () => {
                           },
                         }));
                       }}
-                      className="px-3 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm"
+                      className="text-gray-400 hover:text-red-500 transition-colors"
+                      title="Delete link"
                     >
-                      Delete
+                      <TrashIcon className="w-4 h-4" />
                     </button>
                   </div>
                 ))}
@@ -2346,9 +2347,10 @@ const SettingsManagement: React.FC = () => {
                                 );
                                 addToast("Tax rule deleted", "success");
                               }}
-                              className="px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-sm"
+                              className="text-gray-400 hover:text-red-500 transition-colors"
+                              title="Delete tax rule"
                             >
-                              Delete
+                              <TrashIcon className="w-4 h-4" />
                             </button>
                           </div>
                         </div>
@@ -2962,9 +2964,10 @@ const SettingsManagement: React.FC = () => {
                           setSettings({ ...settings, segmentRules: updated });
                           addToast("Segment removed", "info");
                         }}
-                        className="text-red-400 hover:text-red-300 text-sm font-medium"
+                        className="text-gray-400 hover:text-red-500 transition-colors flex-shrink-0"
+                        title="Delete segment"
                       >
-                        Delete
+                        <TrashIcon className="w-4 h-4" />
                       </button>
                     </div>
                   </div>

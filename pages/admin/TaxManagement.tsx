@@ -3,6 +3,7 @@ import { useSiteSettings } from '../../context/SiteSettingsContext';
 import { TaxRule } from '../../types';
 import { US_STATES } from '../../services/taxService';
 import { useToast } from '../../hooks/useToast';
+import { TrashIcon } from '../../components/Icons';
 
 const TaxManagement: React.FC = () => {
   const { siteSettings, updateSiteSettings } = useSiteSettings();
@@ -261,9 +262,10 @@ const TaxManagement: React.FC = () => {
                     </button>
                     <button
                       onClick={() => handleDeleteRule(rule.id)}
-                      className="px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+                      className="text-gray-400 hover:text-red-500 transition-colors"
+                      title="Delete tax rule"
                     >
-                      Delete
+                      <TrashIcon className="w-4 h-4" />
                     </button>
                   </div>
                 </div>

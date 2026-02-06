@@ -39,6 +39,7 @@ import Underline from "@tiptap/extension-underline";
 import TextAlign from "@tiptap/extension-text-align";
 import Highlight from "@tiptap/extension-highlight";
 import ImageUploadInput from "../../components/admin/ImageUploadInput";
+import { TrashIcon } from "../../components/Icons";
 
 // Page type templates with required fields and defaults
 const PAGE_TEMPLATES = {
@@ -1133,9 +1134,10 @@ const PageEditor: React.FC = () => {
               <button
                 type="button"
                 onClick={() => deleteField(field.id)}
-                className="text-red-400 hover:text-red-300 text-sm px-2"
+                className="text-gray-400 hover:text-red-500 transition-colors"
+                title="Delete field"
               >
-                Delete
+                <TrashIcon className="w-4 h-4" />
               </button>
             </div>
           </div>
