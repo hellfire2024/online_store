@@ -1095,7 +1095,7 @@ const ProductManagement: React.FC = () => {
                         Allow Custom Image Upload
                       </label>
                     </div>
-                    {currentProduct.allowCustomImageUpload && (
+                    {currentProduct.allowCustomImageUpload ? (
                       <div>
                         <label
                           htmlFor="customImageUploadPrice"
@@ -1118,7 +1118,7 @@ const ProductManagement: React.FC = () => {
                           Flat fee added when the customer uploads their own image
                         </p>
                       </div>
-                    )}
+                    ) : null}
                   </div>
                 </>
               )}
