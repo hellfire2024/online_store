@@ -255,11 +255,15 @@ CREATE TABLE IF NOT EXISTS reviews (
   rating INT NOT NULL CHECK (rating >= 1 AND rating <= 5),
   status ENUM('pending', 'approved', 'rejected', 'archived') DEFAULT 'pending',
   rejection_reason TEXT,
+  images JSON,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   approved_at TIMESTAMP NULL,
   INDEX idx_status (status),
   INDEX idx_rating (rating)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+ALTER TABLE reviews
+  ADD COLUMN IF NOT EXISTS images JSON;
 
 -- ============================================
 -- STAFF & SERVICES
