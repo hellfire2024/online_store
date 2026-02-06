@@ -115,8 +115,15 @@ const CustomerOrdersPage: React.FC = () => {
           (item.product && item.product.name) ||
           "Unknown Item";
 
-        // Find the product by name in the products list
-        const product = products.find((p) => p.name === itemName);
+        const productId =
+          (item as any).productId ||
+          (item.product && item.product.id) ||
+          (item as any).product?.id;
+
+        // Find the product by id first, then fallback to name
+        const product =
+          products.find((p) => p.id === productId) ||
+          products.find((p) => p.name === itemName);
 
         if (!product) {
           addToast(`Product "${itemName}" is no longer available`, "info");
@@ -124,10 +131,18 @@ const CustomerOrdersPage: React.FC = () => {
         }
 
         // Reconstruct CartItem from order item
+        const rawSelectedOptions =
+          (item as any).selectedOptionsRaw || (item as any).selectedOptions;
+
+        const selectedOptions =
+          rawSelectedOptions && typeof rawSelectedOptions === "object"
+            ? rawSelectedOptions
+            : undefined;
+
         const cartItem: CartItem = {
           product,
           quantity: item.quantity,
-          selectedOptions: undefined, // Selected options aren't fully stored, just the text representation
+          selectedOptions,
           customization: (item as any).customization,
           customText: (item as any).customText,
         };

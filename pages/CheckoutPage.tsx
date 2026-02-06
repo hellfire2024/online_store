@@ -439,6 +439,7 @@ const CheckoutPage: React.FC = () => {
           const basePrice = toNumber(item.product.price);
 
           return {
+            productId: item.product.id,
             name: item.product.name,
             quantity: item.quantity,
             price: basePrice + optionsDelta + customTextCost,
@@ -447,6 +448,7 @@ const CheckoutPage: React.FC = () => {
             optionsBreakdown:
               optionsBreakdown.length > 0 ? optionsBreakdown : undefined,
             productImage: item.product.imageUrl,
+            selectedOptionsRaw: item.selectedOptions,
             customization: item.customization
               ? {
                   type: item.customization.type,
