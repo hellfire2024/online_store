@@ -568,17 +568,62 @@ const CustomerOrdersPage: React.FC = () => {
                           </h4>
                           <div className="space-y-3 max-h-60 overflow-y-auto">
                             {order.items.map((item: any, idx) => {
+                              const productFromItem =
+                                item.product ||
+                                products.find(
+                                  (product) =>
+                                    product.id === item.productId ||
+                                    product.id === item.product?.id ||
+                                    product.name === item.name,
+                                );
+
                               const productName =
                                 item.name ||
                                 item.productName ||
+                                productFromItem?.name ||
                                 item.product?.name ||
                                 "Unknown Item";
+
                               const basePrice =
-                                item.basePrice || item.price || item.product?.price || 0;
+                                item.basePrice ||
+                                item.price ||
+                                productFromItem?.price ||
+                                item.product?.price ||
+                                0;
+
                               const totalItemPrice = basePrice * (item.quantity || 1);
                               const hasOptions =
                                 item.optionsBreakdown && item.optionsBreakdown.length > 0;
                               const customTextCost = item.customTextCost || 0;
+
+                              let selectedOptionsText =
+                                typeof item.selectedOptions === "string"
+                                  ? item.selectedOptions
+                                  : "";
+
+                              if (!selectedOptionsText && item.selectedOptions && productFromItem?.optionLists) {
+                                const optionParts: string[] = [];
+                                productFromItem.optionLists.forEach((list: any) => {
+                                  const selectedOptionIds = item.selectedOptions?.[list.id] || [];
+                                  if (Array.isArray(selectedOptionIds)) {
+                                    selectedOptionIds.forEach((optionId: string) => {
+                                      const option = list.options.find((o: any) => o.id === optionId);
+                                      if (option) {
+                                        optionParts.push(`${list.name}: ${option.name}`);
+                                      }
+                                    });
+                                  }
+                                });
+                                selectedOptionsText = optionParts.join(", ");
+                              }
+
+                              const imageSrc =
+                                item.productImage ||
+                                item.imageUrl ||
+                                productFromItem?.imageUrl ||
+                                item.product?.imageUrl ||
+                                item.customization?.value ||
+                                "";
 
                               return (
                                 <div
@@ -586,10 +631,10 @@ const CustomerOrdersPage: React.FC = () => {
                                   className="bg-slate-800/50 rounded border border-slate-700 p-3"
                                 >
                                   <div className="flex gap-3">
-                                    {(item.productImage || item.customization?.value) && (
+                                    {imageSrc && (
                                       <div className="flex-shrink-0">
                                         <img
-                                          src={item.productImage || item.customization?.value}
+                                          src={imageSrc}
                                           alt={productName}
                                           className="w-16 h-16 object-cover rounded border border-slate-600"
                                           onError={(e) => {
@@ -608,9 +653,9 @@ const CustomerOrdersPage: React.FC = () => {
                                           <span>Base Price:</span>
                                           <span>${Number(basePrice).toFixed(2)}</span>
                                         </div>
-                                        {item.selectedOptions && (
+                                        {selectedOptionsText && (
                                           <div className="text-sky-400">
-                                            Selections: {item.selectedOptions}
+                                            Selections: {selectedOptionsText}
                                           </div>
                                         )}
                                         {hasOptions && (
