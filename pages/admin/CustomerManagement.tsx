@@ -1210,65 +1210,70 @@ const CustomerManagement: React.FC = () => {
                         key={idx}
                         className="bg-slate-800 rounded border border-slate-600 overflow-hidden"
                       >
-                        <div className="flex gap-4 p-4">
-                          {item.productImage && (
-                            <div className="flex-shrink-0">
-                              <img
-                                src={item.productImage}
-                                alt={productName}
-                                className="w-24 h-24 object-cover rounded border border-slate-600"
-                                onError={(e) => {
-                                  (e.target as HTMLImageElement).src =
-                                    "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect fill='%23475569' width='100' height='100'/%3E%3Ctext x='50' y='50' font-size='12' fill='%239ca3af' text-anchor='middle' dy='.3em'%3ENo Image%3C/text%3E%3C/svg%3E";
-                                }}
-                              />
-                            </div>
-                          )}
-                          {customUploadImageUrl && (
-                            <div className="flex-shrink-0">
-                              <div className="text-xs text-gray-400 mb-1">
-                                Custom Upload
-                                {customUploadFileName
-                                  ? ` • ${customUploadFileName}`
-                                  : ""}
+                        <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] gap-4 p-4">
+                          <div className="space-y-3">
+                            {item.productImage && (
+                              <div>
+                                <div className="text-xs text-gray-400 mb-1">
+                                  Product Image
+                                </div>
+                                <img
+                                  src={item.productImage}
+                                  alt={productName}
+                                  className="w-full h-32 object-cover rounded border border-slate-600"
+                                  onError={(e) => {
+                                    (e.target as HTMLImageElement).src =
+                                      "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect fill='%23475569' width='100' height='100'/%3E%3Ctext x='50' y='50' font-size='12' fill='%239ca3af' text-anchor='middle' dy='.3em'%3ENo Image%3C/text%3E%3C/svg%3E";
+                                  }}
+                                />
                               </div>
-                              <img
-                                src={customUploadImageUrl}
-                                alt={customUploadFileName || "Custom upload"}
-                                className="w-24 h-24 object-cover rounded border border-slate-600"
-                                onError={(e) => {
-                                  (e.target as HTMLImageElement).src =
-                                    "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect fill='%23475569' width='100' height='100'/%3E%3Ctext x='50' y='50' font-size='12' fill='%239ca3af' text-anchor='middle' dy='.3em'%3ENo Image%3C/text%3E%3C/svg%3E";
-                                }}
-                              />
-                              <a
-                                href={customUploadImageUrl}
-                                download={
-                                  customUploadFileName ||
-                                  `${productName}-custom-upload.png`
-                                }
-                                className="mt-2 inline-flex items-center gap-1 rounded-md border border-slate-600 bg-slate-700 px-2 py-1 text-xs text-sky-300 hover:bg-slate-600 hover:text-sky-200"
-                              >
-                                Download original
-                              </a>
-                            </div>
-                          )}
-                          {customGalleryImageUrl && (
-                            <div className="flex-shrink-0">
-                              <div className="text-xs text-gray-400 mb-1">
-                                Custom Selection
+                            )}
+                            {customUploadImageUrl && (
+                              <div>
+                                <div className="text-xs text-gray-400 mb-1">
+                                  Custom Upload
+                                  {customUploadFileName
+                                    ? ` • ${customUploadFileName}`
+                                    : ""}
+                                </div>
+                                <img
+                                  src={customUploadImageUrl}
+                                  alt={customUploadFileName || "Custom upload"}
+                                  className="w-full h-32 object-cover rounded border border-slate-600"
+                                  onError={(e) => {
+                                    (e.target as HTMLImageElement).src =
+                                      "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect fill='%23475569' width='100' height='100'/%3E%3Ctext x='50' y='50' font-size='12' fill='%239ca3af' text-anchor='middle' dy='.3em'%3ENo Image%3C/text%3E%3C/svg%3E";
+                                  }}
+                                />
+                                <a
+                                  href={customUploadImageUrl}
+                                  download={
+                                    customUploadFileName ||
+                                    `${productName}-custom-upload.png`
+                                  }
+                                  className="mt-2 inline-flex items-center gap-1 rounded-md border border-slate-600 bg-slate-700 px-2 py-1 text-xs text-sky-300 hover:bg-slate-600 hover:text-sky-200"
+                                >
+                                  Download original
+                                </a>
                               </div>
-                              <img
-                                src={customGalleryImageUrl}
-                                alt="Custom selection"
-                                className="w-24 h-24 object-cover rounded border border-slate-600"
-                                onError={(e) => {
-                                  (e.target as HTMLImageElement).src =
-                                    "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect fill='%23475569' width='100' height='100'/%3E%3Ctext x='50' y='50' font-size='12' fill='%239ca3af' text-anchor='middle' dy='.3em'%3ENo Image%3C/text%3E%3C/svg%3E";
-                                }}
-                              />
-                            </div>
-                          )}
+                            )}
+                            {customGalleryImageUrl && (
+                              <div>
+                                <div className="text-xs text-gray-400 mb-1">
+                                  Custom Selection
+                                </div>
+                                <img
+                                  src={customGalleryImageUrl}
+                                  alt="Custom selection"
+                                  className="w-full h-32 object-cover rounded border border-slate-600"
+                                  onError={(e) => {
+                                    (e.target as HTMLImageElement).src =
+                                      "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect fill='%23475569' width='100' height='100'/%3E%3Ctext x='50' y='50' font-size='12' fill='%239ca3af' text-anchor='middle' dy='.3em'%3ENo Image%3C/text%3E%3C/svg%3E";
+                                  }}
+                                />
+                              </div>
+                            )}
+                          </div>
                           <div className="flex-1">
                             <p className="text-white font-semibold text-lg mb-1">
                               {productName}
