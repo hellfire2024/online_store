@@ -1192,6 +1192,14 @@ const CustomerManagement: React.FC = () => {
                     const hasOptions =
                       item.optionsBreakdown && item.optionsBreakdown.length > 0;
                     const customTextCost = item.customTextCost || 0;
+                    const customUploadImageUrl =
+                      item.customization?.type === "upload"
+                        ? item.customization.value
+                        : undefined;
+                    const customUploadFileName =
+                      item.customization?.type === "upload"
+                        ? item.customization.fileName
+                        : undefined;
 
                     return (
                       <div
@@ -1204,6 +1212,25 @@ const CustomerManagement: React.FC = () => {
                               <img
                                 src={item.productImage}
                                 alt={productName}
+                                className="w-24 h-24 object-cover rounded border border-slate-600"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).src =
+                                    "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect fill='%23475569' width='100' height='100'/%3E%3Ctext x='50' y='50' font-size='12' fill='%239ca3af' text-anchor='middle' dy='.3em'%3ENo Image%3C/text%3E%3C/svg%3E";
+                                }}
+                              />
+                            </div>
+                          )}
+                          {customUploadImageUrl && (
+                            <div className="flex-shrink-0">
+                              <div className="text-xs text-gray-400 mb-1">
+                                Custom Upload
+                                {customUploadFileName
+                                  ? ` • ${customUploadFileName}`
+                                  : ""}
+                              </div>
+                              <img
+                                src={customUploadImageUrl}
+                                alt={customUploadFileName || "Custom upload"}
                                 className="w-24 h-24 object-cover rounded border border-slate-600"
                                 onError={(e) => {
                                   (e.target as HTMLImageElement).src =
