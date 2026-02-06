@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useCustomerAuth } from "../context/CustomerAuthContext";
 import { useSiteSettings } from "../context/SiteSettingsContext";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useToast } from "../hooks/useToast";
 import apiClient from "../services/apiClient";
 
@@ -27,6 +27,7 @@ const SupportTicketsPage: React.FC = () => {
   const { isAuthenticated, customer } = useCustomerAuth();
   const { siteSettings } = useSiteSettings();
   const navigate = useNavigate();
+  const location = useLocation();
   const { addToast } = useToast();
 
   const [activeTab, setActiveTab] = useState<"create" | "tickets">("create");
@@ -42,6 +43,32 @@ const SupportTicketsPage: React.FC = () => {
   });
   const [replyMessage, setReplyMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    const state = location.state as
+      | {
+          orderId?: string;
+          orderNumber?: string;
+          orderDate?: string;
+          subject?: string;
+          message?: string;
+        }
+      | undefined;
+
+    if (state && (state.orderId || state.subject || state.message)) {
+      setActiveTab("create");
+      setFormData((prev) => ({
+        ...prev,
+        orderId: state.orderId ?? prev.orderId,
+        subject:
+          state.subject ??
+          (state.orderNumber
+            ? `Order ${state.orderNumber} support request`
+            : prev.subject),
+        message: state.message ?? prev.message,
+      }));
+    }
+  }, [location.state]);
 
   useEffect(() => {
     const loadTickets = async () => {

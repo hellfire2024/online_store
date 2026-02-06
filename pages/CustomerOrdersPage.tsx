@@ -676,7 +676,20 @@ const CustomerOrdersPage: React.FC = () => {
 
                         {/* Action Buttons */}
                         <div className="flex gap-2 flex-wrap">
-                          <button className="flex-1 px-4 py-2 bg-sky-600 text-white rounded hover:bg-sky-700 transition text-sm">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate("/support", {
+                                state: {
+                                  orderId: order.id,
+                                  orderNumber: order.orderNumber,
+                                  orderDate: order.date,
+                                  subject: `Order ${order.orderNumber} support request`,
+                                },
+                              });
+                            }}
+                            className="flex-1 px-4 py-2 bg-sky-600 text-white rounded hover:bg-sky-700 transition text-sm"
+                          >
                             📧 Contact Support
                           </button>
                           <button
