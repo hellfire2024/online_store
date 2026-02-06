@@ -48,6 +48,12 @@ const ProductDetailPage: React.FC = () => {
   const [selectedOptions, setSelectedOptions] = useState<{
     [listId: string]: string[];
   }>({});
+  
+  useEffect(() => {
+    if (!product?.allowCustomImageUpload && activeTab === "upload") {
+      setActiveTab("gallery");
+    }
+  }, [activeTab, product?.allowCustomImageUpload]);
 
   const [selectedGalleryImage, setSelectedGalleryImage] =
     useState<GalleryImage | null>(null);
@@ -90,6 +96,9 @@ const ProductDetailPage: React.FC = () => {
   }, [slug]);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!product?.allowCustomImageUpload) {
+      return;
+    }
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       setUploadedFileName(file.name);
@@ -146,8 +155,12 @@ const ProductDetailPage: React.FC = () => {
         type: "gallery" as const,
         value: selectedGalleryImage.imageUrl,
       };
-    } else if (uploadedImage) {
-      customization = { type: "upload" as const, value: uploadedImage };
+    } else if (uploadedImage && product.allowCustomImageUpload) {
+      customization = {
+        type: "upload" as const,
+        value: uploadedImage,
+        fileName: uploadedFileName || undefined,
+      };
     }
 
     if (product.customizable && !customization) {
@@ -398,12 +411,14 @@ const ProductDetailPage: React.FC = () => {
                   activeTab={activeTab}
                   setActiveTab={setActiveTab}
                 />
-                <TabButton
-                  tab="upload"
-                  label="Upload Your Own"
-                  activeTab={activeTab}
-                  setActiveTab={setActiveTab}
-                />
+                {product.allowCustomImageUpload && (
+                  <TabButton
+                    tab="upload"
+                    label="Upload Your Own"
+                    activeTab={activeTab}
+                    setActiveTab={setActiveTab}
+                  />
+                )}
                 {!!product.enableAIIdeas && (
                   <TabButton
                     tab="ideas"
@@ -449,6 +464,11 @@ const ProductDetailPage: React.FC = () => {
                         onChange={handleImageUpload}
                       />
                     </label>
+                    {product.customImageUploadPrice ? (
+                      <p className="text-xs text-gray-400 mt-2 text-center">
+                        Upload fee: +${Number(product.customImageUploadPrice).toFixed(2)}
+                      </p>
+                    ) : null}
                     {uploadedImage && (
                       <p className="text-sm text-green-400 mt-3 text-center font-medium">
                         ✓ Image ready for preview

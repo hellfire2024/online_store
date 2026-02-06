@@ -13,6 +13,8 @@ export interface Product {
   allowCustomText?: boolean; // Allow customers to add custom engraving text
   customTextPricePerChar?: number; // Price per character for custom text
   customTextMaxLength?: number; // Maximum characters allowed
+  allowCustomImageUpload?: boolean; // Allow customers to upload a custom image
+  customImageUploadPrice?: number; // Flat price for uploaded custom image
 }
 
 export interface ProductOptionList {
@@ -36,6 +38,7 @@ export interface CartItem {
   customization?: {
     type: "gallery" | "upload";
     value: string; // URL for gallery, data URL for upload
+    fileName?: string;
   };
   selectedOptions?: { [listId: string]: string[] }; // Map of option list ID to selected option IDs (array for multi-select)
   customText?: string; // Custom engraving text

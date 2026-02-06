@@ -327,6 +327,8 @@ const ProductManagement: React.FC = () => {
       allowCustomText: false,
       customTextPricePerChar: 0.1,
       customTextMaxLength: 100,
+      allowCustomImageUpload: false,
+      customImageUploadPrice: 0,
     };
     setNewProduct(newProd);
     setOriginalProduct(newProd);
@@ -1067,6 +1069,52 @@ const ProductManagement: React.FC = () => {
                           </div>
                         </div>
                       </>
+                    )}
+                  </div>
+
+                  <div className="border-t border-slate-600 pt-4 mt-4">
+                    <h4 className="text-sm font-semibold text-gray-300 mb-3">
+                      Custom Image Upload
+                    </h4>
+                    <div className="flex items-center mb-3">
+                      <input
+                        type="checkbox"
+                        name="allowCustomImageUpload"
+                        id="allowCustomImageUpload"
+                        checked={currentProduct.allowCustomImageUpload || false}
+                        onChange={handleCheckboxChange}
+                        className="h-4 w-4 rounded border-gray-300 text-sky-600 focus:ring-sky-500"
+                      />
+                      <label
+                        htmlFor="allowCustomImageUpload"
+                        className="ml-2 block text-sm text-gray-300"
+                      >
+                        Allow Custom Image Upload
+                      </label>
+                    </div>
+                    {currentProduct.allowCustomImageUpload && (
+                      <div>
+                        <label
+                          htmlFor="customImageUploadPrice"
+                          className="block text-sm text-gray-300 mb-1"
+                        >
+                          Upload Fee ($)
+                        </label>
+                        <input
+                          type="number"
+                          id="customImageUploadPrice"
+                          name="customImageUploadPrice"
+                          step="0.01"
+                          min="0"
+                          placeholder="0.00"
+                          value={currentProduct.customImageUploadPrice ?? 0}
+                          onChange={handleChange}
+                          className="w-full p-2 bg-slate-700 border border-slate-600 rounded-md text-white"
+                        />
+                        <p className="text-xs text-gray-400 mt-1">
+                          Flat fee added when the customer uploads their own image
+                        </p>
+                      </div>
                     )}
                   </div>
                 </>

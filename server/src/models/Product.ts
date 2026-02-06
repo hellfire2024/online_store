@@ -13,6 +13,8 @@ interface Product {
   customizable: boolean;
   enableAIIdeas?: boolean;
   galleryId?: string;
+  allowCustomImageUpload?: boolean;
+  customImageUploadPrice?: number;
   optionLists?: ProductOptionList[];
 }
 
@@ -45,7 +47,9 @@ export async function findAll(): Promise<Product[]> {
   const [rows] = await pool.query<RowDataPacket[]>(
     `SELECT id, name, description, price, image_url as imageUrl, inventory, 
             low_stock_threshold as lowStockThreshold, customizable, 
-            enable_ai_ideas as enableAIIdeas, gallery_id as galleryId
+            enable_ai_ideas as enableAIIdeas, gallery_id as galleryId,
+            allow_custom_image_upload as allowCustomImageUpload,
+            custom_image_upload_price as customImageUploadPrice
      FROM products ORDER BY name`,
   );
 
@@ -63,7 +67,9 @@ export async function findById(id: string): Promise<Product | null> {
   const [rows] = await pool.query<RowDataPacket[]>(
     `SELECT id, name, description, price, image_url as imageUrl, inventory,
             low_stock_threshold as lowStockThreshold, customizable,
-            enable_ai_ideas as enableAIIdeas, gallery_id as galleryId
+            enable_ai_ideas as enableAIIdeas, gallery_id as galleryId,
+            allow_custom_image_upload as allowCustomImageUpload,
+            custom_image_upload_price as customImageUploadPrice
      FROM products WHERE id = ?`,
     [id],
   );
@@ -113,8 +119,9 @@ export async function create(data: Partial<Product>): Promise<Product> {
 
     await connection.query(
       `INSERT INTO products (id, name, description, price, image_url, inventory,
-                             low_stock_threshold, customizable, enable_ai_ideas, gallery_id)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                             low_stock_threshold, customizable, enable_ai_ideas, gallery_id,
+                             allow_custom_image_upload, custom_image_upload_price)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id,
         data.name,
@@ -126,6 +133,8 @@ export async function create(data: Partial<Product>): Promise<Product> {
         data.customizable || false,
         data.enableAIIdeas || false,
         data.galleryId || null,
+        data.allowCustomImageUpload || false,
+        data.customImageUploadPrice || 0,
       ],
     );
 
@@ -163,7 +172,8 @@ export async function update(
     const [result] = await connection.query<ResultSetHeader>(
       `UPDATE products SET name = ?, description = ?, price = ?, image_url = ?,
                           inventory = ?, low_stock_threshold = ?, customizable = ?,
-                          enable_ai_ideas = ?, gallery_id = ?
+                          enable_ai_ideas = ?, gallery_id = ?,
+                          allow_custom_image_upload = ?, custom_image_upload_price = ?
        WHERE id = ?`,
       [
         data.name ?? currentProduct.name,
@@ -175,6 +185,8 @@ export async function update(
         data.customizable ?? currentProduct.customizable,
         data.enableAIIdeas ?? currentProduct.enableAIIdeas,
         data.galleryId ?? currentProduct.galleryId,
+        data.allowCustomImageUpload ?? currentProduct.allowCustomImageUpload,
+        data.customImageUploadPrice ?? currentProduct.customImageUploadPrice ?? 0,
         id,
       ],
     );

@@ -109,7 +109,6 @@ const CustomerOrdersPage: React.FC = () => {
       let itemsAdded = 0;
 
       for (const item of order.items) {
-        console.log("Item from order:", item);
         // Get the actual item name - could be in item.name (stored format) or item.product.name (alternate format)
         const itemName =
           (item as any).name ||
@@ -148,7 +147,6 @@ const CustomerOrdersPage: React.FC = () => {
           customText: (item as any).customText,
         };
 
-        console.log("Cart item being added:", cartItem);
         addToCart(cartItem);
         itemsAdded++;
       }

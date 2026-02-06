@@ -10,7 +10,14 @@ const TrashIcon: React.FC = () => (
     height="20"
     viewBox="0 0 24 24"
     fill="none"
-    stroke="currentColor"
+  const customImageCost =
+    item.customization?.type === "upload" &&
+    item.product.allowCustomImageUpload &&
+    item.product.customImageUploadPrice
+      ? toNumber(item.product.customImageUploadPrice)
+      : 0;
+
+  const finalPrice = basePrice + optionsDelta + customTextCost + customImageCost;
     strokeWidth="2"
     strokeLinecap="round"
     strokeLinejoin="round"
@@ -42,6 +49,16 @@ const CartItemRow: React.FC<{ item: CartItem }> = ({ item }) => {
       const selectedOptionIds = item.selectedOptions?.[list.id] || [];
       if (Array.isArray(selectedOptionIds)) {
         selectedOptionIds.forEach((optionId) => {
+        {customImageCost > 0 && (
+          <div className="mt-2 bg-slate-700 p-2 rounded-lg">
+            <p className="text-xs font-semibold text-sky-400 mb-1">
+              Custom Image Upload Fee:
+            </p>
+            <p className="text-xs text-gray-300">
+              +${customImageCost.toFixed(2)}
+            </p>
+          </div>
+        )}
           const option = list.options.find((o) => o.id === optionId);
           if (option) {
             const priceDelta = toNumber(option.priceDelta);

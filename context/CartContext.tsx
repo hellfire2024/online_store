@@ -114,9 +114,18 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
       customTextCost =
         item.customText.length * Number(item.product.customTextPricePerChar);
     }
+    const customImageCost =
+      item.customization?.type === "upload" &&
+      item.product.allowCustomImageUpload &&
+      item.product.customImageUploadPrice
+        ? Number(item.product.customImageUploadPrice)
+        : 0;
     return (
       total +
-      (Number(item.product.price) + optionsDelta + customTextCost) *
+      (Number(item.product.price) +
+        optionsDelta +
+        customTextCost +
+        customImageCost) *
         item.quantity
     );
   }, 0);

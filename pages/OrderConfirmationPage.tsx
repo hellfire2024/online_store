@@ -336,6 +336,16 @@ const OrderConfirmationPage: React.FC = () => {
                   )}
                 </div>
               )}
+              {item.customImageCost && (
+                <div className="mt-3 bg-slate-700 p-3 rounded-lg">
+                  <p className="text-xs font-semibold text-sky-400 mb-1">
+                    Custom Image Upload Fee:
+                  </p>
+                  <p className="text-xs text-gray-400">
+                    +${item.customImageCost.toFixed(2)}
+                  </p>
+                </div>
+              )}
               {item.customization && (
                 <div className="mt-3 bg-slate-700 p-3 rounded-lg">
                   <div className="flex items-start gap-3">

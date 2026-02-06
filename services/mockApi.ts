@@ -20,6 +20,8 @@ let mockProducts: Product[] = [
     imageUrl: "https://picsum.photos/seed/tshirt/400/400",
     inventory: 100,
     customizable: true,
+    allowCustomImageUpload: true,
+    customImageUploadPrice: 5,
     galleryId: "g-patterns",
     lowStockThreshold: 20,
     optionLists: [

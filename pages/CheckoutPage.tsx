@@ -241,8 +241,19 @@ const CheckoutPage: React.FC = () => {
           });
         }
         const itemPrice = toNumber(item.product.price);
+        let customTextCost = 0;
+        if (item.customText && item.product.customTextPricePerChar) {
+          customTextCost =
+            item.customText.length * item.product.customTextPricePerChar;
+        }
+        const customImageCost =
+          item.customization?.type === "upload" &&
+          item.product.allowCustomImageUpload &&
+          item.product.customImageUploadPrice
+            ? toNumber(item.product.customImageUploadPrice)
+            : 0;
         const quantity = toNumber(item.quantity);
-        return total + (itemPrice + optionsDelta) * quantity;
+        return total + (itemPrice + optionsDelta + customTextCost + customImageCost) * quantity;
       }, 0);
 
       if (!siteSettings || !siteSettings.taxConfig || !shippingState) {
@@ -436,13 +447,20 @@ const CheckoutPage: React.FC = () => {
               item.customText.length * item.product.customTextPricePerChar;
           }
 
+          const customImageCost =
+            item.customization?.type === "upload" &&
+            item.product.allowCustomImageUpload &&
+            item.product.customImageUploadPrice
+              ? toNumber(item.product.customImageUploadPrice)
+              : 0;
+
           const basePrice = toNumber(item.product.price);
 
           return {
             productId: item.product.id,
             name: item.product.name,
             quantity: item.quantity,
-            price: basePrice + optionsDelta + customTextCost,
+            price: basePrice + optionsDelta + customTextCost + customImageCost,
             basePrice,
             optionsCost: optionsDelta,
             optionsBreakdown:
@@ -455,7 +473,8 @@ const CheckoutPage: React.FC = () => {
                   value: item.customization.value, // Full-size image URL or data URL
                   fileName:
                     item.customization.type === "upload"
-                      ? `${item.product.name}-custom.png`
+                      ? item.customization.fileName ||
+                        `${item.product.name}-custom.png`
                       : undefined,
                 }
               : undefined,
@@ -465,6 +484,7 @@ const CheckoutPage: React.FC = () => {
               ? item.customText.length
               : undefined,
             customTextCost: customTextCost > 0 ? customTextCost : undefined,
+            customImageCost: customImageCost > 0 ? customImageCost : undefined,
           };
         }),
         shippingAddress: {

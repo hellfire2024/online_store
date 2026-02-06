@@ -94,6 +94,8 @@ CREATE TABLE IF NOT EXISTS products (
   customizable BOOLEAN DEFAULT FALSE,
   enable_ai_ideas BOOLEAN DEFAULT FALSE,
   gallery_id VARCHAR(36),
+  allow_custom_image_upload BOOLEAN DEFAULT FALSE,
+  custom_image_upload_price DECIMAL(10,2) DEFAULT 0.00,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   INDEX idx_name (name),
@@ -103,6 +105,10 @@ CREATE TABLE IF NOT EXISTS products (
 -- Alter existing products table to use LONGTEXT for image_url
 ALTER TABLE products
   MODIFY COLUMN image_url LONGTEXT;
+
+ALTER TABLE products
+  ADD COLUMN IF NOT EXISTS allow_custom_image_upload BOOLEAN DEFAULT FALSE,
+  ADD COLUMN IF NOT EXISTS custom_image_upload_price DECIMAL(10,2) DEFAULT 0.00;
 
 CREATE TABLE IF NOT EXISTS product_option_lists (
   id VARCHAR(36) PRIMARY KEY,
