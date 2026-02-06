@@ -58,6 +58,10 @@ export async function findAll(): Promise<Product[]> {
   // Load option lists for each product
   for (const product of products) {
     product.optionLists = await findOptionLists(product.id);
+    // Convert 0 to undefined for customImageUploadPrice when feature is not enabled
+    if (!product.allowCustomImageUpload || product.customImageUploadPrice === 0) {
+      product.customImageUploadPrice = undefined;
+    }
   }
 
   return products;
@@ -78,6 +82,10 @@ export async function findById(id: string): Promise<Product | null> {
 
   const product = rows[0] as Product;
   product.optionLists = await findOptionLists(id);
+  // Convert 0 to undefined for customImageUploadPrice when feature is not enabled
+  if (!product.allowCustomImageUpload || product.customImageUploadPrice === 0) {
+    product.customImageUploadPrice = undefined;
+  }
 
   return product;
 }
@@ -134,7 +142,7 @@ export async function create(data: Partial<Product>): Promise<Product> {
         data.enableAIIdeas || false,
         data.galleryId || null,
         data.allowCustomImageUpload || false,
-        data.customImageUploadPrice || 0,
+        data.customImageUploadPrice ?? null,
       ],
     );
 
@@ -186,7 +194,7 @@ export async function update(
         data.enableAIIdeas ?? currentProduct.enableAIIdeas,
         data.galleryId ?? currentProduct.galleryId,
         data.allowCustomImageUpload ?? currentProduct.allowCustomImageUpload,
-        data.customImageUploadPrice ?? currentProduct.customImageUploadPrice ?? 0,
+        data.customImageUploadPrice ?? currentProduct.customImageUploadPrice ?? null,
         id,
       ],
     );
