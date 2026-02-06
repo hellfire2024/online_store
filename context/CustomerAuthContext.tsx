@@ -172,14 +172,22 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
 
   const storeCustomerToLocalStorage = (customer: Customer) => {
     // Only store minimal customer data to avoid localStorage quota issues
+    // Clear localStorage first to free up space
+    try {
+      localStorage.clear();
+    } catch (e) {
+      console.warn("Could not clear localStorage", e);
+    }
+    
     const minimalCustomer = {
       id: customer.id,
       name: customer.name,
       firstName: customer.firstName,
       lastName: customer.lastName,
       email: customer.email,
-      phone: customer.phone,
-      addresses: customer.addresses,
+      phone: customer.phone || "",
+      // Store only address IDs and essential info - NOT full address details
+      addressCount: customer.addresses?.length || 0,
       emailPreferences: customer.emailPreferences,
       isActive: customer.isActive,
       createdAt: customer.createdAt,
@@ -187,14 +195,16 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
     };
     try {
       localStorage.setItem("customer", JSON.stringify(minimalCustomer));
+      localStorage.setItem("auth_token", apiClient.getToken() || "");
     } catch (error) {
-      console.error("Failed to store customer data:", error);
-      // Try clearing old data and retry
+      console.error("Failed to store customer data to localStorage:", error);
+      // If still failing, try to at least store ID and token
       try {
-        localStorage.removeItem("customer_backup");
-        localStorage.setItem("customer", JSON.stringify(minimalCustomer));
+        localStorage.clear();
+        localStorage.setItem("customer_id", customer.id);
+        localStorage.setItem("auth_token", apiClient.getToken() || "");
       } catch (e) {
-        console.error("Still failed after cleanup:", e);
+        console.error("Critical: Cannot store to localStorage at all", e);
       }
     }
   };
@@ -234,7 +244,7 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
         }
 
         setCustomer(newCustomer);
-        localStorage.setItem("customer", JSON.stringify(newCustomer));
+        storeCustomerToLocalStorage(newCustomer);
         return { success: true };
       }
       return { success: false, error: "Registration failed" };

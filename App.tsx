@@ -1,5 +1,11 @@
 import React, { useState, useEffect, useCallback, Suspense } from "react";
-import { HashRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import {
+  HashRouter,
+  Routes,
+  Route,
+  Navigate,
+  useLocation,
+} from "react-router-dom";
 import { CustomerAuthProvider } from "./context/CustomerAuthContext";
 import { CartProvider } from "./context/CartContext";
 import { ToastProvider } from "./hooks/useToast";
@@ -84,13 +90,16 @@ const App: React.FC = () => {
   // Suppress browser extension message channel errors (not application errors)
   useEffect(() => {
     const handleError = (event: ErrorEvent) => {
-      if (event.message && event.message.includes('listener indicated an asynchronous response')) {
+      if (
+        event.message &&
+        event.message.includes("listener indicated an asynchronous response")
+      ) {
         event.preventDefault();
       }
     };
-    
-    window.addEventListener('error', handleError);
-    return () => window.removeEventListener('error', handleError);
+
+    window.addEventListener("error", handleError);
+    return () => window.removeEventListener("error", handleError);
   }, []);
 
   useAdminKeyListener(handleOpenAdminLogin);
@@ -138,105 +147,63 @@ const App: React.FC = () => {
 
 const AppContent: React.FC = () => {
   const location = useLocation();
-  const isAdminRoute = location.pathname.startsWith('/admin');
+  const isAdminRoute = location.pathname.startsWith("/admin");
 
   return (
     <div className="flex flex-col min-h-screen">
       {!isAdminRoute && <Header />}
       <main className={isAdminRoute ? "" : "grow container mx-auto px-4 py-8"}>
         <Routes>
-                                    <Route
-                                      path="/test-hero"
-                                      element={<TestHeroRenderingPage />}
-                                    />
-                                    <Route path="/" element={<HomePage />} />
-                                    <Route
-                                      path="/about"
-                                      element={<AboutPage />}
-                                    />
-                                    <Route
-                                      path="/contact"
-                                      element={<ContactPage />}
-                                    />
-                                    <Route
-                                      path="/store"
-                                      element={<StorePage />}
-                                    />
-                                    <Route
-                                      path="/product/:slug"
-                                      element={<ProductDetailPage />}
-                                    />
-                                    <Route
-                                      path="/cart"
-                                      element={<CartPage />}
-                                    />
-                                    <Route
-                                      path="/checkout"
-                                      element={<CheckoutPage />}
-                                    />
-                                    <Route
-                                      path="/order-confirmation"
-                                      element={<OrderConfirmationPage />}
-                                    />
-                                    <Route
-                                      path="/login"
-                                      element={<LoginPage />}
-                                    />
-                                    <Route
-                                      path="/register"
-                                      element={<RegisterPage />}
-                                    />
-                                    <Route
-                                      path="/forgot-password"
-                                      element={<ForgotPasswordPage />}
-                                    />
-                                    <Route
-                                      path="/admin/*"
-                                      element={
-                                        <AdminProtectedRoute>
-                                          <Suspense fallback={<Spinner />}>
-                                            <AdminPage />
-                                          </Suspense>
-                                        </AdminProtectedRoute>
-                                      }
-                                    />
-                                    <Route
-                                      path="/account"
-                                      element={<CustomerAccountPage />}
-                                    />
-                                    <Route
-                                      path="/account/addresses"
-                                      element={<CustomerAddressesPage />}
-                                    />
-                                    <Route
-                                      path="/account/orders"
-                                      element={<CustomerOrdersPage />}
-                                    />
-                                    <Route
-                                      path="/account/change-password"
-                                      element={<ChangePasswordPage />}
-                                    />
-                                    <Route
-                                      path="/terms"
-                                      element={<TermsAndConditionsPage />}
-                                    />
-                                    <Route
-                                      path="/support"
-                                      element={<SupportTicketsPage />}
-                                    />
-                                    <Route
-                                      path="/admin/pages/preview"
-                                      element={
-                                        <Suspense fallback={<Spinner />}>
-                                          <PagePreview />
-                                        </Suspense>
-                                      }
-                                    />
-                                    <Route path="*" element={<CustomPage />} />
-                                  </Routes>
-                                </main>
-                                {!isAdminRoute && <Footer />}
-                              </div>
+          <Route path="/test-hero" element={<TestHeroRenderingPage />} />
+          <Route path="/" element={<HomePage />} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/contact" element={<ContactPage />} />
+          <Route path="/store" element={<StorePage />} />
+          <Route path="/product/:slug" element={<ProductDetailPage />} />
+          <Route path="/cart" element={<CartPage />} />
+          <Route path="/checkout" element={<CheckoutPage />} />
+          <Route
+            path="/order-confirmation"
+            element={<OrderConfirmationPage />}
+          />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route
+            path="/admin/*"
+            element={
+              <AdminProtectedRoute>
+                <Suspense fallback={<Spinner />}>
+                  <AdminPage />
+                </Suspense>
+              </AdminProtectedRoute>
+            }
+          />
+          <Route path="/account" element={<CustomerAccountPage />} />
+          <Route
+            path="/account/addresses"
+            element={<CustomerAddressesPage />}
+          />
+          <Route path="/account/orders" element={<CustomerOrdersPage />} />
+          <Route
+            path="/account/change-password"
+            element={<ChangePasswordPage />}
+          />
+          <Route path="/terms" element={<TermsAndConditionsPage />} />
+          <Route path="/support" element={<SupportTicketsPage />} />
+          <Route
+            path="/admin/pages/preview"
+            element={
+              <Suspense fallback={<Spinner />}>
+                <PagePreview />
+              </Suspense>
+            }
+          />
+          <Route path="*" element={<CustomPage />} />
+        </Routes>
+      </main>
+      {!isAdminRoute && <Footer />}
+    </div>
   );
 };
 

@@ -988,8 +988,16 @@ const CustomerManagement: React.FC = () => {
                               <div className="border-t border-slate-600 pt-2 mt-2">
                                 <div className="space-y-1">
                                   {order.items.map((item: any, idx: number) => {
-                                    const productName = item.name || item.productName || item.product?.name || 'Unknown Product';
-                                    const productPrice = item.price || item.product?.price || item.basePrice || 0;
+                                    const productName =
+                                      item.name ||
+                                      item.productName ||
+                                      item.product?.name ||
+                                      "Unknown Product";
+                                    const productPrice =
+                                      item.price ||
+                                      item.product?.price ||
+                                      item.basePrice ||
+                                      0;
                                     return (
                                       <div
                                         key={idx}
@@ -1111,256 +1119,335 @@ const CustomerManagement: React.FC = () => {
         <div className="fixed inset-0 bg-black bg-opacity-70 flex items-start justify-center z-60 p-4 overflow-y-auto">
           <div className="bg-slate-800 rounded-lg max-w-3xl w-full my-8 border-2 border-sky-600">
             <div className="p-6">
-            <div className="flex justify-between items-start mb-6">
-              <div>
-                <h2 className="text-2xl font-bold text-white">
-                  Order #{selectedOrderDetail.orderNumber}
-                </h2>
-                <p className="text-gray-400">
-                  {new Date(selectedOrderDetail.date).toLocaleString()}
-                </p>
-              </div>
-              <button
-                onClick={() => setSelectedOrderDetail(null)}
-                className="text-gray-400 hover:text-white text-3xl font-bold leading-none -mt-2"
-              >
-                ×
-              </button>
-            </div>
-
-            {/* Order Status */}
-            <div className="bg-slate-700 p-4 rounded-lg mb-6">
-              <div className="flex items-center justify-between">
+              <div className="flex justify-between items-start mb-6">
                 <div>
-                  <p className="text-sm text-gray-400 mb-1">Status</p>
-                  <span
-                    className={`inline-block px-4 py-2 rounded-lg text-sm font-bold capitalize ${
-                      selectedOrderDetail.status === "pending"
-                        ? "bg-yellow-900 text-yellow-200"
-                        : selectedOrderDetail.status === "processing"
-                          ? "bg-blue-900 text-blue-200"
-                          : selectedOrderDetail.status === "shipped"
-                            ? "bg-purple-900 text-purple-200"
-                            : selectedOrderDetail.status === "delivered"
-                              ? "bg-green-900 text-green-200"
-                              : "bg-red-900 text-red-200"
-                    }`}
-                  >
-                    {selectedOrderDetail.status}
-                  </span>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm text-gray-400 mb-1">Total Amount</p>
-                  <p className="text-3xl font-bold text-white">
-                    ${Number(selectedOrderDetail.total).toFixed(2)}
+                  <h2 className="text-2xl font-bold text-white">
+                    Order #{selectedOrderDetail.orderNumber}
+                  </h2>
+                  <p className="text-gray-400">
+                    {new Date(selectedOrderDetail.date).toLocaleString()}
                   </p>
                 </div>
+                <button
+                  onClick={() => setSelectedOrderDetail(null)}
+                  className="text-gray-400 hover:text-white text-3xl font-bold leading-none -mt-2"
+                >
+                  ×
+                </button>
               </div>
-              {selectedOrderDetail.trackingNumber && (
-                <div className="mt-4 pt-4 border-t border-slate-600">
-                  <p className="text-sm text-gray-400">Tracking Number</p>
-                  <p className="text-sky-400 font-mono text-lg font-semibold">
-                    {selectedOrderDetail.trackingNumber}
-                  </p>
-                </div>
-              )}
-            </div>
 
-            {/* Order Items */}
-            <div className="bg-slate-700 p-4 rounded-lg mb-6">
-              <h3 className="text-lg font-semibold text-white mb-4">
-                Order Items
-              </h3>
-              <div className="space-y-4">
-                {selectedOrderDetail.items.map((item: any, idx: number) => {
-                  const productName = item.name || item.productName || item.product?.name || "Unknown Product";
-                  const basePrice = item.basePrice || item.price || item.product?.price || 0;
-                  const totalItemPrice = basePrice * item.quantity;
-                  const hasOptions = item.optionsBreakdown && item.optionsBreakdown.length > 0;
-                  const customTextCost = item.customTextCost || 0;
-                  
-                  return (
-                    <div
-                      key={idx}
-                      className="bg-slate-800 rounded border border-slate-600 overflow-hidden"
+              {/* Order Status */}
+              <div className="bg-slate-700 p-4 rounded-lg mb-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-400 mb-1">Status</p>
+                    <span
+                      className={`inline-block px-4 py-2 rounded-lg text-sm font-bold capitalize ${
+                        selectedOrderDetail.status === "pending"
+                          ? "bg-yellow-900 text-yellow-200"
+                          : selectedOrderDetail.status === "processing"
+                            ? "bg-blue-900 text-blue-200"
+                            : selectedOrderDetail.status === "shipped"
+                              ? "bg-purple-900 text-purple-200"
+                              : selectedOrderDetail.status === "delivered"
+                                ? "bg-green-900 text-green-200"
+                                : "bg-red-900 text-red-200"
+                      }`}
                     >
-                      <div className="flex gap-4 p-4">
-                        {item.productImage && (
-                          <div className="flex-shrink-0">
-                            <img
-                              src={item.productImage}
-                              alt={productName}
-                              className="w-24 h-24 object-cover rounded border border-slate-600"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect fill='%23475569' width='100' height='100'/%3E%3Ctext x='50' y='50' font-size='12' fill='%239ca3af' text-anchor='middle' dy='.3em'%3ENo Image%3C/text%3E%3C/svg%3E";
-                              }}
-                            />
-                          </div>
-                        )}
-                        <div className="flex-1">
-                          <p className="text-white font-semibold text-lg mb-1">
-                            {productName}
-                          </p>
-                          <div className="text-sm text-gray-400 space-y-1">
-                            <div className="flex justify-between">
-                              <span>Base Price:</span>
-                              <span>${Number(basePrice).toFixed(2)}</span>
+                      {selectedOrderDetail.status}
+                    </span>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm text-gray-400 mb-1">Total Amount</p>
+                    <p className="text-3xl font-bold text-white">
+                      ${Number(selectedOrderDetail.total).toFixed(2)}
+                    </p>
+                  </div>
+                </div>
+                {selectedOrderDetail.trackingNumber && (
+                  <div className="mt-4 pt-4 border-t border-slate-600">
+                    <p className="text-sm text-gray-400">Tracking Number</p>
+                    <p className="text-sky-400 font-mono text-lg font-semibold">
+                      {selectedOrderDetail.trackingNumber}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Order Items */}
+              <div className="bg-slate-700 p-4 rounded-lg mb-6">
+                <h3 className="text-lg font-semibold text-white mb-4">
+                  Order Items
+                </h3>
+                <div className="space-y-4">
+                  {selectedOrderDetail.items.map((item: any, idx: number) => {
+                    const productName =
+                      item.name ||
+                      item.productName ||
+                      item.product?.name ||
+                      "Unknown Product";
+                    const basePrice =
+                      item.basePrice || item.price || item.product?.price || 0;
+                    const totalItemPrice = basePrice * item.quantity;
+                    const hasOptions =
+                      item.optionsBreakdown && item.optionsBreakdown.length > 0;
+                    const customTextCost = item.customTextCost || 0;
+
+                    return (
+                      <div
+                        key={idx}
+                        className="bg-slate-800 rounded border border-slate-600 overflow-hidden"
+                      >
+                        <div className="flex gap-4 p-4">
+                          {item.productImage && (
+                            <div className="flex-shrink-0">
+                              <img
+                                src={item.productImage}
+                                alt={productName}
+                                className="w-24 h-24 object-cover rounded border border-slate-600"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).src =
+                                    "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect fill='%23475569' width='100' height='100'/%3E%3Ctext x='50' y='50' font-size='12' fill='%239ca3af' text-anchor='middle' dy='.3em'%3ENo Image%3C/text%3E%3C/svg%3E";
+                                }}
+                              />
                             </div>
-                            {hasOptions && (
-                              <div className="ml-2 border-l border-slate-600 pl-2 space-y-1">
-                                <div className="font-semibold text-gray-300">Options:</div>
-                                {item.optionsBreakdown.map((option: any, optIdx: number) => (
-                                  <div key={optIdx} className="flex justify-between text-gray-400">
-                                    <span>{option.label}</span>
-                                    <span>+${Number(option.priceDelta).toFixed(2)}</span>
+                          )}
+                          <div className="flex-1">
+                            <p className="text-white font-semibold text-lg mb-1">
+                              {productName}
+                            </p>
+                            <div className="text-sm text-gray-400 space-y-1">
+                              <div className="flex justify-between">
+                                <span>Base Price:</span>
+                                <span>${Number(basePrice).toFixed(2)}</span>
+                              </div>
+                              {hasOptions && (
+                                <div className="ml-2 border-l border-slate-600 pl-2 space-y-1">
+                                  <div className="font-semibold text-gray-300">
+                                    Options:
                                   </div>
-                                ))}
-                              </div>
-                            )}
-                            {item.customText && (
-                              <div className="ml-2 border-l border-slate-600 pl-2">
-                                <div className="font-semibold text-gray-300">Custom Text:</div>
-                                <div className="text-gray-400">"{item.customText}"</div>
-                                {customTextCost > 0 && (
-                                  <div className="flex justify-between text-gray-400 mt-1">
-                                    <span>Text Cost:</span>
-                                    <span>+${Number(customTextCost).toFixed(2)}</span>
+                                  {item.optionsBreakdown.map(
+                                    (option: any, optIdx: number) => (
+                                      <div
+                                        key={optIdx}
+                                        className="flex justify-between text-gray-400"
+                                      >
+                                        <span>{option.label}</span>
+                                        <span>
+                                          +$
+                                          {Number(option.priceDelta).toFixed(2)}
+                                        </span>
+                                      </div>
+                                    ),
+                                  )}
+                                </div>
+                              )}
+                              {item.customText && (
+                                <div className="ml-2 border-l border-slate-600 pl-2">
+                                  <div className="font-semibold text-gray-300">
+                                    Custom Text:
                                   </div>
-                                )}
+                                  <div className="text-gray-400">
+                                    "{item.customText}"
+                                  </div>
+                                  {customTextCost > 0 && (
+                                    <div className="flex justify-between text-gray-400 mt-1">
+                                      <span>Text Cost:</span>
+                                      <span>
+                                        +${Number(customTextCost).toFixed(2)}
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                              {item.selectedOptions && (
+                                <div className="text-gray-400">
+                                  <span className="font-semibold text-gray-300">
+                                    Selections:
+                                  </span>{" "}
+                                  {item.selectedOptions}
+                                </div>
+                              )}
+                              <div className="flex justify-between font-semibold text-white pt-2 border-t border-slate-600 mt-2">
+                                <span>Qty: {item.quantity}</span>
+                                <span>
+                                  ${Number(totalItemPrice).toFixed(2)}
+                                </span>
                               </div>
-                            )}
-                            {item.selectedOptions && (
-                              <div className="text-gray-400">
-                                <span className="font-semibold text-gray-300">Selections:</span> {item.selectedOptions}
-                              </div>
-                            )}
-                            <div className="flex justify-between font-semibold text-white pt-2 border-t border-slate-600 mt-2">
-                              <span>Qty: {item.quantity}</span>
-                              <span>${Number(totalItemPrice).toFixed(2)}</span>
                             </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Order Summary */}
-            <div className="bg-slate-700 p-4 rounded-lg mb-6">
-              <h3 className="text-lg font-semibold text-white mb-3">
-                Order Summary
-              </h3>
-              <div className="space-y-2">
-                <div className="flex justify-between text-gray-300">
-                  <span>Subtotal</span>
-                  <span>
-                    ${toNumber(selectedOrderDetail.orderData?.subtotal ?? selectedOrderDetail.subtotal ?? 0).toFixed(2)}
-                  </span>
-                </div>
-                <div className="flex justify-between text-gray-300">
-                  <span>Tax</span>
-                  <span>
-                    ${toNumber(selectedOrderDetail.orderData?.tax ?? selectedOrderDetail.taxAmount ?? 0).toFixed(2)}
-                  </span>
-                </div>
-                <div className="flex justify-between text-gray-300">
-                  <span>Shipping</span>
-                  <span>
-                    ${toNumber(selectedOrderDetail.orderData?.shipping ?? selectedOrderDetail.shippingCost ?? 0).toFixed(2)}
-                  </span>
-                </div>
-                <div className="border-t border-slate-600 pt-2 flex justify-between text-white font-bold text-lg">
-                  <span>Total</span>
-                  <span>${toNumber(selectedOrderDetail.orderData?.total ?? selectedOrderDetail.total ?? 0).toFixed(2)}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Actions */}
-            <div className="flex gap-3">
-              <button
-                onClick={() => setIsContactModalOpen(true)}
-                className="flex-1 px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 transition-colors"
-              >
-                📧 Contact Customer
-              </button>
-              <button
-                onClick={() => {
-                  try {
-                    const order = selectedOrderDetail;
-                    const customer = selectedCustomer;
-                    if (!customer) {
-                      addToast("Customer details not available", "error");
-                      return;
-                    }
-                    const invoiceWindow = window.open("", "_blank", "width=900,height=1100");
-                    if (!invoiceWindow) {
-                      addToast("Pop-up blocked. Please allow pop-ups to print the invoice.", "error");
-                      return;
-                    }
-                    const items = (order.items || []).map((item: any, idx: number) => {
-                      const name = item.product?.name || item.productName || `Item ${idx + 1}`;
-                      const price = toNumber(item.product?.price ?? item.price ?? 0, 0);
-                      const quantity = toNumber(item.quantity, 1);
-                      return {
-                        id: String(item.id || idx),
-                        name,
-                        quantity,
-                        price,
-                        total: price * quantity,
-                      };
-                    });
-
-                    const orderData = order.orderData || {};
-                    const shipping = orderData.shippingAddress || {};
-                    const invoiceHtml = generateInvoiceHTML(
-                      {
-                        orderNumber: order.orderNumber,
-                        orderDate: order.date,
-                        storeName: "Your Store",
-                        customerName: `${customer.firstName || ""} ${customer.lastName || ""}`.trim(),
-                        customerEmail: customer.email,
-                        customerPhone: customer.phone,
-                        shippingAddress: {
-                          street: shipping.street || shipping.streetAddress || "",
-                          city: shipping.city || "",
-                          state: shipping.state || "",
-                          zip: shipping.zip || shipping.zipCode || "",
-                          country: shipping.country || "",
-                        },
-                        items,
-                        subtotal: toNumber(order.subtotal ?? orderData.subtotal ?? 0, 0),
-                        tax: toNumber(order.taxAmount ?? orderData.tax ?? 0, 0),
-                        shipping: toNumber(order.shippingCost ?? orderData.shipping ?? 0, 0),
-                        total: toNumber(order.total ?? orderData.total ?? 0, 0),
-                        trackingNumber: order.trackingNumber,
-                      },
-                      siteSettings?.invoiceTemplate,
                     );
+                  })}
+                </div>
+              </div>
 
-                    invoiceWindow.document.open();
-                    invoiceWindow.document.write(invoiceHtml);
-                    invoiceWindow.document.close();
-                    invoiceWindow.focus();
-                    invoiceWindow.print();
-                  } catch (error) {
-                    console.error("Failed to print invoice:", error);
-                    addToast("Failed to print invoice", "error");
-                  }
-                }}
-                className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-              >
-                📄 Print Invoice
-              </button>
-              <button
-                onClick={() => setSelectedOrderDetail(null)}
-                className="px-6 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-500 transition-colors"
-              >
-                Close
-              </button>
-            </div>
+              {/* Order Summary */}
+              <div className="bg-slate-700 p-4 rounded-lg mb-6">
+                <h3 className="text-lg font-semibold text-white mb-3">
+                  Order Summary
+                </h3>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-gray-300">
+                    <span>Subtotal</span>
+                    <span>
+                      $
+                      {toNumber(
+                        selectedOrderDetail.orderData?.subtotal ??
+                          selectedOrderDetail.subtotal ??
+                          0,
+                      ).toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-gray-300">
+                    <span>Tax</span>
+                    <span>
+                      $
+                      {toNumber(
+                        selectedOrderDetail.orderData?.tax ??
+                          selectedOrderDetail.taxAmount ??
+                          0,
+                      ).toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-gray-300">
+                    <span>Shipping</span>
+                    <span>
+                      $
+                      {toNumber(
+                        selectedOrderDetail.orderData?.shipping ??
+                          selectedOrderDetail.shippingCost ??
+                          0,
+                      ).toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="border-t border-slate-600 pt-2 flex justify-between text-white font-bold text-lg">
+                    <span>Total</span>
+                    <span>
+                      $
+                      {toNumber(
+                        selectedOrderDetail.orderData?.total ??
+                          selectedOrderDetail.total ??
+                          0,
+                      ).toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setIsContactModalOpen(true)}
+                  className="flex-1 px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 transition-colors"
+                >
+                  📧 Contact Customer
+                </button>
+                <button
+                  onClick={() => {
+                    try {
+                      const order = selectedOrderDetail;
+                      const customer = selectedCustomer;
+                      if (!customer) {
+                        addToast("Customer details not available", "error");
+                        return;
+                      }
+                      const invoiceWindow = window.open(
+                        "",
+                        "_blank",
+                        "width=900,height=1100",
+                      );
+                      if (!invoiceWindow) {
+                        addToast(
+                          "Pop-up blocked. Please allow pop-ups to print the invoice.",
+                          "error",
+                        );
+                        return;
+                      }
+                      const items = (order.items || []).map(
+                        (item: any, idx: number) => {
+                          const name =
+                            item.product?.name ||
+                            item.productName ||
+                            `Item ${idx + 1}`;
+                          const price = toNumber(
+                            item.product?.price ?? item.price ?? 0,
+                            0,
+                          );
+                          const quantity = toNumber(item.quantity, 1);
+                          return {
+                            id: String(item.id || idx),
+                            name,
+                            quantity,
+                            price,
+                            total: price * quantity,
+                          };
+                        },
+                      );
+
+                      const orderData = order.orderData || {};
+                      const shipping = orderData.shippingAddress || {};
+                      const invoiceHtml = generateInvoiceHTML(
+                        {
+                          orderNumber: order.orderNumber,
+                          orderDate: order.date,
+                          storeName: "Your Store",
+                          customerName:
+                            `${customer.firstName || ""} ${customer.lastName || ""}`.trim(),
+                          customerEmail: customer.email,
+                          customerPhone: customer.phone,
+                          shippingAddress: {
+                            street:
+                              shipping.street || shipping.streetAddress || "",
+                            city: shipping.city || "",
+                            state: shipping.state || "",
+                            zip: shipping.zip || shipping.zipCode || "",
+                            country: shipping.country || "",
+                          },
+                          items,
+                          subtotal: toNumber(
+                            order.subtotal ?? orderData.subtotal ?? 0,
+                            0,
+                          ),
+                          tax: toNumber(
+                            order.taxAmount ?? orderData.tax ?? 0,
+                            0,
+                          ),
+                          shipping: toNumber(
+                            order.shippingCost ?? orderData.shipping ?? 0,
+                            0,
+                          ),
+                          total: toNumber(
+                            order.total ?? orderData.total ?? 0,
+                            0,
+                          ),
+                          trackingNumber: order.trackingNumber,
+                        },
+                        siteSettings?.invoiceTemplate,
+                      );
+
+                      invoiceWindow.document.open();
+                      invoiceWindow.document.write(invoiceHtml);
+                      invoiceWindow.document.close();
+                      invoiceWindow.focus();
+                      invoiceWindow.print();
+                    } catch (error) {
+                      console.error("Failed to print invoice:", error);
+                      addToast("Failed to print invoice", "error");
+                    }
+                  }}
+                  className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                >
+                  📄 Print Invoice
+                </button>
+                <button
+                  onClick={() => setSelectedOrderDetail(null)}
+                  className="px-6 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-500 transition-colors"
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         </div>

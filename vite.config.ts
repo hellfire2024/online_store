@@ -16,15 +16,8 @@ export default defineConfig({
         // Optimize chunk splitting to reduce main chunk size
         manualChunks: {
           // Vendor chunks based on purpose, not just module presence
-          "vendor-react": [
-            "react",
-            "react-dom",
-            "react-router-dom",
-          ],
-          "vendor-pdf": [
-            "jspdf",
-            "html2canvas",
-          ],
+          "vendor-react": ["react", "react-dom", "react-router-dom"],
+          "vendor-pdf": ["jspdf", "html2canvas"],
           "vendor-editor": [
             "@tiptap/react",
             "@tiptap/starter-kit",
@@ -38,10 +31,7 @@ export default defineConfig({
             "@tiptap/extension-text-align",
             "@tiptap/extension-underline",
           ],
-          "vendor-dnd": [
-            "@dnd-kit/core",
-            "@dnd-kit/sortable",
-          ],
+          "vendor-dnd": ["@dnd-kit/core", "@dnd-kit/sortable"],
         },
       },
     },

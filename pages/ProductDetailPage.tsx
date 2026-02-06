@@ -102,18 +102,21 @@ const ProductDetailPage: React.FC = () => {
     }
   };
 
-  const handleOptionChange = useCallback((listId: string, optionId: string, isChecked: boolean) => {
-    setSelectedOptions((prev) => {
-      const listSelectedOptions = prev[listId] || [];
-      const newSelected = isChecked
-        ? [...listSelectedOptions, optionId]
-        : listSelectedOptions.filter((id) => id !== optionId);
-      return {
-        ...prev,
-        [listId]: newSelected,
-      };
-    });
-  }, []);
+  const handleOptionChange = useCallback(
+    (listId: string, optionId: string, isChecked: boolean) => {
+      setSelectedOptions((prev) => {
+        const listSelectedOptions = prev[listId] || [];
+        const newSelected = isChecked
+          ? [...listSelectedOptions, optionId]
+          : listSelectedOptions.filter((id) => id !== optionId);
+        return {
+          ...prev,
+          [listId]: newSelected,
+        };
+      });
+    },
+    [],
+  );
 
   const handleAddToCart = () => {
     if (!product) return;
@@ -355,7 +358,11 @@ const ProductDetailPage: React.FC = () => {
                                 type="checkbox"
                                 checked={listSelectedOptions.includes(opt.id)}
                                 onChange={(e) => {
-                                  handleOptionChange(list.id, opt.id, e.target.checked);
+                                  handleOptionChange(
+                                    list.id,
+                                    opt.id,
+                                    e.target.checked,
+                                  );
                                 }}
                                 className="mr-3 w-4 h-4 bg-slate-600 border border-slate-500 rounded checked:bg-sky-500 checked:border-sky-500"
                               />

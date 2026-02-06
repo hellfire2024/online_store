@@ -80,11 +80,17 @@ const CustomerOrdersPage: React.FC = () => {
         country: "USA",
       },
       items: order.items.map((item: any) => ({
-        id: item.id || (item.product && item.product.id) || `item-${Math.random()}`,
-        name: item.name || (item.product && item.product.name) || 'Unknown Item',
+        id:
+          item.id ||
+          (item.product && item.product.id) ||
+          `item-${Math.random()}`,
+        name:
+          item.name || (item.product && item.product.name) || "Unknown Item",
         quantity: item.quantity,
         price: Number(item.price || (item.product && item.product.price) || 0),
-        total: (Number(item.price || (item.product && item.product.price) || 0)) * item.quantity,
+        total:
+          Number(item.price || (item.product && item.product.price) || 0) *
+          item.quantity,
       })),
       subtotal: order.subtotal || order.total * 0.9,
       tax: order.taxAmount || order.total * 0.1,
@@ -101,14 +107,17 @@ const CustomerOrdersPage: React.FC = () => {
   const handleReorder = async (order: CustomerOrder) => {
     try {
       let itemsAdded = 0;
-      
+
       for (const item of order.items) {
         // Get the actual item name - could be in item.name (stored format) or item.product.name (alternate format)
-        const itemName = (item as any).name || (item.product && item.product.name) || 'Unknown Item';
-        
+        const itemName =
+          (item as any).name ||
+          (item.product && item.product.name) ||
+          "Unknown Item";
+
         // Find the product by name in the products list
         const product = products.find((p) => p.name === itemName);
-        
+
         if (!product) {
           addToast(`Product "${itemName}" is no longer available`, "info");
           continue;
@@ -128,7 +137,10 @@ const CustomerOrdersPage: React.FC = () => {
       }
 
       if (itemsAdded > 0) {
-        addToast(`${itemsAdded} item(s) added to cart from order #${order.orderNumber}`, "success");
+        addToast(
+          `${itemsAdded} item(s) added to cart from order #${order.orderNumber}`,
+          "success",
+        );
         navigate("/cart");
       } else {
         addToast("No items could be added to cart", "error");
@@ -283,8 +295,18 @@ const CustomerOrdersPage: React.FC = () => {
             onClick={() => navigate("/account")}
             className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-md transition-colors flex items-center gap-2"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 19l-7-7 7-7"
+              />
             </svg>
             Back to Account
           </button>
@@ -293,8 +315,18 @@ const CustomerOrdersPage: React.FC = () => {
               onClick={exportOrdersToCSV}
               className="px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-md transition-colors inline-flex items-center gap-2"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                />
               </svg>
               Export to CSV
             </button>
@@ -542,18 +574,26 @@ const CustomerOrdersPage: React.FC = () => {
                               >
                                 <div className="flex-1">
                                   <p className="text-white font-medium">
-                                    {item.name || (item.product && item.product.name) || 'Unknown Item'}
+                                    {item.name ||
+                                      (item.product && item.product.name) ||
+                                      "Unknown Item"}
                                   </p>
                                   <p className="text-gray-400 text-sm">
                                     Qty: {item.quantity} × $
-                                    {Number(item.price || (item.product && item.product.price) || 0).toFixed(2)}
+                                    {Number(
+                                      item.price ||
+                                        (item.product && item.product.price) ||
+                                        0,
+                                    ).toFixed(2)}
                                   </p>
                                 </div>
                                 <div className="text-right">
                                   <p className="text-white font-bold">
                                     $
                                     {(
-                                      (item.price || (item.product && item.product.price) || 0) * item.quantity
+                                      (item.price ||
+                                        (item.product && item.product.price) ||
+                                        0) * item.quantity
                                     ).toFixed(2)}
                                   </p>
                                 </div>

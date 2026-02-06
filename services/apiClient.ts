@@ -27,6 +27,10 @@ class ApiClient {
     }
   }
 
+  getToken(): string | null {
+    return this.token;
+  }
+
   private invalidateCache(endpoint: string): void {
     // Remove all cache entries for this resource and related resources
     const resourcePath = endpoint.split("/").slice(0, 2).join("/"); // e.g., "/settings" or "/products"

@@ -35,7 +35,10 @@ export const ServicesProvider: React.FC<{ children: ReactNode }> = ({
         const servicesData = await apiClient.services.getAll();
         setServices(Array.isArray(servicesData) ? servicesData : []);
       } catch (error) {
-        console.error("Failed to load services from API, using mock data", error);
+        console.error(
+          "Failed to load services from API, using mock data",
+          error,
+        );
         try {
           const mockServicesData = await mockApi.fetchServices();
           setServices(mockServicesData);
@@ -62,7 +65,10 @@ export const ServicesProvider: React.FC<{ children: ReactNode }> = ({
 
   const updateService = async (service: Service) => {
     try {
-      const updatedService = await apiClient.services.update(service.id, service);
+      const updatedService = await apiClient.services.update(
+        service.id,
+        service,
+      );
       setServices((prev) =>
         prev.map((s) => (s.id === updatedService.id ? updatedService : s)),
       );
@@ -92,7 +98,14 @@ export const ServicesProvider: React.FC<{ children: ReactNode }> = ({
 
   return (
     <ServicesContext.Provider
-      value={{ services, isLoading, addService, updateService, deleteService, reorderServices }}
+      value={{
+        services,
+        isLoading,
+        addService,
+        updateService,
+        deleteService,
+        reorderServices,
+      }}
     >
       {children}
     </ServicesContext.Provider>

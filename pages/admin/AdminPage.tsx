@@ -48,7 +48,10 @@ const AdminPage: React.FC = () => {
 
   return (
     <div className="flex flex-col lg:flex-row min-h-screen bg-slate-900 text-gray-300">
-      <AdminSidebar isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)} />
+      <AdminSidebar
+        isOpen={isMobileMenuOpen}
+        onClose={() => setIsMobileMenuOpen(false)}
+      />
       <main className="grow w-full overflow-auto">
         {/* Mobile Menu Button */}
         <button
@@ -56,134 +59,144 @@ const AdminPage: React.FC = () => {
           className="lg:hidden fixed top-4 left-4 z-30 p-3 bg-slate-800 rounded-lg text-white hover:bg-slate-700 shadow-lg border border-slate-600"
           aria-label="Open menu"
         >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+          <svg
+            className="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M4 6h16M4 12h16M4 18h16"
+            />
           </svg>
         </button>
         <div className="w-full max-w-7xl mx-auto p-4 pt-20 sm:p-6 lg:p-8">
           <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route
-            path="/products"
-            element={
-              <PermissionRoute requiredPermission="products">
-                <ProductManagement />
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="/galleries"
-            element={
-              <PermissionRoute requiredPermission="galleries">
-                <GalleriesManagement />
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="/staff"
-            element={
-              <PermissionRoute requiredPermission="staff">
-                <StaffManagement />
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="/reviews"
-            element={
-              <PermissionRoute requiredPermission="reviews">
-                <ReviewsManagement />
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="/services"
-            element={
-              <PermissionRoute requiredPermission="services">
-                <ServicesManagement />
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="/settings"
-            element={
-              <PermissionRoute requiredPermission="settings">
-                <SettingsManagement />
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="/pages"
-            element={
-              <PermissionRoute requiredPermission="pages">
-                <PagesManagement />
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="/pages/edit/:pageId"
-            element={
-              <PermissionRoute requiredPermission="pages">
-                <PageEditor />
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="/pages/new"
-            element={
-              <PermissionRoute requiredPermission="pages">
-                <PageEditor />
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="/users"
-            element={
-              <PermissionRoute requiredPermission="users">
-                <UserManagement />
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="/customers"
-            element={
-              <PermissionRoute requiredPermission="customers">
-                <CustomerManagement />
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="/customers/analytics"
-            element={
-              <PermissionRoute requiredPermission="customers">
-                <CustomerAnalytics />
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="/orders"
-            element={
-              <PermissionRoute requiredPermission="orders">
-                <OrderManagement />
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="/security"
-            element={
-              <PermissionRoute requiredPermission="security">
-                <AdminSecurity />
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="/tickets"
-            element={
-              <PermissionRoute requiredPermission="support">
-                <TicketsManagement />
-              </PermissionRoute>
-            }
-          />
-        </Routes>
+            <Route path="/" element={<Dashboard />} />
+            <Route
+              path="/products"
+              element={
+                <PermissionRoute requiredPermission="products">
+                  <ProductManagement />
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="/galleries"
+              element={
+                <PermissionRoute requiredPermission="galleries">
+                  <GalleriesManagement />
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="/staff"
+              element={
+                <PermissionRoute requiredPermission="staff">
+                  <StaffManagement />
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="/reviews"
+              element={
+                <PermissionRoute requiredPermission="reviews">
+                  <ReviewsManagement />
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="/services"
+              element={
+                <PermissionRoute requiredPermission="services">
+                  <ServicesManagement />
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="/settings"
+              element={
+                <PermissionRoute requiredPermission="settings">
+                  <SettingsManagement />
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="/pages"
+              element={
+                <PermissionRoute requiredPermission="pages">
+                  <PagesManagement />
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="/pages/edit/:pageId"
+              element={
+                <PermissionRoute requiredPermission="pages">
+                  <PageEditor />
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="/pages/new"
+              element={
+                <PermissionRoute requiredPermission="pages">
+                  <PageEditor />
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="/users"
+              element={
+                <PermissionRoute requiredPermission="users">
+                  <UserManagement />
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="/customers"
+              element={
+                <PermissionRoute requiredPermission="customers">
+                  <CustomerManagement />
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="/customers/analytics"
+              element={
+                <PermissionRoute requiredPermission="customers">
+                  <CustomerAnalytics />
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="/orders"
+              element={
+                <PermissionRoute requiredPermission="orders">
+                  <OrderManagement />
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="/security"
+              element={
+                <PermissionRoute requiredPermission="security">
+                  <AdminSecurity />
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="/tickets"
+              element={
+                <PermissionRoute requiredPermission="support">
+                  <TicketsManagement />
+                </PermissionRoute>
+              }
+            />
+          </Routes>
         </div>
       </main>
     </div>

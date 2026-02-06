@@ -5,15 +5,31 @@ export interface StaffRole {
 }
 
 const DEFAULT_STAFF_ROLES: StaffRole[] = [
-  { key: 'manager', label: 'Manager', description: 'Manages staff and operations' },
-  { key: 'designer', label: 'Designer', description: 'Creates and designs content' },
-  { key: 'sales', label: 'Sales', description: 'Handles customer sales' },
-  { key: 'support', label: 'Support', description: 'Customer support team' },
-  { key: 'content_creator', label: 'Content Creator', description: 'Creates marketing content' },
-  { key: 'accountant', label: 'Accountant', description: 'Manages financial records' },
+  {
+    key: "manager",
+    label: "Manager",
+    description: "Manages staff and operations",
+  },
+  {
+    key: "designer",
+    label: "Designer",
+    description: "Creates and designs content",
+  },
+  { key: "sales", label: "Sales", description: "Handles customer sales" },
+  { key: "support", label: "Support", description: "Customer support team" },
+  {
+    key: "content_creator",
+    label: "Content Creator",
+    description: "Creates marketing content",
+  },
+  {
+    key: "accountant",
+    label: "Accountant",
+    description: "Manages financial records",
+  },
 ];
 
-const STORAGE_KEY = 'staff_roles_config_v1';
+const STORAGE_KEY = "staff_roles_config_v1";
 
 export function loadStaffRoles(): StaffRole[] {
   try {
@@ -32,7 +48,7 @@ export function saveStaffRoles(roles: StaffRole[]) {
 }
 
 export function findStaffRoleLabel(roles: StaffRole[], key: string): string {
-  const r = roles.find(r => r.key === key);
+  const r = roles.find((r) => r.key === key);
   if (r) return r.label;
   return key;
 }

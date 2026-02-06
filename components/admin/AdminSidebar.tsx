@@ -41,7 +41,10 @@ interface AdminSidebarProps {
   onClose?: () => void;
 }
 
-const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen = true, onClose }) => {
+const AdminSidebar: React.FC<AdminSidebarProps> = ({
+  isOpen = true,
+  onClose,
+}) => {
   const { logoutAdmin } = useAdmin();
   const { can } = usePermissions();
   const navigate = useNavigate();
@@ -59,22 +62,22 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen = true, onClose }) =
   // Close on escape key
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && onClose) {
+      if (e.key === "Escape" && onClose) {
         onClose();
       }
     };
-    
+
     if (isOpen) {
-      document.addEventListener('keydown', handleEscape);
+      document.addEventListener("keydown", handleEscape);
       // Prevent body scroll when mobile menu is open
       if (window.innerWidth < 1024) {
-        document.body.style.overflow = 'hidden';
+        document.body.style.overflow = "hidden";
       }
     }
-    
+
     return () => {
-      document.removeEventListener('keydown', handleEscape);
-      document.body.style.overflow = '';
+      document.removeEventListener("keydown", handleEscape);
+      document.body.style.overflow = "";
     };
   }, [isOpen, onClose]);
 
@@ -105,13 +108,13 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen = true, onClose }) =
     <>
       {/* Mobile Overlay */}
       {isOpen && onClose && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/50 z-40 lg:hidden transition-opacity"
           onClick={onClose}
           aria-hidden="true"
         />
       )}
-      
+
       {/* Sidebar */}
       <aside
         className={`
@@ -119,7 +122,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen = true, onClose }) =
           w-80 lg:w-64 shrink-0 bg-slate-800 p-5 flex flex-col 
           border-r border-slate-700 overflow-y-auto
           transition-transform duration-300 ease-in-out
-          ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+          ${isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
           scrollbar-thin scrollbar-track-slate-800 scrollbar-thumb-slate-700 hover:scrollbar-thumb-slate-600
         `}
         style={{
@@ -134,165 +137,187 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen = true, onClose }) =
             className="lg:hidden absolute top-4 right-4 p-2 text-gray-400 hover:text-white transition-colors"
             aria-label="Close menu"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         )}
-        
+
         <div className="text-2xl font-bold text-white tracking-wider mb-10 px-2">
           Admin<span className="text-sky-400">Panel</span>
         </div>
         <nav className="grow space-y-1" onClick={handleNavClick}>
           <PromptedNavLink to="/admin" end className={getNavLinkClass}>
-          <DashboardIcon className="w-6 h-6 mr-3" />
-          Dashboard
-        </PromptedNavLink>
+            <DashboardIcon className="w-6 h-6 mr-3" />
+            Dashboard
+          </PromptedNavLink>
 
-        <div className="pt-4 mt-2 border-t border-slate-700">
-          <div
-            onClick={() => toggleSection("store")}
-            className={sectionHeaderClass}
-          >
-            <span>Store</span>
-            <ChevronIcon isOpen={expandedSections["store"] || false} />
+          <div className="pt-4 mt-2 border-t border-slate-700">
+            <div
+              onClick={() => toggleSection("store")}
+              className={sectionHeaderClass}
+            >
+              <span>Store</span>
+              <ChevronIcon isOpen={expandedSections["store"] || false} />
+            </div>
+            {expandedSections["store"] && (
+              <>
+                {can("products") && (
+                  <PromptedNavLink
+                    to="/admin/products"
+                    className={getNavLinkClass}
+                  >
+                    <ProductIcon className="w-6 h-6 mr-3" />
+                    Products
+                  </PromptedNavLink>
+                )}
+                {can("galleries") && (
+                  <PromptedNavLink
+                    to="/admin/galleries"
+                    className={getNavLinkClass}
+                  >
+                    <GalleryIcon className="w-6 h-6 mr-3" />
+                    Galleries
+                  </PromptedNavLink>
+                )}
+                {can("services") && (
+                  <PromptedNavLink
+                    to="/admin/services"
+                    className={getNavLinkClass}
+                  >
+                    <ServicesIcon className="w-6 h-6 mr-3" />
+                    Services
+                  </PromptedNavLink>
+                )}
+                {can("reviews") && (
+                  <PromptedNavLink
+                    to="/admin/reviews"
+                    className={getNavLinkClass}
+                  >
+                    <ReviewsIcon className="w-6 h-6 mr-3" />
+                    Reviews
+                  </PromptedNavLink>
+                )}
+              </>
+            )}
           </div>
-          {expandedSections["store"] && (
-            <>
-              {can("products") && (
-                <PromptedNavLink
-                  to="/admin/products"
-                  className={getNavLinkClass}
-                >
-                  <ProductIcon className="w-6 h-6 mr-3" />
-                  Products
-                </PromptedNavLink>
-              )}
-              {can("galleries") && (
-                <PromptedNavLink
-                  to="/admin/galleries"
-                  className={getNavLinkClass}
-                >
-                  <GalleryIcon className="w-6 h-6 mr-3" />
-                  Galleries
-                </PromptedNavLink>
-              )}
-              {can("services") && (
-                <PromptedNavLink
-                  to="/admin/services"
-                  className={getNavLinkClass}
-                >
-                  <ServicesIcon className="w-6 h-6 mr-3" />
-                  Services
-                </PromptedNavLink>
-              )}
-              {can("reviews") && (
-                <PromptedNavLink
-                  to="/admin/reviews"
-                  className={getNavLinkClass}
-                >
-                  <ReviewsIcon className="w-6 h-6 mr-3" />
-                  Reviews
-                </PromptedNavLink>
-              )}
-            </>
-          )}
-        </div>
 
-        <div className="pt-4 mt-2 border-t border-slate-700">
-          <div
-            onClick={() => toggleSection("content")}
-            className={sectionHeaderClass}
-          >
-            <span>Site Content</span>
-            <ChevronIcon isOpen={expandedSections["content"] || false} />
+          <div className="pt-4 mt-2 border-t border-slate-700">
+            <div
+              onClick={() => toggleSection("content")}
+              className={sectionHeaderClass}
+            >
+              <span>Site Content</span>
+              <ChevronIcon isOpen={expandedSections["content"] || false} />
+            </div>
+            {expandedSections["content"] && can("pages") && (
+              <PromptedNavLink to="/admin/pages" className={getNavLinkClass}>
+                <PagesIcon className="w-6 h-6 mr-3" />
+                Pages
+              </PromptedNavLink>
+            )}
           </div>
-          {expandedSections["content"] && can("pages") && (
-            <PromptedNavLink to="/admin/pages" className={getNavLinkClass}>
-              <PagesIcon className="w-6 h-6 mr-3" />
-              Pages
+
+          <div className="pt-4 mt-2 border-t border-slate-700">
+            <div
+              onClick={() => toggleSection("management")}
+              className={sectionHeaderClass}
+            >
+              <span>Management</span>
+              <ChevronIcon isOpen={expandedSections["management"] || false} />
+            </div>
+            {expandedSections["management"] && (
+              <>
+                {can("security") && (
+                  <PromptedNavLink
+                    to="/admin/users"
+                    className={getNavLinkClass}
+                  >
+                    <StaffIcon className="w-6 h-6 mr-3" />
+                    Admin Users
+                  </PromptedNavLink>
+                )}
+                {can("customers") && (
+                  <PromptedNavLink
+                    to="/admin/customers"
+                    end
+                    className={getNavLinkClass}
+                  >
+                    <StaffIcon className="w-6 h-6 mr-3" />
+                    Customers
+                  </PromptedNavLink>
+                )}
+                {can("reports") && (
+                  <PromptedNavLink
+                    to="/admin/customers/analytics"
+                    className={getNavLinkClass}
+                  >
+                    <BarChartIcon className="w-6 h-6 mr-3" />
+                    Customer Analytics
+                  </PromptedNavLink>
+                )}
+                {can("staff") && (
+                  <PromptedNavLink
+                    to="/admin/staff"
+                    className={getNavLinkClass}
+                  >
+                    <StaffIcon className="w-6 h-6 mr-3" />
+                    Staff
+                  </PromptedNavLink>
+                )}
+                {can("orders") && (
+                  <PromptedNavLink
+                    to="/admin/orders"
+                    className={getNavLinkClass}
+                  >
+                    <ShoppingBagIcon className="w-6 h-6 mr-3" />
+                    Orders
+                  </PromptedNavLink>
+                )}
+                <PromptedNavLink
+                  to="/admin/tickets"
+                  className={getNavLinkClass}
+                >
+                  <TicketIcon className="w-6 h-6 mr-3" />
+                  Support Tickets
+                </PromptedNavLink>
+              </>
+            )}
+          </div>
+        </nav>
+
+        <div className="pt-4 mt-auto border-t border-slate-700 -mx-4 px-4">
+          {can("settings") && (
+            <PromptedNavLink to="/admin/settings" className={getNavLinkClass}>
+              <SettingsIcon className="w-6 h-6 mr-3 shrink-0" />
+              <span className="truncate">Settings</span>
             </PromptedNavLink>
           )}
-        </div>
-
-        <div className="pt-4 mt-2 border-t border-slate-700">
-          <div
-            onClick={() => toggleSection("management")}
-            className={sectionHeaderClass}
-          >
-            <span>Management</span>
-            <ChevronIcon isOpen={expandedSections["management"] || false} />
-          </div>
-          {expandedSections["management"] && (
-            <>
-              {can("security") && (
-                <PromptedNavLink to="/admin/users" className={getNavLinkClass}>
-                  <StaffIcon className="w-6 h-6 mr-3" />
-                  Admin Users
-                </PromptedNavLink>
-              )}
-              {can("customers") && (
-                <PromptedNavLink
-                  to="/admin/customers"
-                  end
-                  className={getNavLinkClass}
-                >
-                  <StaffIcon className="w-6 h-6 mr-3" />
-                  Customers
-                </PromptedNavLink>
-              )}
-              {can("reports") && (
-                <PromptedNavLink
-                  to="/admin/customers/analytics"
-                  className={getNavLinkClass}
-                >
-                  <BarChartIcon className="w-6 h-6 mr-3" />
-                  Customer Analytics
-                </PromptedNavLink>
-              )}
-              {can("staff") && (
-                <PromptedNavLink to="/admin/staff" className={getNavLinkClass}>
-                  <StaffIcon className="w-6 h-6 mr-3" />
-                  Staff
-                </PromptedNavLink>
-              )}
-              {can("orders") && (
-                <PromptedNavLink to="/admin/orders" className={getNavLinkClass}>
-                  <ShoppingBagIcon className="w-6 h-6 mr-3" />
-                  Orders
-                </PromptedNavLink>
-              )}
-              <PromptedNavLink to="/admin/tickets" className={getNavLinkClass}>
-                <TicketIcon className="w-6 h-6 mr-3" />
-                Support Tickets
-              </PromptedNavLink>
-            </>
+          {can("security") && (
+            <PromptedNavLink to="/admin/security" className={getNavLinkClass}>
+              <LockIcon className="w-6 h-6 mr-3 shrink-0" />
+              <span className="truncate">Security</span>
+            </PromptedNavLink>
           )}
+          <button
+            onClick={handleLogout}
+            className={`${linkClass} justify-start overflow-hidden`}
+          >
+            <LogoutIcon className="w-6 h-6 mr-3 shrink-0" />
+            <span className="truncate">Logout</span>
+          </button>
         </div>
-      </nav>
-
-      <div className="pt-4 mt-auto border-t border-slate-700 -mx-4 px-4">
-        {can("settings") && (
-          <PromptedNavLink to="/admin/settings" className={getNavLinkClass}>
-            <SettingsIcon className="w-6 h-6 mr-3 shrink-0" />
-            <span className="truncate">Settings</span>
-          </PromptedNavLink>
-        )}
-        {can("security") && (
-          <PromptedNavLink to="/admin/security" className={getNavLinkClass}>
-            <LockIcon className="w-6 h-6 mr-3 shrink-0" />
-            <span className="truncate">Security</span>
-          </PromptedNavLink>
-        )}
-        <button
-          onClick={handleLogout}
-          className={`${linkClass} justify-start overflow-hidden`}
-        >
-          <LogoutIcon className="w-6 h-6 mr-3 shrink-0" />
-          <span className="truncate">Logout</span>
-        </button>
-      </div>
-    </aside>
+      </aside>
     </>
   );
 };

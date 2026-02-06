@@ -2,13 +2,17 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCustomerAuth } from "../context/CustomerAuthContext";
 import { useToast } from "../hooks/useToast";
-import { validatePassword, getPasswordStrengthColor, getPasswordStrengthBgColor } from "../services/passwordValidator";
+import {
+  validatePassword,
+  getPasswordStrengthColor,
+  getPasswordStrengthBgColor,
+} from "../services/passwordValidator";
 
 const ChangePasswordPage: React.FC = () => {
   const navigate = useNavigate();
   const { customer } = useCustomerAuth();
   const { addToast } = useToast();
-  
+
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -52,7 +56,7 @@ const ChangePasswordPage: React.FC = () => {
     // Validate password with strict rules
     const validation = validatePassword(newPassword);
     if (!validation.isValid) {
-      validation.errors.forEach(error => addToast(error, "error"));
+      validation.errors.forEach((error) => addToast(error, "error"));
       return false;
     }
 
@@ -88,7 +92,7 @@ const ChangePasswordPage: React.FC = () => {
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
-      
+
       // Redirect back to account page after 2 seconds
       setTimeout(() => {
         navigate("/account");
@@ -109,15 +113,27 @@ const ChangePasswordPage: React.FC = () => {
           onClick={() => navigate("/account")}
           className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-md transition-colors flex items-center gap-2"
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15 19l-7-7 7-7"
+            />
           </svg>
           Back to Account
         </button>
       </div>
 
       <div className="bg-slate-800 p-6 rounded-lg border border-slate-700">
-        <p className="text-gray-400 mb-6">Update your account password to keep your account secure</p>
+        <p className="text-gray-400 mb-6">
+          Update your account password to keep your account secure
+        </p>
 
         <div className="space-y-4">
           {/* Current Password */}
@@ -168,28 +184,76 @@ const ChangePasswordPage: React.FC = () => {
             </div>
             {newPassword && (
               <div className="mt-3 space-y-2">
-                <div className={`p-3 rounded-md ${getPasswordStrengthBgColor(validatePassword(newPassword).strength)}`}>
-                  <p className={`text-sm font-medium ${getPasswordStrengthColor(validatePassword(newPassword).strength)}`}>
-                    Password Strength: {validatePassword(newPassword).strength.charAt(0).toUpperCase() + validatePassword(newPassword).strength.slice(1)}
+                <div
+                  className={`p-3 rounded-md ${getPasswordStrengthBgColor(validatePassword(newPassword).strength)}`}
+                >
+                  <p
+                    className={`text-sm font-medium ${getPasswordStrengthColor(validatePassword(newPassword).strength)}`}
+                  >
+                    Password Strength:{" "}
+                    {validatePassword(newPassword)
+                      .strength.charAt(0)
+                      .toUpperCase() +
+                      validatePassword(newPassword).strength.slice(1)}
                   </p>
                 </div>
                 <div className="p-3 bg-slate-700 rounded-md border border-slate-600">
-                  <p className="text-xs font-semibold text-gray-300 mb-2">Requirements:</p>
+                  <p className="text-xs font-semibold text-gray-300 mb-2">
+                    Requirements:
+                  </p>
                   <ul className="text-xs text-gray-400 space-y-1">
-                    <li className={newPassword.length >= 8 ? "text-green-400" : "text-gray-400"}>
-                      {newPassword.length >= 8 ? "✓" : "✗"} At least 8 characters
+                    <li
+                      className={
+                        newPassword.length >= 8
+                          ? "text-green-400"
+                          : "text-gray-400"
+                      }
+                    >
+                      {newPassword.length >= 8 ? "✓" : "✗"} At least 8
+                      characters
                     </li>
-                    <li className={/[A-Z]/.test(newPassword) ? "text-green-400" : "text-gray-400"}>
-                      {/[A-Z]/.test(newPassword) ? "✓" : "✗"} One uppercase letter
+                    <li
+                      className={
+                        /[A-Z]/.test(newPassword)
+                          ? "text-green-400"
+                          : "text-gray-400"
+                      }
+                    >
+                      {/[A-Z]/.test(newPassword) ? "✓" : "✗"} One uppercase
+                      letter
                     </li>
-                    <li className={/[a-z]/.test(newPassword) ? "text-green-400" : "text-gray-400"}>
-                      {/[a-z]/.test(newPassword) ? "✓" : "✗"} One lowercase letter
+                    <li
+                      className={
+                        /[a-z]/.test(newPassword)
+                          ? "text-green-400"
+                          : "text-gray-400"
+                      }
+                    >
+                      {/[a-z]/.test(newPassword) ? "✓" : "✗"} One lowercase
+                      letter
                     </li>
-                    <li className={/\d/.test(newPassword) ? "text-green-400" : "text-gray-400"}>
+                    <li
+                      className={
+                        /\d/.test(newPassword)
+                          ? "text-green-400"
+                          : "text-gray-400"
+                      }
+                    >
                       {/\d/.test(newPassword) ? "✓" : "✗"} One number
                     </li>
-                    <li className={/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(newPassword) ? "text-green-400" : "text-gray-400"}>
-                      {/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(newPassword) ? "✓" : "✗"} One special character (!@#$% etc)
+                    <li
+                      className={
+                        /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(
+                          newPassword,
+                        )
+                          ? "text-green-400"
+                          : "text-gray-400"
+                      }
+                    >
+                      {/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(newPassword)
+                        ? "✓"
+                        : "✗"}{" "}
+                      One special character (!@#$% etc)
                     </li>
                   </ul>
                 </div>
@@ -220,15 +284,21 @@ const ChangePasswordPage: React.FC = () => {
               </button>
             </div>
             {confirmPassword && newPassword && (
-              <p className={`text-sm mt-1 ${newPassword === confirmPassword ? "text-green-400" : "text-red-400"}`}>
-                {newPassword === confirmPassword ? "✓ Passwords match" : "✗ Passwords do not match"}
+              <p
+                className={`text-sm mt-1 ${newPassword === confirmPassword ? "text-green-400" : "text-red-400"}`}
+              >
+                {newPassword === confirmPassword
+                  ? "✓ Passwords match"
+                  : "✗ Passwords do not match"}
               </p>
             )}
           </div>
 
           {/* Security Tips */}
           <div className="bg-slate-700 p-4 rounded-md border border-slate-600">
-            <h3 className="text-sm font-semibold text-white mb-2">Security Tips:</h3>
+            <h3 className="text-sm font-semibold text-white mb-2">
+              Security Tips:
+            </h3>
             <ul className="text-sm text-gray-300 space-y-1 list-disc list-inside">
               <li>Use at least 8 characters</li>
               <li>Mix uppercase, lowercase, numbers, and symbols</li>
@@ -241,7 +311,12 @@ const ChangePasswordPage: React.FC = () => {
           <div className="flex gap-3 pt-4">
             <button
               onClick={handleChangePassword}
-              disabled={isLoading || !currentPassword || !newPassword || !confirmPassword}
+              disabled={
+                isLoading ||
+                !currentPassword ||
+                !newPassword ||
+                !confirmPassword
+              }
               className="flex-1 px-4 py-2 bg-sky-500 hover:bg-sky-600 disabled:bg-slate-600 disabled:cursor-not-allowed text-white rounded-md font-medium transition-colors"
             >
               {isLoading ? "Updating..." : "Update Password"}

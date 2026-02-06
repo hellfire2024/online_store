@@ -7,7 +7,11 @@ import Pagination from "../../components/Pagination";
 import { StaffMember } from "../../types";
 import { useUnsavedChanges } from "../../context/UnsavedChangesContext";
 import ImageUploadInput from "../../components/admin/ImageUploadInput";
-import { loadStaffRoles, saveStaffRoles, StaffRole } from "../../services/staffRolesConfig";
+import {
+  loadStaffRoles,
+  saveStaffRoles,
+  StaffRole,
+} from "../../services/staffRolesConfig";
 
 const StaffManagement: React.FC = () => {
   const { staff, isLoading, addStaff, updateStaff, deleteStaff } = useStaff();
@@ -99,7 +103,7 @@ const StaffManagement: React.FC = () => {
         // Upload image to server
         const formData = new FormData();
         formData.append("image", selectedImageFile);
-        
+
         const response = await fetch("http://localhost:3001/api/upload/image", {
           method: "POST",
           body: formData,
@@ -145,9 +149,13 @@ const StaffManagement: React.FC = () => {
   };
 
   // Pagination logic
-  const paginatedStaff = itemsPerPage === -1 
-    ? staff 
-    : staff.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const paginatedStaff =
+    itemsPerPage === -1
+      ? staff
+      : staff.slice(
+          (currentPage - 1) * itemsPerPage,
+          currentPage * itemsPerPage,
+        );
 
   if (isLoading) {
     return <Spinner />;
@@ -191,7 +199,11 @@ const StaffManagement: React.FC = () => {
               </button>
               <button
                 onClick={() => {
-                  if (window.confirm(`Are you sure you want to delete "${staffMember.name}"? This action cannot be undone.`)) {
+                  if (
+                    window.confirm(
+                      `Are you sure you want to delete "${staffMember.name}"? This action cannot be undone.`,
+                    )
+                  ) {
                     deleteStaff(staffMember.id);
                   }
                 }}
@@ -223,7 +235,9 @@ const StaffManagement: React.FC = () => {
             </h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Full Name</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Full Name
+                </label>
                 <input
                   type="text"
                   name="name"
@@ -234,7 +248,9 @@ const StaffManagement: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Role</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Role
+                </label>
                 <div className="flex gap-2">
                   <select
                     name="role"
@@ -243,8 +259,10 @@ const StaffManagement: React.FC = () => {
                     className="flex-1 px-4 py-2 bg-slate-700 border border-slate-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
                   >
                     <option value="">Select a role...</option>
-                    {roleOptions.map(r => (
-                      <option key={r.key} value={r.key}>{r.label}</option>
+                    {roleOptions.map((r) => (
+                      <option key={r.key} value={r.key}>
+                        {r.label}
+                      </option>
                     ))}
                   </select>
                   <button
@@ -257,7 +275,9 @@ const StaffManagement: React.FC = () => {
                 </div>
                 {showNewRoleInput && (
                   <div className="mt-3 p-4 bg-slate-700/50 rounded-md border border-slate-600">
-                    <p className="text-sm text-gray-300 mb-3 font-medium">Create New Role</p>
+                    <p className="text-sm text-gray-300 mb-3 font-medium">
+                      Create New Role
+                    </p>
                     <div className="flex gap-2">
                       <input
                         type="text"
@@ -270,20 +290,31 @@ const StaffManagement: React.FC = () => {
                         onClick={() => {
                           if (newRoleName.trim()) {
                             const newRole: StaffRole = {
-                              key: newRoleName.toLowerCase().replace(/\s+/g, '_'),
+                              key: newRoleName
+                                .toLowerCase()
+                                .replace(/\s+/g, "_"),
                               label: newRoleName,
                             };
                             const updatedRoles = [...roleOptions, newRole];
                             setRoleOptions(updatedRoles);
                             saveStaffRoles(updatedRoles);
                             if (newStaffMember) {
-                              setNewStaffMember({ ...newStaffMember, role: newRole.key });
+                              setNewStaffMember({
+                                ...newStaffMember,
+                                role: newRole.key,
+                              });
                             } else if (editingStaff) {
-                              setEditingStaff({ ...editingStaff, role: newRole.key });
+                              setEditingStaff({
+                                ...editingStaff,
+                                role: newRole.key,
+                              });
                             }
                             setNewRoleName("");
                             setShowNewRoleInput(false);
-                            addToast(`Role "${newRoleName}" created successfully`, "success");
+                            addToast(
+                              `Role "${newRoleName}" created successfully`,
+                              "success",
+                            );
                           }
                         }}
                         className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md font-medium transition-colors whitespace-nowrap"

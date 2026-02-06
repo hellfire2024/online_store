@@ -1,6 +1,23 @@
 import React, { useState } from "react";
 import { useServices } from "../../context/ServicesContext";
-import { PlusIcon, EditIcon, TrashIcon, DashboardIcon, ProductIcon, GalleryIcon, ContentIcon, StarIcon, UsersIcon, MessageSquareIcon, SettingsIcon, LayersIcon, CoffeeIcon, AwardIcon, FileTextIcon, UploadIcon } from "../../components/Icons";
+import {
+  PlusIcon,
+  EditIcon,
+  TrashIcon,
+  DashboardIcon,
+  ProductIcon,
+  GalleryIcon,
+  ContentIcon,
+  StarIcon,
+  UsersIcon,
+  MessageSquareIcon,
+  SettingsIcon,
+  LayersIcon,
+  CoffeeIcon,
+  AwardIcon,
+  FileTextIcon,
+  UploadIcon,
+} from "../../components/Icons";
 import Spinner from "../../components/Spinner";
 import Pagination from "../../components/Pagination";
 import { Service } from "../../types";
@@ -49,18 +66,25 @@ const SortableServiceRow: React.FC<SortableServiceRowProps> = ({
   };
 
   const iconMap: Record<string, React.FC<{ className?: string }>> = {
-    DashboardIcon, ProductIcon, GalleryIcon, ContentIcon, StarIcon,
-    UsersIcon, MessageSquareIcon, SettingsIcon, LayersIcon,
-    CoffeeIcon, AwardIcon, FileTextIcon, EditIcon, UploadIcon
+    DashboardIcon,
+    ProductIcon,
+    GalleryIcon,
+    ContentIcon,
+    StarIcon,
+    UsersIcon,
+    MessageSquareIcon,
+    SettingsIcon,
+    LayersIcon,
+    CoffeeIcon,
+    AwardIcon,
+    FileTextIcon,
+    EditIcon,
+    UploadIcon,
   };
   const ServiceIcon = iconMap[service.icon] || LayersIcon;
 
   return (
-    <tr
-      ref={setNodeRef}
-      style={style}
-      className="border-t border-slate-700"
-    >
+    <tr ref={setNodeRef} style={style} className="border-t border-slate-700">
       <td className="p-4">
         <button
           type="button"
@@ -83,10 +107,7 @@ const SortableServiceRow: React.FC<SortableServiceRowProps> = ({
         >
           <EditIcon className="w-5 h-5" />
         </button>
-        <button
-          onClick={onDelete}
-          className="text-gray-400 hover:text-red-500"
-        >
+        <button onClick={onDelete} className="text-gray-400 hover:text-red-500">
           <TrashIcon className="w-5 h-5" />
         </button>
       </td>
@@ -95,9 +116,17 @@ const SortableServiceRow: React.FC<SortableServiceRowProps> = ({
 };
 
 const ServicesManagement: React.FC = () => {
-  const { services, isLoading, addService, updateService, deleteService, reorderServices } =
-    useServices();
-  const [editingService, setEditingService] = useState<Service | Omit<Service, "id"> | null>(null);
+  const {
+    services,
+    isLoading,
+    addService,
+    updateService,
+    deleteService,
+    reorderServices,
+  } = useServices();
+  const [editingService, setEditingService] = useState<
+    Service | Omit<Service, "id"> | null
+  >(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
@@ -119,10 +148,10 @@ const ServicesManagement: React.FC = () => {
   const handleSave = async () => {
     if (!editingService) return;
 
-    if ('id' in editingService && editingService.id) {
+    if ("id" in editingService && editingService.id) {
       await updateService(editingService as Service);
     } else {
-      await addService(editingService as Omit<Service, 'id'>);
+      await addService(editingService as Omit<Service, "id">);
     }
     closeModal();
   };
@@ -148,9 +177,13 @@ const ServicesManagement: React.FC = () => {
     "w-full p-2 bg-slate-700 border border-slate-600 rounded-md text-white";
 
   // Pagination logic
-  const paginatedServices = itemsPerPage === -1 
-    ? services 
-    : services.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const paginatedServices =
+    itemsPerPage === -1
+      ? services
+      : services.slice(
+          (currentPage - 1) * itemsPerPage,
+          currentPage * itemsPerPage,
+        );
 
   if (isLoading) {
     return <Spinner />;
@@ -201,7 +234,11 @@ const ServicesManagement: React.FC = () => {
                       service={service}
                       onEdit={() => openModal(service)}
                       onDelete={() => {
-                        if (window.confirm(`Are you sure you want to delete "${service.title}"? This action cannot be undone.`)) {
+                        if (
+                          window.confirm(
+                            `Are you sure you want to delete "${service.title}"? This action cannot be undone.`,
+                          )
+                        ) {
                           deleteService(service.id);
                         }
                       }}
@@ -229,7 +266,7 @@ const ServicesManagement: React.FC = () => {
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center">
           <div className="bg-slate-800 rounded-lg shadow-2xl p-8 w-full max-w-lg border border-slate-700">
             <h2 className="text-2xl font-bold text-white mb-6">
-              {('id' in editingService ? 'Edit' : 'Add')} Service
+              {"id" in editingService ? "Edit" : "Add"} Service
             </h2>
             <div className="space-y-4">
               <input
@@ -249,17 +286,43 @@ const ServicesManagement: React.FC = () => {
                 rows={3}
               ></textarea>
               <div>
-                <label className="block text-gray-300 text-sm font-bold mb-2">Icon</label>
+                <label className="block text-gray-300 text-sm font-bold mb-2">
+                  Icon
+                </label>
                 <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto p-2 bg-slate-900 rounded-lg">
                   {[
-                    { name: "DashboardIcon", Icon: DashboardIcon, label: "Dashboard" },
-                    { name: "ProductIcon", Icon: ProductIcon, label: "Product" },
-                    { name: "GalleryIcon", Icon: GalleryIcon, label: "Gallery" },
-                    { name: "ContentIcon", Icon: ContentIcon, label: "Document" },
+                    {
+                      name: "DashboardIcon",
+                      Icon: DashboardIcon,
+                      label: "Dashboard",
+                    },
+                    {
+                      name: "ProductIcon",
+                      Icon: ProductIcon,
+                      label: "Product",
+                    },
+                    {
+                      name: "GalleryIcon",
+                      Icon: GalleryIcon,
+                      label: "Gallery",
+                    },
+                    {
+                      name: "ContentIcon",
+                      Icon: ContentIcon,
+                      label: "Document",
+                    },
                     { name: "StarIcon", Icon: StarIcon, label: "Star" },
                     { name: "UsersIcon", Icon: UsersIcon, label: "Users" },
-                    { name: "MessageSquareIcon", Icon: MessageSquareIcon, label: "Message" },
-                    { name: "SettingsIcon", Icon: SettingsIcon, label: "Settings" },
+                    {
+                      name: "MessageSquareIcon",
+                      Icon: MessageSquareIcon,
+                      label: "Message",
+                    },
+                    {
+                      name: "SettingsIcon",
+                      Icon: SettingsIcon,
+                      label: "Settings",
+                    },
                     { name: "LayersIcon", Icon: LayersIcon, label: "Layers" },
                     { name: "CoffeeIcon", Icon: CoffeeIcon, label: "Coffee" },
                     { name: "AwardIcon", Icon: AwardIcon, label: "Award" },
@@ -270,15 +333,21 @@ const ServicesManagement: React.FC = () => {
                     <button
                       key={iconData.name}
                       type="button"
-                      onClick={() => setEditingService(prev => prev ? { ...prev, icon: iconData.name } : null)}
+                      onClick={() =>
+                        setEditingService((prev) =>
+                          prev ? { ...prev, icon: iconData.name } : null,
+                        )
+                      }
                       className={`flex items-center gap-2 p-3 rounded-lg border-2 transition-all ${
                         editingService.icon === iconData.name
-                          ? 'border-sky-500 bg-sky-500/20'
-                          : 'border-slate-600 bg-slate-700 hover:border-slate-500'
+                          ? "border-sky-500 bg-sky-500/20"
+                          : "border-slate-600 bg-slate-700 hover:border-slate-500"
                       }`}
                     >
                       <iconData.Icon className="w-5 h-5 text-white" />
-                      <span className="text-sm text-white">{iconData.label}</span>
+                      <span className="text-sm text-white">
+                        {iconData.label}
+                      </span>
                     </button>
                   ))}
                 </div>

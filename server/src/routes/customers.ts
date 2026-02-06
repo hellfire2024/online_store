@@ -84,7 +84,11 @@ router.get("/:id", async (req: Request, res: Response) => {
       try {
         orderData = order.orderData ? JSON.parse(order.orderData) : null;
       } catch (parseError) {
-        console.error("Failed to parse order_data for order", order.id, parseError);
+        console.error(
+          "Failed to parse order_data for order",
+          order.id,
+          parseError,
+        );
       }
       return {
         id: order.id,

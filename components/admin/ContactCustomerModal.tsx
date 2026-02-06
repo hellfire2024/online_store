@@ -27,7 +27,9 @@ const ContactCustomerModal: React.FC<ContactCustomerModalProps> = ({
   const [message, setMessage] = useState("");
   const getDefaultSubject = () => {
     if (orderNumber) {
-      const dateStr = orderDate ? ` from ${new Date(orderDate).toLocaleDateString()}` : "";
+      const dateStr = orderDate
+        ? ` from ${new Date(orderDate).toLocaleDateString()}`
+        : "";
       return `Regarding your order #${orderNumber}${dateStr}`;
     }
     return "Store Support";
@@ -58,7 +60,7 @@ const ContactCustomerModal: React.FC<ContactCustomerModalProps> = ({
     try {
       // Create a support ticket with the message
       const ticketNumber = `TKT-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`;
-      
+
       const response = await apiClient.tickets.create({
         ticketNumber,
         customerId: customer.id,
@@ -83,7 +85,7 @@ const ContactCustomerModal: React.FC<ContactCustomerModalProps> = ({
       console.error("Failed to send message:", error);
       addToast(
         `Failed to send message: ${error instanceof Error ? error.message : "Unknown error"}`,
-        "error"
+        "error",
       );
     } finally {
       setIsSending(false);
@@ -101,9 +103,7 @@ const ContactCustomerModal: React.FC<ContactCustomerModalProps> = ({
       <div className="bg-slate-800 p-6 rounded-lg max-w-2xl w-full border-2 border-sky-600">
         <div className="flex justify-between items-start mb-6">
           <div>
-            <h2 className="text-2xl font-bold text-white">
-              Contact Customer
-            </h2>
+            <h2 className="text-2xl font-bold text-white">Contact Customer</h2>
             <p className="text-gray-400 mt-1">
               Send a message to {customer.firstName} {customer.lastName}
             </p>
@@ -151,7 +151,8 @@ const ContactCustomerModal: React.FC<ContactCustomerModalProps> = ({
               className="w-full px-4 py-3 rounded bg-slate-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500 resize-none h-40"
             />
             <p className="text-xs text-gray-400 mt-2">
-              This will create a support ticket and notify the customer via email
+              This will create a support ticket and notify the customer via
+              email
             </p>
           </div>
         </div>
