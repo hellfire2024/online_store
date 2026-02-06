@@ -1107,7 +1107,7 @@ const ProductManagement: React.FC = () => {
                           step="0.01"
                           min="0"
                           placeholder="0.00"
-                          value={currentProduct.customImageUploadPrice ?? 0}
+                          value={currentProduct.customImageUploadPrice || ""}
                           onChange={handleChange}
                           className="w-full p-2 bg-slate-700 border border-slate-600 rounded-md text-white"
                         />

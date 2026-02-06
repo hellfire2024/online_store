@@ -114,19 +114,19 @@ const CartItemRow: React.FC<{ item: CartItem }> = ({ item }) => {
             </p>
           </div>
         )}
-        <p className="text-sm text-gray-400 mt-1">
+        {customTextCost > 0 && (
+          <p className="text-xs text-gray-300 mt-1">
+            Custom text: {item.customText?.length} characters • +${customTextCost.toFixed(2)}
+          </p>
+        )}
+        {customImageCost > 0 && (
+          <p className="text-xs text-gray-300 mt-1">
+            Custom image upload • +${customImageCost.toFixed(2)}
+          </p>
+        )}
+        <p className="text-sm text-gray-400 mt-2 font-semibold">
           Item total (each): ${finalPrice.toFixed(2)}
         </p>
-        {customImageCost > 0 && (
-          <div className="mt-2 bg-slate-700 p-2 rounded-lg">
-            <p className="text-xs font-semibold text-sky-400 mb-1">
-              Custom Image Upload Fee:
-            </p>
-            <p className="text-xs text-gray-300">
-              +${customImageCost.toFixed(2)}
-            </p>
-          </div>
-        )}
         {item.customization && (
           <div className="mt-2 bg-slate-700 p-2 rounded-lg">
             <div className="flex items-center gap-2">
