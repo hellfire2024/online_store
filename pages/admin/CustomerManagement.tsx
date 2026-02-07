@@ -1432,40 +1432,62 @@ const CustomerManagement: React.FC = () => {
                           const name =
                             item.product?.name ||
                             item.productName ||
+                            item.name ||
                             `Item ${idx + 1}`;
                           const price = toNumber(
                             item.product?.price ?? item.price ?? 0,
                             0,
                           );
                           const quantity = toNumber(item.quantity, 1);
+                          
+                          // Build selected options string if available
+                          let selectedOptionsText = "";
+                          if (typeof item.selectedOptions === "string") {
+                            selectedOptionsText = item.selectedOptions;
+                          }
+                          
                           return {
                             id: String(item.id || idx),
                             name,
                             quantity,
                             price,
                             total: price * quantity,
+                            selectedOptions: selectedOptionsText || undefined,
+                            customText: item.customText,
+                            customTextCost: item.customTextCost,
+                            customization: item.customization,
+                            customImageCost: item.customImageCost,
+                            optionsBreakdown: item.optionsBreakdown,
                           };
                         },
                       );
 
                       const orderData = order.orderData || {};
-                      const shipping = orderData.shippingAddress || {};
+                      const shipping = orderData.shippingAddress || order.shippingAddress || {};
+                      
                       const invoiceHtml = generateInvoiceHTML(
                         {
                           orderNumber: order.orderNumber,
                           orderDate: order.date,
-                          storeName: "Your Store",
+                          storeName:
+                            `${siteSettings?.logoText || "Your"} ${siteSettings?.logoTextAccent || "Store"}`.trim(),
                           customerName:
                             `${customer.firstName || ""} ${customer.lastName || ""}`.trim(),
                           customerEmail: customer.email,
                           customerPhone: customer.phone,
                           shippingAddress: {
                             street:
-                              shipping.street || shipping.streetAddress || "",
+                              shipping.street || 
+                              shipping.streetAddress || 
+                              shipping.street1 || 
+                              "",
                             city: shipping.city || "",
                             state: shipping.state || "",
-                            zip: shipping.zip || shipping.zipCode || "",
-                            country: shipping.country || "",
+                            zip: 
+                              shipping.zip || 
+                              shipping.zipCode || 
+                              "",
+                            country: shipping.country || "USA",
                           },
                           items,
                           subtotal: toNumber(
@@ -1485,6 +1507,8 @@ const CustomerManagement: React.FC = () => {
                             0,
                           ),
                           trackingNumber: order.trackingNumber,
+                          paymentMethod: "Credit Card",
+                          notes: `Order Status: ${order.status || "pending"}`,
                         },
                         siteSettings?.invoiceTemplate,
                       );
