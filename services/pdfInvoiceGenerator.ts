@@ -9,19 +9,41 @@ import html2canvas from "html2canvas";
 export interface InvoiceTemplate {
   id: string;
   name: string;
+  // Header Configuration
   headerImageUrl?: string;
+  logoUrl?: string; // Logo image URL
+  logoPosition?: "left" | "center" | "right"; // Logo alignment
+  logoSize?: number; // Logo size in pixels (width)
+  showCompanyInfo?: boolean; // Show company name, email, phone
+  
+  // Company Information
   companyName: string;
   companyEmail?: string;
   companyPhone?: string;
   companyAddress?: string;
+  
+  // Invoice Layout
   invoiceTitle: string;
   includeItems: boolean;
   includeTotals: boolean;
+  includeCustomization: boolean; // Include custom text, images, options
+  
+  // Sections Visibility
+  showTrackingNumber?: boolean;
+  showPaymentMethod?: boolean;
+  showNotes?: boolean;
+  
+  // Footer
   footerText?: string;
+  footerAlignment?: "left" | "center" | "right";
+  
+  // Styling
   accentColor: string;
   backgroundColor: string;
   textColor: string;
   borderColor: string;
+  headerBackgroundColor?: string;
+  headerTextColor?: string;
 }
 
 export interface InvoiceData {
@@ -74,11 +96,19 @@ export const DEFAULT_TEMPLATE: InvoiceTemplate = {
   invoiceTitle: "INVOICE",
   includeItems: true,
   includeTotals: true,
+  includeCustomization: true,
+  showTrackingNumber: true,
+  showPaymentMethod: true,
+  showNotes: true,
   footerText: "Thank you for your business!",
+  footerAlignment: "center",
   accentColor: "#0ea5e9",
   backgroundColor: "#ffffff",
   textColor: "#1e293b",
   borderColor: "#cbd5e1",
+  logoPosition: "left",
+  logoSize: 120,
+  showCompanyInfo: true,
 };
 
 const formatCurrency = (value: number) => `$${value.toFixed(2)}`;
@@ -89,6 +119,30 @@ export const generateInvoiceHTML = (
   invoice: InvoiceData,
   template: InvoiceTemplate = DEFAULT_TEMPLATE,
 ): string => {
+  // Header with logo and company info
+  const headerHtml = `
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 3px solid ${template.accentColor}; background-color: ${template.headerBackgroundColor || template.backgroundColor};">
+      <div style="flex: 1;">
+        ${
+          template.logoUrl
+            ? `<div style="margin-bottom: 15px;"><img src="${template.logoUrl}" style="height: ${template.logoSize || 120}px; object-fit: contain;" alt="Logo" /></div>`
+            : ""
+        }
+        ${
+          template.showCompanyInfo !== false
+            ? `
+          <div style="color: ${template.textColor};">
+            <div style="font-size: 24px; font-weight: bold; margin-bottom: 5px;">${template.companyName}</div>
+            ${template.companyAddress ? `<div style="font-size: 11px; margin-bottom: 3px;">${template.companyAddress}</div>` : ""}\n            ${template.companyEmail ? `<div style="font-size: 11px; margin-bottom: 3px;">${template.companyEmail}</div>` : ""}\n            ${template.companyPhone ? `<div style="font-size: 11px;">${template.companyPhone}</div>` : ""}\n          </div>\n        `
+            : ""
+        }
+      </div>
+      <div style="text-align: right; color: ${template.headerTextColor || template.textColor};">
+        <div style="font-size: 36px; font-weight: bold; color: ${template.accentColor}; margin-bottom: 10px;">${template.invoiceTitle}</div>
+      </div>
+    </div>
+  `;
+
   const itemsHtml = template.includeItems
     ? `
     <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
@@ -172,30 +226,6 @@ export const generateInvoiceHTML = (
           padding: 40px;
           box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-        .header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 40px;
-          border-bottom: 2px solid ${template.accentColor};
-          padding-bottom: 20px;
-        }
-        .company-name {
-          font-size: 28px;
-          font-weight: bold;
-          color: ${template.textColor};
-        }
-        .invoice-title {
-          font-size: 24px;
-          font-weight: bold;
-          color: ${template.accentColor};
-        }
-        .invoice-details {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 20px;
-          margin-bottom: 40px;
-        }
         .detail-label {
           font-weight: bold;
           color: ${template.textColor};
@@ -206,7 +236,7 @@ export const generateInvoiceHTML = (
           color: #475569;
         }
         .footer {
-          text-align: center;
+          text-align: ${template.footerAlignment || "center"};
           color: #94a3b8;
           font-size: 12px;
           border-top: 1px solid ${template.borderColor};
@@ -217,12 +247,9 @@ export const generateInvoiceHTML = (
     </head>
     <body>
       <div class="invoice">
-        <div class="header">
-          <div class="company-name">${template.companyName}</div>
-          <div class="invoice-title">${template.invoiceTitle}</div>
-        </div>
+        ${headerHtml}
 
-        <div class="invoice-details">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 40px;">
           <div>
             <div class="detail-label">Invoice Number</div>
             <div class="detail-value">${invoice.orderNumber}</div>
@@ -246,7 +273,7 @@ export const generateInvoiceHTML = (
         ${totalsHtml}
 
         ${
-          invoice.trackingNumber
+          template.showTrackingNumber !== false && invoice.trackingNumber
             ? `
           <div style="margin-bottom: 20px;">
             <div class="detail-label">Tracking Number</div>
@@ -257,7 +284,7 @@ export const generateInvoiceHTML = (
         }
 
         ${
-          invoice.paymentMethod
+          template.showPaymentMethod !== false && invoice.paymentMethod
             ? `
           <div style="margin-bottom: 20px;">
             <div class="detail-label">Payment Method</div>
@@ -268,7 +295,7 @@ export const generateInvoiceHTML = (
         }
 
         ${
-          invoice.notes
+          template.showNotes !== false && invoice.notes
             ? `
           <div style="background: #f0f9ff; padding: 15px; border-left: 4px solid ${template.accentColor}; margin-bottom: 20px; color: #475569;">
             <strong>Notes:</strong><br/>

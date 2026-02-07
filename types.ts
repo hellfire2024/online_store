@@ -441,6 +441,11 @@ export interface SiteSettings {
   invoiceTemplate?: {
     id: string;
     name: string;
+    headerImageUrl?: string;
+    logoUrl?: string;
+    logoPosition?: "left" | "center" | "right";
+    logoSize?: number;
+    showCompanyInfo?: boolean;
     companyName: string;
     companyEmail?: string;
     companyPhone?: string;
@@ -448,11 +453,18 @@ export interface SiteSettings {
     invoiceTitle: string;
     includeItems: boolean;
     includeTotals: boolean;
+    includeCustomization?: boolean;
+    showTrackingNumber?: boolean;
+    showPaymentMethod?: boolean;
+    showNotes?: boolean;
     footerText?: string;
+    footerAlignment?: "left" | "center" | "right";
     accentColor: string;
     backgroundColor: string;
     textColor: string;
     borderColor: string;
+    headerBackgroundColor?: string;
+    headerTextColor?: string;
   };
 
   // Support & Ticketing Configuration

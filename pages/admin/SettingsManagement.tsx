@@ -2490,6 +2490,7 @@ const SettingsManagement: React.FC = () => {
               </h3>
               <InvoiceTemplateEditor
                 template={settings.invoiceTemplate}
+                siteLogoUrl={settings.headerLogoUrl}
                 onTemplateChange={(template) =>
                   setSettings((prev) => ({
                     ...prev!,

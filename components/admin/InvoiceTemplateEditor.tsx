@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef } from "react";
 import {
   InvoiceTemplate,
   DEFAULT_TEMPLATE,
@@ -8,12 +8,15 @@ import {
 interface InvoiceTemplateEditorProps {
   template: InvoiceTemplate | undefined;
   onTemplateChange: (template: InvoiceTemplate) => void;
+  siteLogoUrl?: string; // Logo from site settings
 }
 
 export const InvoiceTemplateEditor: React.FC<InvoiceTemplateEditorProps> = ({
   template,
   onTemplateChange,
+  siteLogoUrl,
 }) => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const currentTemplate = template || DEFAULT_TEMPLATE;
 
   const handleChange = (field: keyof InvoiceTemplate, value: any) => {
@@ -21,9 +24,28 @@ export const InvoiceTemplateEditor: React.FC<InvoiceTemplateEditorProps> = ({
     onTemplateChange(updated);
   };
 
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const dataUrl = event.target?.result as string;
+        handleChange("logoUrl", dataUrl);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const useSiteLogo = () => {
+    if (siteLogoUrl) {
+      handleChange("logoUrl", siteLogoUrl);
+    }
+  };
+
   const previewInvoice = {
     orderNumber: "SAMPLE-001",
     orderDate: new Date().toISOString(),
+    storeName: "Your Store",
     customerName: "John Doe",
     customerEmail: "john@example.com",
     customerPhone: "(555) 123-4567",
@@ -41,6 +63,7 @@ export const InvoiceTemplateEditor: React.FC<InvoiceTemplateEditorProps> = ({
         quantity: 1,
         price: 50,
         total: 50,
+        selectedOptions: "Finish: Matte, Size: 3.5\" x 2\"",
       },
       {
         id: "2",
@@ -71,6 +94,99 @@ export const InvoiceTemplateEditor: React.FC<InvoiceTemplateEditorProps> = ({
           </h3>
 
           <div className="space-y-4">
+            {/* Logo Section */}
+            <div className="border-b border-slate-600 pb-4 mb-4">
+              <h4 className="text-sm font-semibold text-white mb-3">Logo Configuration</h4>
+              <div className="space-y-3">
+                {currentTemplate.logoUrl && (
+                  <div>
+                    <img 
+                      src={currentTemplate.logoUrl} 
+                      alt="Logo" 
+                      className="h-16 object-contain mb-2"
+                    />
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex-1 px-3 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded text-sm font-medium transition-colors"
+                  >
+                    📤 Upload Logo
+                  </button>
+                  {siteLogoUrl && (
+                    <button
+                      onClick={useSiteLogo}
+                      className="flex-1 px-3 py-2 bg-slate-600 hover:bg-slate-500 text-white rounded text-sm font-medium transition-colors"
+                    >
+                      🔗 Use Site Logo
+                    </button>
+                  )}
+                </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleLogoUpload}
+                  className="hidden"
+                />
+                {currentTemplate.logoUrl && (
+                  <button
+                    onClick={() => handleChange("logoUrl", undefined)}
+                    className="w-full px-3 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded text-sm transition-colors"
+                  >
+                    Remove Logo
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Logo Position */}
+            {currentTemplate.logoUrl && (
+              <>
+                <div>
+                  <label className="block text-gray-300 text-sm font-bold mb-2">
+                    Logo Position
+                  </label>
+                  <select
+                    value={currentTemplate.logoPosition || "left"}
+                    onChange={(e) => handleChange("logoPosition", e.target.value as "left" | "center" | "right")}
+                    className="w-full p-2 bg-slate-900 border border-slate-600 rounded text-white"
+                  >
+                    <option value="left">Left</option>
+                    <option value="center">Center</option>
+                    <option value="right">Right</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-gray-300 text-sm font-bold mb-2">
+                    Logo Size (pixels): {currentTemplate.logoSize || 120}
+                  </label>
+                  <input
+                    type="range"
+                    min="60"
+                    max="200"
+                    value={currentTemplate.logoSize || 120}
+                    onChange={(e) => handleChange("logoSize", parseInt(e.target.value))}
+                    className="w-full"
+                  />
+                </div>
+              </>
+            )}
+
+            {/* Company Information */}
+            <div className="border-t border-slate-600 pt-4">
+              <label className="flex items-center gap-2 text-gray-300 mb-3">
+                <input
+                  type="checkbox"
+                  checked={currentTemplate.showCompanyInfo !== false}
+                  onChange={(e) => handleChange("showCompanyInfo", e.target.checked)}
+                  className="w-4 h-4"
+                />
+                <span className="font-semibold">Show Company Info</span>
+              </label>
+            </div>
             {/* Company Name */}
             <div>
               <label className="block text-gray-300 text-sm font-bold mb-1">
@@ -257,6 +373,116 @@ export const InvoiceTemplateEditor: React.FC<InvoiceTemplateEditorProps> = ({
                 />
                 <span>Include Totals Section</span>
               </label>
+              <label className="flex items-center gap-2 text-gray-300">
+                <input
+                  type="checkbox"
+                  checked={currentTemplate.includeCustomization !== false}
+                  onChange={(e) =>
+                    handleChange("includeCustomization", e.target.checked)
+                  }
+                  className="w-4 h-4"
+                />
+                <span>Include Customization Details</span>
+              </label>
+            </div>
+
+            {/* Section Visibility */}
+            <div className="space-y-2 border-t border-slate-600 pt-4">
+              <p className="text-gray-400 text-sm font-semibold mb-2">Optional Sections</p>
+              <label className="flex items-center gap-2 text-gray-300">
+                <input
+                  type="checkbox"
+                  checked={currentTemplate.showTrackingNumber !== false}
+                  onChange={(e) =>
+                    handleChange("showTrackingNumber", e.target.checked)
+                  }
+                  className="w-4 h-4"
+                />
+                <span>Tracking Number</span>
+              </label>
+              <label className="flex items-center gap-2 text-gray-300">
+                <input
+                  type="checkbox"
+                  checked={currentTemplate.showPaymentMethod !== false}
+                  onChange={(e) =>
+                    handleChange("showPaymentMethod", e.target.checked)
+                  }
+                  className="w-4 h-4"
+                />
+                <span>Payment Method</span>
+              </label>
+              <label className="flex items-center gap-2 text-gray-300">
+                <input
+                  type="checkbox"
+                  checked={currentTemplate.showNotes !== false}
+                  onChange={(e) =>
+                    handleChange("showNotes", e.target.checked)
+                  }
+                  className="w-4 h-4"
+                />
+                <span>Order Notes</span>
+              </label>
+            </div>
+
+            {/* Footer Alignment */}
+            <div className="border-t border-slate-600 pt-4">
+              <label className="block text-gray-300 text-sm font-bold mb-2">
+                Footer Alignment
+              </label>
+              <select
+                value={currentTemplate.footerAlignment || "center"}
+                onChange={(e) => handleChange("footerAlignment", e.target.value as "left" | "center" | "right")}
+                className="w-full p-2 bg-slate-900 border border-slate-600 rounded text-white"
+              >
+                <option value="left">Left</option>
+                <option value="center">Center</option>
+                <option value="right">Right</option>
+              </select>
+            </div>
+
+            {/* Header Styling */}
+            <div className="border-t border-slate-600 pt-4">
+              <p className="text-gray-400 text-sm font-semibold mb-3">Header Styling (Optional)</p>
+              <div>
+                <label className="block text-gray-300 text-sm font-bold mb-1">
+                  Header Background Color
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="color"
+                    value={currentTemplate.headerBackgroundColor || currentTemplate.backgroundColor}
+                    onChange={(e) => handleChange("headerBackgroundColor", e.target.value)}
+                    className="h-10 w-20 rounded cursor-pointer"
+                  />
+                  <input
+                    type="text"
+                    value={currentTemplate.headerBackgroundColor || ""}
+                    onChange={(e) => handleChange("headerBackgroundColor", e.target.value)}
+                    className="flex-1 p-2 bg-slate-900 border border-slate-600 rounded text-white font-mono text-sm"
+                    placeholder="Leave blank to use background color"
+                  />
+                </div>
+              </div>
+              <div className="mt-3">
+                <label className="block text-gray-300 text-sm font-bold mb-1">
+                  Header Text Color
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="color"
+                    value={currentTemplate.headerTextColor || currentTemplate.textColor}
+                    onChange={(e) => handleChange("headerTextColor", e.target.value)}
+                    className="h-10 w-20 rounded cursor-pointer"
+                  />
+                  <input
+                    type="text"
+                    value={currentTemplate.headerTextColor || ""}
+                    onChange={(e) => handleChange("headerTextColor", e.target.value)}
+                    className="flex-1 p-2 bg-slate-900 border border-slate-600 rounded text-white font-mono text-sm"
+                    placeholder="Leave blank to use text color"
+                  />
+                </div>
+              </div>
             </div>
           </div>
         </div>
