@@ -26,7 +26,7 @@ export interface InvoiceTemplate {
   invoiceTitle: string;
   includeItems: boolean;
   includeTotals: boolean;
-  includeCustomization: boolean; // Include custom text, images, options
+  includeCustomization?: boolean; // Include custom text, images, options
   
   // Sections Visibility
   showTrackingNumber?: boolean;
