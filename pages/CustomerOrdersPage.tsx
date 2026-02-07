@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useCustomerAuth } from "../context/CustomerAuthContext";
 import { useNavigate, Link } from "react-router-dom";
 import { useToast } from "../hooks/useToast";
@@ -12,6 +12,58 @@ import {
   InvoiceData,
   DEFAULT_TEMPLATE,
 } from "../services/pdfInvoiceGenerator";
+
+// Watermarked Image Component for Order Display
+const WatermarkedOrderImage: React.FC<{ src: string }> = ({ src }) => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    if (!canvasRef.current) return;
+
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      // Set canvas size to match image
+      canvas.width = img.width;
+      canvas.height = img.height;
+
+      // Draw the image
+      ctx.drawImage(img, 0, 0);
+
+      // Add AdaptiveGIS watermark
+      ctx.save();
+      ctx.globalAlpha = 0.25;
+      ctx.font = "bold 48px Arial";
+      ctx.fillStyle = "white";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+
+      // Rotate and add watermark text diagonally
+      ctx.translate(canvas.width / 2, canvas.height / 2);
+      ctx.rotate(-Math.PI / 4);
+
+      // Add watermark text multiple times for coverage
+      ctx.fillText("AdaptiveGIS", 0, -100);
+      ctx.fillText("AdaptiveGIS", 0, 0);
+      ctx.fillText("AdaptiveGIS", 0, 100);
+
+      ctx.restore();
+    };
+    img.src = src;
+  }, [src]);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className="w-16 h-16 object-cover rounded border-2 border-slate-600"
+      style={{ maxWidth: "100%", height: "auto" }}
+    />
+  );
+};
 
 const CustomerOrdersPage: React.FC = () => {
   const { customer, isAuthenticated, fetchOrders } = useCustomerAuth();
@@ -91,6 +143,15 @@ const CustomerOrdersPage: React.FC = () => {
         total:
           Number(item.price || (item.product && item.product.price) || 0) *
           item.quantity,
+        selectedOptions:
+          typeof item.selectedOptions === "string"
+            ? item.selectedOptions
+            : undefined,
+        customText: item.customText,
+        customTextCost: item.customTextCost,
+        customization: item.customization,
+        customImageCost: item.customImageCost,
+        optionsBreakdown: item.optionsBreakdown,
       })),
       subtotal: order.subtotal || order.total * 0.9,
       tax: order.taxAmount || order.total * 0.1,
@@ -632,13 +693,14 @@ const CustomerOrdersPage: React.FC = () => {
                                 selectedOptionsText = optionParts.join(", ");
                               }
 
-                              const imageSrc =
+                              const productImageSrc =
                                 item.productImage ||
                                 item.imageUrl ||
                                 productFromItem?.imageUrl ||
                                 item.product?.imageUrl ||
-                                item.customization?.value ||
                                 "";
+
+                              const customImageCost = item.customImageCost || 0;
 
                               return (
                                 <div
@@ -646,10 +708,10 @@ const CustomerOrdersPage: React.FC = () => {
                                   className="bg-slate-800/50 rounded border border-slate-700 p-3"
                                 >
                                   <div className="flex gap-3">
-                                    {imageSrc && (
+                                    {productImageSrc && (
                                       <div className="flex-shrink-0">
                                         <img
-                                          src={imageSrc}
+                                          src={productImageSrc}
                                           alt={productName}
                                           className="w-16 h-16 object-cover rounded border border-slate-600"
                                           onError={(e) => {
@@ -694,6 +756,11 @@ const CustomerOrdersPage: React.FC = () => {
                                             )}
                                           </div>
                                         )}
+                                        {customImageCost > 0 && (
+                                          <div className="text-gray-300">
+                                            Custom Image Upload Fee: +${Number(customImageCost).toFixed(2)}
+                                          </div>
+                                        )}
                                       </div>
                                       <div className="flex justify-between font-semibold text-white pt-2 border-t border-slate-600 mt-2 text-sm">
                                         <span>Qty: {item.quantity}</span>
@@ -701,6 +768,27 @@ const CustomerOrdersPage: React.FC = () => {
                                       </div>
                                     </div>
                                   </div>
+                                  {item.customization && (
+                                    <div className="mt-3 bg-slate-700/50 p-3 rounded-lg border border-slate-600">
+                                      <div className="flex items-start gap-3">
+                                        <WatermarkedOrderImage src={item.customization.value} />
+                                        <div className="flex-1">
+                                          <p className="text-sm text-gray-300">
+                                            <span className="font-semibold text-sky-400">
+                                              {item.customization.type === "gallery"
+                                                ? "Gallery Design"
+                                                : "Uploaded Design"}
+                                            </span>
+                                            {item.customization.fileName && (
+                                              <span className="text-gray-500">
+                                                {" "} • {item.customization.fileName}
+                                              </span>
+                                            )}
+                                          </p>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )}
                                 </div>
                               );
                             })}

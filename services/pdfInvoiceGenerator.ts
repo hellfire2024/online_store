@@ -44,6 +44,19 @@ export interface InvoiceData {
     quantity: number;
     price: number;
     total: number;
+    selectedOptions?: string; // Formatted string of selected options
+    customText?: string; // Custom engraving text
+    customTextCost?: number;
+    customization?: {
+      type: "gallery" | "upload";
+      value: string; // Image URL or data URL
+      fileName?: string;
+    };
+    customImageCost?: number;
+    optionsBreakdown?: Array<{
+      label: string;
+      priceDelta: number;
+    }>;
   }>;
   subtotal: number;
   tax: number;
@@ -92,7 +105,13 @@ export const generateInvoiceHTML = (
           .map(
             (item, idx) => `
           <tr style="background-color: ${idx % 2 === 0 ? "#f8fafc" : "#ffffff"};">
-            <td style="padding: 12px; border: 1px solid ${template.borderColor}; color: ${template.textColor};">${item.name}</td>
+            <td style="padding: 12px; border: 1px solid ${template.borderColor}; color: ${template.textColor};">
+              <div style="font-weight: bold; margin-bottom: 4px;">${item.name}</div>
+              ${item.selectedOptions ? `<div style="font-size: 11px; color: #64748b; margin-top: 4px;">${item.selectedOptions}</div>` : ""}
+              ${item.optionsBreakdown && item.optionsBreakdown.length > 0 ? `<div style="font-size: 10px; color: #64748b; margin-top: 6px;">${item.optionsBreakdown.map((opt) => `${opt.label}: +${formatCurrency(opt.priceDelta)}`).join("<br/>")}</div>` : ""}
+              ${item.customText ? `<div style="background: #f0f9ff; padding: 8px; margin-top: 6px; border-left: 3px solid ${template.accentColor}; font-size: 11px;"><strong style="color: #7c3aed;">Custom Text:</strong> "${item.customText}"${item.customTextCost ? ` (+${formatCurrency(item.customTextCost)})` : ""}</div>` : ""}
+              ${item.customization ? `<div style="background: #f0f9ff; padding: 8px; margin-top: 6px; border-left: 3px solid ${template.accentColor}; font-size: 11px;"><strong style="color: #0ea5e9;">${item.customization.type === "gallery" ? "Gallery Design" : "Uploaded Design"}:</strong> ${item.customization.fileName || "Custom Image"}${item.customImageCost ? ` (+${formatCurrency(item.customImageCost)})` : ""}</div>` : ""}
+            </td>
             <td style="padding: 12px; text-align: right; border: 1px solid ${template.borderColor}; color: ${template.textColor};">${item.quantity}</td>
             <td style="padding: 12px; text-align: right; border: 1px solid ${template.borderColor}; color: ${template.textColor};">${formatCurrency(item.price)}</td>
             <td style="padding: 12px; text-align: right; border: 1px solid ${template.borderColor}; color: ${template.textColor}; font-weight: bold;">${formatCurrency(item.total)}</td>
