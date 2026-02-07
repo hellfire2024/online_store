@@ -110,7 +110,10 @@ export const generateInvoiceHTML = (
               ${item.selectedOptions ? `<div style="font-size: 11px; color: #64748b; margin-top: 4px;">${item.selectedOptions}</div>` : ""}
               ${item.optionsBreakdown && item.optionsBreakdown.length > 0 ? `<div style="font-size: 10px; color: #64748b; margin-top: 6px;">${item.optionsBreakdown.map((opt) => `${opt.label}: +${formatCurrency(opt.priceDelta)}`).join("<br/>")}</div>` : ""}
               ${item.customText ? `<div style="background: #f0f9ff; padding: 8px; margin-top: 6px; border-left: 3px solid ${template.accentColor}; font-size: 11px;"><strong style="color: #7c3aed;">Custom Text:</strong> "${item.customText}"${item.customTextCost ? ` (+${formatCurrency(item.customTextCost)})` : ""}</div>` : ""}
-              ${item.customization ? `<div style="background: #f0f9ff; padding: 8px; margin-top: 6px; border-left: 3px solid ${template.accentColor}; font-size: 11px;"><strong style="color: #0ea5e9;">${item.customization.type === "gallery" ? "Gallery Design" : "Uploaded Design"}:</strong> ${item.customization.fileName || "Custom Image"}${item.customImageCost ? ` (+${formatCurrency(item.customImageCost)})` : ""}</div>` : ""}
+              ${item.customization ? `<div style="background: #f0f9ff; padding: 8px; margin-top: 6px; border-left: 3px solid ${template.accentColor}; font-size: 11px;">
+                <div style="margin-bottom: 6px;"><strong style="color: #0ea5e9;">${item.customization.type === "gallery" ? "Gallery Design" : "Uploaded Design"}:</strong> ${item.customization.fileName || "Custom Image"}${item.customImageCost ? ` (+${formatCurrency(item.customImageCost)})` : ""}</div>
+                <img src="${item.customization.value}" style="max-width: 150px; max-height: 150px; border: 2px solid #cbd5e1; border-radius: 4px; display: block;" crossorigin="anonymous" />
+              </div>` : ""}
             </td>
             <td style="padding: 12px; text-align: right; border: 1px solid ${template.borderColor}; color: ${template.textColor};">${item.quantity}</td>
             <td style="padding: 12px; text-align: right; border: 1px solid ${template.borderColor}; color: ${template.textColor};">${formatCurrency(item.price)}</td>
