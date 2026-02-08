@@ -2,6 +2,7 @@ import nodemailer from "nodemailer";
 import SMTPTransport from "nodemailer/lib/smtp-transport";
 import { pool } from "../db/connection.js";
 import { RowDataPacket } from "mysql2";
+import { getValidZohoAccessToken } from "./zohoTokenRefresh.js";
 
 // Note: For production watermarking of images, you would need:
 // - Sharp library: npm install sharp
@@ -148,7 +149,7 @@ async function initializeTransporter() {
 
 /**
  * Send email via Zoho Mail API
- * Handles OAuth token refresh and sends email through Zoho API
+ * Uses automatic token refresh mechanism from zohoTokenRefresh service
  */
 async function sendViaZohoApi(mailOptions: any): Promise<any> {
   try {
@@ -160,34 +161,17 @@ async function sendViaZohoApi(mailOptions: any): Promise<any> {
     const axios = await import("axios");
     const axiosInstance = axios.default;
 
-    console.log("[Zoho Email] Requesting access token...");
-    console.log(
-      `[Zoho Email] Using ${zohoConfig.refreshToken ? "refresh_token" : "client_credentials"} grant type`,
-    );
+    console.log("[Zoho Email] Getting valid access token...");
 
-    // Determine grant type based on whether refresh token is available
-    const grantType = zohoConfig.refreshToken
-      ? "refresh_token"
-      : "client_credentials";
-    const tokenParams: any = {
-      client_id: zohoConfig.clientId,
-      client_secret: zohoConfig.clientSecret,
-      grant_type: grantType,
-    };
+    // Get valid access token (automatically refreshes if needed)
+    const accessToken = await getValidZohoAccessToken();
 
-    // Only add refresh_token if it exists
-    if (zohoConfig.refreshToken) {
-      tokenParams.refresh_token = zohoConfig.refreshToken;
+    if (!accessToken) {
+      throw new Error(
+        "Failed to get Zoho access token. Check your credentials and refresh token.",
+      );
     }
 
-    // Get access token
-    const tokenResponse = await axiosInstance.post(
-      "https://accounts.zoho.com/oauth/v2/token",
-      new URLSearchParams(tokenParams),
-      { timeout: 10000 },
-    );
-
-    const accessToken = tokenResponse.data.access_token;
     console.log("[Zoho Email] Access token obtained successfully");
 
     // Send email via Zoho Mail REST API using correct endpoint

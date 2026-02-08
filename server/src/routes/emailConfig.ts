@@ -607,18 +607,14 @@ router.post("/test", async (req: Request, res: Response) => {
             });
           } catch (sendError: any) {
             console.error("[Email Test] Send attempt failed!");
-            console.error(
-              "[Email Test] Status:",
-              sendError.response?.status,
-            );
+            console.error("[Email Test] Status:", sendError.response?.status);
             console.error(
               "[Email Test] Error code:",
               sendError.response?.data?.errorCode,
             );
             console.error(
               "[Email Test] Error message:",
-              sendError.response?.data?.data?.message ||
-                sendError.message,
+              sendError.response?.data?.data?.message || sendError.message,
             );
             console.error(
               "[Email Test] Full response:",
@@ -752,7 +748,8 @@ router.post("/exchange-zoho-code", async (req: Request, res: Response) => {
 
     if (rows.length === 0) {
       return res.status(400).json({
-        error: "Email configuration not found. Please save your Zoho Client ID first.",
+        error:
+          "Email configuration not found. Please save your Zoho Client ID first.",
       });
     }
 
@@ -761,7 +758,8 @@ router.post("/exchange-zoho-code", async (req: Request, res: Response) => {
 
     if (!clientId) {
       return res.status(400).json({
-        error: "Zoho Client ID not configured. Please save your credentials first.",
+        error:
+          "Zoho Client ID not configured. Please save your credentials first.",
       });
     }
 
@@ -799,9 +797,7 @@ router.post("/exchange-zoho-code", async (req: Request, res: Response) => {
       [encryptedRefreshToken],
     );
 
-    console.log(
-      "[Zoho Code Exchange] Refresh token saved successfully!",
-    );
+    console.log("[Zoho Code Exchange] Refresh token saved successfully!");
 
     return res.json({
       success: true,
@@ -810,12 +806,10 @@ router.post("/exchange-zoho-code", async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     console.error("[Zoho Code Exchange] Error:", error.message);
-    console.error(
-      "[Zoho Code Exchange] Response:",
-      error.response?.data,
-    );
+    console.error("[Zoho Code Exchange] Response:", error.response?.data);
 
-    const errorMessage = error.response?.data?.error_description || error.message;
+    const errorMessage =
+      error.response?.data?.error_description || error.message;
 
     return res.status(500).json({
       error: `Failed to exchange authorization code: ${errorMessage}`,

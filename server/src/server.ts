@@ -7,6 +7,7 @@ import rateLimit from "express-rate-limit";
 import dotenv from "dotenv";
 import path from "path";
 import { testConnection } from "./db/connection.js";
+import { startZohoTokenRefreshSchedule } from "./services/zohoTokenRefresh.js";
 
 // Import routes
 import productRoutes from "./routes/products.js";
@@ -143,6 +144,11 @@ async function startServer() {
     // Test database connection unless explicitly skipped (useful for demos)
     if (!DEMO_MODE) {
       await testConnection();
+    }
+
+    // Start Zoho token refresh schedule
+    if (!DEMO_MODE) {
+      startZohoTokenRefreshSchedule();
     }
 
     // Start listening
