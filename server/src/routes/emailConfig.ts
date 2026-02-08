@@ -547,14 +547,18 @@ router.post("/test", async (req: Request, res: Response) => {
             "[Email Test] Sending test email via Zoho API to:",
             testEmail,
           );
+          console.log(
+            "[Email Test] From:",
+            fromEmail,
+            "Account ID:",
+            zohoAccountId,
+          );
 
-          const sendResponse = await axiosInstance.post(
-            `https://mail.zoho.com/api/accounts/${zohoAccountId}/messages/send`,
-            {
-              fromAddress: fromEmail,
-              toAddress: [testEmail],
-              subject: "Test Email - Zoho Mail API Configuration Verified",
-              htmlBody: `
+          const emailPayload = {
+            fromAddress: fromEmail,
+            toAddress: [testEmail],
+            subject: "Test Email - Zoho Mail API Configuration Verified",
+            htmlBody: `
                 <html>
                   <body style="font-family: Arial, sans-serif; color: #333;">
                     <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
@@ -576,7 +580,16 @@ router.post("/test", async (req: Request, res: Response) => {
                   </body>
                 </html>
               `,
-            },
+          };
+
+          console.log(
+            "[Email Test] Mail payload:",
+            JSON.stringify(emailPayload, null, 2),
+          );
+
+          const sendResponse = await axiosInstance.post(
+            `https://mail.zoho.com/api/accounts/${zohoAccountId}/messages/send`,
+            emailPayload,
             {
               headers: {
                 Authorization: `Bearer ${accessToken}`,
@@ -588,6 +601,14 @@ router.post("/test", async (req: Request, res: Response) => {
 
           console.log(
             "[Email Test] Test email sent successfully via Zoho API",
+          );
+          console.log(
+            "[Email Test] Send response status:",
+            sendResponse.status,
+          );
+          console.log(
+            "[Email Test] Send response data:",
+            JSON.stringify(sendResponse.data, null, 2),
           );
           console.log(
             "[Email Test] Message ID:",
@@ -606,18 +627,24 @@ router.post("/test", async (req: Request, res: Response) => {
             },
           });
         } catch (zohoError: any) {
-          console.error("[Email Test] Zoho validation error:");
+          console.error("[Email Test] Zoho error (could be validation or send):");
           console.error("[Email Test] Status:", zohoError.response?.status);
           console.error(
             "[Email Test] Error code:",
-            zohoError.response?.data?.error,
+            zohoError.response?.data?.error || zohoError.response?.data?.status?.code,
           );
           console.error(
             "[Email Test] Error message:",
-            zohoError.response?.data?.error_description,
+            zohoError.response?.data?.error_description || zohoError.response?.data?.status?.description,
           );
           console.error(
             "[Email Test] Full response:",
+            JSON.stringify(zohoError.response?.data, null, 2),
+          );
+          console.error("[Email Test] Request details:", {
+            url: zohoError.config?.url,
+            method: zohoError.config?.method,
+          });
             JSON.stringify(zohoError.response?.data, null, 2),
           );
           console.error("[Email Test] Request was for:", {
