@@ -724,4 +724,104 @@ router.post("/test", async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * Exchange Zoho authorization code for refresh token
+ * POST /api/email-config/exchange-zoho-code
+ */
+router.post("/exchange-zoho-code", async (req: Request, res: Response) => {
+  try {
+    const { code, clientSecret } = req.body;
+
+    if (!code || !clientSecret) {
+      return res.status(400).json({
+        error: "Missing authorization code or client secret",
+      });
+    }
+
+    const axios = await import("axios");
+    const axiosInstance = axios.default;
+
+    console.log(
+      "[Zoho Code Exchange] Exchanging authorization code for refresh token...",
+    );
+
+    // Get current config to retrieve client ID
+    const [rows] = await pool.query<EmailConfigRow[]>(
+      "SELECT * FROM email_config WHERE id = 1",
+    );
+
+    if (rows.length === 0) {
+      return res.status(400).json({
+        error: "Email configuration not found. Please save your Zoho Client ID first.",
+      });
+    }
+
+    const config = rows[0];
+    const clientId = config.zoho_client_id;
+
+    if (!clientId) {
+      return res.status(400).json({
+        error: "Zoho Client ID not configured. Please save your credentials first.",
+      });
+    }
+
+    // Exchange code for tokens
+    const tokenResponse = await axiosInstance.post(
+      "https://accounts.zoho.com/oauth/v2/token",
+      new URLSearchParams({
+        client_id: clientId,
+        client_secret: clientSecret,
+        code: code,
+        grant_type: "authorization_code",
+        redirect_uri: "https://dev.adaptivegis.com/auth/callback",
+      }),
+      { timeout: 10000 },
+    );
+
+    const refreshToken = tokenResponse.data.refresh_token;
+
+    if (!refreshToken) {
+      console.error(
+        "[Zoho Code Exchange] No refresh token in response:",
+        tokenResponse.data,
+      );
+      return res.status(500).json({
+        error:
+          "Zoho did not return a refresh token. Make sure you authorized all scopes (ZohoMail.messages.ALL, ZohoMail.accounts.READ)",
+      });
+    }
+
+    // Encrypt and save refresh token
+    const encryptedRefreshToken = encryptData(refreshToken);
+
+    await pool.query(
+      "UPDATE email_config SET zoho_refresh_token = ? WHERE id = 1",
+      [encryptedRefreshToken],
+    );
+
+    console.log(
+      "[Zoho Code Exchange] Refresh token saved successfully!",
+    );
+
+    return res.json({
+      success: true,
+      message: "Zoho refresh token obtained and saved successfully!",
+      refreshToken: refreshToken.substring(0, 20) + "...",
+    });
+  } catch (error: any) {
+    console.error("[Zoho Code Exchange] Error:", error.message);
+    console.error(
+      "[Zoho Code Exchange] Response:",
+      error.response?.data,
+    );
+
+    const errorMessage = error.response?.data?.error_description || error.message;
+
+    return res.status(500).json({
+      error: `Failed to exchange authorization code: ${errorMessage}`,
+      details: error.response?.data,
+    });
+  }
+});
+
 export default router;
