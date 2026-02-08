@@ -421,6 +421,18 @@ router.post("/test", async (req: Request, res: Response) => {
             error: "Zoho client secret is required but not provided or failed to decrypt. Solution: Re-enter your Zoho credentials in Settings and save again.",
           });
         }
+        
+        // Validate that the secret looks reasonable (should be hex characters and length > 20)
+        if (zohoSecret.length < 20) {
+          console.error("[Email Test] Zoho client secret looks corrupted!");
+          console.error("[Email Test] Secret length:", zohoSecret.length);
+          console.error("[Email Test] Secret preview:", zohoSecret.substring(0, 20) + "...");
+          console.error("[Email Test] This usually means the ENCRYPTION KEY is wrong or decryption failed");
+          console.error("[Email Test] Solution: Delete and re-enter Zoho credentials");
+          return res.status(400).json({
+            error: "Zoho client secret appears corrupted (failed to decrypt properly). Clear your Zoho settings and re-enter credentials.",
+          });
+        }
 
         console.log("[Email Test] Validating Zoho Mail API configuration...");
         console.log("[Email Test] Account ID:", zohoAccountId);
@@ -428,34 +440,41 @@ router.post("/test", async (req: Request, res: Response) => {
         console.log("[Email Test] Client Secret length:", zohoSecret?.length);
         console.log("[Email Test] Has Refresh Token:", !!config.zohoRefreshToken || !!config.zoho_refresh_token);
 
+        // For Zoho Mail API, a refresh token is required
+        let refreshToken = config.zohoRefreshToken;
+        if (!refreshToken && config.zoho_refresh_token) {
+          refreshToken = decryptData(config.zoho_refresh_token);
+        }
+
+        if (!refreshToken) {
+          console.error("[Email Test] Zoho Mail API requires a refresh token for proper authentication");
+          console.error("[Email Test] Client Credentials alone will not work with the Mail API");
+          return res.status(400).json({
+            error: "Zoho Mail API requires a refresh token. Set up OAuth and get a refresh token from Zoho account settings.",
+            help: "See ZOHO_MAIL_API_SETUP.md for instructions on getting a refresh token",
+          });
+        }
+
         try {
           // Import axios for HTTP requests
           const axios = await import("axios");
           const axiosInstance = axios.default;
 
-          // Get access token using client credentials
-          console.log("[Email Test] Requesting Zoho access token...");
+          // Get access token using refresh token
+          console.log("[Email Test] Requesting Zoho access token with refresh token...");
           
           const tokenParams = {
             client_id: zohoClientId,
             client_secret: zohoSecret,
+            refresh_token: refreshToken,
+            grant_type: 'refresh_token',
           };
-          
-          if (config.zohoRefreshToken || config.zoho_refresh_token) {
-            const tokenData = config.zohoRefreshToken || config.zoho_refresh_token;
-            console.log("[Email Test] Using refresh_token grant type");
-            (tokenParams as any).refresh_token = tokenData;
-            (tokenParams as any).grant_type = 'refresh_token';
-          } else {
-            console.log("[Email Test] Using client_credentials grant type");
-            (tokenParams as any).grant_type = 'client_credentials';
-          }
           
           console.log("[Email Test] Token request params:", {
             client_id: tokenParams.client_id,
             client_secret: `${zohoSecret?.substring(0, 10)}...${zohoSecret?.substring(-5)}`,
-            grant_type: (tokenParams as any).grant_type,
-            has_refresh_token: !!(tokenParams as any).refresh_token,
+            grant_type: tokenParams.grant_type,
+            refresh_token: `${refreshToken?.substring(0, 10)}...${refreshToken?.substring(-5)}`,
           });
 
           const tokenResponse = await axiosInstance.post(
@@ -468,6 +487,8 @@ router.post("/test", async (req: Request, res: Response) => {
 
           const accessToken = tokenResponse.data.access_token;
           console.log("[Email Test] Zoho access token obtained");
+          console.log("[Email Test] Token length:", accessToken?.length);
+          console.log("[Email Test] Token preview:", accessToken?.substring(0, 50) + "...");
 
           // Validate by making a simple API call to get account info
           await axiosInstance.get(
