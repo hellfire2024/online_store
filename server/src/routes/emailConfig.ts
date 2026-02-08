@@ -175,67 +175,132 @@ router.put('/', async (req: Request, res: Response) => {
 
 /**
  * Test email configuration
- * Validates that the email config is working
+ * Validates and attempts to send a test email
  */
 router.post('/test', async (req: Request, res: Response) => {
   try {
-    const testEmail = req.body.testEmail;
+    const { testEmail, emailConfig } = req.body;
 
     if (!testEmail) {
       return res.status(400).json({ error: 'testEmail is required' });
     }
 
-    // Fetch current config
-    const [rows] = await pool.query<EmailConfigRow[]>(
-      'SELECT * FROM email_config WHERE id = 1'
-    );
+    // Use provided config or fetch from database
+    let config = emailConfig;
+    if (!config) {
+      const [rows] = await pool.query<EmailConfigRow[]>(
+        'SELECT * FROM email_config WHERE id = 1'
+      );
 
-    if (rows.length === 0) {
-      return res.status(400).json({ error: 'Email configuration not set up' });
+      if (rows.length === 0) {
+        return res.status(400).json({ error: 'Email configuration not set up' });
+      }
+      config = rows[0];
     }
 
-    const config = rows[0];
-
     // Validate config exists
-    if (config.provider === 'none') {
+    if (!config.provider || config.provider === 'none') {
       return res.status(400).json({
         error: 'Email provider is set to "none". Please configure a provider.',
       });
     }
 
-    // In production, you would actually attempt to send an email here
-    // For now, we'll just validate the configuration
-    let isValid = true;
-    let message = '';
+    // Import required modules
+    const nodemailer = await import('nodemailer');
+    let transporter: any = null;
 
-    if (config.provider === 'smtp') {
-      if (!config.smtp_host || !config.smtp_port || !config.smtp_username || !config.smtp_password) {
-        isValid = false;
-        message = 'SMTP configuration is incomplete';
-      } else {
-        message = 'SMTP configuration appears valid';
+    try {
+      if (config.provider === 'smtp') {
+        if (!config.smtpHost && !config.smtp_host) {
+          return res.status(400).json({
+            error: 'SMTP configuration is incomplete - missing host',
+          });
+        }
+
+        const { decryptData } = await import('../utils/encryption.js');
+        const password = config.smtpPassword 
+          ? config.smtpPassword 
+          : (config.smtp_password ? decryptData(config.smtp_password) : null);
+
+        if (!password) {
+          return res.status(400).json({
+            error: 'SMTP password is required but not provided',
+          });
+        }
+
+        transporter = nodemailer.default.createTransport({
+          host: config.smtpHost || config.smtp_host,
+          port: config.smtpPort || config.smtp_port || 587,
+          secure: config.smtpSecure || config.smtp_secure || false,
+          auth: {
+            user: config.smtpUsername || config.smtp_username,
+            pass: password,
+          },
+        });
+      } else if (config.provider === 'sendgrid') {
+        return res.status(501).json({
+          success: false,
+          error: 'SendGrid test email not yet implemented. Please verify your API key manually.',
+          provider: 'sendgrid',
+        });
+      } else if (config.provider === 'mailgun') {
+        return res.status(501).json({
+          success: false,
+          error: 'Mailgun test email not yet implemented. Please verify your configuration manually.',
+          provider: 'mailgun',
+        });
       }
-    } else if (config.provider === 'sendgrid') {
-      if (!config.sendgrid_api_key) {
-        isValid = false;
-        message = 'SendGrid API key is missing';
-      } else {
-        message = 'SendGrid configuration appears valid';
+
+      if (!transporter) {
+        return res.status(400).json({
+          error: 'Failed to initialize email transporter',
+        });
       }
-    } else if (config.provider === 'mailgun') {
-      if (!config.mailgun_domain || !config.mailgun_api_key) {
-        isValid = false;
-        message = 'Mailgun configuration is incomplete';
-      } else {
-        message = 'Mailgun configuration appears valid';
-      }
+
+      // Send test email
+      const fromEmail = config.fromEmail || config.from_email;
+      const fromName = config.fromName || config.from_name;
+
+      await transporter.sendMail({
+        from: `"${fromName}" <${fromEmail}>`,
+        to: testEmail,
+        subject: 'Test Email - Configuration Verified',
+        html: `
+          <html>
+            <body style="font-family: Arial, sans-serif; color: #333;">
+              <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                <h2 style="color: #0ea5e9;">Email Configuration Test</h2>
+                <p>This is a test email to verify that your email configuration is working correctly.</p>
+                <div style="background-color: #f0f9ff; border-left: 4px solid #0ea5e9; padding: 15px; margin: 20px 0;">
+                  <p><strong>Configuration Details:</strong></p>
+                  <ul style="margin: 10px 0;">
+                    <li><strong>Provider:</strong> ${config.provider}</li>
+                    <li><strong>From:</strong> ${fromName} (${fromEmail})</li>
+                    <li><strong>Test Recipient:</strong> ${testEmail}</li>
+                  </ul>
+                </div>
+                <p style="color: #666; font-size: 12px; margin-top: 30px;">
+                  If you received this email, your email configuration is working properly.
+                </p>
+              </div>
+            </body>
+          </html>
+        `,
+      });
+
+      return res.json({
+        success: true,
+        message: `Test email successfully sent to ${testEmail}`,
+        testEmail,
+      });
+    } catch (emailError: any) {
+      console.error('Error sending test email:', emailError);
+      return res.status(500).json({
+        success: false,
+        error: `Failed to send test email: ${emailError.message || 'Unknown error'}`,
+        details: emailError.message,
+      });
     }
-
-    return res.json({
-      success: isValid,
-      message,
-      testEmail,
-    });
   } catch (error) {
     console.error('Error testing email config:', error);
     return res.status(500).json({ error: 'Failed to test email configuration' });

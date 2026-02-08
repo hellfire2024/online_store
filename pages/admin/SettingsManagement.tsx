@@ -222,6 +222,11 @@ const SettingsManagement: React.FC = () => {
   const [selectedLogoFile, setSelectedLogoFile] = useState<File | null>(null);
   const [activeDragItem, setActiveDragItem] = useState<FooterItem | null>(null);
 
+  // --- State for Email Test Modal ---
+  const [showEmailTestModal, setShowEmailTestModal] = useState(false);
+  const [testEmailAddress, setTestEmailAddress] = useState("");
+  const [testEmailLoading, setTestEmailLoading] = useState(false);
+
   // --- State for Menu Editor ---
   const [selectedMenuId, setSelectedMenuId] = useState<string | null>(null);
   const [currentMenu, setCurrentMenu] = useState<Menu | null>(null);
@@ -2790,17 +2795,97 @@ const SettingsManagement: React.FC = () => {
               {settings.emailConfig?.provider !== "none" && (
                 <button
                   onClick={() => {
-                    // Test email config
-                    addToast(
-                      "Email configuration test sent (check console for validation)",
-                      "info",
-                    );
+                    setTestEmailAddress("");
+                    setShowEmailTestModal(true);
                   }}
                   className="bg-slate-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-slate-700"
                 >
                   Test Configuration
                 </button>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* Email Test Modal */}
+        {showEmailTestModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-slate-800 border border-slate-700 rounded-lg p-6 max-w-md w-full">
+              <h3 className="text-lg font-semibold text-white mb-4">
+                Send Test Email
+              </h3>
+              <p className="text-gray-300 text-sm mb-4">
+                Enter the email address where you would like to receive the test email.
+              </p>
+              <input
+                type="email"
+                value={testEmailAddress}
+                onChange={(e) => setTestEmailAddress(e.target.value)}
+                placeholder="test@example.com"
+                className="w-full p-2 bg-slate-900 border border-slate-600 rounded text-white mb-4"
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    setShowEmailTestModal(false);
+                    setTestEmailAddress("");
+                  }}
+                  disabled={testEmailLoading}
+                  className="flex-1 px-4 py-2 bg-slate-700 text-white rounded hover:bg-slate-600 disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={async () => {
+                    if (!testEmailAddress.trim()) {
+                      addToast("Please enter an email address", "error");
+                      return;
+                    }
+
+                    setTestEmailLoading(true);
+                    try {
+                      // Save the current email config first
+                      await updateSiteSettings(settings);
+
+                      // Make API call to test email configuration
+                      const response = await fetch("/api/email/test", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          emailConfig: settings.emailConfig,
+                          testEmail: testEmailAddress,
+                        }),
+                      });
+
+                      if (response.ok) {
+                        addToast(
+                          `Test email sent to ${testEmailAddress}`,
+                          "success",
+                        );
+                        setShowEmailTestModal(false);
+                        setTestEmailAddress("");
+                      } else {
+                        const error = await response.json();
+                        addToast(
+                          `Failed to send test email: ${error.message || "Unknown error"}`,
+                          "error",
+                        );
+                      }
+                    } catch (error) {
+                      addToast(
+                        `Error: ${error instanceof Error ? error.message : "Failed to send test email"}`,
+                        "error",
+                      );
+                    } finally {
+                      setTestEmailLoading(false);
+                    }
+                  }}
+                  disabled={testEmailLoading || !testEmailAddress.trim()}
+                  className="flex-1 px-4 py-2 bg-sky-600 text-white rounded hover:bg-sky-700 disabled:opacity-50"
+                >
+                  {testEmailLoading ? "Sending..." : "Send Test Email"}
+                </button>
+              </div>
             </div>
           </div>
         )}
