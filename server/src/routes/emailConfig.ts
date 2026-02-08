@@ -551,24 +551,18 @@ router.post("/test", async (req: Request, res: Response) => {
             },
           });
         } catch (zohoError: any) {
-          console.error("[Email Test] Zoho error (could be validation or send):");
+          console.error("[Email Test] Zoho validation error:");
           console.error("[Email Test] Status:", zohoError.response?.status);
           console.error(
             "[Email Test] Error code:",
-            zohoError.response?.data?.error || zohoError.response?.data?.status?.code,
+            zohoError.response?.data?.error,
           );
           console.error(
             "[Email Test] Error message:",
-            zohoError.response?.data?.error_description || zohoError.response?.data?.status?.description,
+            zohoError.response?.data?.error_description,
           );
           console.error(
             "[Email Test] Full response:",
-            JSON.stringify(zohoError.response?.data, null, 2),
-          );
-          console.error("[Email Test] Request details:", {
-            url: zohoError.config?.url,
-            method: zohoError.config?.method,
-          });
             JSON.stringify(zohoError.response?.data, null, 2),
           );
           console.error("[Email Test] Request was for:", {
@@ -587,7 +581,8 @@ router.post("/test", async (req: Request, res: Response) => {
               errorMessage += " (Invalid OAuth credentials)";
             }
           } else if (zohoError.response?.status === 404) {
-            errorMessage = "Zoho account not found - check your account ID";
+            errorMessage =
+              "Zoho account not found - check your account ID";
           } else if (zohoError.code === "ECONNREFUSED") {
             errorMessage =
               "Could not connect to Zoho API - check your internet connection";
