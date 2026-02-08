@@ -190,10 +190,12 @@ async function sendViaZohoApi(mailOptions: any): Promise<any> {
     const accessToken = tokenResponse.data.access_token;
     console.log("[Zoho Email] Access token obtained successfully");
 
-    // Zoho Mail API doesn't support REST API email sending for most accounts
-    // Use SMTP with OAuth2 token instead
+    // Send email via Zoho Mail REST API using correct endpoint
     console.log(
-      `[Zoho Email] Sending email to ${mailOptions.to} via Zoho SMTP with OAuth2`,
+      `[Zoho Email] Sending email to ${mailOptions.to} via Zoho REST API`,
+    );
+    console.log(
+      `[Zoho Email] Endpoint: /api/accounts/${zohoConfig.accountId}/messages`,
     );
     console.log("[Zoho Email] Request details:", {
       to: mailOptions.to,
@@ -201,32 +203,31 @@ async function sendViaZohoApi(mailOptions: any): Promise<any> {
       subject: mailOptions.subject,
     });
 
-    const nodemailer = await import("nodemailer");
-    
-    // Create SMTP transporter with OAuth2 token
-    const smtpTransporter = nodemailer.default.createTransport({
-      host: "smtp.zoho.com",
-      port: 465,
-      secure: true,
-      auth: {
-        type: "OAuth2",
-        user: mailOptions.from,
-        accessToken: accessToken,
-      },
-    });
-
-    // Send email via SMTP
-    const emailResponse = await smtpTransporter.sendMail({
-      from: mailOptions.from,
-      to: mailOptions.to,
+    // Build email payload for Zoho REST API
+    const emailPayload = {
+      fromAddress: mailOptions.from,
+      toAddress: mailOptions.to,
       subject: mailOptions.subject,
-      html: mailOptions.html || mailOptions.text,
-    });
+      htmlBody: mailOptions.html || mailOptions.text,
+    };
 
-    console.log("[Zoho Email] Email sent successfully via Zoho SMTP");
-    console.log("[Zoho Email] Message ID:", emailResponse.messageId);
+    // Send via Zoho REST API
+    const apiResponse = await axiosInstance.post(
+      `https://mail.zoho.com/api/accounts/${zohoConfig.accountId}/messages`,
+      emailPayload,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        timeout: 10000,
+      },
+    );
+
+    console.log("[Zoho Email] Email sent successfully via Zoho REST API");
+    console.log("[Zoho Email] Response:", apiResponse.data);
     return {
-      messageId: emailResponse.messageId,
+      messageId: apiResponse.data?.data?.messageId || "sent",
       success: true,
     };
   } catch (error: any) {
@@ -240,7 +241,8 @@ async function sendViaZohoApi(mailOptions: any): Promise<any> {
     // Provide user-friendly error message
     let userMessage = "Failed to send email via Zoho SMTP";
     if (error.responseCode === 535 || error.code === "EAUTH") {
-      userMessage = "Zoho SMTP authentication failed - OAuth token may be expired";
+      userMessage =
+        "Zoho SMTP authentication failed - OAuth token may be expired";
     } else if (error.code === "ECONNREFUSED") {
       userMessage = "Could not connect to Zoho SMTP server";
     } else if (error.code === "ETIMEDOUT") {

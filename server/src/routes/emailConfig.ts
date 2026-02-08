@@ -539,34 +539,26 @@ router.post("/test", async (req: Request, res: Response) => {
             "[Email Test] Zoho Mail API account validation successful",
           );
 
-          // Now attempt to send a test email via SMTP with OAuth
+          // Now attempt to send a test email via Zoho REST API
           const fromEmail = config.fromEmail || config.from_email;
-          const fromName = config.fromName || config.from_name || "Online Store";
-          console.log("[Email Test] Attempting to send test email via Zoho SMTP...");
+          const fromName =
+            config.fromName || config.from_name || "Online Store";
+          console.log(
+            "[Email Test] Attempting to send test email via Zoho REST API...",
+          );
           console.log("[Email Test] From:", fromEmail);
           console.log("[Email Test] To:", testEmail);
+          console.log(
+            `[Email Test] Endpoint: /api/accounts/${zohoAccountId}/messages`,
+          );
 
           try {
-            const nodemailer = await import("nodemailer");
-            
-            // Create SMTP transporter with OAuth2 token
-            const smtpTransporter = nodemailer.default.createTransport({
-              host: "smtp.zoho.com",
-              port: 465,
-              secure: true,
-              auth: {
-                type: "OAuth2",
-                user: fromEmail,
-                accessToken: accessToken,
-              },
-            });
-
-            // Send test email
-            const sendResponse = await smtpTransporter.sendMail({
-              from: `"${fromName}" <${fromEmail}>`,
-              to: testEmail,
+            // Build email payload for Zoho REST API
+            const emailPayload = {
+              fromAddress: fromEmail,
+              toAddress: testEmail,
               subject: "Test Email - Zoho Mail Configuration Verified",
-              html: `
+              htmlBody: `
                 <html>
                   <body style="font-family: Arial, sans-serif; color: #333;">
                     <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
@@ -575,7 +567,7 @@ router.post("/test", async (req: Request, res: Response) => {
                       <div style="background-color: #f0f9ff; border-left: 4px solid #0ea5e9; padding: 15px; margin: 20px 0;">
                         <p><strong>Configuration Details:</strong></p>
                         <ul style="margin: 10px 0;">
-                          <li><strong>Provider:</strong> Zoho Mail (SMTP with OAuth2)</li>
+                          <li><strong>Provider:</strong> Zoho Mail (REST API)</li>
                           <li><strong>From:</strong> ${fromName} (${fromEmail})</li>
                           <li><strong>Test Recipient:</strong> ${testEmail}</li>
                           <li><strong>Sent At:</strong> ${new Date().toISOString()}</li>
@@ -588,32 +580,59 @@ router.post("/test", async (req: Request, res: Response) => {
                   </body>
                 </html>
               `,
-            });
+            };
+
+            // Send test email via Zoho REST API
+            const sendResponse = await axiosInstance.post(
+              `https://mail.zoho.com/api/accounts/${zohoAccountId}/messages`,
+              emailPayload,
+              {
+                headers: {
+                  Authorization: `Bearer ${accessToken}`,
+                  "Content-Type": "application/json",
+                },
+                timeout: 10000,
+              },
+            );
 
             console.log("[Email Test] Test email sent successfully!");
-            console.log("[Email Test] Message ID:", sendResponse.messageId);
+            console.log("[Email Test] Response:", sendResponse.data);
 
             return res.json({
               success: true,
               message: `Test email successfully sent to ${testEmail}! Check your inbox.`,
-              provider: "zoho-smtp",
-              messageId: sendResponse.messageId,
+              provider: "zoho-rest-api",
+              messageId: sendResponse.data?.data?.messageId || "sent",
               fromEmail: fromEmail,
             });
           } catch (sendError: any) {
             console.error("[Email Test] Send attempt failed!");
-            console.error("[Email Test] SMTP error code:", sendError.code);
-            console.error("[Email Test] SMTP response code:", sendError.responseCode);
-            console.error("[Email Test] Send error message:", sendError.message);
-            console.error("[Email Test] Send error:", sendError);
+            console.error(
+              "[Email Test] Status:",
+              sendError.response?.status,
+            );
+            console.error(
+              "[Email Test] Error code:",
+              sendError.response?.data?.errorCode,
+            );
+            console.error(
+              "[Email Test] Error message:",
+              sendError.response?.data?.data?.message ||
+                sendError.message,
+            );
+            console.error(
+              "[Email Test] Full response:",
+              JSON.stringify(sendError.response?.data, null, 2),
+            );
 
             // Return error details
             return res.status(500).json({
               success: false,
-              message: "Zoho credentials validated, but test email send failed via SMTP.",
+              message:
+                "Zoho credentials validated, but test email send failed via REST API.",
               error: sendError.message,
-              errorCode: sendError.code,
-              responseCode: sendError.responseCode,
+              status: sendError.response?.status,
+              errorCode: sendError.response?.data?.errorCode,
               fromEmail: fromEmail,
               testEmail: testEmail,
             });
@@ -649,8 +668,7 @@ router.post("/test", async (req: Request, res: Response) => {
               errorMessage += " (Invalid OAuth credentials)";
             }
           } else if (zohoError.response?.status === 404) {
-            errorMessage =
-              "Zoho account not found - check your account ID";
+            errorMessage = "Zoho account not found - check your account ID";
           } else if (zohoError.code === "ECONNREFUSED") {
             errorMessage =
               "Could not connect to Zoho API - check your internet connection";
