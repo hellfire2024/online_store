@@ -1,180 +1,136 @@
 # Zoho Mail API Configuration Guide
 
-This guide explains how to set up Zoho Mail API as your email provider for the online store. This is ideal for Render and other PaaS platforms that block direct SMTP connections.
+This guide explains how to set up Zoho Mail API as your email provider. Perfect for Render, Hostinger, and other platforms that block SMTP.
 
 ## Why Zoho Mail API?
 
-- **PaaS Compatible**: Works on Render, Heroku, and other platforms that block SMTP
-- **Business Emails**: Use your custom domain email addresses
+- **PaaS Compatible**: Works on Render, Hostinger, Heroku - no SMTP blocking
+- **Business Emails**: Use your custom domain (`noreply@yourdomain.com`)
 - **Reliable**: Zoho's infrastructure ensures high deliverability
-- **No Free Tier Limitations**: Bypass Render's free tier email restrictions
+- **No Free Tier Limits**: Bypass hosting platform email restrictions
+- **No Command Line Needed**: Everything through the admin panel
 
 ## Prerequisites
 
-1. **Zoho Mail Business Account**: You need a Zoho Mail account (free or paid)
-   - Go to https://www.zoho.com/mail/
-   - Sign up or log in to your account
+1. **Zoho Mail Account** (free or paid): https://www.zoho.com/mail/
+2. **Business Email**: Your domain configured in Zoho Mail (e.g., `noreply@yourdomain.com`)
 
-2. **Business Email**: Your domain email configured in Zoho Mail
-   - Example: `noreply@yourdomain.com`
+## Quick Setup (5 minutes)
 
-## Step 1: Register Your Application in Zoho
+### Step 1: Get Zoho Credentials
 
-1. Go to **Zoho Developer Console**: https://accounts.zoho.com/developerconsole
-2. Click **Create Server-based Applications** or **Add Client ID**
-3. Fill in the form:
+1. Go to https://accounts.zoho.com/developerconsole
+2. Click **Create Server-based Applications**
+3. Fill in:
    - **Client Name**: "Online Store Email Service"
    - **Client Domain**: Your domain (e.g., `yourdomain.com`)
-   - **Authorized Redirect URLs**: `http://localhost:3000/auth/callback` (for testing)
-     - In production, use your actual domain: `https://yourdomain.com/auth/callback`
 4. Click **Create**
-5. Save your credentials:
-   - **Client ID**
-   - **Client Secret**
+5. Save your **Client ID** and **Client Secret**
 
-## Step 2: Generate Refresh Token
+### Step 2: Get Your Account ID
 
-You need to get a refresh token to allow your application to send emails on your behalf.
-
-### Method 1: Using Authorization Code Flow (Recommended)
-
-1. Replace `{CLIENT_ID}` and `{CLIENT_SECRET}` and visit this URL:
-```
-https://accounts.zoho.com/oauth/v2/auth?
-  response_type=code
-  &client_id={CLIENT_ID}
-  &scope=ZohoMail.accounts.READ,ZohoMail.messages.CREATE,ZohoMail.messages.SEND
-  &redirect_uri=http://localhost:3000/auth/callback
-  &access_type=offline
-```
-
-2. Log in with your Zoho account
-3. Grant permissions
-4. You'll be redirected with an authorization code in the URL: `?code=...`
-5. Copy that code and exchange it for a refresh token using this curl command:
-
-```bash
-curl -X POST https://accounts.zoho.com/oauth/v2/token \
-  -d "grant_type=authorization_code" \
-  -d "client_id={CLIENT_ID}" \
-  -d "client_secret={CLIENT_SECRET}" \
-  -d "code={AUTHORIZATION_CODE}" \
-  -d "redirect_uri=http://localhost:3000/auth/callback"
-```
-
-6. The response will include `refresh_token` - **save this securely**
-
-### Method 2: Using Client Credentials (For Testing Only)
-
-For initial testing, you can skip the refresh token. The system will attempt to use client credentials if no refresh token is provided.
-
-## Step 3: Configure in Admin Panel
-
-1. Go to **Admin Dashboard** → **Settings** → **Email Configuration**
-2. Select **Email Provider**: `Zoho Mail API`
-3. Fill in the following fields:
-   - **From Email**: Your business email (e.g., `noreply@yourdomain.com`)
-   - **From Name**: Display name (e.g., `Custom Threads Store`)
-   - **Zoho Account ID**: Your Zoho Mail account ID (appears in Zoho Mail settings)
-   - **Zoho Client ID**: From developer console
-   - **Zoho Client Secret**: From developer console
-   - **Zoho Refresh Token**: From the OAuth flow (optional for initial testing)
-
-4. Click **Test Email Configuration**
-5. Enter a test email address and send
-6. If successful, you'll see a confirmation message
-
-## Step 4: Finding Your Zoho Account ID
-
-1. Log in to Zoho Mail: https://mail.zoho.com/
+1. Log into https://mail.zoho.com/
 2. Click your profile icon (top right)
 3. Go to **Settings** → **Preferences**
-4. Look for **Account ID** (also appears in the URL as `/accounts/{ACCOUNT_ID}`)
+4. Find and copy your **Account ID** (also in URL: `/accounts/{ACCOUNT_ID}`)
 
-## Environment Variables (Optional)
+### Step 3: Configure in Admin Panel
 
-If you prefer to configure via environment variables:
+No bash, curl, or PowerShell needed - just use the admin interface:
 
-```bash
+1. Log into your admin dashboard
+2. Go to **Settings** → **Email Configuration**
+3. Select **Zoho Mail API (Recommended for Render)**
+4. Fill in:
+   - **From Email**: `noreply@yourdomain.com`
+   - **From Name**: Your store name
+   - **Zoho Account ID**: From Step 2
+   - **Zoho Client ID**: From Step 1
+   - **Zoho Client Secret**: From Step 1
+   - **Zoho Refresh Token**: Leave empty (optional for testing)
+5. Click **Save Email Configuration**
+
+### Step 4: Test It
+
+1. Click **Test Configuration** button
+2. Enter your test email address
+3. Click **Send Test Email**
+4. Check your inbox
+5. **If successful, you're done! ✅**
+
+## That's It!
+
+Emails now send via Zoho Mail API automatically for:
+- Order confirmations
+- Shipping notifications  
+- Support tickets
+- Any other transactional emails
+
+## Optional: Add Refresh Token (Production)
+
+For production, add a refresh token for better reliability:
+
+1. Go to https://accounts.zoho.com/
+2. Click **My Account** → **Connected Apps**
+3. Find your "Online Store Email Service" app
+4. Get your refresh token
+5. Go back to **Settings** → **Email Configuration**
+6. Add the refresh token and **Save**
+
+## Deploy to Render/Hostinger
+
+1. All settings are saved in database (encrypted)
+2. Push code to GitHub
+3. Your hosting automatically deploys
+4. Done! No environment variables needed
+
+## Optional: Environment Variables
+
+For extra security on production, add these in your hosting dashboard:
+
+**For Render**: Dashboard → Service → Environment tab
+
+```
 ZOHO_ACCOUNT_ID=your_account_id
 ZOHO_CLIENT_ID=your_client_id
 ZOHO_CLIENT_SECRET=your_client_secret
 ZOHO_REFRESH_TOKEN=your_refresh_token
 ```
 
-## Testing
-
-### Test in Admin Panel
-1. Go to **Admin Settings** → **Email Configuration**
-2. Click **Test Email** button
-3. Enter your email address
-4. Verify you receive the test email
-
-### Manual Testing
-You can also test using PowerShell:
-
-```powershell
-$body = @{testEmail = "your.email@example.com"} | ConvertTo-Json
-Invoke-WebRequest -Uri "http://localhost:3001/api/email-config/test" `
-  -Method POST -ContentType "application/json" -Body $body
-```
-
-## Supported Scopes
-
-The system requires these Zoho Mail API scopes:
-- `ZohoMail.accounts.READ` - Read account information
-- `ZohoMail.messages.CREATE` - Create email messages
-- `ZohoMail.messages.SEND` - Send email messages
+**For Hostinger**: Control Panel → Environment Variables (if available)
 
 ## Troubleshooting
 
-### "Authentication failed" Error
-- Verify your Client ID and Secret are correct
-- Check that your refresh token hasn't expired
-- Re-generate your refresh token using the OAuth flow
+### Test email returns "Authentication failed"
+- Check Client ID and Secret are correct
+- Verify your Zoho account is active
 
-### "Account not found" Error
-- Verify your Account ID is correct
-- Check Zoho Mail account settings to get the correct ID
+### Test email returns "Account not found"
+- Verify Account ID is correct (from Zoho Mail settings, not your account ID)
+- Should be a long number string
 
-### "Connection timeout" Error
+### Test email returns "Connection timeout"
 - Check your internet connection
 - Verify Zoho Mail API is accessible in your region
-- Check firewall/network restrictions
 
-### Emails Not Sending in Production
-- Verify the refresh token is configured (if using OAuth)
-- Check that your domain is verified in Zoho Mail
-- Monitor Zoho Mail's activity logs for delivery failures
-- Ensure `from_email` matches a verified domain in Zoho Mail
+### Emails not sending after deployment
+- Check admin panel - Zoho still selected?
+- Verify `from_email` domain is verified in Zoho Mail
+- Check Zoho Mail activity logs
 
-## Zoho Mail API Endpoints
-
-- **Auth**: `https://accounts.zoho.com/oauth/v2/token`
-- **Send Email**: `https://mail.zoho.com/api/accounts/{ACCOUNT_ID}/messages/send`
-- **Get Account Info**: `https://mail.zoho.com/api/accounts/{ACCOUNT_ID}`
-
-## Security Best Practices
-
-1. **Never commit secrets**: Store Client Secret and Refresh Token in environment variables
-2. **Use HTTPS**: Always use HTTPS in production
-3. **Rotate tokens**: Periodically regenerate refresh tokens
-4. **Monitor logs**: Check email delivery logs regularly
-5. **Rate limiting**: Be aware of Zoho's API rate limits (varies by plan)
-
-## Support
+## Need Help?
 
 - **Zoho Mail Help**: https://www.zoho.com/support/zohomail/
-- **Zoho API Documentation**: https://www.zoho.com/mail/help/api/
-- **Developer Community**: https://www.zoho.com/developer/
+- **API Documentation**: https://www.zoho.com/mail/help/api/
+- **Developer Console**: https://accounts.zoho.com/developerconsole
 
-## Next Steps
+## Summary
 
-1. Install axios: `npm install axios` (in server folder)
-2. Configure Zoho credentials in Admin Settings
-3. Test email sending
-4. Deploy to Render with environment variables
+✅ Everything done through web interfaces - no command line!
+✅ Works on any hosting platform
+✅ No SMTP blocking issues
+✅ Takes about 5 minutes to set up
 
 ---
 
-**Note**: This configuration uses the Zoho Mail API, which bypasses all PaaS SMTP limitations. You can now send transactional emails (order confirmations, shipping notifications, support tickets) directly from Render without any port blocking issues.
+**Updated**: February 2026 - Now optimized for Render/Hostinger with no CLI commands needed
