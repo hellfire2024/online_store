@@ -34,7 +34,10 @@ export function decryptData(encryptedData: string): string {
   
   try {
     const [ivHex, encrypted] = encryptedData.split(':');
-    if (!ivHex || !encrypted) return '';
+    if (!ivHex || !encrypted) {
+      console.error('Decryption error: Invalid encrypted data format (missing IV or encrypted part)');
+      return '';
+    }
     
     const iv = Buffer.from(ivHex, 'hex');
     const decipher = crypto.createDecipheriv(ALGORITHM, Buffer.from(ENCRYPTION_KEY), iv);
@@ -43,8 +46,12 @@ export function decryptData(encryptedData: string): string {
     decrypted += decipher.final('utf-8');
     
     return decrypted;
-  } catch (error) {
-    console.error('Decryption error:', error);
+  } catch (error: any) {
+    console.error('Decryption error - this likely means the encryption key changed:', error.message);
+    console.error('Encrypted data starts with:', encryptedData.substring(0, 20) + '...');
+    console.error('Current encryption key length:', ENCRYPTION_KEY.length);
+    console.error('If credentials were encrypted with a different key, they cannot be decrypted.');
+    console.error('Solution: Re-save your email configuration in the admin panel.');
     return '';
   }
 }

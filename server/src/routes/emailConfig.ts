@@ -413,8 +413,12 @@ router.post("/test", async (req: Request, res: Response) => {
             : null;
 
         if (!zohoSecret) {
+          console.error("[Email Test] Zoho client secret is empty!");
+          console.error("[Email Test] zohoClientSecret from config:", !!config.zohoClientSecret);
+          console.error("[Email Test] zoho_client_secret in DB:", !!config.zoho_client_secret);
+          console.error("[Email Test] This usually means decryption failed - encryption key may have changed");
           return res.status(400).json({
-            error: "Zoho client secret is required but not provided",
+            error: "Zoho client secret is required but not provided or failed to decrypt. Solution: Re-enter your Zoho credentials in Settings and save again.",
           });
         }
 
