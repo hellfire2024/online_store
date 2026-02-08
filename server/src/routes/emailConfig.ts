@@ -539,17 +539,59 @@ router.post("/test", async (req: Request, res: Response) => {
             "[Email Test] Zoho Mail API account validation successful",
           );
 
-          return res.json({
-            success: true,
-            message:
-              "Zoho Mail API configuration validated successfully. This provider works on Render and other PaaS platforms.",
-            provider: "zoho",
-            config: {
-              accountId: zohoAccountId,
-              clientId: zohoClientId,
-              fromEmail: config.fromEmail || config.from_email,
-            },
-          });
+          // Now attempt to send a test email to see the actual error
+          const fromEmail = config.fromEmail || config.from_email;
+          console.log("[Email Test] Attempting to send test email...");
+          console.log("[Email Test] From:", fromEmail);
+          console.log("[Email Test] To:", testEmail);
+
+          try {
+            const sendResponse = await axiosInstance.post(
+              `https://mail.zoho.com/api/accounts/${zohoAccountId}/messages/send`,
+              {
+                fromAddress: fromEmail,
+                toAddress: [testEmail],
+                subject: "Test Email from Zoho Mail API",
+                htmlBody: "<p>This is a test email</p>",
+              },
+              {
+                headers: {
+                  Authorization: `Bearer ${accessToken}`,
+                  "Content-Type": "application/json",
+                },
+                timeout: 10000,
+              },
+            );
+
+            console.log("[Email Test] Send response:", sendResponse.data);
+
+            return res.json({
+              success: true,
+              message: `Test email sent successfully to ${testEmail}!`,
+              provider: "zoho",
+              config: {
+                accountId: zohoAccountId,
+                clientId: zohoClientId,
+                fromEmail: fromEmail,
+              },
+            });
+          } catch (sendError: any) {
+            console.error("[Email Test] Send attempt failed!");
+            console.error("[Email Test] Send error status:", sendError.response?.status);
+            console.error("[Email Test] Send error data:", JSON.stringify(sendError.response?.data, null, 2));
+            console.error("[Email Test] Send error message:", sendError.message);
+
+            // Return validation success but note the send failed
+            return res.json({
+              success: true,
+              message: "Zoho credentials validated, but test email send failed. See details below.",
+              validationPassed: true,
+              sendFailed: true,
+              sendError: sendError.response?.data || sendError.message,
+              fromEmail: fromEmail,
+              testEmail: testEmail,
+            });
+          }
         } catch (zohoError: any) {
           console.error("[Email Test] Zoho validation error:");
           console.error("[Email Test] Status:", zohoError.response?.status);
