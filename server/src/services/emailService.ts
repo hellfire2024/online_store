@@ -190,60 +190,63 @@ async function sendViaZohoApi(mailOptions: any): Promise<any> {
     const accessToken = tokenResponse.data.access_token;
     console.log("[Zoho Email] Access token obtained successfully");
 
-    // Send email via Zoho Mail API
+    // Zoho Mail API doesn't support REST API email sending for most accounts
+    // Use SMTP with OAuth2 token instead
     console.log(
-      `[Zoho Email] Sending email to ${mailOptions.to} via Zoho Mail API`,
+      `[Zoho Email] Sending email to ${mailOptions.to} via Zoho SMTP with OAuth2`,
     );
     console.log("[Zoho Email] Request details:", {
       to: mailOptions.to,
       from: mailOptions.from,
       subject: mailOptions.subject,
-      accountId: zohoConfig.accountId,
     });
 
-    const emailPayload = {
-      fromAddress: mailOptions.from,
-      toAddress: [mailOptions.to],
-      subject: mailOptions.subject,
-      htmlBody: mailOptions.html || mailOptions.text,
-    };
-
-    const emailResponse = await axiosInstance.post(
-      `https://mail.zoho.com/api/accounts/${zohoConfig.accountId}/messages/send`,
-      emailPayload,
-      {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
-        timeout: 10000,
+    const nodemailer = await import("nodemailer");
+    
+    // Create SMTP transporter with OAuth2 token
+    const smtpTransporter = nodemailer.default.createTransport({
+      host: "smtp.zoho.com",
+      port: 465,
+      secure: true,
+      auth: {
+        type: "OAuth2",
+        user: mailOptions.from,
+        accessToken: accessToken,
       },
-    );
+    });
 
-    console.log("[Zoho Email] Email sent successfully via Zoho API");
-    console.log("[Zoho Email] Response:", emailResponse.data);
+    // Send email via SMTP
+    const emailResponse = await smtpTransporter.sendMail({
+      from: mailOptions.from,
+      to: mailOptions.to,
+      subject: mailOptions.subject,
+      html: mailOptions.html || mailOptions.text,
+    });
+
+    console.log("[Zoho Email] Email sent successfully via Zoho SMTP");
+    console.log("[Zoho Email] Message ID:", emailResponse.messageId);
     return {
-      messageId: emailResponse.data.data.messageId,
+      messageId: emailResponse.messageId,
       success: true,
     };
   } catch (error: any) {
     // Enhanced error logging for debugging
     console.error("[Zoho Email] Error sending email:");
-    console.error("[Zoho Email] Status:", error.response?.status);
-    console.error("[Zoho Email] Error Code:", error.code);
+    console.error("[Zoho Email] SMTP Error Code:", error.code);
     console.error("[Zoho Email] Message:", error.message);
-    console.error("[Zoho Email] Response Data:", error.response?.data);
+    console.error("[Zoho Email] Response:", error.response);
+    console.error("[Zoho Email] Response Code:", error.responseCode);
 
     // Provide user-friendly error message
-    let userMessage = "Failed to send email via Zoho Mail API";
-    if (error.response?.status === 401) {
-      userMessage = "Zoho authentication failed - invalid credentials";
-    } else if (error.response?.status === 404) {
-      userMessage = "Zoho account not found - check Account ID";
+    let userMessage = "Failed to send email via Zoho SMTP";
+    if (error.responseCode === 535 || error.code === "EAUTH") {
+      userMessage = "Zoho SMTP authentication failed - OAuth token may be expired";
     } else if (error.code === "ECONNREFUSED") {
-      userMessage = "Could not connect to Zoho API";
-    } else if (error.message?.includes("timeout")) {
-      userMessage = "Connection to Zoho API timed out";
+      userMessage = "Could not connect to Zoho SMTP server";
+    } else if (error.code === "ETIMEDOUT") {
+      userMessage = "Connection to Zoho SMTP server timed out";
+    } else if (error.code === "ESOCKET") {
+      userMessage = "SMTP connection error - check network connectivity";
     }
 
     const enrichedError = new Error(userMessage);

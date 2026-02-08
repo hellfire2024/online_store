@@ -539,55 +539,81 @@ router.post("/test", async (req: Request, res: Response) => {
             "[Email Test] Zoho Mail API account validation successful",
           );
 
-          // Now attempt to send a test email to see the actual error
+          // Now attempt to send a test email via SMTP with OAuth
           const fromEmail = config.fromEmail || config.from_email;
-          console.log("[Email Test] Attempting to send test email...");
+          const fromName = config.fromName || config.from_name || "Online Store";
+          console.log("[Email Test] Attempting to send test email via Zoho SMTP...");
           console.log("[Email Test] From:", fromEmail);
           console.log("[Email Test] To:", testEmail);
 
           try {
-            const sendResponse = await axiosInstance.post(
-              `https://mail.zoho.com/api/accounts/${zohoAccountId}/messages/send`,
-              {
-                fromAddress: fromEmail,
-                toAddress: [testEmail],
-                subject: "Test Email from Zoho Mail API",
-                htmlBody: "<p>This is a test email</p>",
+            const nodemailer = await import("nodemailer");
+            
+            // Create SMTP transporter with OAuth2 token
+            const smtpTransporter = nodemailer.default.createTransport({
+              host: "smtp.zoho.com",
+              port: 465,
+              secure: true,
+              auth: {
+                type: "OAuth2",
+                user: fromEmail,
+                accessToken: accessToken,
               },
-              {
-                headers: {
-                  Authorization: `Bearer ${accessToken}`,
-                  "Content-Type": "application/json",
-                },
-                timeout: 10000,
-              },
-            );
+            });
 
-            console.log("[Email Test] Send response:", sendResponse.data);
+            // Send test email
+            const sendResponse = await smtpTransporter.sendMail({
+              from: `"${fromName}" <${fromEmail}>`,
+              to: testEmail,
+              subject: "Test Email - Zoho Mail Configuration Verified",
+              html: `
+                <html>
+                  <body style="font-family: Arial, sans-serif; color: #333;">
+                    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                      <h2 style="color: #0ea5e9;">Email Configuration Test</h2>
+                      <p>This is a test email to verify that your Zoho Mail configuration is working correctly.</p>
+                      <div style="background-color: #f0f9ff; border-left: 4px solid #0ea5e9; padding: 15px; margin: 20px 0;">
+                        <p><strong>Configuration Details:</strong></p>
+                        <ul style="margin: 10px 0;">
+                          <li><strong>Provider:</strong> Zoho Mail (SMTP with OAuth2)</li>
+                          <li><strong>From:</strong> ${fromName} (${fromEmail})</li>
+                          <li><strong>Test Recipient:</strong> ${testEmail}</li>
+                          <li><strong>Sent At:</strong> ${new Date().toISOString()}</li>
+                        </ul>
+                      </div>
+                      <p style="color: #666; font-size: 12px; margin-top: 30px;">
+                        If you received this email, your Zoho Mail configuration is working properly!
+                      </p>
+                    </div>
+                  </body>
+                </html>
+              `,
+            });
+
+            console.log("[Email Test] Test email sent successfully!");
+            console.log("[Email Test] Message ID:", sendResponse.messageId);
 
             return res.json({
               success: true,
-              message: `Test email sent successfully to ${testEmail}!`,
-              provider: "zoho",
-              config: {
-                accountId: zohoAccountId,
-                clientId: zohoClientId,
-                fromEmail: fromEmail,
-              },
+              message: `Test email successfully sent to ${testEmail}! Check your inbox.`,
+              provider: "zoho-smtp",
+              messageId: sendResponse.messageId,
+              fromEmail: fromEmail,
             });
           } catch (sendError: any) {
             console.error("[Email Test] Send attempt failed!");
-            console.error("[Email Test] Send error status:", sendError.response?.status);
-            console.error("[Email Test] Send error data:", JSON.stringify(sendError.response?.data, null, 2));
+            console.error("[Email Test] SMTP error code:", sendError.code);
+            console.error("[Email Test] SMTP response code:", sendError.responseCode);
             console.error("[Email Test] Send error message:", sendError.message);
+            console.error("[Email Test] Send error:", sendError);
 
-            // Return validation success but note the send failed
-            return res.json({
-              success: true,
-              message: "Zoho credentials validated, but test email send failed. See details below.",
-              validationPassed: true,
-              sendFailed: true,
-              sendError: sendError.response?.data || sendError.message,
+            // Return error details
+            return res.status(500).json({
+              success: false,
+              message: "Zoho credentials validated, but test email send failed via SMTP.",
+              error: sendError.message,
+              errorCode: sendError.code,
+              responseCode: sendError.responseCode,
               fromEmail: fromEmail,
               testEmail: testEmail,
             });
