@@ -108,10 +108,14 @@ class ApiClient {
       let attempt = 0;
 
       while (true) {
-        const response = await fetch(`${this.baseUrl}${endpoint}`, {
+        const url = `${this.baseUrl}${endpoint}`;
+        console.log(`[API] ${method} ${url}`);
+        const response = await fetch(url, {
           ...options,
           headers,
         });
+
+        console.log(`[API] Response ${method} ${url}: ${response.status}`);
 
         if (response.ok) {
           if (response.status === 204) {
@@ -164,7 +168,10 @@ class ApiClient {
 
         const error = await response
           .json()
-          .catch(() => ({ error: "Request failed" }));
+          .catch((parseErr) => {
+            console.error(`[API] Failed to parse JSON for ${method} ${endpoint}:`, parseErr);
+            return { error: "Request failed" };
+          });
         throw new Error(error.error || `HTTP ${response.status}`);
       }
     };

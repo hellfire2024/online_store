@@ -2848,11 +2848,13 @@ const SettingsManagement: React.FC = () => {
                       // Save the current email config first
                       await updateSiteSettings(settings);
 
+                      console.log("Sending test email request to:", testEmailAddress);
                       const result = await apiClient.emailConfig.test({
                         emailConfig: settings.emailConfig,
                         testEmail: testEmailAddress,
                       });
 
+                      console.log("Test email response:", result);
                       if (result?.success) {
                         addToast(
                           `Test email sent to ${testEmailAddress}`,
@@ -2867,6 +2869,7 @@ const SettingsManagement: React.FC = () => {
                         );
                       }
                     } catch (error) {
+                      console.error("Test email error:", error);
                       addToast(
                         `Error: ${error instanceof Error ? error.message : "Failed to send test email"}`,
                         "error",
