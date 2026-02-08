@@ -2848,7 +2848,7 @@ const SettingsManagement: React.FC = () => {
                       await updateSiteSettings(settings);
 
                       // Make API call to test email configuration
-                      const response = await fetch("/api/email/test", {
+                      const response = await fetch("/api/email-config/test", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({
