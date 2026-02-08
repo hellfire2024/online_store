@@ -209,8 +209,28 @@ async function sendViaZohoApi(mailOptions: any): Promise<any> {
       success: true,
     };
   } catch (error: any) {
-    console.error('[Zoho Email] Error sending email:', error.response?.data || error.message);
-    throw error;
+    // Enhanced error logging for debugging
+    console.error('[Zoho Email] Error sending email:');
+    console.error('[Zoho Email] Status:', error.response?.status);
+    console.error('[Zoho Email] Error Code:', error.code);
+    console.error('[Zoho Email] Message:', error.message);
+    console.error('[Zoho Email] Response Data:', error.response?.data);
+    
+    // Provide user-friendly error message
+    let userMessage = 'Failed to send email via Zoho Mail API';
+    if (error.response?.status === 401) {
+      userMessage = 'Zoho authentication failed - invalid credentials';
+    } else if (error.response?.status === 404) {
+      userMessage = 'Zoho account not found - check Account ID';
+    } else if (error.code === 'ECONNREFUSED') {
+      userMessage = 'Could not connect to Zoho API';
+    } else if (error.message?.includes('timeout')) {
+      userMessage = 'Connection to Zoho API timed out';
+    }
+    
+    const enrichedError = new Error(userMessage);
+    (enrichedError as any).originalError = error;
+    throw enrichedError;
   }
 }
 
