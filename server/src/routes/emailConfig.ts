@@ -539,91 +539,15 @@ router.post("/test", async (req: Request, res: Response) => {
             "[Email Test] Zoho Mail API account validation successful",
           );
 
-          // Now actually send a test email
-          const fromEmail = config.fromEmail || config.from_email;
-          const fromName = config.fromName || config.from_name || "Online Store";
-
-          console.log(
-            "[Email Test] Sending test email via Zoho API to:",
-            testEmail,
-          );
-          console.log(
-            "[Email Test] From:",
-            fromEmail,
-            "Account ID:",
-            zohoAccountId,
-          );
-
-          const emailPayload = {
-            fromAddress: fromEmail,
-            toAddress: [testEmail],
-            subject: "Test Email - Zoho Mail API Configuration Verified",
-            htmlBody: `
-                <html>
-                  <body style="font-family: Arial, sans-serif; color: #333;">
-                    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-                      <h2 style="color: #0ea5e9;">Email Configuration Test</h2>
-                      <p>This is a test email to verify that your Zoho Mail API configuration is working correctly.</p>
-                      <div style="background-color: #f0f9ff; border-left: 4px solid #0ea5e9; padding: 15px; margin: 20px 0;">
-                        <p><strong>Configuration Details:</strong></p>
-                        <ul style="margin: 10px 0;">
-                          <li><strong>Provider:</strong> Zoho Mail API</li>
-                          <li><strong>From:</strong> ${fromName} (${fromEmail})</li>
-                          <li><strong>Test Recipient:</strong> ${testEmail}</li>
-                          <li><strong>Sent At:</strong> ${new Date().toISOString()}</li>
-                        </ul>
-                      </div>
-                      <p style="color: #666; font-size: 12px; margin-top: 30px;">
-                        If you received this email, your Zoho Mail API configuration is working properly and emails will be sent automatically for orders, confirmations, and support tickets.
-                      </p>
-                    </div>
-                  </body>
-                </html>
-              `,
-          };
-
-          console.log(
-            "[Email Test] Mail payload:",
-            JSON.stringify(emailPayload, null, 2),
-          );
-
-          const sendResponse = await axiosInstance.post(
-            `https://mail.zoho.com/api/accounts/${zohoAccountId}/messages/send`,
-            emailPayload,
-            {
-              headers: {
-                Authorization: `Bearer ${accessToken}`,
-                "Content-Type": "application/json",
-              },
-              timeout: 10000,
-            },
-          );
-
-          console.log(
-            "[Email Test] Test email sent successfully via Zoho API",
-          );
-          console.log(
-            "[Email Test] Send response status:",
-            sendResponse.status,
-          );
-          console.log(
-            "[Email Test] Send response data:",
-            JSON.stringify(sendResponse.data, null, 2),
-          );
-          console.log(
-            "[Email Test] Message ID:",
-            sendResponse.data.data?.messageId,
-          );
-
           return res.json({
             success: true,
-            message: `Test email successfully sent to ${testEmail} via Zoho Mail API. Check your inbox to verify delivery.`,
+            message:
+              "Zoho Mail API configuration validated successfully. This provider works on Render and other PaaS platforms.",
             provider: "zoho",
-            messageId: sendResponse.data.data?.messageId,
             config: {
               accountId: zohoAccountId,
               clientId: zohoClientId,
-              fromEmail: fromEmail,
+              fromEmail: config.fromEmail || config.from_email,
             },
           });
         } catch (zohoError: any) {
