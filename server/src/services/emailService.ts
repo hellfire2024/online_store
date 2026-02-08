@@ -112,8 +112,9 @@ async function initializeTransporter() {
         ? decryptData(config.zoho_refresh_token)
         : null;
 
-      if (!zohoClientId || !zohoClientSecret) {
-        console.log("Zoho Mail API configuration incomplete");
+      // Accept either OAuth (client_id + secret) or Self Client (just token)
+      if (!zohoRefreshToken) {
+        console.log("Zoho Mail API configuration incomplete - missing refresh token");
         return null;
       }
 
@@ -125,7 +126,7 @@ async function initializeTransporter() {
         // Custom fields for Zoho
         auth: {
           user: config.from_email,
-          pass: zohoClientId,
+          pass: zohoClientId || "self-client",
         },
         // Store Zoho-specific config for use in sendMail
       } as any);
