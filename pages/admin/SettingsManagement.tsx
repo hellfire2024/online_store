@@ -2557,7 +2557,9 @@ const SettingsManagement: React.FC = () => {
                 <option value="smtp">SMTP Server</option>
                 <option value="sendgrid">SendGrid</option>
                 <option value="mailgun">Mailgun</option>
-                <option value="zoho">Zoho Mail API (Recommended for Render)</option>
+                <option value="zoho">
+                  Zoho Mail API (Recommended for Render)
+                </option>
               </select>
             </div>
 
@@ -2791,7 +2793,8 @@ const SettingsManagement: React.FC = () => {
                       Zoho Mail API Configuration
                     </h3>
                     <p className="text-xs text-gray-400 mt-1">
-                      Perfect for Render and other PaaS platforms that block SMTP
+                      Perfect for Render and other PaaS platforms that block
+                      SMTP
                     </p>
                   </div>
                   <a
@@ -2979,7 +2982,11 @@ const SettingsManagement: React.FC = () => {
                         setShowEmailTestModal(false);
                         setTestEmailAddress("");
                       } else {
-                        const errorDetail = result?.details || result?.error || result?.message || "Unknown error";
+                        const errorDetail =
+                          result?.details ||
+                          result?.error ||
+                          result?.message ||
+                          "Unknown error";
                         console.error("Test failed with details:", errorDetail);
                         addToast(
                           `Failed to test email: ${errorDetail}`,
@@ -2988,7 +2995,8 @@ const SettingsManagement: React.FC = () => {
                       }
                     } catch (error) {
                       console.error("Test email error:", error);
-                      const errorMsg = error instanceof Error ? error.message : String(error);
+                      const errorMsg =
+                        error instanceof Error ? error.message : String(error);
                       console.error("Error details:", errorMsg);
                       addToast(
                         `Error: ${error instanceof Error ? error.message : "Failed to send test email"}`,

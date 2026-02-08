@@ -147,7 +147,8 @@ router.put("/", async (req: Request, res: Response) => {
     } else if (provider === "zoho") {
       if (!zohoAccountId || !zohoClientId || !zohoClientSecret) {
         return res.status(400).json({
-          error: "Zoho Mail API provider requires account ID, client ID, and client secret",
+          error:
+            "Zoho Mail API provider requires account ID, client ID, and client secret",
         });
       }
     }
@@ -339,7 +340,9 @@ router.post("/test", async (req: Request, res: Response) => {
 
         console.log("[Email Test] Verifying SMTP connection...");
         await transporter.verify();
-        console.log("[Email Test] SMTP connection verified - sending test email");
+        console.log(
+          "[Email Test] SMTP connection verified - sending test email",
+        );
 
         const fromEmail = config.fromEmail || config.from_email;
         const fromName = config.fromName || config.from_name;
@@ -401,7 +404,8 @@ router.post("/test", async (req: Request, res: Response) => {
 
         if (!zohoAccountId || !zohoClientId) {
           return res.status(400).json({
-            error: "Zoho configuration is incomplete - missing account ID or client ID",
+            error:
+              "Zoho configuration is incomplete - missing account ID or client ID",
           });
         }
 
@@ -414,23 +418,40 @@ router.post("/test", async (req: Request, res: Response) => {
 
         if (!zohoSecret) {
           console.error("[Email Test] Zoho client secret is empty!");
-          console.error("[Email Test] zohoClientSecret from config:", !!config.zohoClientSecret);
-          console.error("[Email Test] zoho_client_secret in DB:", !!config.zoho_client_secret);
-          console.error("[Email Test] This usually means decryption failed - encryption key may have changed");
+          console.error(
+            "[Email Test] zohoClientSecret from config:",
+            !!config.zohoClientSecret,
+          );
+          console.error(
+            "[Email Test] zoho_client_secret in DB:",
+            !!config.zoho_client_secret,
+          );
+          console.error(
+            "[Email Test] This usually means decryption failed - encryption key may have changed",
+          );
           return res.status(400).json({
-            error: "Zoho client secret is required but not provided or failed to decrypt. Solution: Re-enter your Zoho credentials in Settings and save again.",
+            error:
+              "Zoho client secret is required but not provided or failed to decrypt. Solution: Re-enter your Zoho credentials in Settings and save again.",
           });
         }
-        
+
         // Validate that the secret looks reasonable (should be hex characters and length > 20)
         if (zohoSecret.length < 20) {
           console.error("[Email Test] Zoho client secret looks corrupted!");
           console.error("[Email Test] Secret length:", zohoSecret.length);
-          console.error("[Email Test] Secret preview:", zohoSecret.substring(0, 20) + "...");
-          console.error("[Email Test] This usually means the ENCRYPTION KEY is wrong or decryption failed");
-          console.error("[Email Test] Solution: Delete and re-enter Zoho credentials");
+          console.error(
+            "[Email Test] Secret preview:",
+            zohoSecret.substring(0, 20) + "...",
+          );
+          console.error(
+            "[Email Test] This usually means the ENCRYPTION KEY is wrong or decryption failed",
+          );
+          console.error(
+            "[Email Test] Solution: Delete and re-enter Zoho credentials",
+          );
           return res.status(400).json({
-            error: "Zoho client secret appears corrupted (failed to decrypt properly). Clear your Zoho settings and re-enter credentials.",
+            error:
+              "Zoho client secret appears corrupted (failed to decrypt properly). Clear your Zoho settings and re-enter credentials.",
           });
         }
 
@@ -438,7 +459,10 @@ router.post("/test", async (req: Request, res: Response) => {
         console.log("[Email Test] Account ID:", zohoAccountId);
         console.log("[Email Test] Client ID:", zohoClientId);
         console.log("[Email Test] Client Secret length:", zohoSecret?.length);
-        console.log("[Email Test] Has Refresh Token:", !!config.zohoRefreshToken || !!config.zoho_refresh_token);
+        console.log(
+          "[Email Test] Has Refresh Token:",
+          !!config.zohoRefreshToken || !!config.zoho_refresh_token,
+        );
 
         // For Zoho Mail API, a refresh token is required
         let refreshToken = config.zohoRefreshToken;
@@ -447,10 +471,15 @@ router.post("/test", async (req: Request, res: Response) => {
         }
 
         if (!refreshToken) {
-          console.error("[Email Test] Zoho Mail API requires a refresh token for proper authentication");
-          console.error("[Email Test] Client Credentials alone will not work with the Mail API");
+          console.error(
+            "[Email Test] Zoho Mail API requires a refresh token for proper authentication",
+          );
+          console.error(
+            "[Email Test] Client Credentials alone will not work with the Mail API",
+          );
           return res.status(400).json({
-            error: "Zoho Mail API requires a refresh token. Set up OAuth and get a refresh token from Zoho account settings.",
+            error:
+              "Zoho Mail API requires a refresh token. Set up OAuth and get a refresh token from Zoho account settings.",
             help: "See ZOHO_MAIL_API_SETUP.md for instructions on getting a refresh token",
           });
         }
@@ -461,15 +490,17 @@ router.post("/test", async (req: Request, res: Response) => {
           const axiosInstance = axios.default;
 
           // Get access token using refresh token
-          console.log("[Email Test] Requesting Zoho access token with refresh token...");
-          
+          console.log(
+            "[Email Test] Requesting Zoho access token with refresh token...",
+          );
+
           const tokenParams = {
             client_id: zohoClientId,
             client_secret: zohoSecret,
             refresh_token: refreshToken,
-            grant_type: 'refresh_token',
+            grant_type: "refresh_token",
           };
-          
+
           console.log("[Email Test] Token request params:", {
             client_id: tokenParams.client_id,
             client_secret: `${zohoSecret?.substring(0, 10)}...${zohoSecret?.substring(-5)}`,
@@ -482,13 +513,16 @@ router.post("/test", async (req: Request, res: Response) => {
             new URLSearchParams(tokenParams as any),
             {
               timeout: 10000,
-            }
+            },
           );
 
           const accessToken = tokenResponse.data.access_token;
           console.log("[Email Test] Zoho access token obtained");
           console.log("[Email Test] Token length:", accessToken?.length);
-          console.log("[Email Test] Token preview:", accessToken?.substring(0, 50) + "...");
+          console.log(
+            "[Email Test] Token preview:",
+            accessToken?.substring(0, 50) + "...",
+          );
 
           // Validate by making a simple API call to get account info
           await axiosInstance.get(
@@ -498,28 +532,94 @@ router.post("/test", async (req: Request, res: Response) => {
                 Authorization: `Bearer ${accessToken}`,
               },
               timeout: 10000,
-            }
+            },
           );
 
-          console.log("[Email Test] Zoho Mail API account validation successful");
+          console.log(
+            "[Email Test] Zoho Mail API account validation successful",
+          );
+
+          // Now actually send a test email
+          const fromEmail = config.fromEmail || config.from_email;
+          const fromName = config.fromName || config.from_name || "Online Store";
+
+          console.log(
+            "[Email Test] Sending test email via Zoho API to:",
+            testEmail,
+          );
+
+          const sendResponse = await axiosInstance.post(
+            `https://mail.zoho.com/api/accounts/${zohoAccountId}/messages/send`,
+            {
+              fromAddress: fromEmail,
+              toAddress: [testEmail],
+              subject: "Test Email - Zoho Mail API Configuration Verified",
+              htmlBody: `
+                <html>
+                  <body style="font-family: Arial, sans-serif; color: #333;">
+                    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                      <h2 style="color: #0ea5e9;">Email Configuration Test</h2>
+                      <p>This is a test email to verify that your Zoho Mail API configuration is working correctly.</p>
+                      <div style="background-color: #f0f9ff; border-left: 4px solid #0ea5e9; padding: 15px; margin: 20px 0;">
+                        <p><strong>Configuration Details:</strong></p>
+                        <ul style="margin: 10px 0;">
+                          <li><strong>Provider:</strong> Zoho Mail API</li>
+                          <li><strong>From:</strong> ${fromName} (${fromEmail})</li>
+                          <li><strong>Test Recipient:</strong> ${testEmail}</li>
+                          <li><strong>Sent At:</strong> ${new Date().toISOString()}</li>
+                        </ul>
+                      </div>
+                      <p style="color: #666; font-size: 12px; margin-top: 30px;">
+                        If you received this email, your Zoho Mail API configuration is working properly and emails will be sent automatically for orders, confirmations, and support tickets.
+                      </p>
+                    </div>
+                  </body>
+                </html>
+              `,
+            },
+            {
+              headers: {
+                Authorization: `Bearer ${accessToken}`,
+                "Content-Type": "application/json",
+              },
+              timeout: 10000,
+            },
+          );
+
+          console.log(
+            "[Email Test] Test email sent successfully via Zoho API",
+          );
+          console.log(
+            "[Email Test] Message ID:",
+            sendResponse.data.data?.messageId,
+          );
 
           return res.json({
             success: true,
-            message:
-              "Zoho Mail API configuration validated successfully. This provider works on Render and other PaaS platforms.",
+            message: `Test email successfully sent to ${testEmail} via Zoho Mail API. Check your inbox to verify delivery.`,
             provider: "zoho",
+            messageId: sendResponse.data.data?.messageId,
             config: {
               accountId: zohoAccountId,
               clientId: zohoClientId,
-              fromEmail: config.fromEmail || config.from_email,
+              fromEmail: fromEmail,
             },
           });
         } catch (zohoError: any) {
           console.error("[Email Test] Zoho validation error:");
           console.error("[Email Test] Status:", zohoError.response?.status);
-          console.error("[Email Test] Error code:", zohoError.response?.data?.error);
-          console.error("[Email Test] Error message:", zohoError.response?.data?.error_description);
-          console.error("[Email Test] Full response:", JSON.stringify(zohoError.response?.data, null, 2));
+          console.error(
+            "[Email Test] Error code:",
+            zohoError.response?.data?.error,
+          );
+          console.error(
+            "[Email Test] Error message:",
+            zohoError.response?.data?.error_description,
+          );
+          console.error(
+            "[Email Test] Full response:",
+            JSON.stringify(zohoError.response?.data, null, 2),
+          );
           console.error("[Email Test] Request was for:", {
             url: zohoError.config?.url,
             method: zohoError.config?.method,
@@ -536,8 +636,7 @@ router.post("/test", async (req: Request, res: Response) => {
               errorMessage += " (Invalid OAuth credentials)";
             }
           } else if (zohoError.response?.status === 404) {
-            errorMessage =
-              "Zoho account not found - check your account ID";
+            errorMessage = "Zoho account not found - check your account ID";
           } else if (zohoError.code === "ECONNREFUSED") {
             errorMessage =
               "Could not connect to Zoho API - check your internet connection";
