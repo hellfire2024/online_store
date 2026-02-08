@@ -22,6 +22,7 @@
   "license": "MIT",
   "dependencies": {
     "@types/nodemailer": "^7.0.9",
+    "axios": "^1.6.0",
     "bcrypt": "^6.0.0",
     "bcryptjs": "^2.4.3",
     "chart.js": "^4.5.1",
