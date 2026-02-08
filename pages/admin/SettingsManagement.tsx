@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useSiteSettings } from "../../context/SiteSettingsContext";
 import { usePages } from "../../context/PagesContext";
 import { useToast } from "../../hooks/useToast";
+import { apiClient } from "../../services/apiClient";
 import {
   SiteSettings,
   Menu,
@@ -2847,17 +2848,12 @@ const SettingsManagement: React.FC = () => {
                       // Save the current email config first
                       await updateSiteSettings(settings);
 
-                      // Make API call to test email configuration
-                      const response = await fetch("/api/email-config/test", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                          emailConfig: settings.emailConfig,
-                          testEmail: testEmailAddress,
-                        }),
+                      const result = await apiClient.emailConfig.test({
+                        emailConfig: settings.emailConfig,
+                        testEmail: testEmailAddress,
                       });
 
-                      if (response.ok) {
+                      if (result?.success) {
                         addToast(
                           `Test email sent to ${testEmailAddress}`,
                           "success",
@@ -2865,9 +2861,8 @@ const SettingsManagement: React.FC = () => {
                         setShowEmailTestModal(false);
                         setTestEmailAddress("");
                       } else {
-                        const error = await response.json();
                         addToast(
-                          `Failed to send test email: ${error.message || "Unknown error"}`,
+                          `Failed to send test email: ${result?.error || result?.message || "Unknown error"}`,
                           "error",
                         );
                       }

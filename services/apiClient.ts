@@ -200,6 +200,14 @@ class ApiClient {
       }),
   };
 
+  emailConfig = {
+    test: (payload: { emailConfig?: any; testEmail: string }) =>
+      this.request<any>("/email-config/test", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+  };
+
   // Galleries
   galleries = {
     getAll: () => this.request<any[]>("/galleries"),
