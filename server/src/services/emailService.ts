@@ -194,15 +194,23 @@ async function sendViaZohoApi(mailOptions: any): Promise<any> {
     console.log(
       `[Zoho Email] Sending email to ${mailOptions.to} via Zoho Mail API`,
     );
+    console.log("[Zoho Email] Request details:", {
+      to: mailOptions.to,
+      from: mailOptions.from,
+      subject: mailOptions.subject,
+      accountId: zohoConfig.accountId,
+    });
+
+    const emailPayload = {
+      fromAddress: mailOptions.from,
+      toAddress: [mailOptions.to],
+      subject: mailOptions.subject,
+      htmlBody: mailOptions.html || mailOptions.text,
+    };
 
     const emailResponse = await axiosInstance.post(
       `https://mail.zoho.com/api/accounts/${zohoConfig.accountId}/messages/send`,
-      {
-        fromAddress: mailOptions.from,
-        toAddress: [mailOptions.to],
-        subject: mailOptions.subject,
-        htmlBody: mailOptions.html || mailOptions.text,
-      },
+      emailPayload,
       {
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -213,6 +221,7 @@ async function sendViaZohoApi(mailOptions: any): Promise<any> {
     );
 
     console.log("[Zoho Email] Email sent successfully via Zoho API");
+    console.log("[Zoho Email] Response:", emailResponse.data);
     return {
       messageId: emailResponse.data.data.messageId,
       success: true,
