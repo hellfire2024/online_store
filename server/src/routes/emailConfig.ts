@@ -211,9 +211,19 @@ router.post('/test', async (req: Request, res: Response) => {
 
     try {
       if (config.provider === 'smtp') {
-        if (!config.smtpHost && !config.smtp_host) {
+        const smtpHost = config.smtpHost || config.smtp_host;
+        const smtpPort = config.smtpPort || config.smtp_port || 587;
+        const smtpUsername = config.smtpUsername || config.smtp_username;
+        
+        if (!smtpHost) {
           return res.status(400).json({
             error: 'SMTP configuration is incomplete - missing host',
+          });
+        }
+
+        if (!smtpUsername) {
+          return res.status(400).json({
+            error: 'SMTP configuration is incomplete - missing username',
           });
         }
 
@@ -228,15 +238,24 @@ router.post('/test', async (req: Request, res: Response) => {
           });
         }
 
+        console.log(`[Email Test] Creating SMTP transporter for ${smtpHost}:${smtpPort}`);
         transporter = nodemailer.default.createTransport({
-          host: config.smtpHost || config.smtp_host,
-          port: config.smtpPort || config.smtp_port || 587,
+          host: smtpHost,
+          port: smtpPort,
           secure: config.smtpSecure || config.smtp_secure || false,
           auth: {
-            user: config.smtpUsername || config.smtp_username,
+            user: smtpUsername,
             pass: password,
           },
+          // Add timeout to fail faster if server is unreachable
+          connectionTimeout: 10000, // 10 seconds
+          socketTimeout: 10000, // 10 seconds
         });
+
+        // Verify connection before sending
+        console.log('[Email Test] Verifying SMTP connection...');
+        await transporter.verify();
+        console.log('[Email Test] SMTP connection verified');
       } else if (config.provider === 'sendgrid') {
         return res.status(501).json({
           success: false,
@@ -261,6 +280,7 @@ router.post('/test', async (req: Request, res: Response) => {
       const fromEmail = config.fromEmail || config.from_email;
       const fromName = config.fromName || config.from_name;
 
+      console.log(`[Email Test] Sending test email to ${testEmail} from ${fromEmail}`);
       await transporter.sendMail({
         from: `"${fromName}" <${fromEmail}>`,
         to: testEmail,
@@ -277,6 +297,7 @@ router.post('/test', async (req: Request, res: Response) => {
                     <li><strong>Provider:</strong> ${config.provider}</li>
                     <li><strong>From:</strong> ${fromName} (${fromEmail})</li>
                     <li><strong>Test Recipient:</strong> ${testEmail}</li>
+                    <li><strong>Sent At:</strong> ${new Date().toISOString()}</li>
                   </ul>
                 </div>
                 <p style="color: #666; font-size: 12px; margin-top: 30px;">
@@ -288,21 +309,37 @@ router.post('/test', async (req: Request, res: Response) => {
         `,
       });
 
+      console.log('[Email Test] Email sent successfully');
       return res.json({
         success: true,
         message: `Test email successfully sent to ${testEmail}`,
         testEmail,
       });
     } catch (emailError: any) {
-      console.error('Error sending test email:', emailError);
+      console.error('[Email Test] Error sending test email:', emailError);
+      
+      // Provide more specific error messages
+      let errorMessage = emailError.message || 'Unknown error';
+      
+      if (emailError.code === 'ECONNREFUSED') {
+        errorMessage = 'Connection refused - SMTP server is not reachable. Check host and port.';
+      } else if (emailError.code === 'ETIMEDOUT') {
+        errorMessage = 'Connection timeout - SMTP server is not responding. Check firewall/network settings.';
+      } else if (emailError.code === 'ENOTFOUND') {
+        errorMessage = 'SMTP host not found. Check your SMTP host configuration.';
+      } else if (errorMessage.includes('Invalid login') || errorMessage.includes('Authentication failed')) {
+        errorMessage = 'Authentication failed - check your SMTP username and password.';
+      }
+      
       return res.status(500).json({
         success: false,
-        error: `Failed to send test email: ${emailError.message || 'Unknown error'}`,
+        error: `Failed to send test email: ${errorMessage}`,
         details: emailError.message,
+        code: emailError.code,
       });
     }
   } catch (error) {
-    console.error('Error testing email config:', error);
+    console.error('[Email Test] Unexpected error:', error);
     return res.status(500).json({ error: 'Failed to test email configuration' });
   }
 });
