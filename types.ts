@@ -418,7 +418,7 @@ export interface SiteSettings {
 
   // Email Configuration
   emailConfig: {
-    provider: "smtp" | "sendgrid" | "mailgun" | "none";
+    provider: "smtp" | "sendgrid" | "mailgun" | "zoho" | "none";
     fromEmail: string;
     fromName: string;
     // SMTP specific
@@ -432,6 +432,11 @@ export interface SiteSettings {
     // Mailgun specific
     mailgunDomain?: string;
     mailgunApiKey?: string; // Encrypted in database
+    // Zoho Mail API specific
+    zohoAccountId?: string;
+    zohoClientId?: string;
+    zohoClientSecret?: string; // Encrypted in database
+    zohoRefreshToken?: string; // Encrypted in database
   };
 
   // Order Configuration
