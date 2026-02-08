@@ -24,8 +24,11 @@ This guide explains how to set up Zoho Mail API as your email provider. Perfect 
 3. Fill in:
    - **Client Name**: "Online Store Email Service"
    - **Client Domain**: Your domain (e.g., `yourdomain.com`)
+   - **Authorized Redirect URLs**: Leave blank (NOT needed for testing)
 4. Click **Create**
 5. Save your **Client ID** and **Client Secret**
+   - Copy them EXACTLY - no extra spaces before/after
+   - They contain special characters
 
 ### Step 2: Get Your Account ID
 
@@ -45,8 +48,8 @@ No bash, curl, or PowerShell needed - just use the admin interface:
    - **From Email**: `noreply@yourdomain.com`
    - **From Name**: Your store name
    - **Zoho Account ID**: From Step 2
-   - **Zoho Client ID**: From Step 1
-   - **Zoho Client Secret**: From Step 1
+   - **Zoho Client ID**: From Step 1 (copy exactly with no spaces!)
+   - **Zoho Client Secret**: From Step 1 (copy exactly with no spaces!)
    - **Zoho Refresh Token**: Leave empty (optional for testing)
 5. Click **Save Email Configuration**
 
@@ -102,21 +105,43 @@ ZOHO_REFRESH_TOKEN=your_refresh_token
 ## Troubleshooting
 
 ### Test email returns "Authentication failed"
-- Check Client ID and Secret are correct
-- Verify your Zoho account is active
+
+**This means Client ID or Client Secret is wrong.** Try:
+
+1. Go back to Zoho Developer Console: https://accounts.zoho.com/developerconsole
+2. Find your app "Online Store Email Service"
+3. Copy the **Client ID** again - copy carefully, no extra spaces!
+4. Copy the **Client Secret** again - copy carefully, no extra spaces!
+5. Go back to admin panel
+6. Clear the fields and paste the credentials again
+7. Save and test again
+
+**Common mistakes:**
+- Extra spaces before/after when copying
+- Wrong app selected in Zoho Developer Console
+- Special characters not copied exactly
+- Copy/pasting from browser cache
 
 ### Test email returns "Account not found"
-- Verify Account ID is correct (from Zoho Mail settings, not your account ID)
-- Should be a long number string
+- Verify Account ID is correct (from Zoho Mail settings page, not your account login ID)
+- Should be a long numeric string
+- No spaces or special characters
 
 ### Test email returns "Connection timeout"
 - Check your internet connection
 - Verify Zoho Mail API is accessible in your region
+- Try refreshing your browser
+
+### Redirect URL (NOT needed for testing)
+- **Important**: The redirect URL like `https://yourdomain.com/auth/callback` is ONLY for OAuth refresh token setup
+- **NOT needed** for initial testing with Client ID + Secret
+- Leave it blank in Step 1
+- You can add it later if you want to set up production refresh token
 
 ### Emails not sending after deployment
-- Check admin panel - Zoho still selected?
+- Check admin panel - is Zoho still selected?
 - Verify `from_email` domain is verified in Zoho Mail
-- Check Zoho Mail activity logs
+- Check Zoho Mail activity logs for delivery failures
 
 ## Need Help?
 
@@ -127,10 +152,11 @@ ZOHO_REFRESH_TOKEN=your_refresh_token
 ## Summary
 
 ✅ Everything done through web interfaces - no command line!
+✅ Redirect URL NOT needed for testing
 ✅ Works on any hosting platform
 ✅ No SMTP blocking issues
 ✅ Takes about 5 minutes to set up
 
 ---
 
-**Updated**: February 2026 - Now optimized for Render/Hostinger with no CLI commands needed
+**Updated**: February 2026 - Now clarifies redirect URL is not needed for testing
