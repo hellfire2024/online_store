@@ -339,7 +339,7 @@ export async function sendOrderConfirmationEmail(
         html,
       });
     }
-    });
+
 
     console.log('Order confirmation email sent:', result);
     return { success: true, message: 'Email sent successfully' };

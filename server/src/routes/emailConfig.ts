@@ -449,7 +449,7 @@ router.post("/test", async (req: Request, res: Response) => {
           console.log("[Email Test] Zoho access token obtained");
 
           // Validate by making a simple API call to get account info
-          const accountResponse = await axiosInstance.get(
+          await axiosInstance.get(
             `https://mail.zoho.com/api/accounts/${zohoAccountId}`,
             {
               headers: {
