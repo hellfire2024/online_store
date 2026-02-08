@@ -156,21 +156,30 @@ async function sendViaZohoApi(mailOptions: any): Promise<any> {
     const axiosInstance = axios.default;
 
     console.log('[Zoho Email] Requesting access token...');
+    console.log(`[Zoho Email] Using ${zohoConfig.refreshToken ? 'refresh_token' : 'client_credentials'} grant type`);
+
+    // Determine grant type based on whether refresh token is available
+    const grantType = zohoConfig.refreshToken ? 'refresh_token' : 'client_credentials';
+    const tokenParams: any = {
+      client_id: zohoConfig.clientId,
+      client_secret: zohoConfig.clientSecret,
+      grant_type: grantType,
+    };
+
+    // Only add refresh_token if it exists
+    if (zohoConfig.refreshToken) {
+      tokenParams.refresh_token = zohoConfig.refreshToken;
+    }
 
     // Get access token
     const tokenResponse = await axiosInstance.post(
       'https://accounts.zoho.com/oauth/v2/token',
-      new URLSearchParams({
-        client_id: zohoConfig.clientId,
-        client_secret: zohoConfig.clientSecret,
-        refresh_token: zohoConfig.refreshToken,
-        grant_type: 'refresh_token',
-      }),
+      new URLSearchParams(tokenParams),
       { timeout: 10000 }
     );
 
     const accessToken = tokenResponse.data.access_token;
-    console.log('[Zoho Email] Access token obtained');
+    console.log('[Zoho Email] Access token obtained successfully');
 
     // Send email via Zoho Mail API
     console.log(
@@ -200,7 +209,7 @@ async function sendViaZohoApi(mailOptions: any): Promise<any> {
       success: true,
     };
   } catch (error: any) {
-    console.error('[Zoho Email] Error sending email:', error);
+    console.error('[Zoho Email] Error sending email:', error.response?.data || error.message);
     throw error;
   }
 }
