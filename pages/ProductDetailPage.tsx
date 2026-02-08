@@ -6,7 +6,9 @@ import { useGalleries } from "../context/GalleryContext";
 import { getDesignIdeas } from "../services/geminiService";
 import { useCart } from "../context/CartContext";
 import { generateSlug } from "../services/slugService";
+import { useToast } from "../hooks/useToast";
 import Spinner from "../components/Spinner";
+import DragDropFileUpload from "../components/DragDropFileUpload";
 
 type CustomizationTab = "gallery" | "upload" | "ideas";
 
@@ -95,20 +97,17 @@ const ProductDetailPage: React.FC = () => {
     }
   }, [slug]);
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = (file: File) => {
     if (!product?.allowCustomImageUpload) {
       return;
     }
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setUploadedFileName(file.name);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setUploadedImage(reader.result as string);
-        setSelectedGalleryImage(null);
-      };
-      reader.readAsDataURL(file);
-    }
+    setUploadedFileName(file.name);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setUploadedImage(reader.result as string);
+      setSelectedGalleryImage(null);
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleOptionChange = useCallback(
@@ -449,40 +448,20 @@ const ProductDetailPage: React.FC = () => {
                 <div
                   style={{ display: activeTab === "upload" ? "block" : "none" }}
                 >
-                  <div>
-                    <label className="block w-full px-6 py-8 bg-slate-600 text-sky-300 rounded-lg border-2 border-dashed border-slate-500 cursor-pointer text-center">
-                      <svg
-                        className="w-10 h-10 mb-3 mx-auto"
-                        fill="currentColor"
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 20 20"
-                      >
-                        <path d="M16.88 9.1A4 4 0 0 1 16 17H5a5 5 0 0 1-1-9.9V7a3 3 0 0 1 4.52-2.59A4.98 4.98 0 0 1 17 8c0 .38-.04.74-.12 1.1zM11 11h3l-4 4-4-4h3V7h2v4z" />
-                      </svg>
-                      <div className="text-base font-medium">
-                        {uploadedFileName || "Click to select a file"}
-                      </div>
-                      <div className="text-xs text-gray-400 mt-1">
-                        PNG, JPG, GIF up to 10MB
-                      </div>
-                      <input
-                        type="file"
-                        className="hidden"
-                        accept="image/*"
-                        onChange={handleImageUpload}
-                      />
-                    </label>
-                    {product.customImageUploadPrice ? (
-                      <p className="text-xs text-gray-400 mt-2 text-center">
-                        Upload fee: +${Number(product.customImageUploadPrice).toFixed(2)}
-                      </p>
-                    ) : null}
-                    {uploadedImage && (
-                      <p className="text-sm text-green-400 mt-3 text-center font-medium">
-                        ✓ Image ready for preview
-                      </p>
-                    )}
-                  </div>
+                  <DragDropFileUpload
+                    onFileSelect={handleImageUpload}
+                    acceptedFormats="image/*"
+                    maxSize={10 * 1024 * 1024}
+                    label="Upload Your Design"
+                    showPreview={true}
+                    previewUrl={uploadedImage || undefined}
+                    previewAlt={product.name}
+                  />
+                  {product.customImageUploadPrice ? (
+                    <p className="text-xs text-gray-400 mt-3 text-center">
+                      Upload fee: +${Number(product.customImageUploadPrice).toFixed(2)}
+                    </p>
+                  ) : null}
                 </div>
 
                 <div

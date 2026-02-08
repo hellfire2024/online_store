@@ -4,6 +4,7 @@ import {
   DEFAULT_TEMPLATE,
   generateInvoiceHTML,
 } from "../../services/pdfInvoiceGenerator";
+import DragDropFileUpload from "../DragDropFileUpload";
 
 interface InvoiceTemplateEditorProps {
   template: InvoiceTemplate | undefined;
@@ -16,7 +17,6 @@ export const InvoiceTemplateEditor: React.FC<InvoiceTemplateEditorProps> = ({
   onTemplateChange,
   siteLogoUrl,
 }) => {
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const currentTemplate = template || DEFAULT_TEMPLATE;
 
   const handleChange = (field: keyof InvoiceTemplate, value: any) => {
@@ -24,16 +24,13 @@ export const InvoiceTemplateEditor: React.FC<InvoiceTemplateEditorProps> = ({
     onTemplateChange(updated);
   };
 
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const dataUrl = event.target?.result as string;
-        handleChange("logoUrl", dataUrl);
-      };
-      reader.readAsDataURL(file);
-    }
+  const handleLogoUpload = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result as string;
+      handleChange("logoUrl", dataUrl);
+    };
+    reader.readAsDataURL(file);
   };
 
   const useSiteLogo = () => {
@@ -99,37 +96,28 @@ export const InvoiceTemplateEditor: React.FC<InvoiceTemplateEditorProps> = ({
               <h4 className="text-sm font-semibold text-white mb-3">Logo Configuration</h4>
               <div className="space-y-3">
                 {currentTemplate.logoUrl && (
-                  <div>
+                  <div className="p-3 bg-slate-800 rounded-lg">
                     <img 
                       src={currentTemplate.logoUrl} 
                       alt="Logo" 
-                      className="h-16 object-contain mb-2"
+                      className="h-20 object-contain"
                     />
                   </div>
                 )}
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    className="flex-1 px-3 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded text-sm font-medium transition-colors"
-                  >
-                    📤 Upload Logo
-                  </button>
-                  {siteLogoUrl && (
-                    <button
-                      onClick={useSiteLogo}
-                      className="flex-1 px-3 py-2 bg-slate-600 hover:bg-slate-500 text-white rounded text-sm font-medium transition-colors"
-                    >
-                      🔗 Use Site Logo
-                    </button>
-                  )}
-                </div>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleLogoUpload}
-                  className="hidden"
+                <DragDropFileUpload
+                  onFileSelect={handleLogoUpload}
+                  acceptedFormats="image/*"
+                  label="Upload Invoice Logo"
+                  maxSize={5 * 1024 * 1024}
                 />
+                {siteLogoUrl && (
+                  <button
+                    onClick={useSiteLogo}
+                    className="w-full px-3 py-2 bg-slate-600 hover:bg-slate-500 text-white rounded text-sm font-medium transition-colors"
+                  >
+                    🔗 Use Site Logo
+                  </button>
+                )}
                 {currentTemplate.logoUrl && (
                   <button
                     onClick={() => handleChange("logoUrl", undefined)}

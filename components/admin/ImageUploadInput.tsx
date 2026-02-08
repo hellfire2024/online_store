@@ -1,4 +1,5 @@
-import React, { useState, ChangeEvent } from "react";
+import React, { useState, useEffect } from "react";
+import DragDropFileUpload from "../DragDropFileUpload";
 
 interface ImageUploadInputProps {
   label: string;
@@ -15,48 +16,32 @@ const ImageUploadInput: React.FC<ImageUploadInputProps> = ({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [imageError, setImageError] = useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     setPreviewUrl(imageUrl || null);
     setImageError(false);
   }, [imageUrl]);
 
-  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      onFileSelect(file);
-      setPreviewUrl(URL.createObjectURL(file));
-      setImageError(false);
-    }
+  const handleFileSelect = (file: File) => {
+    const previewUrl = URL.createObjectURL(file);
+    setPreviewUrl(previewUrl);
+    setImageError(false);
+    onFileSelect(file);
   };
-
 
   return (
     <div className="space-y-2">
-      <label className="block text-gray-300 text-sm font-bold mb-1">
+      <label className="block text-gray-300 text-sm font-bold mb-3">
         {label}
       </label>
-      {previewUrl && (
-        <div className="mb-2 p-2 bg-slate-700 rounded-md">
-          {!imageError ? (
-            <img
-              src={previewUrl}
-              alt="Preview"
-              className="w-32 h-32 object-contain rounded-md"
-              style={{ backgroundColor: 'white' }}
-              onError={() => setImageError(true)}
-            />
-          ) : (
-            <div className="w-32 h-32 flex items-center justify-center bg-slate-600 rounded-md text-gray-400 text-xs text-center p-2">
-              Image unavailable<br/><span className="text-red-400 break-all">{previewUrl}</span>
-            </div>
-          )}
-        </div>
-      )}
-      <input
-        type="file"
-        accept="image/*"
-        onChange={handleFileChange}
-        className="w-full text-white text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-sky-500 file:text-white hover:file:bg-sky-600"
+      <DragDropFileUpload
+        onFileSelect={handleFileSelect}
+        acceptedFormats="image/*"
+        maxSize={10 * 1024 * 1024}
+        label={label || "Upload image"}
+        showPreview={true}
+        previewUrl={previewUrl || undefined}
+        previewAlt={label}
+        error={imageError ? "Failed to load image" : undefined}
       />
     </div>
   );
