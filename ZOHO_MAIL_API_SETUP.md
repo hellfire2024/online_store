@@ -24,7 +24,8 @@ This guide explains how to set up Zoho Mail API as your email provider. Perfect 
 3. Fill in:
    - **Client Name**: "Online Store Email Service"
    - **Client Domain**: Your domain (e.g., `yourdomain.com`)
-   - **Authorized Redirect URLs**: Leave blank (NOT needed for testing)
+   - **Authorized Redirect URLs**: `http://localhost:3000/auth/callback`
+     (Zoho requires this field - copy it exactly as shown, even if you don't use OAuth refresh tokens)
 4. Click **Create**
 5. Save your **Client ID** and **Client Secret**
    - Copy them EXACTLY - no extra spaces before/after
@@ -104,6 +105,12 @@ ZOHO_REFRESH_TOKEN=your_refresh_token
 
 ## Troubleshooting
 
+### "invalid redirect uri" when creating app
+- **Solution**: You MUST provide a redirect URL, even though you're not using it
+- Enter: `http://localhost:3000/auth/callback`
+- Zoho's form requires this field - it won't accept blank
+- It doesn't need to be a real working page
+
 ### Test email returns "Authentication failed"
 
 **This means Client ID or Client Secret is wrong.** Try:
@@ -132,11 +139,12 @@ ZOHO_REFRESH_TOKEN=your_refresh_token
 - Verify Zoho Mail API is accessible in your region
 - Try refreshing your browser
 
-### Redirect URL (NOT needed for testing)
-- **Important**: The redirect URL like `https://yourdomain.com/auth/callback` is ONLY for OAuth refresh token setup
-- **NOT needed** for initial testing with Client ID + Secret
-- Leave it blank in Step 1
-- You can add it later if you want to set up production refresh token
+### Redirect URL (required field, not used for testing)
+- **Important**: Zoho requires a redirect URL even though you won't use it for testing
+- **Use this exact value**: `http://localhost:3000/auth/callback`
+- **Why**: Zoho's form doesn't allow blank fields - it's a requirement, not functionality
+- You don't need to have that page actually exist or respond
+- If using a different domain, format is: `http://yourdomain.com/auth/callback`
 
 ### Emails not sending after deployment
 - Check admin panel - is Zoho still selected?
