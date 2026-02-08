@@ -6,7 +6,6 @@ import { useGalleries } from "../context/GalleryContext";
 import { getDesignIdeas } from "../services/geminiService";
 import { useCart } from "../context/CartContext";
 import { generateSlug } from "../services/slugService";
-import { useToast } from "../hooks/useToast";
 import Spinner from "../components/Spinner";
 import DragDropFileUpload from "../components/DragDropFileUpload";
 
