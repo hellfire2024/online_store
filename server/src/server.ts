@@ -44,7 +44,7 @@ const DEMO_MODE =
 
 // Trust proxy - REQUIRED for Render and other services behind reverse proxies
 // This allows rate limiting and other middleware to work correctly
-app.set('trust proxy', 1);
+app.set("trust proxy", 1);
 
 // Security headers
 app.use(helmet());

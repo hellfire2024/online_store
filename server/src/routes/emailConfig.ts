@@ -419,6 +419,10 @@ router.post("/test", async (req: Request, res: Response) => {
         }
 
         console.log("[Email Test] Validating Zoho Mail API configuration...");
+        console.log("[Email Test] Account ID:", zohoAccountId);
+        console.log("[Email Test] Client ID:", zohoClientId);
+        console.log("[Email Test] Client Secret length:", zohoSecret?.length);
+        console.log("[Email Test] Has Refresh Token:", !!config.zohoRefreshToken || !!config.zoho_refresh_token);
 
         try {
           // Import axios for HTTP requests
@@ -427,19 +431,32 @@ router.post("/test", async (req: Request, res: Response) => {
 
           // Get access token using client credentials
           console.log("[Email Test] Requesting Zoho access token...");
+          
+          const tokenParams = {
+            client_id: zohoClientId,
+            client_secret: zohoSecret,
+          };
+          
+          if (config.zohoRefreshToken || config.zoho_refresh_token) {
+            const tokenData = config.zohoRefreshToken || config.zoho_refresh_token;
+            console.log("[Email Test] Using refresh_token grant type");
+            (tokenParams as any).refresh_token = tokenData;
+            (tokenParams as any).grant_type = 'refresh_token';
+          } else {
+            console.log("[Email Test] Using client_credentials grant type");
+            (tokenParams as any).grant_type = 'client_credentials';
+          }
+          
+          console.log("[Email Test] Token request params:", {
+            client_id: tokenParams.client_id,
+            client_secret: `${zohoSecret?.substring(0, 10)}...${zohoSecret?.substring(-5)}`,
+            grant_type: (tokenParams as any).grant_type,
+            has_refresh_token: !!(tokenParams as any).refresh_token,
+          });
+
           const tokenResponse = await axiosInstance.post(
             "https://accounts.zoho.com/oauth/v2/token",
-            new URLSearchParams({
-              client_id: zohoClientId,
-              client_secret: zohoSecret,
-              refresh_token:
-                config.zohoRefreshToken ||
-                config.zoho_refresh_token ||
-                "test_mode",
-              grant_type: config.zohoRefreshToken
-                ? "refresh_token"
-                : "client_credentials",
-            }),
+            new URLSearchParams(tokenParams as any),
             {
               timeout: 10000,
             }
@@ -473,12 +490,26 @@ router.post("/test", async (req: Request, res: Response) => {
             },
           });
         } catch (zohoError: any) {
-          console.error("[Email Test] Zoho validation error:", zohoError);
+          console.error("[Email Test] Zoho validation error:");
+          console.error("[Email Test] Status:", zohoError.response?.status);
+          console.error("[Email Test] Error code:", zohoError.response?.data?.error);
+          console.error("[Email Test] Error message:", zohoError.response?.data?.error_description);
+          console.error("[Email Test] Full response:", JSON.stringify(zohoError.response?.data, null, 2));
+          console.error("[Email Test] Request was for:", {
+            url: zohoError.config?.url,
+            method: zohoError.config?.method,
+            data: zohoError.config?.data?.substring?.(0, 100), // First 100 chars of request data
+          });
 
           let errorMessage = "Failed to validate Zoho Mail API configuration";
           if (zohoError.response?.status === 401) {
             errorMessage =
               "Zoho authentication failed - check your client ID and secret";
+            // Add more specific error info
+            const errorCode = zohoError.response?.data?.error;
+            if (errorCode === "INVALID_OAUTH_TOKEN") {
+              errorMessage += " (Invalid OAuth credentials)";
+            }
           } else if (zohoError.response?.status === 404) {
             errorMessage =
               "Zoho account not found - check your account ID";

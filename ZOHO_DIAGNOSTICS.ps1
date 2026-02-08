@@ -43,7 +43,8 @@ try {
     $dnsResult = Resolve-DnsName -Name "accounts.zoho.com" -ErrorAction Stop
     Write-Host "✅ DNS resolves successfully" -ForegroundColor Green
     Write-Host "   IP: $($dnsResult.IPAddress | Select-Object -First 1)" -ForegroundColor Gray
-} catch {
+}
+catch {
     Write-Host "⚠️  Cannot resolve accounts.zoho.com - check your internet connection" -ForegroundColor Yellow
 }
 
@@ -54,10 +55,10 @@ Write-Host "2️⃣  Testing OAuth token endpoint..." -ForegroundColor Cyan
 try {
     $tokenUri = "https://accounts.zoho.com/oauth/v2/token"
     $tokenBody = @{
-        client_id = $ClientId
+        client_id     = $ClientId
         client_secret = $ClientSecret
-        grant_type = "client_credentials"
-        scope = "ZohoMail.message.ALL"
+        grant_type    = "client_credentials"
+        scope         = "ZohoMail.message.ALL"
     }
 
     $tokenResponse = Invoke-RestMethod -Uri $tokenUri -Method Post -Body $tokenBody -ErrorAction Stop
@@ -85,11 +86,13 @@ try {
             Write-Host "=====================================" -ForegroundColor Green
             Write-Host ""
             Write-Host "Your Zoho credentials are valid and configured correctly." -ForegroundColor Green
-        } else {
+        }
+        else {
             Write-Host "❌ Account validation failed" -ForegroundColor Red
             Write-Host "Response: $($accountResponse | ConvertTo-Json)" -ForegroundColor Gray
         }
-    } else {
+    }
+    else {
         Write-Host "❌ Failed to get access token" -ForegroundColor Red
         Write-Host "Response: $($tokenResponse | ConvertTo-Json)" -ForegroundColor Gray
         Write-Host ""
@@ -98,16 +101,19 @@ try {
         Write-Host "  • Extra spaces in credentials when copying" -ForegroundColor Yellow
         Write-Host "  • Using outdated credentials" -ForegroundColor Yellow
     }
-} catch {
+}
+catch {
     Write-Host "❌ Error: $($_.Exception.Message)" -ForegroundColor Red
     Write-Host ""
     Write-Host "Troubleshooting tips:" -ForegroundColor Yellow
     
     if ($_.Exception.Message -like "*401*") {
         Write-Host "  • 401 Unauthorized: Check your Client ID and Secret" -ForegroundColor Yellow
-    } elseif ($_.Exception.Message -like "*timeout*") {
+    }
+    elseif ($_.Exception.Message -like "*timeout*") {
         Write-Host "  • Timeout: Check your internet connection" -ForegroundColor Yellow
-    } elseif ($_.Exception.Message -like "*not found*") {
+    }
+    elseif ($_.Exception.Message -like "*not found*") {
         Write-Host "  • Not Found: Check the Zoho endpoint URL" -ForegroundColor Yellow
     }
     

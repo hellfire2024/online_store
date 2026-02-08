@@ -2958,11 +2958,18 @@ const SettingsManagement: React.FC = () => {
                         "Sending test email request to:",
                         testEmailAddress,
                       );
+                      console.log("Email config being sent:", {
+                        provider: settings.emailConfig?.provider,
+                        fromEmail: settings.emailConfig?.fromEmail,
+                        zohoAccountId: settings.emailConfig?.zohoAccountId,
+                        zohoClientId: settings.emailConfig?.zohoClientId,
+                        hasZohoSecret: !!settings.emailConfig?.zohoClientSecret,
+                        hasZohoToken: !!settings.emailConfig?.zohoRefreshToken,
+                      });
                       const result = await apiClient.emailConfig.test({
                         emailConfig: settings.emailConfig,
                         testEmail: testEmailAddress,
                       });
-
                       console.log("Test email response:", result);
                       if (result?.success) {
                         addToast(
@@ -2972,13 +2979,17 @@ const SettingsManagement: React.FC = () => {
                         setShowEmailTestModal(false);
                         setTestEmailAddress("");
                       } else {
+                        const errorDetail = result?.details || result?.error || result?.message || "Unknown error";
+                        console.error("Test failed with details:", errorDetail);
                         addToast(
-                          `Failed to send test email: ${result?.error || result?.message || "Unknown error"}`,
+                          `Failed to test email: ${errorDetail}`,
                           "error",
                         );
                       }
                     } catch (error) {
                       console.error("Test email error:", error);
+                      const errorMsg = error instanceof Error ? error.message : String(error);
+                      console.error("Error details:", errorMsg);
                       addToast(
                         `Error: ${error instanceof Error ? error.message : "Failed to send test email"}`,
                         "error",

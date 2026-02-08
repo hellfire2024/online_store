@@ -3,7 +3,9 @@
 ## Recently Fixed Issues
 
 ### ✅ Grant Type Handling (FIXED)
+
 The `sendViaZohoApi` function now correctly handles both authentication flows:
+
 - **Client Credentials** (for testing without refresh token)
 - **Refresh Token** (for production with long-term access)
 
@@ -18,6 +20,7 @@ This was causing "authentication failed" errors when sending real emails without
 **Location**: Admin Settings → Email Configuration
 
 Check that the following fields are populated:
+
 - ✅ **From Email**: Must be a verified business email in your Zoho Mail account (e.g., `noreply@yourdomain.com`)
 - ✅ **From Name**: Store name or business name
 - ✅ **Zoho Account ID**: From your Zoho Mail settings → Account ID
@@ -33,11 +36,13 @@ Check that the following fields are populated:
 Click **"Test Configuration"** button in Settings → Email Configuration
 
 **What it does**:
+
 1. Saves your current settings to database
 2. Makes an API call to verify credentials
 3. Checks if it can connect to Zoho's API
 
 **Check browser console** (F12 → Console tab) for:
+
 ```
 Sending test email request to: [your-test-email@example.com]
 Test email response: {success: true, ...}
@@ -57,6 +62,7 @@ Settings → Logs → View Live Logs
 Look for these messages:
 
 **✅ SUCCESS**:
+
 ```
 [Email Test] Validating Zoho Mail API configuration...
 [Email Test] Requesting Zoho access token...
@@ -65,6 +71,7 @@ Look for these messages:
 ```
 
 **❌ FAILURE** - Look for specific error:
+
 ```
 [Email Test] Zoho validation error
 ```
@@ -80,6 +87,7 @@ Followed by one of these:
 **Cause**: Invalid Client ID or Client Secret
 
 **Solution**:
+
 1. Go to https://accounts.zoho.com/developerconsole
 2. Find your "Online Store Email Service" app
 3. Copy the **Client ID** (should look like `1000.xxxxxxxxxxxxxxxx`)
@@ -94,6 +102,7 @@ Followed by one of these:
 9. Click **Test Configuration**
 
 **Common copy/paste mistakes**:
+
 - Extra spaces before/after the credential
 - Copying from browser's auto-fill which sometimes adds spaces
 - Using outdated credentials (previous app version)
@@ -105,6 +114,7 @@ Followed by one of these:
 **Cause**: Wrong Account ID format
 
 **Solution**:
+
 1. Log into https://mail.zoho.com/
 2. Click your profile icon (top right corner)
 3. Go to **Settings** → **Preferences**
@@ -124,6 +134,7 @@ Followed by one of these:
 **Cause**: Network connectivity issue or Zoho API unreachable
 
 **Solutions**:
+
 1. **Check internet connection** - Are other sites loading?
 2. **Try in 30 seconds** - Sometimes temporary API issues
 3. **Check Zoho status** - https://www.zoho.com/status/
@@ -138,6 +149,7 @@ Followed by one of these:
 **Cause**: DNS or network issue
 
 **Solutions**:
+
 1. **Check DNS**:
    ```powershell
    nslookup accounts.zoho.com
@@ -158,12 +170,14 @@ Followed by one of these:
 The **"Test Configuration"** button only verifies credentials. To actually test email sending:
 
 ### Option 1: Send a Real Order Confirmation
+
 1. As a customer, create an order in the store
 2. At checkout, enter your test email address
 3. Complete the order
 4. **Check your inbox** within 30 seconds
 
 **Check server logs for**:
+
 ```
 [Zoho Email] Sending email to [test@example.com] via Zoho Mail API
 [Zoho Email] Access token obtained successfully
@@ -171,6 +185,7 @@ The **"Test Configuration"** button only verifies credentials. To actually test 
 ```
 
 ### Option 2: Use Support Tickets
+
 1. Go to Contact page
 2. Create a support ticket
 3. You should receive a notification email
@@ -195,18 +210,21 @@ Invoke-WebRequest `
 ## Refresh Token vs Client Credentials
 
 ### For Testing (No Refresh Token Needed)
+
 - ✅ Use: Client ID + Client Secret only
 - ✅ Grant Type: `client_credentials`
 - ✅ Limitations: Might have rate limits
 - ✅ Works: For testing and development
 
 ### For Production (With Refresh Token)
+
 - ✅ More reliable
 - ✅ Better rate limits
 - ✅ Recommended for live deployments
 - 🔍 **Optional** - Not required for basic testing
 
 To add a refresh token later:
+
 1. Go to https://accounts.zoho.com/
 2. Click **My Account** → **Connected Apps**
 3. Find your app and get the refresh token
@@ -221,6 +239,7 @@ To add a refresh token later:
 If credentials are saved but not working:
 
 ### Check Database
+
 ```bash
 # SSH into your Render database
 psql [your-connection-string]
@@ -230,12 +249,14 @@ SELECT * FROM email_config WHERE id = 1;
 ```
 
 **Look for**:
+
 - ✅ `provider` = `'zoho'`
 - ✅ `zoho_account_id` is populated
 - ✅ `zoho_client_id` is populated
 - ✅ `zoho_client_secret` is populated (encrypted)
 
 If empty, rebuild settings:
+
 1. Clear the Email Configuration
 2. Re-enter values
 3. Click Save
@@ -250,16 +271,15 @@ If empty, rebuild settings:
 1. ✅ A **verified business email** in your Zoho Mail account
    - NOT a personal email
    - NOT a Gmail account (use Zoho Mail domain)
-   
 2. ✅ In the format `noreply@yourdomain.com` (or similar)
    - Using your actual domain, not a subdomain
-   
 3. ✅ Confirmed in Zoho Mail:
    - Log into https://mail.zoho.com/
    - Check your email address is listed under your account
    - If not found, add your domain to Zoho Mail first
 
 **If emails still don't arrive**:
+
 - Check Zoho Mail's activity log
 - Verify recipient email isn't blocked
 - Check spam folder for test emails
@@ -269,15 +289,18 @@ If empty, rebuild settings:
 ## Platform-Specific Issues
 
 ### Render
+
 - ✅ Outbound HTTPS is enabled
 - ✅ Should work fine with Zoho
 - 🔍 Check Render's Services → Environment for any blocked domains
 
 ### Hostinger
+
 - ✅ Usually allows outbound HTTPS
 - 🔍 Contact support if HTTPS connections are blocked
 
 ### Local Development
+
 - ✅ Should work fine if not behind a restricted corporate firewall
 - 🔍 If on corporate network, you may need a VPN
 
@@ -291,7 +314,7 @@ Edit `server/src/services/emailService.ts` to add more logging:
 
 ```typescript
 // In sendViaZohoApi function, after getting access token:
-console.log('[Zoho Email] Token response:', {
+console.log("[Zoho Email] Token response:", {
   hasAccessToken: !!tokenResponse.data.access_token,
   expiresIn: tokenResponse.data.expires_in,
   scope: tokenResponse.data.scope,
@@ -328,6 +351,7 @@ The error message sometimes includes Zoho's response. Common Zoho errors:
 If other email providers work but Zoho doesn't:
 
 **Option 1**: Use SendGrid temporarily
+
 ```
 1. Sign up: https://sendgrid.com/
 2. Get API key
@@ -336,6 +360,7 @@ If other email providers work but Zoho doesn't:
 ```
 
 **Option 2**: Use Mailgun temporarily
+
 ```
 1. Sign up: https://www.mailgun.com/
 2. Get domain and API key
@@ -370,4 +395,3 @@ Before contacting support:
 - **Zoho Mail API Docs**: https://www.zoho.com/mail/help/api/
 - **Zoho Status**: https://www.zoho.com/status/
 - **Setup Guide**: See `ZOHO_MAIL_API_SETUP.md`
-

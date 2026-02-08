@@ -1,7 +1,7 @@
-import nodemailer from 'nodemailer';
-import SMTPTransport from 'nodemailer/lib/smtp-transport';
-import { pool } from '../db/connection.js';
-import { RowDataPacket } from 'mysql2';
+import nodemailer from "nodemailer";
+import SMTPTransport from "nodemailer/lib/smtp-transport";
+import { pool } from "../db/connection.js";
+import { RowDataPacket } from "mysql2";
 
 // Note: For production watermarking of images, you would need:
 // - Sharp library: npm install sharp
@@ -33,17 +33,17 @@ let cachedConfig: EmailConfig | null = null;
 async function loadEmailConfig() {
   try {
     const [rows] = await pool.query<EmailConfig[]>(
-      'SELECT * FROM email_config WHERE id = 1'
+      "SELECT * FROM email_config WHERE id = 1",
     );
-    
+
     if (rows.length === 0) {
-      console.log('No email config found - email sending disabled');
+      console.log("No email config found - email sending disabled");
       return null;
     }
-    
+
     return rows[0];
   } catch (error) {
-    console.error('Error loading email config:', error);
+    console.error("Error loading email config:", error);
     return null;
   }
 }
@@ -51,15 +51,20 @@ async function loadEmailConfig() {
 async function initializeTransporter() {
   try {
     const config = await loadEmailConfig();
-    
-    if (!config || config.provider === 'none') {
-      console.log('Email provider not configured');
+
+    if (!config || config.provider === "none") {
+      console.log("Email provider not configured");
       return null;
     }
 
-    if (config.provider === 'smtp') {
-      if (!config.smtp_host || !config.smtp_port || !config.smtp_username || !config.smtp_password) {
-        console.log('SMTP configuration incomplete');
+    if (config.provider === "smtp") {
+      if (
+        !config.smtp_host ||
+        !config.smtp_port ||
+        !config.smtp_username ||
+        !config.smtp_password
+      ) {
+        console.log("SMTP configuration incomplete");
         return null;
       }
 
@@ -74,30 +79,30 @@ async function initializeTransporter() {
       };
 
       transporter = nodemailer.createTransport(transportOptions);
-    } else if (config.provider === 'sendgrid') {
-      const sgTransport = require('nodemailer-sendgrid-transport');
+    } else if (config.provider === "sendgrid") {
+      const sgTransport = require("nodemailer-sendgrid-transport");
       transporter = nodemailer.createTransport(
         sgTransport({
           auth: {
             api_key: config.sendgrid_api_key,
           },
-        })
+        }),
       );
-    } else if (config.provider === 'mailgun') {
-      const mgTransport = require('nodemailer-mailgun-transport');
+    } else if (config.provider === "mailgun") {
+      const mgTransport = require("nodemailer-mailgun-transport");
       transporter = nodemailer.createTransport(
         mgTransport({
           auth: {
             api_key: config.mailgun_api_key,
             domain: config.mailgun_domain,
           },
-        })
+        }),
       );
-    } else if (config.provider === 'zoho') {
+    } else if (config.provider === "zoho") {
       // For Zoho, we'll use a custom transporter that calls the Zoho Mail API
       // This requires axios or similar for HTTP requests
-      const { decryptData } = await import('../utils/encryption.js');
-      
+      const { decryptData } = await import("../utils/encryption.js");
+
       const zohoClientId = config.zoho_client_id;
       const zohoClientSecret = config.zoho_client_secret
         ? decryptData(config.zoho_client_secret)
@@ -107,13 +112,13 @@ async function initializeTransporter() {
         : null;
 
       if (!zohoClientId || !zohoClientSecret) {
-        console.log('Zoho Mail API configuration incomplete');
+        console.log("Zoho Mail API configuration incomplete");
         return null;
       }
 
       // Create a custom nodemailer transport for Zoho Mail API
       transporter = nodemailer.createTransport({
-        host: 'zoho-api',
+        host: "zoho-api",
         port: 1025,
         secure: false,
         // Custom fields for Zoho
@@ -136,7 +141,7 @@ async function initializeTransporter() {
     cachedConfig = config;
     return transporter;
   } catch (error) {
-    console.error('Error initializing email transporter:', error);
+    console.error("Error initializing email transporter:", error);
     return null;
   }
 }
@@ -148,18 +153,22 @@ async function initializeTransporter() {
 async function sendViaZohoApi(mailOptions: any): Promise<any> {
   try {
     if (!transporter || !(transporter as any).zohoConfig) {
-      throw new Error('Zoho transporter not properly initialized');
+      throw new Error("Zoho transporter not properly initialized");
     }
 
     const zohoConfig = (transporter as any).zohoConfig;
-    const axios = await import('axios');
+    const axios = await import("axios");
     const axiosInstance = axios.default;
 
-    console.log('[Zoho Email] Requesting access token...');
-    console.log(`[Zoho Email] Using ${zohoConfig.refreshToken ? 'refresh_token' : 'client_credentials'} grant type`);
+    console.log("[Zoho Email] Requesting access token...");
+    console.log(
+      `[Zoho Email] Using ${zohoConfig.refreshToken ? "refresh_token" : "client_credentials"} grant type`,
+    );
 
     // Determine grant type based on whether refresh token is available
-    const grantType = zohoConfig.refreshToken ? 'refresh_token' : 'client_credentials';
+    const grantType = zohoConfig.refreshToken
+      ? "refresh_token"
+      : "client_credentials";
     const tokenParams: any = {
       client_id: zohoConfig.clientId,
       client_secret: zohoConfig.clientSecret,
@@ -173,17 +182,17 @@ async function sendViaZohoApi(mailOptions: any): Promise<any> {
 
     // Get access token
     const tokenResponse = await axiosInstance.post(
-      'https://accounts.zoho.com/oauth/v2/token',
+      "https://accounts.zoho.com/oauth/v2/token",
       new URLSearchParams(tokenParams),
-      { timeout: 10000 }
+      { timeout: 10000 },
     );
 
     const accessToken = tokenResponse.data.access_token;
-    console.log('[Zoho Email] Access token obtained successfully');
+    console.log("[Zoho Email] Access token obtained successfully");
 
     // Send email via Zoho Mail API
     console.log(
-      `[Zoho Email] Sending email to ${mailOptions.to} via Zoho Mail API`
+      `[Zoho Email] Sending email to ${mailOptions.to} via Zoho Mail API`,
     );
 
     const emailResponse = await axiosInstance.post(
@@ -197,37 +206,37 @@ async function sendViaZohoApi(mailOptions: any): Promise<any> {
       {
         headers: {
           Authorization: `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         timeout: 10000,
-      }
+      },
     );
 
-    console.log('[Zoho Email] Email sent successfully via Zoho API');
+    console.log("[Zoho Email] Email sent successfully via Zoho API");
     return {
       messageId: emailResponse.data.data.messageId,
       success: true,
     };
   } catch (error: any) {
     // Enhanced error logging for debugging
-    console.error('[Zoho Email] Error sending email:');
-    console.error('[Zoho Email] Status:', error.response?.status);
-    console.error('[Zoho Email] Error Code:', error.code);
-    console.error('[Zoho Email] Message:', error.message);
-    console.error('[Zoho Email] Response Data:', error.response?.data);
-    
+    console.error("[Zoho Email] Error sending email:");
+    console.error("[Zoho Email] Status:", error.response?.status);
+    console.error("[Zoho Email] Error Code:", error.code);
+    console.error("[Zoho Email] Message:", error.message);
+    console.error("[Zoho Email] Response Data:", error.response?.data);
+
     // Provide user-friendly error message
-    let userMessage = 'Failed to send email via Zoho Mail API';
+    let userMessage = "Failed to send email via Zoho Mail API";
     if (error.response?.status === 401) {
-      userMessage = 'Zoho authentication failed - invalid credentials';
+      userMessage = "Zoho authentication failed - invalid credentials";
     } else if (error.response?.status === 404) {
-      userMessage = 'Zoho account not found - check Account ID';
-    } else if (error.code === 'ECONNREFUSED') {
-      userMessage = 'Could not connect to Zoho API';
-    } else if (error.message?.includes('timeout')) {
-      userMessage = 'Connection to Zoho API timed out';
+      userMessage = "Zoho account not found - check Account ID";
+    } else if (error.code === "ECONNREFUSED") {
+      userMessage = "Could not connect to Zoho API";
+    } else if (error.message?.includes("timeout")) {
+      userMessage = "Connection to Zoho API timed out";
     }
-    
+
     const enrichedError = new Error(userMessage);
     (enrichedError as any).originalError = error;
     throw enrichedError;
@@ -238,45 +247,45 @@ export async function sendOrderConfirmationEmail(
   customerEmail: string,
   customerName: string,
   orderNumber: string,
-  orderDetails: any
+  orderDetails: any,
 ) {
   try {
     const transport = transporter || (await initializeTransporter());
     if (!transport || !cachedConfig) {
-      console.log('Email service not available - skipping order confirmation email');
-      return { success: false, message: 'Email service not configured' };
+      console.log(
+        "Email service not available - skipping order confirmation email",
+      );
+      return { success: false, message: "Email service not configured" };
     }
 
     const itemsHtml = orderDetails.items
-      .map(
-        (item: any) => {
-          let itemHtml = `
+      .map((item: any) => {
+        let itemHtml = `
       <tr>
         <td style="padding: 8px; border-bottom: 1px solid #ddd;">${item.name}</td>
         <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: center;">${item.quantity}</td>
         <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right;">$${(item.quantity * item.price).toFixed(2)}</td>
       </tr>`;
-          
-          // Add customization image if present
-          if (item.customization && item.customization.value) {
-            itemHtml += `
+
+        // Add customization image if present
+        if (item.customization && item.customization.value) {
+          itemHtml += `
       <tr>
         <td colspan="3" style="padding: 8px; border-bottom: 1px solid #ddd;">
           <div style="margin-top: 10px; margin-bottom: 10px;">
             <strong>Customization:</strong><br/>
             <img src="${item.customization.value}" alt="Customization" style="max-width: 150px; height: auto; border-radius: 4px; margin-top: 8px; border: 1px solid #ddd;">
             <p style="font-size: 11px; color: #666; margin-top: 4px;">
-              ${item.customization.fileName ? item.customization.fileName : 'Custom Design'} (${item.customization.type === 'gallery' ? 'Gallery Design' : 'Uploaded Design'})
+              ${item.customization.fileName ? item.customization.fileName : "Custom Design"} (${item.customization.type === "gallery" ? "Gallery Design" : "Uploaded Design"})
             </p>
           </div>
         </td>
       </tr>`;
-          }
-          
-          return itemHtml;
         }
-      )
-      .join('');
+
+        return itemHtml;
+      })
+      .join("");
 
     const html = `
     <!DOCTYPE html>
@@ -353,7 +362,7 @@ export async function sendOrderConfirmationEmail(
     `;
 
     let result;
-    if (cachedConfig.provider === 'zoho') {
+    if (cachedConfig.provider === "zoho") {
       result = await sendViaZohoApi({
         from: `${cachedConfig.from_name} <${cachedConfig.from_email}>`,
         to: customerEmail,
@@ -369,12 +378,11 @@ export async function sendOrderConfirmationEmail(
       });
     }
 
-
-    console.log('Order confirmation email sent:', result);
-    return { success: true, message: 'Email sent successfully' };
+    console.log("Order confirmation email sent:", result);
+    return { success: true, message: "Email sent successfully" };
   } catch (error) {
-    console.error('Error sending order confirmation email:', error);
-    return { success: false, message: 'Failed to send email', error };
+    console.error("Error sending order confirmation email:", error);
+    return { success: false, message: "Failed to send email", error };
   }
 }
 
@@ -384,16 +392,20 @@ export async function sendShippingNotificationEmail(
   orderNumber: string,
   trackingNumber: string,
   shipper: string,
-  shippingUrl?: string
+  shippingUrl?: string,
 ) {
   try {
     const transport = transporter || (await initializeTransporter());
     if (!transport || !cachedConfig) {
-      console.log('Email service not available - skipping shipping notification email');
-      return { success: false, message: 'Email service not configured' };
+      console.log(
+        "Email service not available - skipping shipping notification email",
+      );
+      return { success: false, message: "Email service not configured" };
     }
 
-    const trackingLink = shippingUrl ? `<p><a href="${shippingUrl}" class="button">Track Your Package</a></p>` : '';
+    const trackingLink = shippingUrl
+      ? `<p><a href="${shippingUrl}" class="button">Track Your Package</a></p>`
+      : "";
 
     const html = `
     <!DOCTYPE html>
@@ -437,7 +449,7 @@ export async function sendShippingNotificationEmail(
     `;
 
     let result;
-    if (cachedConfig.provider === 'zoho') {
+    if (cachedConfig.provider === "zoho") {
       result = await sendViaZohoApi({
         from: `${cachedConfig.from_name} <${cachedConfig.from_email}>`,
         to: customerEmail,
@@ -453,11 +465,11 @@ export async function sendShippingNotificationEmail(
       });
     }
 
-    console.log('Shipping notification email sent:', result);
-    return { success: true, message: 'Email sent successfully' };
+    console.log("Shipping notification email sent:", result);
+    return { success: true, message: "Email sent successfully" };
   } catch (error) {
-    console.error('Error sending shipping notification email:', error);
-    return { success: false, message: 'Failed to send email', error };
+    console.error("Error sending shipping notification email:", error);
+    return { success: false, message: "Failed to send email", error };
   }
 }
 
@@ -468,13 +480,15 @@ export async function sendTicketEmail(
   orderId: string | undefined,
   priority: string,
   message: string,
-  customerInfo: { subject: string; date: string }
+  customerInfo: { subject: string; date: string },
 ) {
   try {
     const transport = transporter || (await initializeTransporter());
     if (!transport || !cachedConfig) {
-      console.log('Email service not available - skipping support ticket email');
-      return { success: false, message: 'Email service not configured' };
+      console.log(
+        "Email service not available - skipping support ticket email",
+      );
+      return { success: false, message: "Email service not configured" };
     }
 
     const html = `
@@ -504,7 +518,7 @@ export async function sendTicketEmail(
             <p><strong>Date:</strong> ${customerInfo.date}</p>
             <p><strong>Ticket ID:</strong> ${ticketNumber}</p>
             <p><strong>Priority:</strong> <span class="priority-${priority}">${priority.toUpperCase()}</span></p>
-            ${orderId ? `<p><strong>Order ID:</strong> ${orderId}</p>` : ''}
+            ${orderId ? `<p><strong>Order ID:</strong> ${orderId}</p>` : ""}
           </div>
 
           <div class="divider"></div>
@@ -525,7 +539,7 @@ export async function sendTicketEmail(
     `;
 
     let result;
-    if (cachedConfig.provider === 'zoho') {
+    if (cachedConfig.provider === "zoho") {
       result = await sendViaZohoApi({
         from: `${cachedConfig.from_name} <${cachedConfig.from_email}>`,
         to: supportEmail,
@@ -541,10 +555,10 @@ export async function sendTicketEmail(
       });
     }
 
-    console.log('Support ticket email sent:', result);
-    return { success: true, message: 'Email sent successfully' };
+    console.log("Support ticket email sent:", result);
+    return { success: true, message: "Email sent successfully" };
   } catch (error) {
-    console.error('Error sending support ticket email:', error);
-    return { success: false, message: 'Failed to send email', error };
+    console.error("Error sending support ticket email:", error);
+    return { success: false, message: "Failed to send email", error };
   }
 }
