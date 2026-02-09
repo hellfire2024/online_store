@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "cd server && tsx watch src/server.ts",
     "build": "cd server && npm install && npm run build && cd .. && cp -r server/dist .",
-    "start": "cd server && npm start",
+    "start": "cd server && node dist/server.js",
     "db:migrate": "cd server && tsx src/db/migrate.ts",
     "db:seed": "cd server && tsx src/db/seed.ts",
     "db:reset": "cd server && tsx src/db/reset.ts"
