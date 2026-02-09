@@ -40,6 +40,7 @@
     "nodemailer": "^7.0.13",
     "react-chartjs-2": "^5.3.1",
     "stripe": "^20.2.0",
+    "typescript": "^5.3.3",
     "uuid": "^13.0.0"
   },
   "devDependencies": {
@@ -52,7 +53,6 @@
     "@types/morgan": "^1.9.9",
     "@types/multer": "^2.0.0",
     "@types/node": "^20.10.6",
-    "tsx": "^4.7.0",
-    "typescript": "^5.3.3"
+    "tsx": "^4.7.0"
   }
 }
