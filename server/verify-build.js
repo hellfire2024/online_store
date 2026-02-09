@@ -28,9 +28,9 @@ async function verifyBuild() {
     const serverPath = path.join(distPath, 'server.js');
     console.log('📄 Checking server.js:', serverPath);
     if (!fs.existsSync(serverPath)) {
-      throw new Error('❌ public_html/server.js does not exist!');
+      throw new Error('❌ dist/server.js does not exist!');
     }
-    console.log('✅ public_html/server.js exists');
+    console.log('✅ dist/server.js exists');
 
     // Check file size
     const stats = fs.statSync(serverPath);
@@ -39,9 +39,9 @@ async function verifyBuild() {
       throw new Error('❌ server.js appears to be empty or too small');
     }
 
-    // List public_html folder contents
-    const publicHtmlFiles = fs.readdirSync(publicHtmlPath);
-    console.log('📋 Files in public_html:', publicHtmlFiles.slice(0, 10).join(', '));
+    // List dist folder contents
+    const distFiles = fs.readdirSync(distPath);
+    console.log('📋 Files in dist:', distFiles.slice(0, 10).join(', '));
 
     // Check that server.js is valid JavaScript (basic check)
     const content = fs.readFileSync(serverPath, 'utf-8');
