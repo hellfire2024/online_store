@@ -28,7 +28,7 @@ log('CWD: ' + process.cwd());
 log('PORT: ' + (process.env.PORT || '3001'));
 log('NODE_ENV: ' + (process.env.NODE_ENV || 'development'));
 
-const serverPath = './dist/server.js';
+const serverPath = './server/dist/server.js';
 log('Loading: ' + serverPath);
 
 // Use dynamic import to load ES module
