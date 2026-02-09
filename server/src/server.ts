@@ -193,13 +193,15 @@ async function startServer() {
     }
 
     console.log(`🎧 Starting HTTP server on port ${PORT}...`);
-    // Start listening
-    app.listen(PORT, () => {
+    // Start listening on all network interfaces (0.0.0.0)
+    // This is required for hosting providers like Hostinger, Render, etc.
+    app.listen(PORT, "0.0.0.0", () => {
       console.log("=".repeat(50));
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📍 Environment: ${process.env.NODE_ENV || "development"}`);
       console.log(`🔗 API URL: http://localhost:${PORT}/api`);
       console.log(`🏥 Health check: http://localhost:${PORT}/health`);
+      console.log(`🌐 Bound to: 0.0.0.0 (all network interfaces)`);
       if (DEMO_MODE) {
         console.log(
           "⚠️  DEMO_MODE enabled: serving mock data, database checks skipped.",
