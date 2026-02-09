@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Build verification script - runs after TypeScript compilation
- * Checks if the compiled server can be loaded without errors
+ * Checks if the compiled server files are valid without executing the server
  */
 
 console.log('\n' + '='.repeat(60));
@@ -34,17 +34,25 @@ async function verifyBuild() {
     }
     console.log('✅ dist/server.js exists');
     
+    // Check file size
+    const stats = fs.statSync(serverPath);
+    console.log(`📊 server.js size: ${stats.size} bytes`);
+    
+    if (stats.size < 1000) {
+      throw new Error('❌ server.js appears to be empty or too small');
+    }
+    
     // List dist folder contents
     const distFiles = fs.readdirSync(distPath);
     console.log('📋 Files in dist:', distFiles.slice(0, 10).join(', '));
     
-    console.log('\n🔄 Attempting to import server module...');
-    
-    // Try to import the server (this will fail if there are syntax/import errors)
-    const serverModule = await import(serverPath);
-    
-    console.log('✅ Server module imported successfully');
-    console.log('📦 Module exports:', Object.keys(serverModule).join(', ') || 'default export');
+    // Check that server.js is valid JavaScript (basic check)
+    const content = fs.readFileSync(serverPath, 'utf-8');
+    if (!content.includes('express') && !content.includes('app.listen')) {
+      console.warn('⚠️  Warning: server.js might not contain Express app code');
+    } else {
+      console.log('✅ server.js contains expected app code');
+    }
     
     console.log('\n' + '='.repeat(60));
     console.log('✅ BUILD VERIFICATION PASSED');
@@ -66,8 +74,7 @@ async function verifyBuild() {
     }
     console.error('\n' + '='.repeat(60) + '\n');
     
-    // Don't fail the build, just report
-    process.exit(0);
+    process.exit(1);
   }
 }
 

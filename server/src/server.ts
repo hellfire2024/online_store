@@ -193,9 +193,16 @@ async function startServer() {
     }
 
     console.log(`🎧 Starting HTTP server on port ${PORT}...`);
+    console.log(`📍 PORT type: ${typeof PORT}, value: ${PORT}`);
+    console.log(`📍 Binding to: 0.0.0.0:${PORT}`);
+    
     // Start listening on all network interfaces (0.0.0.0)
     // This is required for hosting providers like Hostinger, Render, etc.
-    const server = app.listen(PORT, "0.0.0.0", () => {
+    const server = app.listen(PORT, "0.0.0.0");
+    
+    console.log(`✔️  app.listen() called successfully, server object created`);
+    
+    const onListening = () => {
       console.log("=".repeat(50));
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📍 Environment: ${process.env.NODE_ENV || "development"}`);
@@ -208,7 +215,9 @@ async function startServer() {
         );
       }
       console.log("=".repeat(50));
-    });
+    };
+    
+    server.on("listening", onListening);
 
     // Handle server errors
     server.on("error", (error: any) => {
@@ -252,16 +261,32 @@ async function startServer() {
 }
 
 console.log("🎬 Calling startServer()...");
-startServer().catch((err) => {
-  console.error("❌ Unhandled error in startServer:");
-  console.error("Error:", err instanceof Error ? err.message : String(err));
-  console.error("Stack:", err instanceof Error ? err.stack : "No stack");
-  process.exit(1);
+
+if (require.main === module || import.meta.url === `file://${process.argv[1]}`) {
+  startServer().catch((err) => {
+    console.error("❌ Unhandled error in startServer:");
+    console.error("Error:", err instanceof Error ? err.message : String(err));
+    console.error("Stack:", err instanceof Error ? err.stack : "No stack");
+    process.exit(1);
+  });
+} else {
+  console.log("⚠️  Server module imported (not running)");
+}
+
+// Graceful shutdown handlers
+process.on("SIGTERM", () => {
+  console.log("📌 SIGTERM received");
+  process.exit(0);
+});
+
+process.on("SIGINT", () => {
+  console.log("📌 SIGINT received");
+  process.exit(0);
 });
 
 // Prevent process from exiting if there are unhandled promises
 process.on("exit", (code) => {
-  console.log(`\nProcess exiting with code ${code}`);
+  console.log(`\n📊 Process exiting with code ${code}`);
 });
 
 export default app;
