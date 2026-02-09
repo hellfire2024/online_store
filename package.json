@@ -2,13 +2,14 @@
   "name": "online-store-backend",
   "version": "1.0.0",
   "description": "Backend API server for Custom Threads Online Store",
-  "main": "dist/server.js",
+  "main": "server.js",
   "type": "module",
   "scripts": {
     "dev": "tsx watch backend-src/server.ts",
     "build": "node node_modules/typescript/lib/tsc.js -p tsconfig.backend.json && node verify-build.js",
-    "postinstall": "npm run build",
-    "start": "node dist/server.js",
+    "postbuild": "copy dist\\server.js server.js",
+    "postinstall": "npm run build && npm run postbuild",
+    "start": "node server.js",
     "db:migrate": "tsx backend-src/db/migrate.ts",
     "db:seed": "tsx backend-src/db/seed.ts",
     "db:reset": "tsx backend-src/db/reset.ts"
