@@ -195,7 +195,7 @@ async function startServer() {
     console.log(`🎧 Starting HTTP server on port ${PORT}...`);
     // Start listening on all network interfaces (0.0.0.0)
     // This is required for hosting providers like Hostinger, Render, etc.
-    app.listen(PORT, "0.0.0.0", () => {
+    const server = app.listen(PORT, "0.0.0.0", () => {
       console.log("=".repeat(50));
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📍 Environment: ${process.env.NODE_ENV || "development"}`);
@@ -209,6 +209,38 @@ async function startServer() {
       }
       console.log("=".repeat(50));
     });
+
+    // Handle server errors
+    server.on("error", (error: any) => {
+      console.error("❌ SERVER ERROR:", error);
+      if (error.code === "EADDRINUSE") {
+        console.error(`Port ${PORT} is already in use`);
+      }
+      process.exit(1);
+    });
+
+    // Handle server close
+    server.on("close", () => {
+      console.warn("⚠️  Server closed");
+    });
+
+    // Graceful shutdown
+    process.on("SIGTERM", () => {
+      console.log("SIGTERM received, shutting down gracefully...");
+      server.close(() => {
+        console.log("Server closed");
+        process.exit(0);
+      });
+    });
+
+    process.on("SIGINT", () => {
+      console.log("SIGINT received, shutting down gracefully...");
+      server.close(() => {
+        console.log("Server closed");
+        process.exit(0);
+      });
+    });
+
   } catch (error) {
     console.error("❌ FATAL ERROR - Failed to start server:");
     console.error("Error name:", error instanceof Error ? error.name : "Unknown");
@@ -222,8 +254,14 @@ async function startServer() {
 console.log("🎬 Calling startServer()...");
 startServer().catch((err) => {
   console.error("❌ Unhandled error in startServer:");
-  console.error(err);
+  console.error("Error:", err instanceof Error ? err.message : String(err));
+  console.error("Stack:", err instanceof Error ? err.stack : "No stack");
   process.exit(1);
+});
+
+// Prevent process from exiting if there are unhandled promises
+process.on("exit", (code) => {
+  console.log(`\nProcess exiting with code ${code}`);
 });
 
 export default app;
