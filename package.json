@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "cd server && npx tsx watch src/server.ts",
-    "build": "cd server && npm install && npx tsc",
+    "build": "cd server && npm install && npm run build",
     "start": "cd server && node dist/server.js",
     "db:migrate": "cd server && npx tsx src/db/migrate.ts",
     "db:seed": "cd server && npx tsx src/db/seed.ts",
