@@ -1,0 +1,15 @@
+{
+  "name": "online-store-backend-deployer",
+  "version": "1.0.0",
+  "description": "Backend deployment wrapper for Hostinger",
+  "type": "module",
+  "scripts": {
+    "install": "cd server && npm install",
+    "build": "cd server && npm run build",
+    "start": "cd server && npm start",
+    "dev": "cd server && npm run dev"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
