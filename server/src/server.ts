@@ -57,7 +57,7 @@ console.log("✅ All routes imported successfully");
 
 console.log("🏗️  Creating Express app...");
 const app: Express = express();
-const PORT = process.env.PORT || 3001;
+const PORT = parseInt(process.env.PORT || "3001", 10);
 const DEMO_MODE =
   process.env.DEMO_MODE === "1" ||
   process.env.DEMO_MODE === "true" ||
