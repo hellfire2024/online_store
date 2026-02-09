@@ -5,7 +5,7 @@
     "lib": ["ES2022"],
     "moduleResolution": "node",
     "rootDir": "./src",
-    "outDir": "./dist",
+    "outDir": "../public_html",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,
