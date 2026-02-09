@@ -2,7 +2,7 @@
   "name": "online-store-backend",
   "version": "1.0.0",
   "description": "Backend API server for Custom Threads Online Store",
-  "main": "dist/server.js",
+  "main": "start.cjs",
   "type": "module",
   "scripts": {
     "dev": "cd server && tsx watch src/server.ts",
