@@ -6,23 +6,65 @@ import morgan from "morgan";
 import rateLimit from "express-rate-limit";
 import dotenv from "dotenv";
 import path from "path";
+import fs from "fs";
 import { testConnection } from "./db/connection.js";
+
+// ============================================
+// STARTUP LOGGING TO FILE
+// ============================================
+const LOG_FILE = path.join(process.cwd(), 'startup.log');
+
+function appendLog(msg: string) {
+  const ts = new Date().toISOString();
+  const line = `[${ts}] ${msg}\n`;
+  try {
+    fs.appendFileSync(LOG_FILE, line, 'utf8');
+  } catch (e) {
+    // ignore
+  }
+  console.log(msg);
+}
+
+// Initialize log file
+try {
+  fs.writeFileSync(LOG_FILE, `\n\n=== SERVER STARTUP ${new Date().toISOString()} ===\n`, 'utf8');
+} catch (e) {
+  // ignore
+}
+
+appendLog('🚀 server.ts LOADING');
+appendLog('PID: ' + process.pid);
+appendLog('Node: ' + process.version);
+appendLog('CWD: ' + process.cwd());
 
 // Global error handlers for uncaught errors
 process.on("uncaughtException", (error) => {
+  appendLog("❌ UNCAUGHT EXCEPTION:");
+  appendLog(String(error));
   console.error("❌ UNCAUGHT EXCEPTION:");
   console.error(error);
   process.exit(1);
 });
 
 process.on("unhandledRejection", (reason, promise) => {
+  appendLog("❌ UNHANDLED REJECTION at: " + String(promise));
+  appendLog("Reason: " + String(reason));
   console.error("❌ UNHANDLED REJECTION at:", promise);
   console.error("Reason:", reason);
   process.exit(1);
 });
 
-console.log("🔧 Loading environment variables...");
+appendLog("🔧 Loading environment variables...");
 dotenv.config();
+appendLog("✅ Environment loaded");
+appendLog("📂 Working directory: " + process.cwd());
+appendLog("🔢 Node version: " + process.version);
+appendLog("🌍 NODE_ENV: " + process.env.NODE_ENV);
+appendLog("🔌 PORT: " + process.env.PORT);
+appendLog("🔒 CORS_ORIGIN: " + process.env.CORS_ORIGIN);
+appendLog("🗃️  SKIP_DB_CHECK: " + process.env.SKIP_DB_CHECK);
+
+console.log("🔧 Loading environment variables...");
 console.log("✅ Environment loaded");
 console.log("📂 Working directory:", process.cwd());
 console.log("🔢 Node version:", process.version);
@@ -31,6 +73,7 @@ console.log("🔌 PORT:", process.env.PORT);
 console.log("🔒 CORS_ORIGIN:", process.env.CORS_ORIGIN);
 console.log("🗃️  SKIP_DB_CHECK:", process.env.SKIP_DB_CHECK);
 
+appendLog("📦 Importing routes...");
 console.log("📦 Importing routes...");
 // Import routes
 import productRoutes from "./routes/products.js";
@@ -53,8 +96,10 @@ import shippingRoutes from "./routes/shippingApi.js";
 import uploadRoutes from "./routes/upload.js";
 import demoRoutes from "./demoRoutes.js";
 import smtpTestRoutes from "./routes/smtpTest.js";
+appendLog("✅ All routes imported successfully");
 console.log("✅ All routes imported successfully");
 
+appendLog("🏗️  Creating Express app...");
 console.log("🏗️  Creating Express app...");
 const app: Express = express();
 const PORT = parseInt(process.env.PORT || "3001", 10);
@@ -178,39 +223,61 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
 // START SERVER
 // ============================================
 
+appendLog("🚀 Preparing to start server...");
 console.log("🚀 Preparing to start server...");
 
 async function startServer() {
   try {
+    appendLog("🔍 Checking database connection requirement...");
     console.log("🔍 Checking database connection requirement...");
     // Test database connection unless explicitly skipped (useful for demos)
     if (!DEMO_MODE) {
+      appendLog("🔌 Testing database connection...");
       console.log("🔌 Testing database connection...");
       await testConnection();
+      appendLog("✅ Database connected successfully");
       console.log("✅ Database connected successfully");
     } else {
+      appendLog("⚠️  Skipping database check (DEMO_MODE enabled)");
       console.log("⚠️  Skipping database check (DEMO_MODE enabled)");
     }
 
+    appendLog(`🎧 Starting HTTP server on port ${PORT}...`);
     console.log(`🎧 Starting HTTP server on port ${PORT}...`);
+    appendLog(`📍 PORT type: ${typeof PORT}, value: ${PORT}`);
     console.log(`📍 PORT type: ${typeof PORT}, value: ${PORT}`);
+    appendLog(`📍 Binding to: 0.0.0.0:${PORT}`);
     console.log(`📍 Binding to: 0.0.0.0:${PORT}`);
     
     // Start listening on all network interfaces (0.0.0.0)
     // This is required for hosting providers like Hostinger, Render, etc.
     const server = app.listen(PORT, "0.0.0.0");
     
+    appendLog(`✔️  app.listen() called successfully, server object created`);
     console.log(`✔️  app.listen() called successfully, server object created`);
     
     const onListening = () => {
-      console.log("=".repeat(50));
+      const separator = "=".repeat(50);
+      appendLog(separator);
+      appendLog(`🚀 SERVER LISTENING - port ${PORT}`);
+      appendLog(`📍 Environment: ${process.env.NODE_ENV || "development"}`);
+      appendLog(`🌐 Bound to: 0.0.0.0 (all interfaces)`);
+      appendLog(`🌐 URL: https://devapi.adaptivegis.com`);
+      if (DEMO_MODE) {
+        appendLog(`⚠️  DEMO_MODE: serving mock data`);
+      }
+      appendLog(separator);
+      appendLog(`✅ Server is READY - waiting for requests...`);
+      
+      console.log(separator);
       console.log(`🚀 SERVER LISTENING - port ${PORT}`);
       console.log(`📍 Environment: ${process.env.NODE_ENV || "development"}`);
       console.log(`🌐 Bound to: 0.0.0.0 (all interfaces)`);
+      console.log(`🌐 URL: https://devapi.adaptivegis.com`);
       if (DEMO_MODE) {
         console.log(`⚠️  DEMO_MODE: serving mock data`);
       }
-      console.log("=".repeat(50));
+      console.log(separator);
       console.log(`✅ Server is READY - waiting for requests...`);
     };
     
@@ -219,6 +286,15 @@ async function startServer() {
 
     // Handle server errors
     server.on("error", (error: any) => {
+      appendLog("❌ SERVER BINDING ERROR:");
+      appendLog("   Code: " + error.code);
+      appendLog("   Message: " + error.message);
+      if (error.code === "EADDRINUSE") {
+        appendLog(`   ❌ Port ${PORT} is already in use`);
+      }
+      if (error.code === "EACCES") {
+        appendLog(`   ❌ Permission denied - cannot bind to port ${PORT}`);
+      }
       console.error("❌ SERVER BINDING ERROR:");
       console.error("   Code:", error.code);
       console.error("   Message:", error.message);
@@ -254,6 +330,11 @@ async function startServer() {
     });
 
   } catch (error) {
+    appendLog("❌ FATAL ERROR - Failed to start server:");
+    appendLog("Error name: " + (error instanceof Error ? error.name : "Unknown"));
+    appendLog("Error message: " + (error instanceof Error ? error.message : String(error)));
+    appendLog("Error stack: " + (error instanceof Error ? error.stack : "No stack trace"));
+    appendLog("=".repeat(50));
     console.error("❌ FATAL ERROR - Failed to start server:");
     console.error("Error name:", error instanceof Error ? error.name : "Unknown");
     console.error("Error message:", error instanceof Error ? error.message : String(error));
@@ -263,11 +344,14 @@ async function startServer() {
   }
 }
 
+appendLog("🎬 Calling startServer()...");
 console.log("🎬 Calling startServer()...");
 
 // Start the server immediately - no complex module checks needed
 // The build verification doesn't call startServer(), only the runtime does
 startServer().catch((err) => {
+  appendLog("❌ Unhandled error in startServer:");
+  appendLog("Error: " + (err instanceof Error ? err.message : String(err)));
   console.error("❌ Unhandled error in startServer:");
   console.error("Error:", err instanceof Error ? err.message : String(err));
   console.error("Stack:", err instanceof Error ? err.stack : "No stack");
