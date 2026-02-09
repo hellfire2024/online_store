@@ -17,7 +17,7 @@ async function verifyBuild() {
     const path = await import('path');
     
     // Check if public_html folder exists
-    const publicHtmlPath = path.join(process.cwd(), '..', 'public_html');
+    const publicHtmlPath = path.join(process.cwd(), '..', '..', 'public_html');
     console.log('📁 Checking public_html folder:', publicHtmlPath);
     if (!fs.existsSync(publicHtmlPath)) {
       throw new Error('❌ public_html folder does not exist!');
