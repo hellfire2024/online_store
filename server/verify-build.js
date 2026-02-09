@@ -16,36 +16,33 @@ async function verifyBuild() {
     const fs = await import('fs');
     const path = await import('path');
     
-    // Check if dist folder exists
-    const distPath = path.join(process.cwd(), 'dist');
-    console.log('📁 Checking dist folder:', distPath);
-    
-    if (!fs.existsSync(distPath)) {
-      throw new Error('❌ dist folder does not exist!');
+    // Check if public_html folder exists
+    const publicHtmlPath = path.join(process.cwd(), '..', 'public_html');
+    console.log('📁 Checking public_html folder:', publicHtmlPath);
+    if (!fs.existsSync(publicHtmlPath)) {
+      throw new Error('❌ public_html folder does not exist!');
     }
-    console.log('✅ dist folder exists');
-    
+    console.log('✅ public_html folder exists');
+
     // Check if server.js exists
-    const serverPath = path.join(distPath, 'server.js');
+    const serverPath = path.join(publicHtmlPath, 'server.js');
     console.log('📄 Checking server.js:', serverPath);
-    
     if (!fs.existsSync(serverPath)) {
-      throw new Error('❌ dist/server.js does not exist!');
+      throw new Error('❌ public_html/server.js does not exist!');
     }
-    console.log('✅ dist/server.js exists');
-    
+    console.log('✅ public_html/server.js exists');
+
     // Check file size
     const stats = fs.statSync(serverPath);
     console.log(`📊 server.js size: ${stats.size} bytes`);
-    
     if (stats.size < 1000) {
       throw new Error('❌ server.js appears to be empty or too small');
     }
-    
-    // List dist folder contents
-    const distFiles = fs.readdirSync(distPath);
-    console.log('📋 Files in dist:', distFiles.slice(0, 10).join(', '));
-    
+
+    // List public_html folder contents
+    const publicHtmlFiles = fs.readdirSync(publicHtmlPath);
+    console.log('📋 Files in public_html:', publicHtmlFiles.slice(0, 10).join(', '));
+
     // Check that server.js is valid JavaScript (basic check)
     const content = fs.readFileSync(serverPath, 'utf-8');
     if (!content.includes('express') && !content.includes('app.listen')) {
