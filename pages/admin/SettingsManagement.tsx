@@ -2557,9 +2557,6 @@ const SettingsManagement: React.FC = () => {
                 <option value="smtp">SMTP Server</option>
                 <option value="sendgrid">SendGrid</option>
                 <option value="mailgun">Mailgun</option>
-                <option value="zoho">
-                  Zoho Mail API (Recommended for Render)
-                </option>
               </select>
             </div>
 
@@ -2785,110 +2782,6 @@ const SettingsManagement: React.FC = () => {
               </div>
             )}
 
-            {settings.emailConfig?.provider === "zoho" && (
-              <div className="bg-slate-700 p-4 rounded-lg space-y-4">
-                <div className="flex items-start gap-4 mb-4">
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-white">
-                      Zoho Mail API Configuration
-                    </h3>
-                    <p className="text-xs text-gray-400 mt-1">
-                      Perfect for Render and other PaaS platforms that block
-                      SMTP
-                    </p>
-                  </div>
-                  <a
-                    href="/ZOHO_MAIL_API_SETUP.md"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-400 hover:text-blue-300 text-sm whitespace-nowrap"
-                  >
-                    Setup Guide →
-                  </a>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-gray-300 text-sm font-bold mb-2">
-                      Zoho Account ID *
-                    </label>
-                    <input
-                      type="text"
-                      value={settings.emailConfig.zohoAccountId || ""}
-                      onChange={(e) => {
-                        const newSettings = { ...settings };
-                        newSettings.emailConfig!.zohoAccountId = e.target.value;
-                        setSettings(newSettings);
-                      }}
-                      placeholder="123456789012345678"
-                      className={inputClasses}
-                    />
-                    <p className="text-xs text-gray-400 mt-1">
-                      Found in Zoho Mail settings
-                    </p>
-                  </div>
-
-                  <div>
-                    <label className="block text-gray-300 text-sm font-bold mb-2">
-                      Zoho Client ID *
-                    </label>
-                    <input
-                      type="text"
-                      value={settings.emailConfig.zohoClientId || ""}
-                      onChange={(e) => {
-                        const newSettings = { ...settings };
-                        newSettings.emailConfig!.zohoClientId = e.target.value;
-                        setSettings(newSettings);
-                      }}
-                      placeholder="1000.xxxxxxxxxxxxxxxxxx"
-                      className={inputClasses}
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-gray-300 text-sm font-bold mb-2">
-                      Zoho Client Secret *
-                    </label>
-                    <input
-                      type="password"
-                      onChange={(e) => {
-                        const newSettings = { ...settings };
-                        newSettings.emailConfig!.zohoClientSecret =
-                          e.target.value;
-                        setSettings(newSettings);
-                      }}
-                      placeholder="••••••••"
-                      className={inputClasses}
-                    />
-                    <p className="text-xs text-gray-400 mt-1">
-                      Encrypted in database for security
-                    </p>
-                  </div>
-
-                  <div>
-                    <label className="block text-gray-300 text-sm font-bold mb-2">
-                      Zoho Refresh Token (Optional)
-                    </label>
-                    <input
-                      type="password"
-                      onChange={(e) => {
-                        const newSettings = { ...settings };
-                        newSettings.emailConfig!.zohoRefreshToken =
-                          e.target.value;
-                        setSettings(newSettings);
-                      }}
-                      placeholder="••••••••"
-                      className={inputClasses}
-                    />
-                    <p className="text-xs text-gray-400 mt-1">
-                      For OAuth flow (leave empty for testing)
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
 
             <div className="flex gap-4">
               <button
@@ -2964,10 +2857,6 @@ const SettingsManagement: React.FC = () => {
                       console.log("Email config being sent:", {
                         provider: settings.emailConfig?.provider,
                         fromEmail: settings.emailConfig?.fromEmail,
-                        zohoAccountId: settings.emailConfig?.zohoAccountId,
-                        zohoClientId: settings.emailConfig?.zohoClientId,
-                        hasZohoSecret: !!settings.emailConfig?.zohoClientSecret,
-                        hasZohoToken: !!settings.emailConfig?.zohoRefreshToken,
                       });
                       const result = await apiClient.emailConfig.test({
                         emailConfig: settings.emailConfig,

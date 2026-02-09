@@ -2,7 +2,6 @@ import nodemailer from "nodemailer";
 import SMTPTransport from "nodemailer/lib/smtp-transport";
 import { pool } from "../db/connection.js";
 import { RowDataPacket } from "mysql2";
-import { getValidZohoAccessToken } from "./zohoTokenRefresh.js";
 
 // Note: For production watermarking of images, you would need:
 // - Sharp library: npm install sharp
@@ -22,10 +21,6 @@ interface EmailConfig extends RowDataPacket {
   sendgrid_api_key: string | null;
   mailgun_domain: string | null;
   mailgun_api_key: string | null;
-  zoho_account_id: string | null;
-  zoho_client_id: string | null;
-  zoho_client_secret: string | null;
-  zoho_refresh_token: string | null;
 }
 
 let transporter: nodemailer.Transporter | null = null;
@@ -99,45 +94,6 @@ async function initializeTransporter() {
           },
         }),
       );
-    } else if (config.provider === "zoho") {
-      // For Zoho, we'll use a custom transporter that calls the Zoho Mail API
-      // This requires axios or similar for HTTP requests
-      const { decryptData } = await import("../utils/encryption.js");
-
-      const zohoClientId = config.zoho_client_id;
-      const zohoClientSecret = config.zoho_client_secret
-        ? decryptData(config.zoho_client_secret)
-        : null;
-      const zohoRefreshToken = config.zoho_refresh_token
-        ? decryptData(config.zoho_refresh_token)
-        : null;
-
-      // Accept either OAuth (client_id + secret) or Self Client (just token)
-      if (!zohoRefreshToken) {
-        console.log("Zoho Mail API configuration incomplete - missing refresh token");
-        return null;
-      }
-
-      // Create a custom nodemailer transport for Zoho Mail API
-      transporter = nodemailer.createTransport({
-        host: "zoho-api",
-        port: 1025,
-        secure: false,
-        // Custom fields for Zoho
-        auth: {
-          user: config.from_email,
-          pass: zohoClientId || "self-client",
-        },
-        // Store Zoho-specific config for use in sendMail
-      } as any);
-
-      // Attach Zoho config to transporter for use in sendMail
-      (transporter as any).zohoConfig = {
-        clientId: zohoClientId,
-        clientSecret: zohoClientSecret,
-        refreshToken: zohoRefreshToken,
-        accountId: config.zoho_account_id,
-      };
     }
 
     cachedConfig = config;
@@ -148,99 +104,6 @@ async function initializeTransporter() {
   }
 }
 
-/**
- * Send email via Zoho Mail API
- * Uses automatic token refresh mechanism from zohoTokenRefresh service
- */
-async function sendViaZohoApi(mailOptions: any): Promise<any> {
-  try {
-    if (!transporter || !(transporter as any).zohoConfig) {
-      throw new Error("Zoho transporter not properly initialized");
-    }
-
-    const zohoConfig = (transporter as any).zohoConfig;
-    const axios = await import("axios");
-    const axiosInstance = axios.default;
-
-    console.log("[Zoho Email] Getting valid access token...");
-
-    // Get valid access token (automatically refreshes if needed)
-    const accessToken = await getValidZohoAccessToken();
-
-    if (!accessToken) {
-      throw new Error(
-        "Failed to get Zoho access token. Check your credentials and refresh token.",
-      );
-    }
-
-    console.log("[Zoho Email] Access token obtained successfully");
-
-    // Send email via Zoho Mail REST API using correct endpoint
-    console.log(
-      `[Zoho Email] Sending email to ${mailOptions.to} via Zoho REST API`,
-    );
-    console.log(
-      `[Zoho Email] Endpoint: /api/accounts/${zohoConfig.accountId}/messages`,
-    );
-    console.log("[Zoho Email] Request details:", {
-      to: mailOptions.to,
-      from: mailOptions.from,
-      subject: mailOptions.subject,
-    });
-
-    // Build email payload for Zoho REST API
-    const emailPayload = {
-      fromAddress: mailOptions.from,
-      toAddress: mailOptions.to,
-      subject: mailOptions.subject,
-      htmlBody: mailOptions.html || mailOptions.text,
-    };
-
-    // Send via Zoho REST API
-    const apiResponse = await axiosInstance.post(
-      `https://mail.zoho.com/api/accounts/${zohoConfig.accountId}/messages`,
-      emailPayload,
-      {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
-        timeout: 10000,
-      },
-    );
-
-    console.log("[Zoho Email] Email sent successfully via Zoho REST API");
-    console.log("[Zoho Email] Response:", apiResponse.data);
-    return {
-      messageId: apiResponse.data?.data?.messageId || "sent",
-      success: true,
-    };
-  } catch (error: any) {
-    // Enhanced error logging for debugging
-    console.error("[Zoho Email] Error sending email:");
-    console.error("[Zoho Email] SMTP Error Code:", error.code);
-    console.error("[Zoho Email] Message:", error.message);
-    console.error("[Zoho Email] Response:", error.response);
-    console.error("[Zoho Email] Response Code:", error.responseCode);
-
-    // Provide user-friendly error message
-    let userMessage = "Failed to send email via Zoho SMTP";
-    if (error.responseCode === 535 || error.code === "EAUTH") {
-      userMessage =
-        "Zoho SMTP authentication failed - OAuth token may be expired";
-    } else if (error.code === "ECONNREFUSED") {
-      userMessage = "Could not connect to Zoho SMTP server";
-    } else if (error.code === "ETIMEDOUT") {
-      userMessage = "Connection to Zoho SMTP server timed out";
-    } else if (error.code === "ESOCKET") {
-      userMessage = "SMTP connection error - check network connectivity";
-    }
-
-    const enrichedError = new Error(userMessage);
-    (enrichedError as any).originalError = error;
-    throw enrichedError;
-  }
-}
 
 export async function sendOrderConfirmationEmail(
   customerEmail: string,
@@ -360,22 +223,12 @@ export async function sendOrderConfirmationEmail(
     </html>
     `;
 
-    let result;
-    if (cachedConfig.provider === "zoho") {
-      result = await sendViaZohoApi({
-        from: `${cachedConfig.from_name} <${cachedConfig.from_email}>`,
-        to: customerEmail,
-        subject: `Order Confirmation - ${orderNumber}`,
-        html,
-      });
-    } else {
-      result = await transport.sendMail({
-        from: `${cachedConfig.from_name} <${cachedConfig.from_email}>`,
-        to: customerEmail,
-        subject: `Order Confirmation - ${orderNumber}`,
-        html,
-      });
-    }
+    const result = await transport.sendMail({
+      from: `${cachedConfig.from_name} <${cachedConfig.from_email}>`,
+      to: customerEmail,
+      subject: `Order Confirmation - ${orderNumber}`,
+      html,
+    });
 
     console.log("Order confirmation email sent:", result);
     return { success: true, message: "Email sent successfully" };
@@ -447,22 +300,12 @@ export async function sendShippingNotificationEmail(
     </html>
     `;
 
-    let result;
-    if (cachedConfig.provider === "zoho") {
-      result = await sendViaZohoApi({
-        from: `${cachedConfig.from_name} <${cachedConfig.from_email}>`,
-        to: customerEmail,
-        subject: `Your Order Has Been Shipped - ${orderNumber}`,
-        html,
-      });
-    } else {
-      result = await transport.sendMail({
-        from: `${cachedConfig.from_name} <${cachedConfig.from_email}>`,
-        to: customerEmail,
-        subject: `Your Order Has Been Shipped - ${orderNumber}`,
-        html,
-      });
-    }
+    const result = await transport.sendMail({
+      from: `${cachedConfig.from_name} <${cachedConfig.from_email}>`,
+      to: customerEmail,
+      subject: `Your Order Has Been Shipped - ${orderNumber}`,
+      html,
+    });
 
     console.log("Shipping notification email sent:", result);
     return { success: true, message: "Email sent successfully" };
@@ -537,22 +380,12 @@ export async function sendTicketEmail(
     </html>
     `;
 
-    let result;
-    if (cachedConfig.provider === "zoho") {
-      result = await sendViaZohoApi({
-        from: `${cachedConfig.from_name} <${cachedConfig.from_email}>`,
-        to: supportEmail,
-        subject: subject,
-        html,
-      });
-    } else {
-      result = await transport.sendMail({
-        from: `${cachedConfig.from_name} <${cachedConfig.from_email}>`,
-        to: supportEmail,
-        subject: subject,
-        html,
-      });
-    }
+    const result = await transport.sendMail({
+      from: `${cachedConfig.from_name} <${cachedConfig.from_email}>`,
+      to: supportEmail,
+      subject: subject,
+      html,
+    });
 
     console.log("Support ticket email sent:", result);
     return { success: true, message: "Email sent successfully" };

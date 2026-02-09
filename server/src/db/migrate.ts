@@ -317,21 +317,10 @@ CREATE TABLE IF NOT EXISTS email_config (
   sendgrid_api_key VARCHAR(500),
   mailgun_domain VARCHAR(255),
   mailgun_api_key VARCHAR(500),
-  zoho_account_id VARCHAR(255),
-  zoho_client_id VARCHAR(255),
-  zoho_client_secret VARCHAR(500),
-  zoho_refresh_token VARCHAR(1000),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   CHECK (id = 1)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- Add Zoho columns to existing email_config table if they don't exist
-ALTER TABLE email_config
-  ADD COLUMN IF NOT EXISTS zoho_account_id VARCHAR(255),
-  ADD COLUMN IF NOT EXISTS zoho_client_id VARCHAR(255),
-  ADD COLUMN IF NOT EXISTS zoho_client_secret VARCHAR(500),
-  ADD COLUMN IF NOT EXISTS zoho_refresh_token VARCHAR(1000);
 
 -- ============================================
 -- SUPPORT TICKETS

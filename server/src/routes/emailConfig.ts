@@ -18,10 +18,6 @@ interface EmailConfigRow extends RowDataPacket {
   sendgrid_api_key: string | null;
   mailgun_domain: string | null;
   mailgun_api_key: string | null;
-  zoho_account_id: string | null;
-  zoho_client_id: string | null;
-  zoho_client_secret: string | null;
-  zoho_refresh_token: string | null;
 }
 
 /**
@@ -65,25 +61,13 @@ router.get("/", async (_req: Request, res: Response) => {
       hasSendgridApiKey: !!config.sendgrid_api_key,
       hasMailgunApiKey: !!config.mailgun_api_key,
       // Return decrypted values for editing (admin only)
-      smtpPassword: config.smtp_password
-        ? decryptData(config.smtp_password)
-        : "",
+      smtpPassword: config.smtp_password ? decryptData(config.smtp_password) : "",
       sendgridApiKey: config.sendgrid_api_key
         ? decryptData(config.sendgrid_api_key)
         : "",
       mailgunDomain: config.mailgun_domain || "",
       mailgunApiKey: config.mailgun_api_key
         ? decryptData(config.mailgun_api_key)
-        : "",
-      hasZohoClientSecret: !!config.zoho_client_secret,
-      hasZohoRefreshToken: !!config.zoho_refresh_token,
-      zohoAccountId: config.zoho_account_id || "",
-      zohoClientId: config.zoho_client_id || "",
-      zohoClientSecret: config.zoho_client_secret
-        ? decryptData(config.zoho_client_secret)
-        : "",
-      zohoRefreshToken: config.zoho_refresh_token
-        ? decryptData(config.zoho_refresh_token)
         : "",
     });
   } catch (error) {
@@ -112,10 +96,6 @@ router.put("/", async (req: Request, res: Response) => {
       sendgridApiKey,
       mailgunDomain,
       mailgunApiKey,
-      zohoAccountId,
-      zohoClientId,
-      zohoClientSecret,
-      zohoRefreshToken,
     } = req.body;
 
     // Validate required fields
@@ -144,16 +124,6 @@ router.put("/", async (req: Request, res: Response) => {
           error: "Mailgun provider requires domain and API key",
         });
       }
-    } else if (provider === "zoho") {
-      // Zoho supports two auth methods:
-      // 1. OAuth: Requires account ID, client ID, client secret, and refresh token
-      // 2. Self Client: Requires account ID and refresh token only
-      if (!zohoAccountId || !zohoRefreshToken) {
-        return res.status(400).json({
-          error:
-            "Zoho Mail API provider requires account ID and refresh token (either OAuth refresh token or Self Client token)",
-        });
-      }
     }
 
     // Encrypt sensitive fields
@@ -166,20 +136,13 @@ router.put("/", async (req: Request, res: Response) => {
     const encryptedMailgunKey = mailgunApiKey
       ? encryptData(mailgunApiKey)
       : null;
-    const encryptedZohoSecret = zohoClientSecret
-      ? encryptData(zohoClientSecret)
-      : null;
-    const encryptedZohoToken = zohoRefreshToken
-      ? encryptData(zohoRefreshToken)
-      : null;
 
     await pool.query(
       `INSERT INTO email_config (
         id, provider, from_email, from_name, 
         smtp_host, smtp_port, smtp_secure, smtp_username, smtp_password,
-        sendgrid_api_key, mailgun_domain, mailgun_api_key,
-        zoho_account_id, zoho_client_id, zoho_client_secret, zoho_refresh_token
-      ) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        sendgrid_api_key, mailgun_domain, mailgun_api_key
+      ) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        ON DUPLICATE KEY UPDATE
         provider = VALUES(provider),
         from_email = VALUES(from_email),
@@ -192,10 +155,6 @@ router.put("/", async (req: Request, res: Response) => {
         sendgrid_api_key = VALUES(sendgrid_api_key),
         mailgun_domain = VALUES(mailgun_domain),
         mailgun_api_key = VALUES(mailgun_api_key),
-        zoho_account_id = VALUES(zoho_account_id),
-        zoho_client_id = VALUES(zoho_client_id),
-        zoho_client_secret = VALUES(zoho_client_secret),
-        zoho_refresh_token = VALUES(zoho_refresh_token),
         updated_at = CURRENT_TIMESTAMP`,
       [
         provider,
@@ -209,10 +168,6 @@ router.put("/", async (req: Request, res: Response) => {
         encryptedSendgridKey,
         mailgunDomain || null,
         encryptedMailgunKey,
-        zohoAccountId || null,
-        zohoClientId || null,
-        encryptedZohoSecret,
-        encryptedZohoToken,
       ],
     );
 
@@ -343,9 +298,7 @@ router.post("/test", async (req: Request, res: Response) => {
 
         console.log("[Email Test] Verifying SMTP connection...");
         await transporter.verify();
-        console.log(
-          "[Email Test] SMTP connection verified - sending test email",
-        );
+        console.log("[Email Test] SMTP connection verified - sending test email");
 
         const fromEmail = config.fromEmail || config.from_email;
         const fromName = config.fromName || config.from_name;
@@ -400,244 +353,6 @@ router.post("/test", async (req: Request, res: Response) => {
           provider: "mailgun",
           info: "To test Mailgun, send a real transactional email (order confirmation, etc.)",
         });
-      } else if (config.provider === "zoho") {
-        // Validate Zoho configuration
-        const zohoAccountId = config.zohoAccountId || config.zoho_account_id;
-
-        if (!zohoAccountId) {
-          return res.status(400).json({
-            error: "Zoho configuration is incomplete - missing account ID",
-          });
-        }
-
-        const { decryptData } = await import("../utils/encryption.js");
-        let refreshToken = config.zohoRefreshToken;
-        if (!refreshToken && config.zoho_refresh_token) {
-          refreshToken = decryptData(config.zoho_refresh_token);
-        }
-
-        if (!refreshToken) {
-          console.error("[Email Test] Zoho Mail API requires a refresh token");
-          return res.status(400).json({
-            error:
-              "Zoho Mail API requires a refresh token (either OAuth or Self Client token)",
-            help: "See ZOHO_MAIL_API_SETUP.md for instructions",
-          });
-        }
-
-        console.log("[Email Test] Validating Zoho Mail API configuration...");
-        console.log("[Email Test] Account ID:", zohoAccountId);
-        console.log(
-          "[Email Test] Token type:",
-          refreshToken.includes(".") && refreshToken.split(".").length === 3
-            ? "Self Client"
-            : "OAuth",
-        );
-
-        try {
-          // Import axios for HTTP requests
-          const axios = await import("axios");
-          const axiosInstance = axios.default;
-
-          // Determine if this is a Self Client token or OAuth refresh token
-          const isSelfClient =
-            refreshToken.includes(".") && refreshToken.split(".").length === 3;
-          let accessToken = refreshToken;
-
-          // If OAuth refresh token, exchange it for access token
-          if (!isSelfClient) {
-            const zohoClientId = config.zohoClientId || config.zoho_client_id;
-            const zohoClientSecret = config.zohoClientSecret
-              ? config.zohoClientSecret
-              : config.zoho_client_secret
-                ? decryptData(config.zoho_client_secret)
-                : null;
-
-            if (!zohoClientId || !zohoClientSecret) {
-              return res.status(400).json({
-                error:
-                  "OAuth refresh token requires client ID and secret. Use Self Client token instead for simpler setup.",
-              });
-            }
-
-            const tokenParams = {
-              client_id: zohoClientId,
-              client_secret: zohoClientSecret,
-              refresh_token: refreshToken,
-              grant_type: "refresh_token",
-            };
-
-            console.log("[Email Test] Exchanging OAuth refresh token for access token...");
-            const tokenResponse = await axiosInstance.post(
-              "https://accounts.zoho.com/oauth/v2/token",
-              new URLSearchParams(tokenParams as any),
-              {
-                timeout: 10000,
-              },
-            );
-
-            accessToken = tokenResponse.data.access_token;
-            console.log("[Email Test] OAuth access token obtained");
-          } else {
-            console.log("[Email Test] Using Self Client token directly");
-          }
-
-          // Validate by making a simple API call to get account info
-          console.log("[Email Test] Validating token with account info request...");
-          const accountResponse = await axiosInstance.get(
-            `https://mail.zoho.com/api/accounts/${zohoAccountId}`,
-            {
-              headers: {
-                Authorization: `Bearer ${accessToken}`,
-              },
-              timeout: 10000,
-            },
-          );
-
-          console.log(
-            "[Email Test] Zoho Mail API account validation successful",
-          );
-          console.log("[Email Test] Account response:", accountResponse.status);
-
-          // Now attempt to send a test email via Zoho REST API
-          const fromEmail = config.fromEmail || config.from_email;
-          const fromName =
-            config.fromName || config.from_name || "Online Store";
-          console.log(
-            "[Email Test] Attempting to send test email via Zoho REST API...",
-          );
-          console.log("[Email Test] From:", fromEmail);
-          console.log("[Email Test] To:", testEmail);
-          console.log(
-            `[Email Test] Endpoint: /api/accounts/${zohoAccountId}/messages`,
-          );
-
-          try {
-            // Build email payload for Zoho REST API
-            const emailPayload = {
-              fromAddress: fromEmail,
-              toAddress: testEmail,
-              subject: "Test Email - Zoho Mail Configuration Verified",
-              htmlBody: `
-                <html>
-                  <body style="font-family: Arial, sans-serif; color: #333;">
-                    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-                      <h2 style="color: #0ea5e9;">Email Configuration Test</h2>
-                      <p>This is a test email to verify that your Zoho Mail configuration is working correctly.</p>
-                      <div style="background-color: #f0f9ff; border-left: 4px solid #0ea5e9; padding: 15px; margin: 20px 0;">
-                        <p><strong>Configuration Details:</strong></p>
-                        <ul style="margin: 10px 0;">
-                          <li><strong>Provider:</strong> Zoho Mail (REST API)</li>
-                          <li><strong>From:</strong> ${fromName} (${fromEmail})</li>
-                          <li><strong>Test Recipient:</strong> ${testEmail}</li>
-                          <li><strong>Sent At:</strong> ${new Date().toISOString()}</li>
-                        </ul>
-                      </div>
-                      <p style="color: #666; font-size: 12px; margin-top: 30px;">
-                        If you received this email, your Zoho Mail configuration is working properly!
-                      </p>
-                    </div>
-                  </body>
-                </html>
-              `,
-            };
-
-            // Send test email via Zoho REST API
-            const sendResponse = await axiosInstance.post(
-              `https://mail.zoho.com/api/accounts/${zohoAccountId}/messages`,
-              emailPayload,
-              {
-                headers: {
-                  Authorization: `Bearer ${accessToken}`,
-                  "Content-Type": "application/json",
-                },
-                timeout: 10000,
-              },
-            );
-
-            console.log("[Email Test] Test email sent successfully!");
-            console.log("[Email Test] Response:", sendResponse.data);
-
-            return res.json({
-              success: true,
-              message: `Test email successfully sent to ${testEmail}! Check your inbox.`,
-              provider: "zoho-rest-api",
-              messageId: sendResponse.data?.data?.messageId || "sent",
-              fromEmail: fromEmail,
-            });
-          } catch (sendError: any) {
-            console.error("[Email Test] Send attempt failed!");
-            console.error("[Email Test] Status:", sendError.response?.status);
-            console.error(
-              "[Email Test] Error code:",
-              sendError.response?.data?.errorCode,
-            );
-            console.error(
-              "[Email Test] Error message:",
-              sendError.response?.data?.data?.message || sendError.message,
-            );
-            console.error(
-              "[Email Test] Full response:",
-              JSON.stringify(sendError.response?.data, null, 2),
-            );
-
-            // Return error details
-            return res.status(500).json({
-              success: false,
-              message:
-                "Zoho credentials validated, but test email send failed via REST API.",
-              error: sendError.message,
-              status: sendError.response?.status,
-              errorCode: sendError.response?.data?.errorCode,
-              fromEmail: fromEmail,
-              testEmail: testEmail,
-            });
-          }
-        } catch (zohoError: any) {
-          console.error("[Email Test] Zoho validation error:");
-          console.error("[Email Test] Status:", zohoError.response?.status);
-          console.error(
-            "[Email Test] Error code:",
-            zohoError.response?.data?.error,
-          );
-          console.error(
-            "[Email Test] Error message:",
-            zohoError.response?.data?.error_description,
-          );
-          console.error(
-            "[Email Test] Full response:",
-            JSON.stringify(zohoError.response?.data, null, 2),
-          );
-          console.error("[Email Test] Request was for:", {
-            url: zohoError.config?.url,
-            method: zohoError.config?.method,
-            data: zohoError.config?.data?.substring?.(0, 100), // First 100 chars of request data
-          });
-
-          let errorMessage = "Failed to validate Zoho Mail API configuration";
-          if (zohoError.response?.status === 401) {
-            errorMessage =
-              "Zoho authentication failed - check your client ID and secret";
-            // Add more specific error info
-            const errorCode = zohoError.response?.data?.error;
-            if (errorCode === "INVALID_OAUTH_TOKEN") {
-              errorMessage += " (Invalid OAuth credentials)";
-            }
-          } else if (zohoError.response?.status === 404) {
-            errorMessage = "Zoho account not found - check your account ID";
-          } else if (zohoError.code === "ECONNREFUSED") {
-            errorMessage =
-              "Could not connect to Zoho API - check your internet connection";
-          } else if (zohoError.message?.includes("timeout")) {
-            errorMessage = "Connection to Zoho API timed out";
-          }
-
-          return res.status(500).json({
-            success: false,
-            error: errorMessage,
-            details: zohoError.response?.data?.error || zohoError.message,
-          });
-        }
       }
 
       return res.status(400).json({
@@ -677,104 +392,6 @@ router.post("/test", async (req: Request, res: Response) => {
     return res
       .status(500)
       .json({ error: "Failed to test email configuration" });
-  }
-});
-
-/**
- * Exchange Zoho authorization code for refresh token
- * POST /api/email-config/exchange-zoho-code
- */
-router.post("/exchange-zoho-code", async (req: Request, res: Response) => {
-  try {
-    const { code, clientSecret } = req.body;
-
-    if (!code || !clientSecret) {
-      return res.status(400).json({
-        error: "Missing authorization code or client secret",
-      });
-    }
-
-    const axios = await import("axios");
-    const axiosInstance = axios.default;
-
-    console.log(
-      "[Zoho Code Exchange] Exchanging authorization code for refresh token...",
-    );
-
-    // Get current config to retrieve client ID
-    const [rows] = await pool.query<EmailConfigRow[]>(
-      "SELECT * FROM email_config WHERE id = 1",
-    );
-
-    if (rows.length === 0) {
-      return res.status(400).json({
-        error:
-          "Email configuration not found. Please save your Zoho Client ID first.",
-      });
-    }
-
-    const config = rows[0];
-    const clientId = config.zoho_client_id;
-
-    if (!clientId) {
-      return res.status(400).json({
-        error:
-          "Zoho Client ID not configured. Please save your credentials first.",
-      });
-    }
-
-    // Exchange code for tokens
-    const tokenResponse = await axiosInstance.post(
-      "https://accounts.zoho.com/oauth/v2/token",
-      new URLSearchParams({
-        client_id: clientId,
-        client_secret: clientSecret,
-        code: code,
-        grant_type: "authorization_code",
-        redirect_uri: "https://dev.adaptivegis.com/auth/callback",
-      }),
-      { timeout: 10000 },
-    );
-
-    const refreshToken = tokenResponse.data.refresh_token;
-
-    if (!refreshToken) {
-      console.error(
-        "[Zoho Code Exchange] No refresh token in response:",
-        tokenResponse.data,
-      );
-      return res.status(500).json({
-        error:
-          "Zoho did not return a refresh token. Make sure you authorized all scopes (ZohoMail.messages.ALL, ZohoMail.accounts.READ)",
-      });
-    }
-
-    // Encrypt and save refresh token
-    const encryptedRefreshToken = encryptData(refreshToken);
-
-    await pool.query(
-      "UPDATE email_config SET zoho_refresh_token = ? WHERE id = 1",
-      [encryptedRefreshToken],
-    );
-
-    console.log("[Zoho Code Exchange] Refresh token saved successfully!");
-
-    return res.json({
-      success: true,
-      message: "Zoho refresh token obtained and saved successfully!",
-      refreshToken: refreshToken.substring(0, 20) + "...",
-    });
-  } catch (error: any) {
-    console.error("[Zoho Code Exchange] Error:", error.message);
-    console.error("[Zoho Code Exchange] Response:", error.response?.data);
-
-    const errorMessage =
-      error.response?.data?.error_description || error.message;
-
-    return res.status(500).json({
-      error: `Failed to exchange authorization code: ${errorMessage}`,
-      details: error.response?.data,
-    });
   }
 });
 
