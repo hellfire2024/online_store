@@ -204,26 +204,29 @@ async function startServer() {
     
     const onListening = () => {
       console.log("=".repeat(50));
-      console.log(`🚀 Server running on port ${PORT}`);
+      console.log(`🚀 SERVER LISTENING - port ${PORT}`);
       console.log(`📍 Environment: ${process.env.NODE_ENV || "development"}`);
-      console.log(`🔗 API URL: http://localhost:${PORT}/api`);
-      console.log(`🏥 Health check: http://localhost:${PORT}/health`);
-      console.log(`🌐 Bound to: 0.0.0.0 (all network interfaces)`);
+      console.log(`🌐 Bound to: 0.0.0.0 (all interfaces)`);
       if (DEMO_MODE) {
-        console.log(
-          "⚠️  DEMO_MODE enabled: serving mock data, database checks skipped.",
-        );
+        console.log(`⚠️  DEMO_MODE: serving mock data`);
       }
       console.log("=".repeat(50));
+      console.log(`✅ Server is READY - waiting for requests...`);
     };
     
-    server.on("listening", onListening);
+    // Attach listener BEFORE server might already be listening
+    server.once("listening", onListening);
 
     // Handle server errors
     server.on("error", (error: any) => {
-      console.error("❌ SERVER ERROR:", error);
+      console.error("❌ SERVER BINDING ERROR:");
+      console.error("   Code:", error.code);
+      console.error("   Message:", error.message);
       if (error.code === "EADDRINUSE") {
-        console.error(`Port ${PORT} is already in use`);
+        console.error(`   ❌ Port ${PORT} is already in use`);
+      }
+      if (error.code === "EACCES") {
+        console.error(`   ❌ Permission denied - cannot bind to port ${PORT}`);
       }
       process.exit(1);
     });
@@ -262,16 +265,14 @@ async function startServer() {
 
 console.log("🎬 Calling startServer()...");
 
-if (require.main === module || import.meta.url === `file://${process.argv[1]}`) {
-  startServer().catch((err) => {
-    console.error("❌ Unhandled error in startServer:");
-    console.error("Error:", err instanceof Error ? err.message : String(err));
-    console.error("Stack:", err instanceof Error ? err.stack : "No stack");
-    process.exit(1);
-  });
-} else {
-  console.log("⚠️  Server module imported (not running)");
-}
+// Start the server immediately - no complex module checks needed
+// The build verification doesn't call startServer(), only the runtime does
+startServer().catch((err) => {
+  console.error("❌ Unhandled error in startServer:");
+  console.error("Error:", err instanceof Error ? err.message : String(err));
+  console.error("Stack:", err instanceof Error ? err.stack : "No stack");
+  process.exit(1);
+});
 
 // Graceful shutdown handlers
 process.on("SIGTERM", () => {
