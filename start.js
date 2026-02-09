@@ -1,67 +1,90 @@
 #!/usr/bin/env node
 /**
- * Startup wrapper - ensures immediate execution logging
- * This file is the actual entry point for the Node.js application
+ * Application Startup Wrapper with File Logging
+ * This is the main entry point. It logs all startup information to startup.log
+ * so we can debug deployment issues without relying on visible console output.
  */
 
-// Immediate startup signal - synchronous write to ensure it appears
-process.stdout.write('\n');
-process.stdout.write('╔════════════════════════════════════════════════════════╗\n');
-process.stdout.write('║         🚀 NODE.JS APPLICATION STARTING                ║\n');
-process.stdout.write('╚════════════════════════════════════════════════════════╝\n');
-process.stdout.write('⏱️  Timestamp: ' + new Date().toISOString() + '\n');
-process.stdout.write('📍 Process ID: ' + process.pid + '\n');
-process.stdout.write('🔢 Node Version: ' + process.version + '\n');
-process.stdout.write('📂 Working Directory: ' + process.cwd() + '\n');
-process.stdout.write('📄 Entry File: ' + __filename + '\n');
-process.stdout.write('\n');
+import { writeFileSync, appendFileSync } from 'fs';
+import { join } from 'path';
 
-// Now import and run the server
-process.stdout.write('📦 Importing compiled server...\n');
+const LOG_FILE = join(process.cwd(), 'startup.log');
 
-try {
-  // Import the compiled server - this will execute all top-level code
-  // including middleware setup and the startServer() call
-  import('./dist/server.js')
-    .then((module) => {
-      process.stdout.write('✅ Server module imported successfully\n');
-      process.stdout.write('🎯 Application is running\n');
-    })
-    .catch((err) => {
-      process.stderr.write('❌ FATAL: Failed to import server module\n');
-      process.stderr.write('   Error: ' + err.message + '\n');
-      process.stderr.write('   Stack: ' + err.stack + '\n');
-      process.exit(1);
-    });
-} catch (err) {
-  process.stderr.write('❌ FATAL: Synchronous error during server import\n');
-  process.stderr.write('   Error: ' + err.message + '\n');
-  process.stderr.write('   Stack: ' + err.stack + '\n');
-  process.exit(1);
+function log(message) {
+  const timestamp = new Date().toISOString();
+  const line = `[${timestamp}] ${message}`;
+  try {
+    appendFileSync(LOG_FILE, line + '\n', { encoding: 'utf8' });
+  } catch (e) {
+    // Log to stderr if file write fails
+  }
+  process.stdout.write(line + '\n');
 }
 
-// Graceful shutdown
+// Initialize log file
+try {
+  writeFileSync(LOG_FILE, `================================\nApp started: ${new Date().toISOString()}\n================================\n`, { encoding: 'utf8' });
+} catch (e) {
+  // ignore
+}
+
+// Main startup function
+async function startup() {
+  log('🚀 APPLICATION STARTUP WRAPPER');
+  log('📍 PID: ' + process.pid);
+  log('🔢 Node: ' + process.version);
+  log('📂 CWD: ' + process.cwd());
+  log('🌍 NODE_ENV: ' + (process.env.NODE_ENV || 'not set'));
+  log('');
+  
+  try {
+    log('📦 Importing ./dist/server.js');
+    const serverModule = await import('./dist/server.js');
+    log('✅ Server module imported successfully');
+    log('🎯 Application is online and listening');
+    return true;
+  } catch (err) {
+    log('❌ IMPORT FAILED');
+    log('Error: ' + (err?.message || String(err)));
+    log('Code: ' + (err?.code || 'N/A'));
+    log('Type: ' + (err?.name || 'Unknown'));
+    if (err?.stack) {
+      log('Stack:');
+      err.stack.split('\n').slice(0, 10).forEach((line, i) => {
+        log('  ' + line);
+      });
+    }
+    log('');
+    process.exit(1);
+  }
+}
+
+// Signal handlers
 process.on('SIGTERM', () => {
-  process.stdout.write('\n📌 SIGTERM received - shutting down\n');
+  log('📌 SIGTERM received');
   process.exit(0);
 });
 
 process.on('SIGINT', () => {
-  process.stdout.write('\n📌 SIGINT received - shutting down\n');
+  log('📌 SIGINT received');
   process.exit(0);
 });
 
-// Log unhandled errors
 process.on('uncaughtException', (err) => {
-  process.stderr.write('\n❌ UNCAUGHT EXCEPTION:\n');
-  process.stderr.write('   ' + err.message + '\n');
-  process.stderr.write('   ' + err.stack + '\n');
+  log('❌ UNCAUGHT EXCEPTION: ' + err.message);
+  if (err.stack) {
+    err.stack.split('\n').forEach(line => log('  ' + line));
+  }
   process.exit(1);
 });
 
-process.on('unhandledRejection', (reason, promise) => {
-  process.stderr.write('\n❌ UNHANDLED REJECTION:\n');
-  process.stderr.write('   Promise: ' + String(promise) + '\n');
-  process.stderr.write('   Reason: ' + String(reason) + '\n');
+process.on('unhandledRejection', (reason) => {
+  log('❌ UNHANDLED REJECTION: ' + String(reason));
+  process.exit(1);
+});
+
+// Start the application
+startup().catch(err => {
+  log('❌ Startup error: ' + err.message);
   process.exit(1);
 });
