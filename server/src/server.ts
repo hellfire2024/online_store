@@ -8,6 +8,30 @@ import dotenv from "dotenv";
 import path from "path";
 import { testConnection } from "./db/connection.js";
 
+// Global error handlers for uncaught errors
+process.on("uncaughtException", (error) => {
+  console.error("❌ UNCAUGHT EXCEPTION:");
+  console.error(error);
+  process.exit(1);
+});
+
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("❌ UNHANDLED REJECTION at:", promise);
+  console.error("Reason:", reason);
+  process.exit(1);
+});
+
+console.log("🔧 Loading environment variables...");
+dotenv.config();
+console.log("✅ Environment loaded");
+console.log("📂 Working directory:", process.cwd());
+console.log("🔢 Node version:", process.version);
+console.log("🌍 NODE_ENV:", process.env.NODE_ENV);
+console.log("🔌 PORT:", process.env.PORT);
+console.log("🔒 CORS_ORIGIN:", process.env.CORS_ORIGIN);
+console.log("🗃️  SKIP_DB_CHECK:", process.env.SKIP_DB_CHECK);
+
+console.log("📦 Importing routes...");
 // Import routes
 import productRoutes from "./routes/products.js";
 import customerRoutes from "./routes/customers.js";
@@ -29,9 +53,9 @@ import shippingRoutes from "./routes/shippingApi.js";
 import uploadRoutes from "./routes/upload.js";
 import demoRoutes from "./demoRoutes.js";
 import smtpTestRoutes from "./routes/smtpTest.js";
+console.log("✅ All routes imported successfully");
 
-dotenv.config();
-
+console.log("🏗️  Creating Express app...");
 const app: Express = express();
 const PORT = process.env.PORT || 3001;
 const DEMO_MODE =
@@ -39,9 +63,13 @@ const DEMO_MODE =
   process.env.DEMO_MODE === "true" ||
   !!process.env.SKIP_DB_CHECK;
 
+console.log("🎭 DEMO_MODE:", DEMO_MODE);
+
 // ============================================
 // MIDDLEWARE
 // ============================================
+
+console.log("⚙️  Configuring middleware...");
 
 // Trust proxy - REQUIRED for Render and other services behind reverse proxies
 // This allows rate limiting and other middleware to work correctly
@@ -87,18 +115,25 @@ const limiter = rateLimit({
 });
 app.use("/api/", limiter);
 
+console.log("✅ Middleware configured successfully");
+
 // ============================================
 // ROUTES
 // ============================================
 
+console.log("🛣️  Setting up routes...");
+
 app.get("/health", (_req: Request, res: Response) => {
-  res.json({ status: "ok", timestamp: new Date().toISOString() });
+  console.log("💚 Health check accessed");
+  res.json({ status: "ok", timestamp: new Date().toISOString(), demo_mode: DEMO_MODE });
 });
 
 // API routes
 if (DEMO_MODE) {
+  console.log("📋 Using demo routes (mock data)");
   app.use("/api", demoRoutes);
 } else {
+  console.log("📋 Using production routes (real database)");
   app.use("/api/auth", authRoutes);
   app.use("/api/upload", uploadRoutes);
   app.use("/api/products", productRoutes);
@@ -120,8 +155,11 @@ if (DEMO_MODE) {
   app.use("/api/shipping", shippingRoutes);
 }
 
+console.log("✅ All routes configured successfully");
+
 // 404 handler
 app.use((_req: Request, res: Response) => {
+  console.log("⚠️  404 - Route not found:", _req.method, _req.url);
   res.status(404).json({ error: "Route not found" });
 });
 
@@ -140,30 +178,50 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
 // START SERVER
 // ============================================
 
+console.log("🚀 Preparing to start server...");
+
 async function startServer() {
   try {
+    console.log("🔍 Checking database connection requirement...");
     // Test database connection unless explicitly skipped (useful for demos)
     if (!DEMO_MODE) {
+      console.log("🔌 Testing database connection...");
       await testConnection();
+      console.log("✅ Database connected successfully");
+    } else {
+      console.log("⚠️  Skipping database check (DEMO_MODE enabled)");
     }
 
+    console.log(`🎧 Starting HTTP server on port ${PORT}...`);
     // Start listening
     app.listen(PORT, () => {
+      console.log("=".repeat(50));
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📍 Environment: ${process.env.NODE_ENV || "development"}`);
       console.log(`🔗 API URL: http://localhost:${PORT}/api`);
+      console.log(`🏥 Health check: http://localhost:${PORT}/health`);
       if (DEMO_MODE) {
         console.log(
           "⚠️  DEMO_MODE enabled: serving mock data, database checks skipped.",
         );
       }
+      console.log("=".repeat(50));
     });
   } catch (error) {
-    console.error("Failed to start server:", error);
+    console.error("❌ FATAL ERROR - Failed to start server:");
+    console.error("Error name:", error instanceof Error ? error.name : "Unknown");
+    console.error("Error message:", error instanceof Error ? error.message : String(error));
+    console.error("Error stack:", error instanceof Error ? error.stack : "No stack trace");
+    console.error("=".repeat(50));
     process.exit(1);
   }
 }
 
-startServer();
+console.log("🎬 Calling startServer()...");
+startServer().catch((err) => {
+  console.error("❌ Unhandled error in startServer:");
+  console.error(err);
+  process.exit(1);
+});
 
 export default app;
