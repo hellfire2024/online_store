@@ -28,6 +28,7 @@ import customerAddressesRoutes from "./routes/customerAddresses.js";
 import shippingRoutes from "./routes/shippingApi.js";
 import uploadRoutes from "./routes/upload.js";
 import demoRoutes from "./demoRoutes.js";
+import smtpTestRoutes from "./routes/smtpTest.js";
 
 dotenv.config();
 
@@ -115,6 +116,7 @@ if (DEMO_MODE) {
   app.use("/api/tax/providers", providersTaxRoutes);
   app.use("/api/tickets", ticketsApiRoutes);
   app.use("/api/customer-addresses", customerAddressesRoutes);
+  app.use("/api/smtp-test", smtpTestRoutes);
   app.use("/api/shipping", shippingRoutes);
 }
 
