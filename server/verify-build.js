@@ -16,16 +16,16 @@ async function verifyBuild() {
     const fs = await import('fs');
     const path = await import('path');
     
-    // Check if public_html folder exists
-    const publicHtmlPath = path.join(process.cwd(), '..', '..', 'public_html');
-    console.log('📁 Checking public_html folder:', publicHtmlPath);
-    if (!fs.existsSync(publicHtmlPath)) {
-      throw new Error('❌ public_html folder does not exist!');
+    // Check if dist folder exists
+    const distPath = path.join(process.cwd(), 'dist');
+    console.log('📁 Checking dist folder:', distPath);
+    if (!fs.existsSync(distPath)) {
+      throw new Error('❌ dist folder does not exist!');
     }
-    console.log('✅ public_html folder exists');
+    console.log('✅ dist folder exists');
 
     // Check if server.js exists
-    const serverPath = path.join(publicHtmlPath, 'server.js');
+    const serverPath = path.join(distPath, 'server.js');
     console.log('📄 Checking server.js:', serverPath);
     if (!fs.existsSync(serverPath)) {
       throw new Error('❌ public_html/server.js does not exist!');
