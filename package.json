@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "cd server && tsx watch src/server.ts",
-    "build": "cd server && npm install && npm run build && test -d dist || exit 1",
+    "build": "cd server && npm install && npm run build && cd .. && cp -r server/dist .",
     "start": "cd server && npm start",
     "db:migrate": "cd server && tsx src/db/migrate.ts",
     "db:seed": "cd server && tsx src/db/seed.ts",
