@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "description": "Backend API server for Custom Threads Online Store",
   "scripts": {
-    "build": "echo === STARTING ROOT BUILD === && cd server && npm install && npm run build && echo === ROOT BUILD COMPLETE === && ls -la server/dist/server.js",
+    "build": "echo === STARTING ROOT BUILD === && cd server && npm install && npm run build && cd .. && cp -r server/dist . && echo === ROOT BUILD COMPLETE === && ls -la dist/server.js",
     "postinstall": "npm run build",
-    "start": "cd server && node dist/server.js"
+    "start": "node dist/server.js"
   },
   "author": "",
   "license": "MIT",
