@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch backend-src/server.ts",
-    "build": "echo === STARTING BACKEND BUILD === && node node_modules/typescript/lib/tsc.js -p tsconfig.backend.json && node verify-build.js && echo === BACKEND BUILD COMPLETE === && ls -la dist/server.js",
+    "build": "node node_modules/typescript/lib/tsc.js -p tsconfig.backend.json && node verify-build.js",
     "postinstall": "npm run build",
     "start": "node dist/server.js",
     "db:migrate": "tsx backend-src/db/migrate.ts",
