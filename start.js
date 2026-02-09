@@ -83,8 +83,18 @@ process.on('unhandledRejection', (reason) => {
   process.exit(1);
 });
 
-// Start the application
-startup().catch(err => {
-  log('❌ Startup error: ' + err.message);
-  process.exit(1);
-});
+// Start the application and keep it alive
+startup()
+  .then(() => {
+    log('✅ Startup completed, keeping process alive...');
+    log('Ready to accept requests');
+    // Keep the process alive indefinitely
+    setInterval(() => {}, 1000);
+  })
+  .catch(err => {
+    log('❌ Startup error: ' + err.message);
+    if (err?.stack) {
+      err.stack.split('\n').forEach(line => log('  ' + line));
+    }
+    process.exit(1);
+  });
