@@ -1,43 +1,5 @@
-import express from "express";
-import cors from "cors";
-import helmet from "helmet";
-import compression from "compression";
-import morgan from "morgan";
-import rateLimit from "express-rate-limit";
-import dotenv from "dotenv";
-import path from "path";
-import fs from "fs";
-import { testConnection } from "./db/connection.js";
-// ============================================
-// STARTUP LOGGING TO FILE
-// ============================================
-const LOG_FILE = path.join(process.cwd(), 'startup.log');
-function appendLog(msg) {
-    const ts = new Date().toISOString();
-    const line = `[${ts}] ${msg}\n`;
-    try {
-        fs.appendFileSync(LOG_FILE, line, 'utf8');
-    }
-    catch (e) {
-        // ignore
-    }
-    console.log(msg);
-}
-// Initialize log file
-try {
-    fs.writeFileSync(LOG_FILE, `\n\n=== SERVER STARTUP ${new Date().toISOString()} ===\n`, 'utf8');
-}
-catch (e) {
-    // ignore
-}
-appendLog('🚀 server.ts LOADING');
-appendLog('PID: ' + process.pid);
-appendLog('Node: ' + process.version);
-appendLog('CWD: ' + process.cwd());
-// Global error handlers for uncaught errors
-process.on("uncaughtException", (error) => {
-    appendLog("❌ UNCAUGHT EXCEPTION:");
-    appendLog(String(error));
+// Root entry for Node.js PaaS compatibility (Hostinger, etc.)
+require('./dist/server.js');
     console.error("❌ UNCAUGHT EXCEPTION:");
     console.error(error);
     process.exit(1);
