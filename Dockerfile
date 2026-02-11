@@ -1,3 +1,4 @@
+# Force redeploy: 2026-02-11
 
 # Production-ready Dockerfile for React frontend (Vite build + nginx)
 
