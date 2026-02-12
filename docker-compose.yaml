@@ -17,7 +17,7 @@ services:
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_NAME=${DB_NAME}
     restart: unless-stopped
-    entrypoint: ["/bin/sh", "-c", "chmod +x /app/backend-src/wait-for-mysql.sh && /app/backend-src/wait-for-mysql.sh npm start"]
+    entrypoint: ["/bin/sh", "-c", "set -a && [ -f .env ] && . .env && set +a && chmod +x /app/backend-src/wait-for-mysql.sh && /app/backend-src/wait-for-mysql.sh npm start"]
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
       interval: 30s
