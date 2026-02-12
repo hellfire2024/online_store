@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Backend API server for Custom Threads Online Store",
   "main": "dist/server.js",
+  "type": "module",
   
   "scripts": {
     "dev": "tsx watch backend-src/server.ts",
