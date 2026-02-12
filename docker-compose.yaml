@@ -22,9 +22,9 @@ services:
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: rootpassword
-      MYSQL_DATABASE: yourdb
-      MYSQL_USER: youruser
-      MYSQL_PASSWORD: yourpassword
+      MYSQL_DATABASE: agis_dev_db
+      MYSQL_USER: adaptivegis-dev
+      MYSQL_PASSWORD: we1r9dveIPTzjJ84HMD6
     ports:
       - "3306:3306"
     volumes:
