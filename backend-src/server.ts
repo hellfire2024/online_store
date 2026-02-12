@@ -12,13 +12,13 @@ import { testConnection } from "./db/connection.js";
 // ============================================
 // STARTUP LOGGING TO FILE
 // ============================================
-const LOG_FILE = path.join(process.cwd(), 'startup.log');
+const LOG_FILE = path.join(process.cwd(), "startup.log");
 
 function appendLog(msg: string) {
   const ts = new Date().toISOString();
   const line = `[${ts}] ${msg}\n`;
   try {
-    fs.appendFileSync(LOG_FILE, line, 'utf8');
+    fs.appendFileSync(LOG_FILE, line, "utf8");
   } catch (e) {
     // ignore
   }
@@ -27,15 +27,19 @@ function appendLog(msg: string) {
 
 // Initialize log file
 try {
-  fs.writeFileSync(LOG_FILE, `\n\n=== SERVER STARTUP ${new Date().toISOString()} ===\n`, 'utf8');
+  fs.writeFileSync(
+    LOG_FILE,
+    `\n\n=== SERVER STARTUP ${new Date().toISOString()} ===\n`,
+    "utf8",
+  );
 } catch (e) {
   // ignore
 }
 
-appendLog('🚀 server.ts LOADING');
-appendLog('PID: ' + process.pid);
-appendLog('Node: ' + process.version);
-appendLog('CWD: ' + process.cwd());
+appendLog("🚀 server.ts LOADING");
+appendLog("PID: " + process.pid);
+appendLog("Node: " + process.version);
+appendLog("CWD: " + process.cwd());
 
 // Global error handlers for uncaught errors
 process.on("uncaughtException", (error) => {
@@ -169,12 +173,18 @@ console.log("✅ Middleware configured successfully");
 console.log("🛣️  Setting up routes...");
 
 app.get("/health", (_req: Request, res: Response) => {
-  console.log("💚 Health check accessed");
-  res.json({ status: "ok", timestamp: new Date().toISOString(), demo_mode: DEMO_MODE });
+  const healthStatus = {
+    status: "ok",
+    timestamp: new Date().toISOString(),
+    demo_mode: DEMO_MODE,
+    db_connected: true,
+    port: process.env.PORT || 3001,
+    node_version: process.version,
+    env: process.env.NODE_ENV,
+  };
+  console.log("💚 Health check accessed", healthStatus);
+  res.status(200).json(healthStatus);
 });
-
-// Health check endpoint for Docker
-app.get('/health', (_req, res) => res.status(200).send('OK'));
 
 // API routes
 if (DEMO_MODE) {
@@ -251,14 +261,14 @@ async function startServer() {
     console.log(`📍 PORT type: ${typeof PORT}, value: ${PORT}`);
     appendLog(`📍 Binding to: 0.0.0.0:${PORT}`);
     console.log(`📍 Binding to: 0.0.0.0:${PORT}`);
-    
+
     // Start listening on all network interfaces (0.0.0.0)
     // This is required for hosting providers like Hostinger, Render, etc.
     const server = app.listen(PORT, "0.0.0.0");
-    
+
     appendLog(`✔️  app.listen() called successfully, server object created`);
     console.log(`✔️  app.listen() called successfully, server object created`);
-    
+
     const onListening = () => {
       const separator = "=".repeat(50);
       appendLog(separator);
@@ -271,7 +281,7 @@ async function startServer() {
       }
       appendLog(separator);
       appendLog(`✅ Server is READY - waiting for requests...`);
-      
+
       console.log(separator);
       console.log(`🚀 SERVER LISTENING - port ${PORT}`);
       console.log(`📍 Environment: ${process.env.NODE_ENV || "development"}`);
@@ -283,7 +293,7 @@ async function startServer() {
       console.log(separator);
       console.log(`✅ Server is READY - waiting for requests...`);
     };
-    
+
     // Attach listener BEFORE server might already be listening
     server.once("listening", onListening);
 
@@ -331,17 +341,33 @@ async function startServer() {
         process.exit(0);
       });
     });
-
   } catch (error) {
     appendLog("❌ FATAL ERROR - Failed to start server:");
-    appendLog("Error name: " + (error instanceof Error ? error.name : "Unknown"));
-    appendLog("Error message: " + (error instanceof Error ? error.message : String(error)));
-    appendLog("Error stack: " + (error instanceof Error ? error.stack : "No stack trace"));
+    appendLog(
+      "Error name: " + (error instanceof Error ? error.name : "Unknown"),
+    );
+    appendLog(
+      "Error message: " +
+        (error instanceof Error ? error.message : String(error)),
+    );
+    appendLog(
+      "Error stack: " +
+        (error instanceof Error ? error.stack : "No stack trace"),
+    );
     appendLog("=".repeat(50));
     console.error("❌ FATAL ERROR - Failed to start server:");
-    console.error("Error name:", error instanceof Error ? error.name : "Unknown");
-    console.error("Error message:", error instanceof Error ? error.message : String(error));
-    console.error("Error stack:", error instanceof Error ? error.stack : "No stack trace");
+    console.error(
+      "Error name:",
+      error instanceof Error ? error.name : "Unknown",
+    );
+    console.error(
+      "Error message:",
+      error instanceof Error ? error.message : String(error),
+    );
+    console.error(
+      "Error stack:",
+      error instanceof Error ? error.stack : "No stack trace",
+    );
     console.error("=".repeat(50));
     process.exit(1);
   }
