@@ -1,12 +1,10 @@
-
-
 # Production-ready Dockerfile for React frontend (Vite build + nginx)
 FROM node:20-alpine AS build
 WORKDIR /app
-COPY package.json .
-COPY vite.config.ts .
-COPY src ./src
-COPY public ./public
+COPY frontend/package.json ./package.json
+COPY frontend/vite.config.ts ./vite.config.ts
+COPY frontend/public ./public
+COPY frontend/src ./src
 RUN npm install --frozen-lockfile || yarn install --frozen-lockfile
 RUN npm run build || yarn build
 
