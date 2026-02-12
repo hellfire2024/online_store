@@ -174,7 +174,7 @@ app.get("/health", (_req: Request, res: Response) => {
 });
 
 // Health check endpoint for Docker
-app.get('/health', (req, res) => res.status(200).send('OK'));
+app.get('/health', (_req, res) => res.status(200).send('OK'));
 
 // API routes
 if (DEMO_MODE) {

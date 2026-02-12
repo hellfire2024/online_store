@@ -5,7 +5,7 @@
     "lib": ["ES2022"],
     "moduleResolution": "node",
     "rootDir": "./backend-src",
-    "outDir": "./",
+    "outDir": "dist",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,
