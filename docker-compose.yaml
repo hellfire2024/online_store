@@ -17,7 +17,7 @@ services:
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_NAME=${DB_NAME}
     restart: unless-stopped
-    entrypoint: ["/bin/sh", "-c", "echo 'PWD:' $(pwd); echo 'Files:'; ls -al; if [ ! -f .env ]; then echo 'ERROR: .env file not found!'; fi; set -a && [ -f .env ] && . .env && set +a; echo 'DB_HOST='$DB_HOST; chmod +x /app/backend-src/wait-for-mysql.sh; /app/backend-src/wait-for-mysql.sh npm start"]
+    entrypoint: ["/bin/sh", "-c", "echo 'PWD:' $(pwd); echo 'Files:'; ls -al; echo 'DB_HOST='$DB_HOST; chmod +x /app/backend-src/wait-for-mysql.sh; /app/backend-src/wait-for-mysql.sh npm start"]
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
       interval: 30s
