@@ -17,5 +17,6 @@ COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/package.json ./package.json
 COPY --from=build /app/verify-build.js ./verify-build.js
 COPY --from=build /app/backend-src/wait-for-mysql.sh ./backend-src/wait-for-mysql.sh
+COPY backend-src/healthcheck-debug.sh ./backend-src/healthcheck-debug.sh
 CMD ["node", "dist/server.js"]
 EXPOSE 3001
