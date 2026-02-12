@@ -4,7 +4,6 @@
   "description": "Backend API server for Custom Threads Online Store",
   "main": "dist/server.js",
   "type": "module",
-  
   "scripts": {
     "dev": "tsx watch backend-src/server.ts",
     "build": "node node_modules/typescript/lib/tsc.js -p tsconfig.backend.json && node verify-build.js",

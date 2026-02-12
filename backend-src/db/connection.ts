@@ -1,18 +1,18 @@
-import mysql from 'mysql2/promise';
-import dotenv from 'dotenv';
+import mysql from "mysql2/promise";
+import dotenv from "dotenv";
 
 dotenv.config();
 // Debug log environment variables for DB connection
-console.log('🔍 DB_USER:', process.env.DB_USER);
-console.log('🔍 DB_PASSWORD:', process.env.DB_PASSWORD);
-console.log('🔍 DB_HOST:', process.env.DB_HOST);
-console.log('🔍 DB_PORT:', process.env.DB_PORT);
-console.log('🔍 DB_NAME:', process.env.DB_NAME);
+console.log("🔍 DB_USER:", process.env.DB_USER);
+console.log("🔍 DB_PASSWORD:", process.env.DB_PASSWORD);
+console.log("🔍 DB_HOST:", process.env.DB_HOST);
+console.log("🔍 DB_PORT:", process.env.DB_PORT);
+console.log("🔍 DB_NAME:", process.env.DB_NAME);
 
 // Database connection pool configuration
 const poolConfig = {
-  host: process.env.DB_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT || '3306'),
+  host: process.env.DB_HOST || "localhost",
+  port: parseInt(process.env.DB_PORT || "3306"),
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_DATABASE || process.env.DB_NAME,
@@ -30,17 +30,17 @@ export const pool = mysql.createPool(poolConfig);
 export async function testConnection(): Promise<void> {
   try {
     const connection = await pool.getConnection();
-    console.log('✅ Database connection established successfully');
+    console.log("✅ Database connection established successfully");
     connection.release();
   } catch (error) {
-    console.error('❌ Database connection failed:', error);
+    console.error("❌ Database connection failed:", error);
     throw error;
   }
 }
 
 // Helper function for transactions
 export async function withTransaction<T>(
-  callback: (connection: mysql.PoolConnection) => Promise<T>
+  callback: (connection: mysql.PoolConnection) => Promise<T>,
 ): Promise<T> {
   const connection = await pool.getConnection();
   await connection.beginTransaction();
