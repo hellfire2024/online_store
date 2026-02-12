@@ -172,7 +172,7 @@ console.log("✅ Middleware configured successfully");
 
 console.log("🛣️  Setting up routes...");
 
-app.get("/health", (_req: Request, res: Response) => {
+app.get("/health", (req: Request, res: Response) => {
   const healthStatus = {
     status: "ok",
     timestamp: new Date().toISOString(),
@@ -181,8 +181,12 @@ app.get("/health", (_req: Request, res: Response) => {
     port: process.env.PORT || 3001,
     node_version: process.version,
     env: process.env.NODE_ENV,
+    host: req.hostname,
+    ip: req.ip,
+    url: req.protocol + '://' + req.get('host') + req.originalUrl,
+    headers: req.headers,
   };
-  console.log("💚 Health check accessed", healthStatus);
+  appendLog("💚 Health check accessed: " + JSON.stringify(healthStatus));
   res.status(200).json(healthStatus);
 });
 
