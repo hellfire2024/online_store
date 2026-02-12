@@ -27,8 +27,6 @@ services:
       MYSQL_PASSWORD: we1r9dveIPTzjJ84HMD6
     ports:
       - "3306:3306"
-    volumes:
-      - db_data:/var/lib/mysql
 
   version: '3.8'
   services:
@@ -78,5 +76,4 @@ services:
         timeout: 10s
         retries: 5
 
-  volumes:
-    db_data:
+
