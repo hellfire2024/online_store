@@ -17,7 +17,22 @@ services:
       timeout: 10s
       retries: 5
 
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: yourdb
+      MYSQL_USER: youruser
+      MYSQL_PASSWORD: yourpassword
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+
   frontend:
+    volumes:
+      db_data:
     build:
       context: ./frontend
       dockerfile: ../Dockerfile
