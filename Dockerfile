@@ -3,6 +3,7 @@ FROM node:20-alpine AS build
 WORKDIR /app
 COPY package.json ./package.json
 COPY vite.config.ts ./vite.config.ts
+COPY index.html ./index.html
 COPY public ./public
 COPY src ./src
 RUN npm install --frozen-lockfile || yarn install --frozen-lockfile
