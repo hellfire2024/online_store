@@ -12,6 +12,7 @@ services:
     environment:
       - NODE_ENV=production
     restart: unless-stopped
+    entrypoint: ["/bin/sh", "-c", "chmod +x ./backend-src/wait-for-mysql.sh && ./backend-src/wait-for-mysql.sh npm start"]
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
       interval: 30s
