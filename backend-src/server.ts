@@ -173,6 +173,9 @@ app.get("/health", (_req: Request, res: Response) => {
   res.json({ status: "ok", timestamp: new Date().toISOString(), demo_mode: DEMO_MODE });
 });
 
+// Health check endpoint for Docker
+app.get('/health', (req, res) => res.status(200).send('OK'));
+
 // API routes
 if (DEMO_MODE) {
   console.log("📋 Using demo routes (mock data)");
