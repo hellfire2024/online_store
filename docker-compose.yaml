@@ -30,20 +30,53 @@ services:
     volumes:
       - db_data:/var/lib/mysql
 
-  frontend:
-    volumes:
-      db_data:
-    build:
-      context: ./frontend
-      dockerfile: ../Dockerfile
-    ports:
-      - "8080:80"
-    depends_on:
-      backend:
-        condition: service_healthy
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:80"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
+  version: '3.8'
+  services:
+    backend:
+      build:
+        context: .
+        dockerfile: Dockerfile.backend
+      ports:
+        - "3001:3001"
+      env_file:
+        - .env
+      environment:
+        - NODE_ENV=production
+      restart: unless-stopped
+      healthcheck:
+        test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+        interval: 30s
+        timeout: 10s
+        retries: 5
+
+    mysql:
+      image: mysql:8.0
+      restart: unless-stopped
+      environment:
+        MYSQL_ROOT_PASSWORD: rootpassword
+        MYSQL_DATABASE: agis_dev_db
+        MYSQL_USER: adaptivegis-dev
+        MYSQL_PASSWORD: we1r9dveIPTzjJ84HMD6
+      ports:
+        - "3306:3306"
+      volumes:
+        - db_data:/var/lib/mysql
+
+    frontend:
+      build:
+        context: ./frontend
+        dockerfile: ../Dockerfile
+      ports:
+        - "8080:80"
+      depends_on:
+        backend:
+          condition: service_healthy
+      restart: unless-stopped
+      healthcheck:
+        test: ["CMD", "curl", "-f", "http://localhost:80"]
+        interval: 30s
+        timeout: 10s
+        retries: 5
+
+  volumes:
+    db_data:
