@@ -10,6 +10,7 @@ RUN npm install --frozen-lockfile || yarn install --frozen-lockfile
 RUN npm run build
 
 FROM node:20-alpine
+RUN apk add --no-cache curl
 ENV DB_HOST=mysql
 WORKDIR /app
 COPY --from=build /app/dist ./dist
