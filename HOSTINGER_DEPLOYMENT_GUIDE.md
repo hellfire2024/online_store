@@ -1,366 +1,193 @@
-# Complete Hostinger Deployment Guide (Business Plan + Render Backend)
+# Hostinger VPS Deployment Guide (Coolify, Docker, Traefik)
 
-This guide provides step-by-step instructions to deploy your React + Node.js + MySQL application when your Hostinger **Business** plan only supports **static site hosting** (no Node.js apps). The backend is hosted on **Render**, and the frontend is deployed to Hostinger via the UI.
-
-Follow every step **in order** without skipping.
+This guide explains how to deploy your full-stack app (Node.js/Express backend, React/Vite frontend, MySQL, Traefik) on a Hostinger VPS using Coolify for automated Docker Compose orchestration.
 
 ---
 
 ## Table of Contents
-1. [Prerequisites](#prerequisites)
-2. [Part 1: Prepare Domain & SSL](#part-1-prepare-domain--ssl)
-3. [Part 2: Hostinger Database Setup](#part-2-hostinger-database-setup)
-4. [Part 3: Render Backend Deployment](#part-3-render-backend-deployment)
-5. [Part 4: Hostinger Frontend Deployment (UI)](#part-4-hostinger-frontend-deployment-ui)
-6. [Part 5: CORS & Environment Validation](#part-5-cors--environment-validation)
-7. [Part 6: Verification & Testing](#part-6-verification--testing)
-8. [Part 7: Troubleshooting](#part-7-troubleshooting)
+
+1. Prerequisites
+2. VPS Provisioning & Initial Setup
+3. DNS & Domain Configuration
+4. Install Docker & Docker Compose
+5. Install Coolify
+6. Coolify Initial Setup
+7. Deploying Your App with Coolify
+8. Environment Variables & Secrets
+9. SSL & Traefik
+10. Verification & Testing
+11. Troubleshooting
 
 ---
 
-## Prerequisites
+## 1. Prerequisites
 
-**What you need:**
-- Hostinger Business plan (static site hosting only)
-- Hostinger File Manager access
-- Hostinger MySQL database access
-- Domain registered (or ready to point to Hostinger)
-- GitHub repository with your code
-- Render.com account (free tier ok)
-
-**Estimated time:** 1.5–2.5 hours
+- Hostinger VPS (Ubuntu 22.04 recommended)
+- Root SSH access to VPS
+- Registered domain (e.g., dev.adaptivegis.com)
+- GitHub repository with your app code
 
 ---
 
-## Part 1: Prepare Domain & SSL
+## 2. VPS Provisioning & Initial Setup
 
-### Step 1.1: Point Domain to Hostinger
-
-1. In Hostinger, go to **Domains** → **Your Domains**
-2. Select your domain
-3. Copy the **Nameservers** (usually ns1.hostinger.com, ns2.hostinger.com, etc.)
-4. Log in to your domain registrar (GoDaddy, Namecheap, etc.)
-5. Update nameservers to Hostinger's nameservers
-6. Wait 24–48 hours for DNS propagation
-
-### Step 1.2: Enable SSL Certificate
-
-1. In Hostinger, go to **Security** → **SSL Certificate**
-2. Click **Manage SSL**
-3. Click **Activate Let's Encrypt SSL** (if not auto-provisioned)
-4. Wait for activation (usually 10–30 minutes)
+1. Order a Hostinger VPS (choose Ubuntu 22.04 LTS for best compatibility).
+2. Set a strong root password.
+3. SSH into your VPS:
+   ```sh
+   ssh root@<your-vps-ip>
+   ```
+4. (Optional) Create a new user and disable root SSH for security.
+5. Update system:
+   ```sh
+   apt update && apt upgrade -y
+   ```
 
 ---
 
-## Part 2: Hostinger Database Setup
+## 3. DNS & Domain Configuration
 
-### Step 2.1: Create MySQL Database
-
-1. In Hostinger, go to **Databases** → **MySQL**
-2. Click **Create New Database**
-3. Database name: `custom_threads_db`
-4. Username: `ct_user`
-5. Generate a strong password and **save it**
-6. Click **Create Database**
-
-### Step 2.2: Find Database Hostname
-
-The hostname is **NOT shown in the database list**. Get it from phpMyAdmin or use the default:
-
-**Option 1 - Try default first (easiest):**
-- Use `localhost` as DB_HOST in Render
-- Most Hostinger databases accept connections via `localhost`
-
-**Option 2 - Get exact hostname from phpMyAdmin:**
-1. Click **Enter phpMyAdmin** button on your database row
-2. Once phpMyAdmin opens, look at the top bar
-3. You'll see "Server: mysql####.hostinger.com" or similar
-4. Use that full hostname as DB_HOST in Render
-
-**From your screenshot:**
-- Database name: `u273796266_agis_dev_db` (use this for DB_DATABASE)
-- Username: `u273796266_adaptivegis` (use this for DB_USER)
-- Password: whatever you set (use this for DB_PASSWORD)
-- Hostname: Try `localhost` first, or get from phpMyAdmin
-
-### Step 2.3: Enable Remote Access (Required for Render)
-
-1. In Hostinger, go to **Databases** → **MySQL**
-2. Click your database
-3. Find **Remote MySQL** or **Remote Access**
-4. Add allowed host: `0.0.0.0/0`
-
-⚠️ This allows any host. If Hostinger supports IP allowlists, you can later restrict it to Render’s IPs.
+1. In your domain registrar, set an A record:
+   - **Host:** dev (or @ for root domain)
+   - **Type:** A
+   - **Value:** <your-vps-ip>
+2. (Optional) Add a wildcard CNAME or A record for subdomains if needed.
+3. Wait for DNS propagation (can take up to 1 hour).
 
 ---
 
-## Part 3: Render Backend Deployment
+## 4. Install Docker & Docker Compose
 
-### Step 3.1: Create Render Web Service
+On your VPS:
 
-1. Go to https://render.com
-2. Sign in with GitHub
-3. Click **New +** → **Web Service**
-4. Select your repository (`online_store`)
-5. Configure:
+```sh
+curl -fsSL https://get.docker.com | sh
+sudo usermod -aG docker $USER
+newgrp docker
+docker --version
+docker compose version
+```
 
-**Build & Run Settings**
-- **Name:** `custom-threads-api`
-- **Branch:** `main`
-- **Root Directory:** `server`
-- **Build Command:** `npm install && npm run build`
-- **Start Command:** `node dist/server.js`
-- **Runtime:** Node
-- **Plan:** Free
+---
 
-### Step 3.2: Add Render Environment Variables (Required Only)
+## 5. Install Coolify
 
-⚠️ **IMPORTANT:** Only set **deployment-time secrets** in Render. Everything else (Stripe, shipping, tax, email) is configured through your **Admin Settings Panel** in the app UI after deployment.
+Coolify is a self-hosted PaaS for Docker Compose apps.
 
-Add these in Render → **Environment**:
+```sh
+docker run -d \
+  --name coolify \
+  -p 3000:3000 \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v coolify-data:/app/data \
+  coollabsio/coolify:latest
+```
+
+Access Coolify at http://<your-vps-ip>:3000 and complete the web onboarding (set admin email/password).
+
+---
+
+## 6. Coolify Initial Setup
+
+1. Log in to Coolify web UI (http://<your-vps-ip>:3000).
+2. Add your VPS as a "Server" (should auto-detect localhost).
+3. Add your GitHub repository as a "Source" (connect via OAuth or deploy key).
+4. Create a new "Application" and select Docker Compose as the deployment type.
+5. Paste your docker-compose.yaml contents or point to the file in your repo.
+
+---
+
+## 7. Deploying Your App with Coolify
+
+1. Configure environment variables for backend, frontend, and MySQL as needed (see .env.example or your docker-compose.yaml).
+2. Set up build and run commands if prompted (Coolify auto-detects for most Node/React apps).
+3. Set the domain for your frontend (e.g., dev.adaptivegis.com) in the Coolify app settings.
+4. Deploy the app from the Coolify dashboard.
+5. Coolify will build, start, and monitor your containers automatically.
+
+---
+
+## 8. Environment Variables & Secrets
+
+Set all sensitive values (DB credentials, API keys, etc.) in Coolify's environment variable UI for each service. Example for backend:
 
 ```
 NODE_ENV=production
-DB_HOST=<your Hostinger hostname>
+DB_HOST=mysql
 DB_PORT=3306
-DB_USER=ct_user
-DB_PASSWORD=<your Hostinger DB password>
-DB_DATABASE=custom_threads_db
+DB_USER=adaptivegis-dev
+DB_PASSWORD=your_db_password
+DB_NAME=agis_dev_db
+CORS_ORIGIN=https://dev.adaptivegis.com
 ```
 
-**That's it.** Do NOT add SMTP, Stripe, or other business configs here. Those go in the app's admin panel once deployed.
+For frontend, set:
 
-### Step 3.3: Deploy Backend
-
-1. Click **Create Web Service**
-2. Wait for build & deploy to finish
-3. Copy your Render URL (example: `https://custom-threads-api.onrender.com`)
-
-### Step 3.4: Run Migrations
-
-⚠️ **IMPORTANT:** Run migrations after deploying or updating your backend to ensure all database tables are created.
-
-Render → your service → **Shell**:
-
-```bash
-cd /opt/render/project/src/server
-npm run migrate
 ```
-
-**What this creates:**
-- `admins` - Admin user accounts
-- `customers` - Customer accounts
-- `customer_addresses` - Shipping/billing addresses
-- `products` - Product catalog
-- `orders` - Order history
-- `support_tickets` - Customer support tickets
-- `ticket_replies` - Support ticket conversations
-- `reviews` - Product reviews
-- `staff` - Staff member profiles
-- `services` - Service offerings
-- `pages` - Custom pages (Terms, Privacy, etc.)
-- `site_settings` - Global site configuration
-- `email_config` - Email provider credentials
-
-If you update the backend code (especially database schema), **always run migrations again** to apply changes.
-
-### Step 3.5: Create Initial Admin User
-
-After migrations, create your first admin user:
-
-```bash
-cd /opt/render/project/src/server
-npm run seed
-```
-
-**Default credentials created:**
-- **Username:** `admin`
-- **Password:** `admin123`
-- **Email:** `admin@customthreads.com`
-
-⚠️ **SECURITY:** Log in immediately and change this password in Admin → Security!
-
----
-
-## Part 4: Configure App Settings (Admin Panel)
-
-After deployment, ALL business configurations go through your app's **Admin Settings Panel**—NOT environment variables.
-
-### Step 4.1: Access Admin Panel
-
-1. Open `https://yourdomain.com/#/admin`
-2. Log in with admin credentials
-3. Go to **Settings** → **Configuration**
-
-### Step 4.2: Configure Business Settings
-
-In the admin panel, set:
-
-- **Email (SMTP):** Mailtrap, SendGrid, or Gmail credentials
-- **Stripe API Key:** For payments
-- **Shipping Providers:** EasyPost, Shippo, ShipStation
-- **Tax Providers:** TaxJar, Avalara, Zamp
-- **From Email/Name:** Notification emails
-- **Footer/Contact Info:** Business details
-- **Segment Rules:** Customer VIP/At-Risk rules
-
-**Why?** These can change without redeploying. Your database stores these securely, not hardcoded in code or environment.
-
----
-
-## Part 5: Hostinger Frontend Deployment (UI)
-
-### Step 5.1: Set Frontend Environment Variable
-
-Create `.env.production` locally:
-
-```env
-VITE_API_URL=https://custom-threads-api.onrender.com/api
-```
-
-Replace with your real Render URL.
-
-### Step 5.2: Deploy with Hostinger GitHub UI
-
-1. Hostinger panel → **GitHub Deployment**
-2. Select your repository
-3. Configure:
-  - **Framework preset:** Vite
-  - **Branch:** main
-  - **Node version:** 18.x
-  - **Root directory:** `/`
-4. Click **Change** in **Build and output settings**:
-  - **Build command:** `npm install && npm run build`
-  - **Output directory:** `dist`
-5. Click **Add** in **Environment variables**:
-  - **Key:** `VITE_API_URL`
-  - **Value:** `https://custom-threads-api.onrender.com/api`
-6. Click **Finish Setup** and **Deploy**
-
-### Step 5.3: Add SPA Routing (.htaccess)
-
-In Hostinger File Manager → `/public_html/.htaccess`:
-
-```apache
-<IfModule mod_rewrite.c>
-  RewriteEngine On
-  RewriteBase /
-  RewriteCond %{REQUEST_FILENAME} !-f
-  RewriteCond %{REQUEST_FILENAME} !-d
-  RewriteRule ^ index.html [QSA,L]
-</IfModule>
+VITE_API_URL=https://devapi.adaptivegis.com/api
 ```
 
 ---
 
-## Part 6: CORS & Environment Validation
+## 9. SSL & Traefik
 
-### Step 6.1: Allow Hostinger Domain in Backend
+Coolify uses Traefik for automatic SSL and reverse proxy.
 
-Add this in Render environment variables:
+1. In Coolify, set your domain for the frontend and backend services.
+2. Enable "Auto SSL" (Let's Encrypt) in the domain settings.
+3. Traefik will automatically provision and renew SSL certificates.
+4. Ensure your docker-compose.yaml has the correct Traefik labels for each service (see example below):
 
 ```
-CORS_ORIGIN=https://yourdomain.com
+labels:
+  - "traefik.enable=true"
+  - "traefik.http.routers.frontend.rule=Host(`dev.adaptivegis.com`)"
+  - "traefik.http.routers.frontend.entrypoints=websecure"
+  - "traefik.http.routers.frontend.tls.certresolver=letsencrypt"
+  - "traefik.http.services.frontend.loadbalancer.server.port=80"
 ```
-
-If your backend code reads `CORS_ORIGIN`, redeploy after adding it.
-
-### Step 6.2: Verify Environment Values
-
-Ensure `VITE_API_URL` points to Render and `CORS_ORIGIN` points to Hostinger.
 
 ---
 
-## Part 7: Verification & Testing
+## 10. Verification & Testing
 
-### Step 7.1: Test Backend API
-
-```powershell
-Invoke-WebRequest -Uri "https://custom-threads-api.onrender.com/api/health" -UseBasicParsing
-```
-
-### Step 7.2: Test Frontend
-
-1. Open `https://yourdomain.com`
-2. Open DevTools (F12)
-3. Confirm no CORS errors
-
-### Step 7.3: Test Core Flows
-
-1. Register a new account
-2. Log in
-3. Add item to cart
-4. Checkout (if payment configured)
+1. Visit https://dev.adaptivegis.com and https://devapi.adaptivegis.com to verify both frontend and backend are live.
+2. Use browser DevTools to check for CORS errors and network issues.
+3. Test all app flows (register, login, checkout, etc.).
+4. Check Coolify dashboard for container health and logs.
 
 ---
 
-## Part 8: Troubleshooting
-### Cannot log in as admin (401 Unauthorized)
+## 11. Troubleshooting
 
-**Problem:** No admin users exist in production database.
-
-**Solution:** Create admin user via Render Shell:
-
-```bash
-cd /opt/render/project/src/server
-npm run seed
-```
-
-Default credentials: `admin` / `admin123`
-
-⚠️ Change password immediately after logging in!
-### Backend won’t start (Render)
-
-Check Render **Logs** for:
-- Invalid DB_HOST
-- Wrong DB password
-- Missing migration tables
-
-### Frontend shows Network Error
-
-1. Confirm `VITE_API_URL` is correct in Hostinger deploy settings
-2. Confirm `CORS_ORIGIN` is set in Render
-3. Redeploy both if updated
-
-### Database connection refused
-
-1. Ensure Remote MySQL is enabled
-2. Confirm `DB_HOST` and `DB_USER` are correct
-3. Allow `0.0.0.0/0` temporarily if needed
+- **App not reachable:**
+  - Check DNS propagation (https://dnschecker.org)
+  - Ensure ports 80/443 are open in VPS firewall (use ufw or your provider's panel)
+- **SSL not working:**
+  - Double-check domain in Coolify and that "Auto SSL" is enabled
+  - Check Traefik logs in Coolify
+- **Database errors:**
+  - Ensure MySQL container is healthy and credentials match
+- **Build failures:**
+  - Check Coolify build logs for errors
+- **CORS issues:**
+  - Confirm CORS_ORIGIN and VITE_API_URL are set correctly
 
 ---
 
-## Environment Variable Philosophy
+## Checklist
 
-**Render (Deployment-Time Only):**
-- Database connection (can't change without redeploying)
-- Node environment
-- CORS origin
-
-**Admin Panel (Runtime, No Redeploy):**
-- SMTP credentials
-- Payment processors (Stripe)
-- Shipping APIs (EasyPost, Shippo, ShipStation)
-- Tax services (TaxJar, Avalara, Zamp)
-- Email sender name/address
-- Business footer info
-- Customer segment rules
-
-This separation means you can update configs in production **instantly** without touching servers or code.
-
----
-
-- [ ] Domain pointing to Hostinger
-- [ ] SSL certificate active
-- [ ] Hostinger MySQL database created
-- [ ] Render backend deployed and healthy
-- [ ] Hostinger frontend deployed
-- [ ] `VITE_API_URL` set to Render
-- [ ] `CORS_ORIGIN` set to Hostinger domain
-- [ ] Site loads without errors
+- [ ] VPS provisioned and accessible via SSH
+- [ ] Docker & Docker Compose installed
+- [ ] Coolify running and accessible
+- [ ] DNS A records set for all domains
+- [ ] App deployed via Coolify
+- [ ] SSL active (https)
+- [ ] All environment variables set
+- [ ] Site loads and works as expected
 
 ---
 
 ## You’re Done! 🎉
 
-Your storefront is on Hostinger and your API is running on Render. If you want a single-host solution, upgrade to a VPS or a Hostinger plan with full Node.js apps.
+Your app is now fully deployed on a Hostinger VPS with Coolify, Docker Compose, and Traefik. All updates and redeploys can be managed via the Coolify dashboard.
