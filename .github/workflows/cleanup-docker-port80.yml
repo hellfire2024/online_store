@@ -1,0 +1,21 @@
+name: Cleanup Docker Port 80
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - dev
+
+jobs:
+  cleanup-docker-port-80:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Remove containers using port 80
+        run: |
+          CONTAINER_IDS=$(docker ps --filter 'publish=80' -q)
+          if [ ! -z "$CONTAINER_IDS" ]; then
+            docker rm -f $CONTAINER_IDS
+          fi
+      - name: Prune unused Docker networks
+        run: |
+          docker network prune -f
