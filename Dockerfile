@@ -8,6 +8,7 @@ COPY public ./public
 COPY src ./src
 RUN npm install --frozen-lockfile || yarn install --frozen-lockfile
 RUN npm run build || yarn build
+RUN node verify-frontend-build.js
 
 FROM nginx:alpine
 COPY --from=build /app/dist /usr/share/nginx/html
