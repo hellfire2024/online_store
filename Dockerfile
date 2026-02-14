@@ -6,7 +6,7 @@ COPY vite.config.ts ./vite.config.ts
 COPY index.html ./index.html
 COPY public ./public
 COPY src ./src
-COPY ./frontend/verify-frontend-build.js ./verify-frontend-build.js
+COPY verify-frontend-build.js ./verify-frontend-build.js
 RUN npm install --frozen-lockfile || yarn install --frozen-lockfile
 RUN npm run build || yarn build
 RUN node verify-frontend-build.js
