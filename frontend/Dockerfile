@@ -10,6 +10,8 @@ COPY src ./src
 
 # Debug: Show files before and after build, and log errors if build fails
 COPY verify-frontend-build.js ./verify-frontend-build.js
+# Debug: List files in /app and /app/src after COPY
+RUN echo "==== FILES IN /app ====" && ls -al /app && echo "==== FILES IN /app/src ====" && ls -al /app/src || echo "No src directory" && exit 1
 RUN npm install --frozen-lockfile || yarn install --frozen-lockfile
 RUN echo "==== BEFORE BUILD: files in /app ====" && ls -al /app && \
 	(npm run build || yarn build) || (echo "==== BUILD FAILED ====" && cat /app/dist/index.html 2>/dev/null || echo "No index.html" && exit 1)
