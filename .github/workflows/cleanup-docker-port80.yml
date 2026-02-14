@@ -10,12 +10,16 @@ jobs:
   cleanup-docker-port-80:
     runs-on: ubuntu-latest
     steps:
-      - name: Remove containers using port 80
+      - name: Remove all Docker containers (running and stopped)
         run: |
-          CONTAINER_IDS=$(docker ps --filter 'publish=80' -q)
+          CONTAINER_IDS=$(docker ps -aq)
           if [ ! -z "$CONTAINER_IDS" ]; then
             docker rm -f $CONTAINER_IDS
           fi
       - name: Prune unused Docker networks
         run: |
           docker network prune -f
+      - name: Show Docker status
+        run: |
+          docker ps -a
+          docker network ls
