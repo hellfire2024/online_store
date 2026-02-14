@@ -23,6 +23,7 @@ RUN node verify-frontend-build.js
 FROM nginx:alpine
 COPY --from=build /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/nginx.conf
+RUN echo "==== CONTENTS OF /usr/share/nginx/html/index.html (final image) ====" && cat /usr/share/nginx/html/index.html
 EXPOSE 80
 HEALTHCHECK --interval=10s --timeout=5s --start-period=20s --retries=5 CMD curl -f http://localhost:80 || exit 1
 CMD ["nginx", "-g", "daemon off;"]
