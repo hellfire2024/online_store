@@ -17,7 +17,7 @@ RUN echo "==== FILES IN /app ====" && ls -al /app && \
 RUN npm install --frozen-lockfile || yarn install --frozen-lockfile
 RUN echo "==== BEFORE BUILD: files in /app ====" && ls -al /app && \
 	(npm run build || yarn build) || (echo "==== BUILD FAILED ====" && cat /app/dist/index.html 2>/dev/null || echo "No index.html" && exit 1)
-RUN if [ -d /app/dist ]; then echo "==== AFTER BUILD: files in /app/dist ====" && ls -al /app/dist; else echo "No dist directory found" && exit 1; fi
+RUN if [ -d /app/dist ]; then echo "==== AFTER BUILD: files in /app/dist ====" && ls -al /app/dist && echo "==== CONTENTS OF /app/dist/index.html ====" && cat /app/dist/index.html; else echo "No dist directory found" && exit 1; fi
 RUN node verify-frontend-build.js
 
 FROM nginx:alpine
