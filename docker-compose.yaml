@@ -2,6 +2,10 @@
 version: '3.8'
 services:
   backend:
+        labels:
+          - "traefik.enable=true"
+          - "traefik.http.services.backend.loadbalancer.healthcheck.path=/health"
+          - "traefik.http.services.backend.loadbalancer.healthcheck.interval=10s"
     build:
       context: .
       dockerfile: Dockerfile.backend
