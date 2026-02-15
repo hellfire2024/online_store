@@ -11,8 +11,7 @@ COPY frontend/public ./public
 COPY pages ./pages
 COPY frontend/src ./src
 
-# Debug: Show files before and after build, and log errors if build fails
-COPY verify-frontend-build.js ./verify-frontend-build.js
+COPY frontend/verify-frontend-build.js ./verify-frontend-build.js
 RUN echo "==== FILES IN /app ====" && ls -al /app && \
 	echo "==== FILES IN /app/src ====" && ls -al /app/src || (echo "No src directory" && exit 1) && \
 	echo "==== CONTENTS OF /app/src/main.tsx ====" && cat /app/src/main.tsx || echo "main.tsx missing" && \
@@ -28,7 +27,7 @@ RUN node verify-frontend-build.js
 
 FROM nginx:alpine
 COPY --from=build /app/dist /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/nginx.conf
+COPY frontend/nginx.conf /etc/nginx/nginx.conf
 RUN echo "==== CONTENTS OF /usr/share/nginx/html/index.html (final image) ====" && cat /usr/share/nginx/html/index.html
 EXPOSE 80
 HEALTHCHECK --interval=10s --timeout=5s --start-period=20s --retries=5 CMD curl -f http://localhost:80 || exit 1
