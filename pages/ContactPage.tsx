@@ -1,30 +1,32 @@
-
-import React, { useState } from 'react';
-import { useToast } from '../frontend/hooks/useToast';
-import { usePages } from '../frontend/context/PagesContext';
-import { ContactPageContent, ContactFormField } from '../frontend/types';
-import Spinner from '../frontend/components/Spinner';
+import React, { useState } from "react";
+import { useToast } from "../frontend/hooks/useToast";
+import { usePages } from "../frontend/context/PagesContext";
+import { ContactPageContent, ContactFormField } from "../frontend/types";
+import Spinner from "../frontend/components/Spinner";
 
 const ContactPage: React.FC = () => {
   const { pages, isLoading } = usePages();
   const { addToast } = useToast();
   const [formData, setFormData] = useState<Record<string, string>>({});
 
-  const contactPage = pages.find((page) => page.pageType === 'contact');
+  const contactPage = pages.find((page) => page.pageType === "contact");
   const content = (contactPage?.contentData as ContactPageContent) || {
-    pageTitle: 'Get In Touch',
+    pageTitle: "Get In Touch",
     pageSubtitle: "Have a question or a comment? Drop us a line!",
     formFields: [],
-    targetEmail: 'contact@example.com',
-    successMessage: 'Thank you for your message! We will get back to you soon.',
-    subjectTemplate: 'Contact Form: {subject}',
+    targetEmail: "contact@example.com",
+    successMessage: "Thank you for your message! We will get back to you soon.",
+    subjectTemplate: "Contact Form: {subject}",
   };
 
   const handleChange = (fieldId: string, value: string) => {
-    setFormData(prev => ({ ...prev, [fieldId]: value }));
+    setFormData((prev) => ({ ...prev, [fieldId]: value }));
   };
 
-  const validateField = (field: ContactFormField, value: string): string | null => {
+  const validateField = (
+    field: ContactFormField,
+    value: string,
+  ): string | null => {
     if (field.required && !value?.trim()) {
       return `${field.label} is required`;
     }
@@ -36,10 +38,16 @@ const ContactPage: React.FC = () => {
           return `${field.label} format is invalid`;
         }
       }
-      if (field.validation.minLength && value.length < field.validation.minLength) {
+      if (
+        field.validation.minLength &&
+        value.length < field.validation.minLength
+      ) {
         return `${field.label} must be at least ${field.validation.minLength} characters`;
       }
-      if (field.validation.maxLength && value.length > field.validation.maxLength) {
+      if (
+        field.validation.maxLength &&
+        value.length > field.validation.maxLength
+      ) {
         return `${field.label} must be at most ${field.validation.maxLength} characters`;
       }
     }
@@ -53,18 +61,18 @@ const ContactPage: React.FC = () => {
     }
 
     // All rules must match (AND logic)
-    return field.conditionalRules.every(rule => {
-      const dependentValue = formData[rule.fieldId] || '';
-      
+    return field.conditionalRules.every((rule) => {
+      const dependentValue = formData[rule.fieldId] || "";
+
       switch (rule.operator) {
-        case 'equals':
+        case "equals":
           return dependentValue === rule.value;
-        case 'notEquals':
+        case "notEquals":
           return dependentValue !== rule.value;
-        case 'contains':
+        case "contains":
           return dependentValue.includes(rule.value);
-        case 'notEmpty':
-          return dependentValue.trim() !== '';
+        case "notEmpty":
+          return dependentValue.trim() !== "";
         default:
           return true;
       }
@@ -73,25 +81,28 @@ const ContactPage: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Validate all required fields
-    const enabledFields = content.formFields.filter(f => f.enabled);
+    const enabledFields = content.formFields.filter((f) => f.enabled);
     for (const field of enabledFields) {
-      const error = validateField(field, formData[field.id] || '');
+      const error = validateField(field, formData[field.id] || "");
       if (error) {
-        addToast(error, 'error');
+        addToast(error, "error");
         return;
       }
     }
 
     // Simulate form submission
-    console.log('Form submission:', {
+    console.log("Form submission:", {
       to: content.targetEmail,
-      subject: content.subjectTemplate.replace('{subject}', formData.subject || 'No Subject'),
+      subject: content.subjectTemplate.replace(
+        "{subject}",
+        formData.subject || "No Subject",
+      ),
       data: formData,
     });
 
-    addToast(content.successMessage, 'success');
+    addToast(content.successMessage, "success");
     setFormData({});
   };
 
@@ -103,7 +114,10 @@ const ContactPage: React.FC = () => {
     );
   }
 
-  const visibleFields = content.formFields?.filter(f => f.enabled && evaluateConditionalRules(f)) || [];
+  const visibleFields =
+    content.formFields?.filter(
+      (f) => f.enabled && evaluateConditionalRules(f),
+    ) || [];
   const pageFont = content.pageFont;
   const pageTitleFont = content.pageTitleFont;
   const pageTitleColor = content.pageTitleColor;
@@ -115,7 +129,10 @@ const ContactPage: React.FC = () => {
     >
       <h1
         className="text-4xl font-bold text-white mb-4 text-center"
-        style={{ fontFamily: pageTitleFont || undefined, color: pageTitleColor || undefined }}
+        style={{
+          fontFamily: pageTitleFont || undefined,
+          color: pageTitleColor || undefined,
+        }}
       >
         {content.pageTitle}
       </h1>
@@ -123,40 +140,53 @@ const ContactPage: React.FC = () => {
       <form onSubmit={handleSubmit} className="space-y-6">
         {visibleFields.map((field) => (
           <div key={field.id}>
-            <label htmlFor={field.id} className="block text-sm font-medium text-gray-300">
-              {field.label} {field.required && <span className="text-red-400">*</span>}
+            <label
+              htmlFor={field.id}
+              className="block text-sm font-medium text-gray-300"
+            >
+              {field.label}{" "}
+              {field.required && <span className="text-red-400">*</span>}
             </label>
-            {field.type === 'checkbox' ? (
+            {field.type === "checkbox" ? (
               <div className="mt-2">
                 <label className="flex items-center gap-2">
                   <input
                     type="checkbox"
                     id={field.id}
-                    checked={formData[field.id] === 'true'}
-                    onChange={(e) => handleChange(field.id, e.target.checked ? 'true' : 'false')}
+                    checked={formData[field.id] === "true"}
+                    onChange={(e) =>
+                      handleChange(
+                        field.id,
+                        e.target.checked ? "true" : "false",
+                      )
+                    }
                     className="w-4 h-4"
                   />
-                  <span className="text-gray-300 text-sm">{field.placeholder || field.label}</span>
+                  <span className="text-gray-300 text-sm">
+                    {field.placeholder || field.label}
+                  </span>
                 </label>
               </div>
-            ) : field.type === 'select' ? (
+            ) : field.type === "select" ? (
               <select
                 id={field.id}
-                value={formData[field.id] || ''}
+                value={formData[field.id] || ""}
                 onChange={(e) => handleChange(field.id, e.target.value)}
                 required={field.required}
                 className="mt-1 block w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md shadow-sm text-white focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
               >
                 <option value="">Select an option...</option>
                 {field.options?.map((option, idx) => (
-                  <option key={idx} value={option}>{option}</option>
+                  <option key={idx} value={option}>
+                    {option}
+                  </option>
                 ))}
               </select>
-            ) : (field.type === 'message' || field.type === 'textarea') ? (
+            ) : field.type === "message" || field.type === "textarea" ? (
               <textarea
                 id={field.id}
                 rows={4}
-                value={formData[field.id] || ''}
+                value={formData[field.id] || ""}
                 onChange={(e) => handleChange(field.id, e.target.value)}
                 required={field.required}
                 placeholder={field.placeholder}
@@ -164,9 +194,15 @@ const ContactPage: React.FC = () => {
               />
             ) : (
               <input
-                type={field.type === 'email' ? 'email' : field.type === 'phone' ? 'tel' : 'text'}
+                type={
+                  field.type === "email"
+                    ? "email"
+                    : field.type === "phone"
+                      ? "tel"
+                      : "text"
+                }
                 id={field.id}
-                value={formData[field.id] || ''}
+                value={formData[field.id] || ""}
                 onChange={(e) => handleChange(field.id, e.target.value)}
                 required={field.required}
                 placeholder={field.placeholder}

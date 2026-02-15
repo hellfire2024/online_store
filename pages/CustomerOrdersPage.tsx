@@ -667,9 +667,11 @@ const CustomerOrdersPage: React.FC = () => {
                                 item.product?.price ||
                                 0;
 
-                              const totalItemPrice = basePrice * (item.quantity || 1);
+                              const totalItemPrice =
+                                basePrice * (item.quantity || 1);
                               const hasOptions =
-                                item.optionsBreakdown && item.optionsBreakdown.length > 0;
+                                item.optionsBreakdown &&
+                                item.optionsBreakdown.length > 0;
                               const customTextCost = item.customTextCost || 0;
 
                               let selectedOptionsText =
@@ -677,19 +679,32 @@ const CustomerOrdersPage: React.FC = () => {
                                   ? item.selectedOptions
                                   : "";
 
-                              if (!selectedOptionsText && item.selectedOptions && productFromItem?.optionLists) {
+                              if (
+                                !selectedOptionsText &&
+                                item.selectedOptions &&
+                                productFromItem?.optionLists
+                              ) {
                                 const optionParts: string[] = [];
-                                productFromItem.optionLists.forEach((list: any) => {
-                                  const selectedOptionIds = item.selectedOptions?.[list.id] || [];
-                                  if (Array.isArray(selectedOptionIds)) {
-                                    selectedOptionIds.forEach((optionId: string) => {
-                                      const option = list.options.find((o: any) => o.id === optionId);
-                                      if (option) {
-                                        optionParts.push(`${list.name}: ${option.name}`);
-                                      }
-                                    });
-                                  }
-                                });
+                                productFromItem.optionLists.forEach(
+                                  (list: any) => {
+                                    const selectedOptionIds =
+                                      item.selectedOptions?.[list.id] || [];
+                                    if (Array.isArray(selectedOptionIds)) {
+                                      selectedOptionIds.forEach(
+                                        (optionId: string) => {
+                                          const option = list.options.find(
+                                            (o: any) => o.id === optionId,
+                                          );
+                                          if (option) {
+                                            optionParts.push(
+                                              `${list.name}: ${option.name}`,
+                                            );
+                                          }
+                                        },
+                                      );
+                                    }
+                                  },
+                                );
                                 selectedOptionsText = optionParts.join(", ");
                               }
 
@@ -728,7 +743,9 @@ const CustomerOrdersPage: React.FC = () => {
                                       <div className="text-gray-400 text-xs space-y-1 mt-1">
                                         <div className="flex justify-between">
                                           <span>Base Price:</span>
-                                          <span>${Number(basePrice).toFixed(2)}</span>
+                                          <span>
+                                            ${Number(basePrice).toFixed(2)}
+                                          </span>
                                         </div>
                                         {selectedOptionsText && (
                                           <div className="text-sky-400">
@@ -737,12 +754,22 @@ const CustomerOrdersPage: React.FC = () => {
                                         )}
                                         {hasOptions && (
                                           <div className="space-y-1">
-                                            <div className="text-gray-300">Options:</div>
+                                            <div className="text-gray-300">
+                                              Options:
+                                            </div>
                                             {item.optionsBreakdown.map(
                                               (option: any, optIdx: number) => (
-                                                <div key={optIdx} className="flex justify-between">
+                                                <div
+                                                  key={optIdx}
+                                                  className="flex justify-between"
+                                                >
                                                   <span>{option.label}</span>
-                                                  <span>+${Number(option.priceDelta).toFixed(2)}</span>
+                                                  <span>
+                                                    +$
+                                                    {Number(
+                                                      option.priceDelta,
+                                                    ).toFixed(2)}
+                                                  </span>
                                                 </div>
                                               ),
                                             )}
@@ -752,36 +779,49 @@ const CustomerOrdersPage: React.FC = () => {
                                           <div className="text-gray-300">
                                             Custom Text: "{item.customText}"
                                             {customTextCost > 0 && (
-                                              <span className="text-gray-400"> • +${Number(customTextCost).toFixed(2)}</span>
+                                              <span className="text-gray-400">
+                                                {" "}
+                                                • +$
+                                                {Number(customTextCost).toFixed(
+                                                  2,
+                                                )}
+                                              </span>
                                             )}
                                           </div>
                                         )}
                                         {customImageCost > 0 && (
                                           <div className="text-gray-300">
-                                            Custom Image Upload Fee: +${Number(customImageCost).toFixed(2)}
+                                            Custom Image Upload Fee: +$
+                                            {Number(customImageCost).toFixed(2)}
                                           </div>
                                         )}
                                       </div>
                                       <div className="flex justify-between font-semibold text-white pt-2 border-t border-slate-600 mt-2 text-sm">
                                         <span>Qty: {item.quantity}</span>
-                                        <span>${Number(totalItemPrice).toFixed(2)}</span>
+                                        <span>
+                                          ${Number(totalItemPrice).toFixed(2)}
+                                        </span>
                                       </div>
                                     </div>
                                   </div>
                                   {item.customization && (
                                     <div className="mt-3 bg-slate-700/50 p-3 rounded-lg border border-slate-600">
                                       <div className="flex items-start gap-3">
-                                        <WatermarkedOrderImage src={item.customization.value} />
+                                        <WatermarkedOrderImage
+                                          src={item.customization.value}
+                                        />
                                         <div className="flex-1">
                                           <p className="text-sm text-gray-300">
                                             <span className="font-semibold text-sky-400">
-                                              {item.customization.type === "gallery"
+                                              {item.customization.type ===
+                                              "gallery"
                                                 ? "Gallery Design"
                                                 : "Uploaded Design"}
                                             </span>
                                             {item.customization.fileName && (
                                               <span className="text-gray-500">
-                                                {" "} • {item.customization.fileName}
+                                                {" "}
+                                                • {item.customization.fileName}
                                               </span>
                                             )}
                                           </p>

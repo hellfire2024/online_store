@@ -21,7 +21,7 @@ const LoginPage: React.FC = () => {
     const result = await customerLogin(email, password);
     if (result.success) {
       addToast("Welcome back!", "success");
-      const redirect = searchParams.get('redirect');
+      const redirect = searchParams.get("redirect");
       navigate(redirect || "/account");
     } else {
       addToast(result.error || "Login failed", "error");

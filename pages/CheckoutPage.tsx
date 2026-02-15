@@ -253,7 +253,11 @@ const CheckoutPage: React.FC = () => {
             ? toNumber(item.product.customImageUploadPrice)
             : 0;
         const quantity = toNumber(item.quantity);
-        return total + (itemPrice + optionsDelta + customTextCost + customImageCost) * quantity;
+        return (
+          total +
+          (itemPrice + optionsDelta + customTextCost + customImageCost) *
+            quantity
+        );
       }, 0);
 
       if (!siteSettings || !siteSettings.taxConfig || !shippingState) {

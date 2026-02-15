@@ -18,11 +18,14 @@ const AboutPage: React.FC = () => {
     );
   }
 
-  const aboutContent = (aboutPage.contentData as AboutPageContent)?.aboutPageContent || 
+  const aboutContent =
+    (aboutPage.contentData as AboutPageContent)?.aboutPageContent ||
     "<p>Welcome to Custom Threads, where creativity meets quality.</p>";
   const pageFont = (aboutPage.contentData as AboutPageContent)?.pageFont;
-  const pageTitleFont = (aboutPage.contentData as AboutPageContent)?.pageTitleFont;
-  const pageTitleColor = (aboutPage.contentData as AboutPageContent)?.pageTitleColor;
+  const pageTitleFont = (aboutPage.contentData as AboutPageContent)
+    ?.pageTitleFont;
+  const pageTitleColor = (aboutPage.contentData as AboutPageContent)
+    ?.pageTitleColor;
 
   return (
     <div
@@ -31,7 +34,10 @@ const AboutPage: React.FC = () => {
     >
       <h1
         className="text-4xl md:text-5xl font-bold text-white mb-6"
-        style={{ fontFamily: pageTitleFont || undefined, color: pageTitleColor || undefined }}
+        style={{
+          fontFamily: pageTitleFont || undefined,
+          color: pageTitleColor || undefined,
+        }}
       >
         About{" "}
         <span className="text-sky-400">{siteSettings?.logoTextAccent}</span>

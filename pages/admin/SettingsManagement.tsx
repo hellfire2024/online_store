@@ -2782,7 +2782,6 @@ const SettingsManagement: React.FC = () => {
               </div>
             )}
 
-
             <div className="flex gap-4">
               <button
                 onClick={() => {

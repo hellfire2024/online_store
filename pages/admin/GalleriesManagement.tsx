@@ -142,7 +142,9 @@ const GalleriesManagement: React.FC = () => {
                     : "bg-slate-700 hover:bg-slate-600 text-gray-300"
                 }`}
               >
-                <span className="wrap-break-word pr-2 text-sm">{gallery.name}</span>
+                <span className="wrap-break-word pr-2 text-sm">
+                  {gallery.name}
+                </span>
                 <button
                   onClick={(e) => {
                     e.stopPropagation();

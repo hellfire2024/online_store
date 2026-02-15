@@ -25,13 +25,16 @@ const ForgotPasswordPage: React.FC = () => {
     try {
       // TODO: Replace with actual API call to /api/auth/customer/request-password-reset
       // For now, we'll simulate the request
-      const response = await fetch("/api/auth/customer/request-password-reset", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const response = await fetch(
+        "/api/auth/customer/request-password-reset",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ email }),
         },
-        body: JSON.stringify({ email }),
-      });
+      );
 
       if (!response.ok) {
         const error = await response.json();
@@ -61,7 +64,9 @@ const ForgotPasswordPage: React.FC = () => {
       {isSubmitted ? (
         <div className="space-y-4">
           <div className="bg-green-900/30 border border-green-700 rounded-lg p-4 text-center">
-            <p className="text-green-200 font-medium mb-2">✓ Email Sent Successfully</p>
+            <p className="text-green-200 font-medium mb-2">
+              ✓ Email Sent Successfully
+            </p>
             <p className="text-green-100 text-sm">
               We've sent a password reset link to <strong>{email}</strong>
             </p>
@@ -105,7 +110,8 @@ const ForgotPasswordPage: React.FC = () => {
               disabled={isLoading}
             />
             <p className="mt-2 text-xs text-gray-400">
-              Enter the email address associated with your account. We'll send you a link to reset your password.
+              Enter the email address associated with your account. We'll send
+              you a link to reset your password.
             </p>
           </div>
 

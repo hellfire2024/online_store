@@ -84,7 +84,8 @@ const CartItemRow: React.FC<{ item: CartItem }> = ({ item }) => {
       : 0;
 
   const basePrice = toNumber(item.product.price);
-  const finalPrice = basePrice + optionsDelta + customTextCost + customImageCost;
+  const finalPrice =
+    basePrice + optionsDelta + customTextCost + customImageCost;
 
   return (
     <div className="flex items-start py-5 border-b border-slate-700 gap-4">
@@ -116,7 +117,8 @@ const CartItemRow: React.FC<{ item: CartItem }> = ({ item }) => {
         )}
         {customTextCost > 0 && (
           <p className="text-xs text-gray-300 mt-1">
-            Custom text: {item.customText?.length} characters • +${customTextCost.toFixed(2)}
+            Custom text: {item.customText?.length} characters • +$
+            {customTextCost.toFixed(2)}
           </p>
         )}
         {customImageCost > 0 && (

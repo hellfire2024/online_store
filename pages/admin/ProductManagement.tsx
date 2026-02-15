@@ -1117,7 +1117,8 @@ const ProductManagement: React.FC = () => {
                           className="w-full p-2 bg-slate-700 border border-slate-600 rounded-md text-white"
                         />
                         <p className="text-xs text-gray-400 mt-1">
-                          Flat fee added when the customer uploads their own image
+                          Flat fee added when the customer uploads their own
+                          image
                         </p>
                       </div>
                     ) : null}
