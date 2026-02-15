@@ -4,6 +4,7 @@ import App from "./App";
 import { ProductProvider } from "../context/ProductContext";
 import { ReviewsProvider } from "../context/ReviewsContext";
 import { PagesProvider } from "../context/PagesContext";
+import { SiteSettingsProvider } from "../context/SiteSettingsContext";
 import "./index.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
@@ -11,7 +12,9 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     <ProductProvider>
       <ReviewsProvider>
         <PagesProvider>
-          <App />
+          <SiteSettingsProvider>
+            <App />
+          </SiteSettingsProvider>
         </PagesProvider>
       </ReviewsProvider>
     </ProductProvider>
