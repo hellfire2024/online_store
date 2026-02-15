@@ -4,6 +4,7 @@ FROM node:20-alpine AS build
 WORKDIR /app
 
 COPY frontend/package.json ./
+COPY frontend/.env ./.env
 COPY frontend/vite.config.ts ./
 COPY frontend/index.html ./
 COPY ../tailwind.config.js ./tailwind.config.js
@@ -23,6 +24,9 @@ RUN echo "==== FILES IN /app ====" && ls -al /app && \
     echo "==== CONTENTS OF /app/src/main.tsx ====" && cat /app/src/main.tsx || echo "main.tsx missing" && \
     echo "==== CONTENTS OF /app/src/App.tsx ====" && cat /app/src/App.tsx || echo "App.tsx missing"
 RUN npm install --frozen-lockfile || yarn install --frozen-lockfile
+# Ensure VITE_API_URL is available during build
+ARG VITE_API_URL
+ENV VITE_API_URL=${VITE_API_URL}
 # Always run Vite build inside the container, never copy dist from host
 RUN echo "==== BEFORE BUILD: files in /app ====" && ls -al /app && \
     (npm run build || yarn build) || (echo "==== BUILD FAILED ====" && exit 1)
