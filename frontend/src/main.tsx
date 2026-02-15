@@ -7,6 +7,7 @@ import { PagesProvider } from "../context/PagesContext";
 import { SiteSettingsProvider } from "../context/SiteSettingsContext";
 import { ToastProvider } from "../hooks/useToast";
 import { ServicesProvider } from "../context/ServicesContext";
+import { GalleryProvider } from "../context/GalleryContext";
 import "./index.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
@@ -16,9 +17,11 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         <SiteSettingsProvider>
           <ToastProvider>
             <ServicesProvider>
-              <PagesProvider>
-                <App />
-              </PagesProvider>
+              <GalleryProvider>
+                <PagesProvider>
+                  <App />
+                </PagesProvider>
+              </GalleryProvider>
             </ServicesProvider>
           </ToastProvider>
         </SiteSettingsProvider>
