@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Product, GalleryImage } from "../types";
 import { useProducts } from "../context/ProductContext";
 import { useGalleries } from "../context/GalleryContext";
+// WARNING: This page uses useGalleries and must be rendered within a GalleryProvider (see App.tsx)
 import { getDesignIdeas } from "../services/geminiService";
 import { useCart } from "../context/CartContext";
 import { generateSlug } from "../services/slugService";

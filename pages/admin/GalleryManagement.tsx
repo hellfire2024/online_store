@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useGalleries } from "../../context/GalleryContext";
+// WARNING: This page uses useGalleries and must be rendered within a GalleryProvider (see App.tsx)
 import { TrashIcon, PlusIcon, EditIcon } from "../../components/Icons";
 import { useToast } from "../../hooks/useToast";
 import Pagination from "../../components/Pagination";

@@ -2,6 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { useProducts } from "../../context/ProductContext";
 import { useGalleries } from "../../context/GalleryContext";
+// WARNING: This page uses useGalleries and must be rendered within a GalleryProvider (see App.tsx)
 import { useStaff } from "../../context/StaffContext";
 import { useReviews } from "../../context/ReviewsContext";
 import {

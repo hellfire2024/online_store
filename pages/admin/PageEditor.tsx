@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { usePages } from "../../context/PagesContext";
 import { useSiteSettings } from "../../context/SiteSettingsContext";
 import { useGalleries } from "../../context/GalleryContext";
+// WARNING: This page uses useGalleries and must be rendered within a GalleryProvider (see App.tsx)
 import {
   Page,
   HomePageContent,

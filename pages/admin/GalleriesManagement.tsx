@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useGalleries } from "../../context/GalleryContext";
+// WARNING: This page uses useGalleries and must be rendered within a GalleryProvider (see App.tsx)
 import { PlusIcon, TrashIcon, UploadIcon } from "../../components/Icons";
 import { useToast } from "../../hooks/useToast";
 import Spinner from "../../components/Spinner";

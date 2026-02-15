@@ -8,6 +8,7 @@ import { useSiteSettings } from "../context/SiteSettingsContext";
 import { useCustomerAuth } from "../context/CustomerAuthContext";
 import { useServices } from "../context/ServicesContext";
 import { useGalleries } from "../context/GalleryContext";
+// WARNING: This page uses useGalleries and must be rendered within a GalleryProvider (see App.tsx)
 import { HomePageContent } from "../types";
 import Spinner from "../components/Spinner";
 import { useToast } from "../hooks/useToast";
