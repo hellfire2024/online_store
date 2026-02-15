@@ -13,6 +13,7 @@ COPY pages ./pages
 COPY context ./context
 COPY components ./components
 COPY hooks ./hooks
+COPY services ./services
 COPY frontend/src ./src
 
 COPY frontend/verify-frontend-build.js ./verify-frontend-build.js
