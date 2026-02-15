@@ -15,9 +15,12 @@ RUN echo "==== FILES IN /app ====" && ls -al /app && \
 	echo "==== CONTENTS OF /app/src/main.tsx ====" && cat /app/src/main.tsx || echo "main.tsx missing" && \
 	echo "==== CONTENTS OF /app/src/App.tsx ====" && cat /app/src/App.tsx || echo "App.tsx missing"
 RUN npm install --frozen-lockfile || yarn install --frozen-lockfile
+# Always run Vite build inside the container, never copy dist from host
 RUN echo "==== BEFORE BUILD: files in /app ====" && ls -al /app && \
-	(npm run build || yarn build) || (echo "==== BUILD FAILED ====" && cat /app/dist/index.html 2>/dev/null || echo "No index.html" && exit 1)
-RUN if [ -d /app/dist ]; then echo "==== AFTER BUILD: files in /app/dist ====" && ls -al /app/dist && echo "==== CONTENTS OF /app/dist/index.html ====" && cat /app/dist/index.html; else echo "No dist directory found" && exit 1; fi
+	(npm run build || yarn build) || (echo "==== BUILD FAILED ====" && exit 1)
+# Fail if dist/index.html is missing or empty
+RUN if [ ! -f /app/dist/index.html ] || [ ! -s /app/dist/index.html ]; then echo "dist/index.html missing or empty, build failed" && exit 1; fi
+RUN echo "==== AFTER BUILD: files in /app/dist ====" && ls -al /app/dist && echo "==== CONTENTS OF /app/dist/index.html ====" && cat /app/dist/index.html
 RUN node verify-frontend-build.js
 
 FROM nginx:alpine

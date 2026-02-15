@@ -33,6 +33,18 @@ services:
       retries: 20
       start_period: 120s
 
+# Pre-deploy cleanup: forcibly remove frontend/backend containers/images (never MySQL)
+x-pre-deploy:
+  image: docker:cli
+  entrypoint: ["/bin/sh", "-c"]
+  command:
+    - |
+      echo "Removing frontend/backend containers/images (MySQL untouched)...";
+      docker ps -a --format '{{.Names}}' | grep -E 'frontend|backend' | xargs -r docker rm -f;
+      docker images --format '{{.Repository}}:{{.Tag}} {{.ID}}' | grep -E 'frontend|backend' | awk '{print $2}' | xargs -r docker rmi -f;
+      echo "Cleanup done."
+  # This service is not started, but can be run manually or as a pre-step in CI/CD
+
   mysql:
     image: mysql:8.0
     restart: unless-stopped
