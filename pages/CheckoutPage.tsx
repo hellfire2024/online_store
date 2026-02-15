@@ -1,11 +1,11 @@
 import React, { useState, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { useCart } from "../context/CartContext";
-import { useCustomerAuth } from "../context/CustomerAuthContext";
-import { useSiteSettings } from "../context/SiteSettingsContext";
-import apiClient from "../services/apiClient";
-import { useToast } from "../hooks/useToast";
-import { calculateTax } from "../services/taxService";
+import { useCart } from "../frontend/context/CartContext";
+import { useCustomerAuth } from "../frontend/context/CustomerAuthContext";
+import { useSiteSettings } from "../frontend/context/SiteSettingsContext";
+import apiClient from "../frontend/services/apiClient";
+import { useToast } from "../frontend/hooks/useToast";
+import { calculateTax } from "../frontend/services/taxService";
 
 const CheckoutPage: React.FC = () => {
   const { cartItems, clearCart, itemCount } = useCart();

@@ -1,9 +1,9 @@
 
 import React, { useState } from 'react';
-import { useToast } from '../hooks/useToast';
-import { usePages } from '../context/PagesContext';
-import { ContactPageContent, ContactFormField } from '../types';
-import Spinner from '../components/Spinner';
+import { useToast } from '../frontend/hooks/useToast';
+import { usePages } from '../frontend/context/PagesContext';
+import { ContactPageContent, ContactFormField } from '../frontend/types';
+import Spinner from '../frontend/components/Spinner';
 
 const ContactPage: React.FC = () => {
   const { pages, isLoading } = usePages();

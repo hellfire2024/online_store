@@ -1,9 +1,9 @@
 
 import React, { useState } from 'react';
-import { useProducts } from '../context/ProductContext';
-import ProductCard from '../components/ProductCard';
-import Spinner from '../components/Spinner';
-import Pagination from '../components/Pagination';
+import { useProducts } from '../frontend/context/ProductContext';
+import ProductCard from '../frontend/components/ProductCard';
+import Spinner from '../frontend/components/Spinner';
+import Pagination from '../frontend/components/Pagination';
 
 const StorePage: React.FC = () => {
   const { products, isLoading } = useProducts();

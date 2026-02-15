@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Product, GalleryImage } from "../types";
-import { useProducts } from "../context/ProductContext";
-import { useGalleries } from "../context/GalleryContext";
-import { getDesignIdeas } from "../services/geminiService";
-import { useCart } from "../context/CartContext";
-import { generateSlug } from "../services/slugService";
-import Spinner from "../components/Spinner";
-import DragDropFileUpload from "../components/DragDropFileUpload";
+import { Product, GalleryImage } from "../frontend/types";
+import { useProducts } from "../frontend/context/ProductContext";
+import { useGalleries } from "../frontend/context/GalleryContext";
+import { getDesignIdeas } from "../frontend/services/geminiService";
+import { useCart } from "../frontend/context/CartContext";
+import { generateSlug } from "../frontend/services/slugService";
+import Spinner from "../frontend/components/Spinner";
+import DragDropFileUpload from "../frontend/components/DragDropFileUpload";
 
 type CustomizationTab = "gallery" | "upload" | "ideas";
 

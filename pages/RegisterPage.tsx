@@ -1,12 +1,12 @@
 import React, { useState } from "react";
-import { useCustomerAuth } from "../context/CustomerAuthContext";
+import { useCustomerAuth } from "../frontend/context/CustomerAuthContext";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
-import { useToast } from "../hooks/useToast";
+import { useToast } from "../frontend/hooks/useToast";
 import {
   validatePassword,
   getPasswordStrengthColor,
   getPasswordStrengthBgColor,
-} from "../services/passwordValidator";
+} from "../frontend/services/passwordValidator";
 
 const RegisterPage: React.FC = () => {
   // Initialize from sessionStorage or default to empty

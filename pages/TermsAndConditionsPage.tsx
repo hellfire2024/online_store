@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { useSiteSettings } from "../context/SiteSettingsContext";
+import { useSiteSettings } from "../frontend/context/SiteSettingsContext";
 
 const TermsAndConditionsPage: React.FC = () => {
   const navigate = useNavigate();

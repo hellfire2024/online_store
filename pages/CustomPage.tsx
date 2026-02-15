@@ -1,8 +1,8 @@
 
 import React from 'react';
 import { useLocation } from 'react-router-dom';
-import { usePages } from '../context/PagesContext';
-import { CustomPageContent } from '../types';
+import { usePages } from '../frontend/context/PagesContext';
+import { CustomPageContent } from '../frontend/types';
 
 const CustomPage: React.FC = () => {
   const { pages } = usePages();

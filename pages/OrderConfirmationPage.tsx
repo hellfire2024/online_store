@@ -1,10 +1,10 @@
 import React, { useEffect, useRef } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
-import { useSiteSettings } from "../context/SiteSettingsContext";
+import { useSiteSettings } from "../frontend/context/SiteSettingsContext";
 import {
   downloadInvoicePDF,
   DEFAULT_TEMPLATE,
-} from "../services/pdfInvoiceGenerator";
+} from "../frontend/services/pdfInvoiceGenerator";
 
 interface OrderDetails {
   orderNumber: string;

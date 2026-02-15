@@ -1,8 +1,8 @@
 import React from "react";
-import { useSiteSettings } from "../context/SiteSettingsContext";
-import { usePages } from "../context/PagesContext";
+import { useSiteSettings } from "../frontend/context/SiteSettingsContext";
+import { usePages } from "../frontend/context/PagesContext";
 import { AboutPageContent } from "../types";
-import Spinner from "../components/Spinner";
+import Spinner from "../frontend/components/Spinner";
 
 const AboutPage: React.FC = () => {
   const { siteSettings } = useSiteSettings();

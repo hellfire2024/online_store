@@ -1,17 +1,17 @@
 import React, { useState, useEffect, useMemo } from "react";
-import ProductCard from "../components/ProductCard";
-import RecentCreationsGallery from "../components/RecentCreationsGallery";
-import { useProducts } from "../context/ProductContext";
-import { useReviews } from "../context/ReviewsContext";
-import { usePages } from "../context/PagesContext";
-import { useSiteSettings } from "../context/SiteSettingsContext";
-import { useCustomerAuth } from "../context/CustomerAuthContext";
-import { useServices } from "../context/ServicesContext";
-import { useGalleries } from "../context/GalleryContext";
-import { HomePageContent } from "../types";
-import Spinner from "../components/Spinner";
-import { useToast } from "../hooks/useToast";
-import * as Icons from "../components/Icons";
+import ProductCard from "../frontend/components/ProductCard";
+import RecentCreationsGallery from "../frontend/components/RecentCreationsGallery";
+import { useProducts } from "../frontend/context/ProductContext";
+import { useReviews } from "../frontend/context/ReviewsContext";
+import { usePages } from "../frontend/context/PagesContext";
+import { useSiteSettings } from "../frontend/context/SiteSettingsContext";
+import { useCustomerAuth } from "../frontend/context/CustomerAuthContext";
+import { useServices } from "../frontend/context/ServicesContext";
+import { useGalleries } from "../frontend/context/GalleryContext";
+import { HomePageContent } from "../frontend/types";
+import Spinner from "../frontend/components/Spinner";
+import { useToast } from "../frontend/hooks/useToast";
+import * as Icons from "../frontend/components/Icons";
 
 const HomePage: React.FC = () => {
   const { products, isLoading: productsLoading } = useProducts();

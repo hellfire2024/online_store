@@ -1,9 +1,9 @@
 import React, { useState } from "react";
-import { useCustomerAuth } from "../context/CustomerAuthContext";
-import { useToast } from "../hooks/useToast";
 import { useNavigate } from "react-router-dom";
+import { useCustomerAuth } from "../frontend/context/CustomerAuthContext";
+import { useToast } from "../frontend/hooks/useToast";
 import { CustomerAddress } from "../types";
-import Pagination from "../components/Pagination";
+import Pagination from "../frontend/components/Pagination";
 
 const CustomerAddressesPage: React.FC = () => {
   const navigate = useNavigate();
