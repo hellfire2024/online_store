@@ -5,6 +5,7 @@ import { ProductProvider } from "../context/ProductContext";
 import { ReviewsProvider } from "../context/ReviewsContext";
 import { PagesProvider } from "../context/PagesContext";
 import { SiteSettingsProvider } from "../context/SiteSettingsContext";
+import { ToastProvider } from "../hooks/useToast";
 import "./index.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
@@ -12,9 +13,11 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     <ProductProvider>
       <ReviewsProvider>
         <SiteSettingsProvider>
-          <PagesProvider>
-            <App />
-          </PagesProvider>
+          <ToastProvider>
+            <PagesProvider>
+              <App />
+            </PagesProvider>
+          </ToastProvider>
         </SiteSettingsProvider>
       </ReviewsProvider>
     </ProductProvider>
