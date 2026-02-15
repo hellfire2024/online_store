@@ -1,17 +1,17 @@
 import React, { useEffect, useState, useRef } from "react";
-import { useCustomerAuth } from "../frontend/context/CustomerAuthContext";
 import { useNavigate, Link } from "react-router-dom";
-import { useToast } from "../frontend/hooks/useToast";
-import { useSiteSettings } from "../frontend/context/SiteSettingsContext";
-import { useCart } from "../frontend/context/CartContext";
-import { useProducts } from "../frontend/context/ProductContext";
-import { CustomerOrder, CartItem } from "../frontend/types";
-import Pagination from "../frontend/components/Pagination";
+import { useCustomerAuth } from "../context/CustomerAuthContext";
+import { useToast } from "../hooks/useToast";
+import { useSiteSettings } from "../context/SiteSettingsContext";
+import { useCart } from "../context/CartContext";
+import { useProducts } from "../context/ProductContext";
+import { CustomerOrder, CartItem } from "../types";
+import Pagination from "../components/Pagination";
 import {
   downloadInvoicePDF,
   InvoiceData,
   DEFAULT_TEMPLATE,
-} from "../frontend/services/pdfInvoiceGenerator";
+} from "../services/pdfInvoiceGenerator";
 
 // Watermarked Image Component for Order Display
 const WatermarkedOrderImage: React.FC<{ src: string }> = ({ src }) => {
@@ -709,7 +709,7 @@ const CustomerOrdersPage: React.FC = () => {
                                 >
                                   <div className="flex gap-3">
                                     {productImageSrc && (
-                                      <div className="flex-shrink-0">
+                                      <div className="shrink-0">
                                         <img
                                           src={productImageSrc}
                                           alt={productName}

@@ -107,7 +107,7 @@ const GalleriesManagement: React.FC = () => {
 
   return (
     <div className="w-full max-w-full overflow-hidden">
-      <h1 className="text-2xl sm:text-3xl font-bold text-white mb-6 sm:mb-8 break-words">
+      <h1 className="text-2xl sm:text-3xl font-bold text-white mb-6 sm:mb-8 wrap-break-word">
         Galleries Management
       </h1>
 
@@ -141,7 +141,7 @@ const GalleriesManagement: React.FC = () => {
                     : "bg-slate-700 hover:bg-slate-600 text-gray-300"
                 }`}
               >
-                <span className="break-words pr-2 text-sm">{gallery.name}</span>
+                <span className="wrap-break-word pr-2 text-sm">{gallery.name}</span>
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -162,7 +162,7 @@ const GalleriesManagement: React.FC = () => {
           galleries.find((g) => g.id === selectedGallery) ? (
             <>
               <div className="flex flex-col gap-4 mb-6">
-                <h2 className="text-xl sm:text-2xl font-semibold text-white break-words">
+                <h2 className="text-xl sm:text-2xl font-semibold text-white wrap-break-word">
                   {galleries.find((g) => g.id === selectedGallery)?.name}
                 </h2>
                 <div className="flex flex-col sm:flex-row flex-wrap gap-2">
@@ -222,7 +222,7 @@ const GalleriesManagement: React.FC = () => {
                           <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col p-3 gap-2">
                             <div className="flex-1 min-h-0 overflow-hidden">
                               <p
-                                className="text-white text-xs break-words overflow-hidden overflow-ellipsis"
+                                className="text-white text-xs wrap-break-word overflow-hidden overflow-ellipsis"
                                 style={{
                                   display: "-webkit-box",
                                   WebkitLineClamp: 3,
@@ -232,7 +232,7 @@ const GalleriesManagement: React.FC = () => {
                                 {image.name}
                               </p>
                             </div>
-                            <div className="flex justify-end items-end flex-shrink-0">
+                            <div className="flex justify-end items-end shrink-0">
                               <button
                                 onClick={() => {
                                   if (

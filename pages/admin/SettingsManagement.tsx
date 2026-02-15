@@ -67,7 +67,7 @@ const DraggableItem: React.FC<{
             e.stopPropagation();
             onDelete(item.id);
           }}
-          className="text-gray-400 hover:text-red-500 transition-colors flex-shrink-0 ml-2"
+          className="text-gray-400 hover:text-red-500 transition-colors shrink-0 ml-2"
           title="Delete item"
         >
           <TrashIcon className="w-4 h-4" />
@@ -3065,7 +3065,7 @@ const SettingsManagement: React.FC = () => {
                           setSettings({ ...settings, segmentRules: updated });
                           addToast("Segment removed", "info");
                         }}
-                        className="text-gray-400 hover:text-red-500 transition-colors flex-shrink-0"
+                        className="text-gray-400 hover:text-red-500 transition-colors shrink-0"
                         title="Delete segment"
                       >
                         <TrashIcon className="w-4 h-4" />

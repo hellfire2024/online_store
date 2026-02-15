@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { useToast } from "../frontend/hooks/useToast";
+import { useToast } from "../hooks/useToast";
 
 const ForgotPasswordPage: React.FC = () => {
   const [email, setEmail] = useState("");

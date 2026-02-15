@@ -45,7 +45,7 @@ const RecentCreationsGallery: React.FC<RecentCreationsGalleryProps> = ({
   };
 
   return (
-    <div className="py-16 bg-gradient-to-b from-slate-900 to-slate-800">
+    <div className="py-16 bg-linear-to-b from-slate-900 to-slate-800">
       <div className="max-w-6xl mx-auto px-4">
         <h2 className="text-4xl font-bold text-white text-center mb-12">
           Recent Creations
@@ -115,7 +115,7 @@ const RecentCreationsGallery: React.FC<RecentCreationsGalleryProps> = ({
             <button
               key={img.id}
               onClick={() => setCurrentIndex(idx)}
-              className={`flex-shrink-0 h-24 w-24 rounded-lg overflow-hidden border-2 transition-all duration-200 ${
+              className={`shrink-0 h-24 w-24 rounded-lg overflow-hidden border-2 transition-all duration-200 ${
                 idx === currentIndex
                   ? "border-blue-500 ring-2 ring-blue-400"
                   : "border-slate-600 hover:border-slate-500"

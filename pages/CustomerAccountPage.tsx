@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useCustomerAuth } from "../frontend/context/CustomerAuthContext";
-import { useToast } from "../frontend/hooks/useToast";
+import { useCustomerAuth } from "../context/CustomerAuthContext";
+import { useToast } from "../hooks/useToast";
 
 const CustomerAccountPage: React.FC = () => {
   const { customer, updateProfile, updateEmailPreferences, logout } =

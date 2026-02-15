@@ -1,7 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { useCart } from "../frontend/context/CartContext";
-import { CartItem } from "../frontend/types";
+import { useCart } from "../context/CartContext";
+import { CartItem } from "../types";
 
 const TrashIcon: React.FC = () => (
   <svg

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
-import { useCustomerAuth } from "../frontend/context/CustomerAuthContext";
-import { useToast } from "../frontend/hooks/useToast";
+import { useCustomerAuth } from "../context/CustomerAuthContext";
+import { useToast } from "../hooks/useToast";
 
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState("");

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useCustomerAuth } from "../frontend/context/CustomerAuthContext";
-import { useSiteSettings } from "../frontend/context/SiteSettingsContext";
-import { useToast } from "../frontend/hooks/useToast";
-import apiClient from "../frontend/services/apiClient";
+import { useCustomerAuth } from "../context/CustomerAuthContext";
+import { useSiteSettings } from "../context/SiteSettingsContext";
+import { useToast } from "../hooks/useToast";
+import apiClient from "../services/apiClient";
 
 interface SupportTicket {
   id: string;

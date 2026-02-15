@@ -331,7 +331,7 @@ const GalleriesManagement: React.FC = () => {
                       )}
                     </div>
                     {currentImages.length > 0 && (
-                      <div className="mt-4 flex-shrink-0">
+                      <div className="mt-4 shrink-0">
                         <Pagination
                           currentPage={currentPage}
                           totalItems={currentImages.length}

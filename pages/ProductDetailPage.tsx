@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Product, GalleryImage } from "../frontend/types";
-import { useProducts } from "../frontend/context/ProductContext";
-import { useGalleries } from "../frontend/context/GalleryContext";
-import { getDesignIdeas } from "../frontend/services/geminiService";
-import { useCart } from "../frontend/context/CartContext";
-import { generateSlug } from "../frontend/services/slugService";
-import Spinner from "../frontend/components/Spinner";
-import DragDropFileUpload from "../frontend/components/DragDropFileUpload";
+import { Product, GalleryImage } from "../types";
+import { useProducts } from "../context/ProductContext";
+import { useGalleries } from "../context/GalleryContext";
+import { getDesignIdeas } from "../services/geminiService";
+import { useCart } from "../context/CartContext";
+import { generateSlug } from "../services/slugService";
+import Spinner from "../components/Spinner";
+import DragDropFileUpload from "../components/DragDropFileUpload";
 
 type CustomizationTab = "gallery" | "upload" | "ideas";
 
@@ -49,7 +49,7 @@ const ProductDetailPage: React.FC = () => {
   const [selectedOptions, setSelectedOptions] = useState<{
     [listId: string]: string[];
   }>({});
-  
+
   useEffect(() => {
     if (!product?.allowCustomImageUpload && activeTab === "upload") {
       setActiveTab("gallery");
@@ -458,7 +458,8 @@ const ProductDetailPage: React.FC = () => {
                   />
                   {product.customImageUploadPrice ? (
                     <p className="text-xs text-gray-400 mt-3 text-center">
-                      Upload fee: +${Number(product.customImageUploadPrice).toFixed(2)}
+                      Upload fee: +$
+                      {Number(product.customImageUploadPrice).toFixed(2)}
                     </p>
                   ) : null}
                 </div>

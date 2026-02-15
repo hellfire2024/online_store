@@ -1,12 +1,12 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useCustomerAuth } from "../frontend/context/CustomerAuthContext";
-import { useToast } from "../frontend/hooks/useToast";
+import { useCustomerAuth } from "../context/CustomerAuthContext";
+import { useToast } from "../hooks/useToast";
 import {
   validatePassword,
   getPasswordStrengthColor,
   getPasswordStrengthBgColor,
-} from "../frontend/services/passwordValidator";
+} from "../services/passwordValidator";
 
 const ChangePasswordPage: React.FC = () => {
   const navigate = useNavigate();
