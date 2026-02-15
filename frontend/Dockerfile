@@ -2,14 +2,14 @@
 # It expects all build files to be present in the same directory.
 FROM node:20-alpine AS build
 WORKDIR /app
-COPY package.json ./
-COPY vite.config.ts ./
-COPY index.html ./
-COPY public ./public
 
-# Copy shared pages directory from monorepo root
-COPY ../pages ./pages
-COPY src ./src
+# Copy files from monorepo root context
+COPY frontend/package.json ./
+COPY frontend/vite.config.ts ./
+COPY frontend/index.html ./
+COPY frontend/public ./public
+COPY pages ./pages
+COPY frontend/src ./src
 
 # Debug: Show files before and after build, and log errors if build fails
 COPY verify-frontend-build.js ./verify-frontend-build.js
