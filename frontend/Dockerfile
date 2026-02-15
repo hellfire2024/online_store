@@ -6,6 +6,9 @@ COPY package.json ./
 COPY vite.config.ts ./
 COPY index.html ./
 COPY public ./public
+
+# Copy shared pages directory from monorepo root
+COPY ../pages ./pages
 COPY src ./src
 
 # Debug: Show files before and after build, and log errors if build fails
