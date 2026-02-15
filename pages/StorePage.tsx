@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { useProducts } from './context/ProductContext';
+import { useProducts } from '../context/ProductContext';
 import ProductCard from '../components/ProductCard';
 import Spinner from '../components/Spinner';
 import Pagination from '../components/Pagination';
