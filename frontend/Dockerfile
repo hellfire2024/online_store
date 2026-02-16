@@ -4,7 +4,8 @@ FROM node:20-alpine AS build
 WORKDIR /app
 
 COPY frontend/package.json ./
-RUN if [ -f ./frontend/.env ]; then cp ./frontend/.env ./.env; else cp ./frontend/.env.example ./.env; fi
+COPY frontend/.env ./.env
+COPY frontend/.env.example ./.env.example
 COPY frontend/vite.config.ts ./
 COPY frontend/index.html ./
 COPY ../tailwind.config.js ./tailwind.config.js
