@@ -1,21 +1,33 @@
 import mysql from "mysql2/promise";
-import dotenv from "dotenv";
+import mysql from "mysql2/promise";
+import fs from "fs";
+import path from "path";
 
-dotenv.config();
-// Debug log environment variables for DB connection
-console.log("🔍 DB_USER:", process.env.DB_USER);
-console.log("🔍 DB_PASSWORD:", process.env.DB_PASSWORD);
-console.log("🔍 DB_HOST:", process.env.DB_HOST);
-console.log("🔍 DB_PORT:", process.env.DB_PORT);
-console.log("🔍 DB_NAME:", process.env.DB_NAME);
+// Load DB config from site_settings table (runtime config)
+function getDbConfigFromSettings(): any {
+  try {
+    const settingsPath = path.join(process.cwd(), "db", "site_settings.json");
+    if (!fs.existsSync(settingsPath)) {
+      throw new Error("site_settings.json not found");
+    }
+    const settingsRaw = fs.readFileSync(settingsPath, "utf8");
+    const settings = JSON.parse(settingsRaw);
+    return settings.dbConfig || {};
+  } catch (e) {
+    console.error("❌ Failed to load DB config from site_settings.json:", e);
+    return {};
+  }
+}
 
 // Database connection pool configuration
 const poolConfig = {
-  host: process.env.DB_HOST || "localhost",
-  port: parseInt(process.env.DB_PORT || "3306"),
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_DATABASE || process.env.DB_NAME,
+const dbConfig = getDbConfigFromSettings();
+const poolConfig = {
+  host: dbConfig.host || "localhost",
+  port: parseInt(dbConfig.port || "3306"),
+  user: dbConfig.user || "root",
+  password: dbConfig.password || "",
+  database: dbConfig.database || "online_store",
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
