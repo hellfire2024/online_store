@@ -4,8 +4,9 @@ FROM node:20-alpine AS build
 WORKDIR /app
 
 COPY frontend/package.json ./
-COPY frontend/.env ./.env
 COPY frontend/.env.example ./.env.example
+# If .env is missing, copy .env.example as .env
+RUN if [ ! -f .env ]; then cp .env.example .env; fi
 # If .env is missing, copy .env.example as .env
 RUN if [ ! -f .env ]; then cp .env.example .env; fi
 COPY frontend/vite.config.ts ./
