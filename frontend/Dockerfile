@@ -5,8 +5,12 @@ WORKDIR /app
 
 COPY frontend/package.json ./
 COPY frontend/.env.example ./.env.example
+ARG VITE_API_URL
+COPY frontend/.env.example ./.env.example
 # If .env is missing, copy .env.example as .env
 RUN if [ ! -f .env ]; then cp .env.example .env; fi
+# If VITE_API_URL is provided as build ARG, override .env
+RUN if [ ! -z "$VITE_API_URL" ]; then sed -i "s|^VITE_API_URL=.*|VITE_API_URL=$VITE_API_URL|" .env; fi
 # If .env is missing, copy .env.example as .env
 RUN if [ ! -f .env ]; then cp .env.example .env; fi
 COPY frontend/vite.config.ts ./
