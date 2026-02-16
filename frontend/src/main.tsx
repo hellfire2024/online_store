@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
 import "./index.css";
-import { setApiClientBaseUrl } from "../../services/apiClient";
+import { setApiClientBaseUrl } from "../services/apiClient";
 
 function Root() {
   const [loading, setLoading] = useState(true);
