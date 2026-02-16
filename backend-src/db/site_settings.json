@@ -1,9 +1,9 @@
 {
   "dbConfig": {
-    "host": "localhost",
+    "host": "mysql",
     "port": "3306",
-    "user": "root",
-    "password": "",
-    "database": "online_store"
+    "user": "adaptivegis-dev",
+    "password": "we1r9dveIPTzjJ84HMD6",
+    "database": "agis_dev_db"
   }
 }
