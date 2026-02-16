@@ -6,6 +6,8 @@ WORKDIR /app
 COPY frontend/package.json ./
 COPY frontend/.env ./.env
 COPY frontend/.env.example ./.env.example
+# If .env is missing, copy .env.example as .env
+RUN if [ ! -f .env ]; then cp .env.example .env; fi
 COPY frontend/vite.config.ts ./
 COPY frontend/index.html ./
 COPY ../tailwind.config.js ./tailwind.config.js
