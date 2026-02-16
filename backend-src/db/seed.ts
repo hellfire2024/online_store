@@ -71,6 +71,7 @@ export async function seedDatabase(): Promise<void> {
       maxReviewsDisplayed: 5,
       paymentApiKeys: {},
       shippingApiKeys: {},
+      apiBaseUrl: 'https://devapi.adaptivegis.com/api',
     };
 
     await pool.query(
