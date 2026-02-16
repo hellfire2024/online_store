@@ -128,15 +128,26 @@ app.set("trust proxy", 1);
 app.use(helmet());
 
 // CORS configuration
-const corsOrigin = (process.env.CORS_ORIGIN || "http://localhost:5173").replace(
-  /\/$/,
-  "",
-);
+// Allow both frontend and API domains in production
+const allowedOrigins = [
+  "https://dev.adaptivegis.com",
+  "https://devapi.adaptivegis.com",
+  "http://localhost:5173",
+  "http://localhost:3001"
+];
 app.use(
   cors({
-    origin: corsOrigin,
+    origin: function (origin, callback) {
+      // allow requests with no origin (like mobile apps, curl, etc.)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      } else {
+        return callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
-  }),
+  })
 );
 
 // Body parsing
