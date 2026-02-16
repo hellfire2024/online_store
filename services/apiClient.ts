@@ -1,6 +1,12 @@
 // API Client for Custom Threads Online Store
-const API_BASE_URL =
-  (import.meta as any).env?.VITE_API_URL || "http://localhost:3001/api";
+let API_BASE_URL = "https://devapi.adaptivegis.com/api";
+
+export function setApiClientBaseUrl(url: string) {
+  API_BASE_URL = url;
+  if (window && typeof window === "object") {
+    (window as any).__API_BASE_URL__ = url;
+  }
+}
 
 class ApiClient {
   private baseUrl: string;
