@@ -20,7 +20,6 @@ function getDbConfigFromSettings(): any {
 }
 
 // Database connection pool configuration
-const poolConfig = {
 const dbConfig = getDbConfigFromSettings();
 const poolConfig = {
   host: dbConfig.host || "localhost",
