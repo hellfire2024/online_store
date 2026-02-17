@@ -23,6 +23,9 @@ services:
       - DB_PORT=3306
       - DB_USER=adaptivegis-dev
       - DB_PASSWORD=we1r9dveIPTzjJ84HMD6
+      - SERVICE_URL_BACKEND=https://devapi.adaptivegis.com
+      - SERVICE_URL_FRONTEND=https://dev.adaptivegis.com
+      - SERVICE_URL_PHPMYADMIN=https://devmysql.adpativegis.com
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
       interval: 10s
@@ -34,10 +37,11 @@ services:
     restart: always
       ports:
         - "8081:80"
-      environment:
-        PMA_HOST: mysql
-        PMA_USER: adaptivegis-dev
-        PMA_PASSWORD: we1r9dveIPTzjJ84HMD6
+    environment:
+      PMA_HOST: mysql
+      PMA_USER: adaptivegis-dev
+      PMA_PASSWORD: we1r9dveIPTzjJ84HMD6
+      SERVICE_URL_PHPMYADMIN: https://devmysql.adpativegis.com
     depends_on:
       - mysql
 
@@ -78,6 +82,9 @@ services:
       backend:
         condition: service_healthy
     restart: unless-stopped
+    environment:
+      SERVICE_URL_BACKEND: https://devapi.adaptivegis.com
+      SERVICE_URL_FRONTEND: https://dev.adaptivegis.com
 
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:80"]
