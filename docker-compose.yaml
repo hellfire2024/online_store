@@ -34,10 +34,10 @@ services:
     restart: always
       ports:
         - "8081:80"
-    environment:
-      PMA_HOST: mysql
-      PMA_USER: adaptivegis-dev
-      PMA_PASSWORD: we1r9dveIPTzjJ84HMD6
+      environment:
+        PMA_HOST: mysql
+        PMA_USER: adaptivegis-dev
+        PMA_PASSWORD: we1r9dveIPTzjJ84HMD6
     depends_on:
       - mysql
 
