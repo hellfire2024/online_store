@@ -25,6 +25,9 @@ services:
       - DB_PASSWORD=we1r9dveIPTzjJ84HMD6
       - DB_NAME=agis_dev_db
       - JWT_SECRET=2b1e7e2e-4c6a-4e2b-8c7e-7e2e4c6a8c7e-2026-02-12
+      - SERVICE_URL_BACKEND=https://devapi.adaptivegis.com
+      - SERVICE_URL_FRONTEND=https://dev.adaptivegis.com
+      - SERVICE_URL_PHPMYADMIN=https://devmysql.adaptivegis.com
     depends_on:
       mysql:
         condition: service_healthy
@@ -53,6 +56,7 @@ services:
     environment:
       SERVICE_URL_BACKEND: https://devapi.adaptivegis.com
       SERVICE_URL_FRONTEND: https://dev.adaptivegis.com
+      SERVICE_URL_PHPMYADMIN: https://devmysql.adaptivegis.com
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:80"]
       interval: 10s
@@ -68,6 +72,9 @@ services:
       PMA_HOST: mysql
       PMA_USER: adaptivegis-dev
       PMA_PASSWORD: we1r9dveIPTzjJ84HMD6
+      SERVICE_URL_BACKEND: https://devapi.adaptivegis.com
+      SERVICE_URL_FRONTEND: https://dev.adaptivegis.com
+      SERVICE_URL_PHPMYADMIN: https://devmysql.adaptivegis.com
     depends_on:
       - mysql
     healthcheck:
