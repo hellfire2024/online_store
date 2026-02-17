@@ -65,6 +65,12 @@ services:
       MYSQL_PASSWORD: we1r9dveIPTzjJ84HMD6
     ports:
       - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   frontend:
     labels:
@@ -83,6 +89,9 @@ services:
         condition: service_healthy
     restart: unless-stopped
     environment:
+    depends_on:
+      mysql:
+        condition: service_healthy
       SERVICE_URL_BACKEND: https://devapi.adaptivegis.com
       SERVICE_URL_FRONTEND: https://dev.adaptivegis.com
 
