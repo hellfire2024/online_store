@@ -172,12 +172,13 @@ class ApiClient {
           continue;
         }
 
-        const error = await response
-          .json()
-          .catch((parseErr) => {
-            console.error(`[API] Failed to parse JSON for ${method} ${endpoint}:`, parseErr);
-            return { error: "Request failed" };
-          });
+        const error = await response.json().catch((parseErr) => {
+          console.error(
+            `[API] Failed to parse JSON for ${method} ${endpoint}:`,
+            parseErr,
+          );
+          return { error: "Request failed" };
+        });
         throw new Error(error.error || `HTTP ${response.status}`);
       }
     };
