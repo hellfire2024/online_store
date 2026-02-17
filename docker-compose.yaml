@@ -23,7 +23,12 @@ services:
       - DB_PORT=3306
       - DB_USER=adaptivegis-dev
       - DB_PASSWORD=we1r9dveIPTzjJ84HMD6
-      - DB_NAME=agis_dev_db
+      healthcheck:
+        test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+        interval: 10s
+        timeout: 5s
+        retries: 5
+        start_period: 20s
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
     restart: always
