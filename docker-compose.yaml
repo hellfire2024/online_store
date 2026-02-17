@@ -35,7 +35,7 @@ services:
       PMA_PASSWORD: we1r9dveIPTzjJ84HMD6
     depends_on:
       - mysql
-    restart: unless-stopped
+
     entrypoint: ["/bin/sh", "-c", "echo 'PWD:' $(pwd); echo 'Files:'; ls -al; echo 'ENVIRONMENT VARIABLES:'; printenv; echo 'DB_HOST='$DB_HOST; chmod +x /app/backend-src/wait-for-mysql.sh /app/backend-src/healthcheck-debug.sh; /app/backend-src/wait-for-mysql.sh npm start & /app/backend-src/healthcheck-debug.sh"]
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
