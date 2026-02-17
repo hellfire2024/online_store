@@ -24,6 +24,17 @@ services:
       - DB_USER=adaptivegis-dev
       - DB_PASSWORD=we1r9dveIPTzjJ84HMD6
       - DB_NAME=agis_dev_db
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    restart: always
+    ports:
+      - "8080:80"
+    environment:
+      PMA_HOST: mysql
+      PMA_USER: adaptivegis-dev
+      PMA_PASSWORD: we1r9dveIPTzjJ84HMD6
+    depends_on:
+      - mysql
     restart: unless-stopped
     entrypoint: ["/bin/sh", "-c", "echo 'PWD:' $(pwd); echo 'Files:'; ls -al; echo 'ENVIRONMENT VARIABLES:'; printenv; echo 'DB_HOST='$DB_HOST; chmod +x /app/backend-src/wait-for-mysql.sh /app/backend-src/healthcheck-debug.sh; /app/backend-src/wait-for-mysql.sh npm start & /app/backend-src/healthcheck-debug.sh"]
     healthcheck:
