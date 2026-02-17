@@ -44,7 +44,6 @@ services:
       PMA_HOST: mysql
       PMA_USER: adaptivegis-dev
       PMA_PASSWORD: we1r9dveIPTzjJ84HMD6
-      SERVICE_URL_PHPMYADMIN: https://devmysql.adaptivegis.com
     depends_on:
       - mysql
     healthcheck:
