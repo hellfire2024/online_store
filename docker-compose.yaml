@@ -89,9 +89,6 @@ services:
         condition: service_healthy
     restart: unless-stopped
     environment:
-    depends_on:
-      mysql:
-        condition: service_healthy
       SERVICE_URL_BACKEND: https://devapi.adaptivegis.com
       SERVICE_URL_FRONTEND: https://dev.adaptivegis.com
 
