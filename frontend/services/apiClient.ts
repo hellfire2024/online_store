@@ -1,5 +1,5 @@
 // API Client for Custom Threads Online Store
-let API_BASE_URL = "https://devapi.adaptivegis.com/api";
+let API_BASE_URL = "http://localhost:3001/api";
 
 export function setApiClientBaseUrl(url: string) {
   API_BASE_URL = url;
