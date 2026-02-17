@@ -25,7 +25,7 @@ services:
       - DB_PASSWORD=we1r9dveIPTzjJ84HMD6
       - SERVICE_URL_BACKEND=https://devapi.adaptivegis.com
       - SERVICE_URL_FRONTEND=https://dev.adaptivegis.com
-      - SERVICE_URL_PHPMYADMIN=https://devmysql.adpativegis.com
+      - SERVICE_URL_PHPMYADMIN=https://devmysql.adaptivegis.com
     depends_on:
       mysql:
         condition: service_healthy
@@ -44,7 +44,7 @@ services:
       PMA_HOST: mysql
       PMA_USER: adaptivegis-dev
       PMA_PASSWORD: we1r9dveIPTzjJ84HMD6
-      SERVICE_URL_PHPMYADMIN: https://devmysql.adpativegis.com
+      SERVICE_URL_PHPMYADMIN: https://devmysql.adaptivegis.com
     depends_on:
       - mysql
     healthcheck:
