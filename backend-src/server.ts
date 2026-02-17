@@ -133,7 +133,7 @@ const allowedOrigins = [
   "https://dev.adaptivegis.com",
   "https://devapi.adaptivegis.com",
   "http://localhost:5173",
-  "http://localhost:3001"
+  "http://localhost:3001",
 ];
 app.use(
   cors({
@@ -147,7 +147,7 @@ app.use(
       }
     },
     credentials: true,
-  })
+  }),
 );
 
 // Body parsing
@@ -194,7 +194,7 @@ app.get("/health", (req: Request, res: Response) => {
     env: process.env.NODE_ENV,
     host: req.hostname,
     ip: req.ip,
-    url: req.protocol + '://' + req.get('host') + req.originalUrl,
+    url: req.protocol + "://" + req.get("host") + req.originalUrl,
     headers: req.headers,
   };
   appendLog("💚 Health check accessed: " + JSON.stringify(healthStatus));
