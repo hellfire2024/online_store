@@ -21,7 +21,7 @@ function getDbConfigFromSettings(): any {
 // Database connection pool configuration
 const dbConfig = getDbConfigFromSettings();
 const poolConfig = {
-  host: dbConfig.host || "localhost",
+  host: dbConfig.host,
   port: parseInt(dbConfig.port || "3306"),
   user: dbConfig.user || "root",
   password: dbConfig.password || "",

@@ -132,8 +132,7 @@ app.use(helmet());
 const allowedOrigins = [
   "https://dev.adaptivegis.com",
   "https://devapi.adaptivegis.com",
-  "http://localhost:5173",
-  "http://localhost:3001",
+  "https://devapi.adaptivegis.com",
 ];
 app.use(
   cors({

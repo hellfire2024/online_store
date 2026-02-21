@@ -104,7 +104,7 @@ const StaffManagement: React.FC = () => {
         const formData = new FormData();
         formData.append("image", selectedImageFile);
 
-        const response = await fetch("http://localhost:3001/api/upload/image", {
+        const response = await fetch("https://devapi.adaptivegis.com/api/upload/image", {
           method: "POST",
           body: formData,
         });

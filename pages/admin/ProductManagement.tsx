@@ -353,7 +353,7 @@ const ProductManagement: React.FC = () => {
         formData.append("type", "products");
 
         const apiUrl =
-          import.meta.env.VITE_API_URL || "http://localhost:3001/api";
+          import.meta.env.VITE_API_URL || "https://devapi.adaptivegis.com/api";
         const response = await fetch(`${apiUrl}/upload/image`, {
           method: "POST",
           body: formData,

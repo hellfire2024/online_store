@@ -109,7 +109,7 @@ app.set("trust proxy", 1);
 // Security headers
 app.use(helmet());
 // CORS configuration
-const corsOrigin = (process.env.CORS_ORIGIN || "http://localhost:5173").replace(/\/$/, "");
+const corsOrigin = (process.env.CORS_ORIGIN || "https://devapi.adaptivegis.com").replace(/\/$/, "");
 app.use(cors({
     origin: corsOrigin,
     credentials: true,
