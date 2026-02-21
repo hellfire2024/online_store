@@ -34,7 +34,7 @@ services:
       mysql:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "https://devapi.adaptivegis.com/health"]
+      test: ["CMD", "curl", "-f", "http://devapi.adaptivegis.com/health"]
       interval: 10s
       timeout: 5s
       retries: 5
