@@ -2,7 +2,7 @@
 # It expects all build files to be present in the same directory.
 FROM node:20.11.1-alpine AS build
 WORKDIR /app
-RUN apt-get update && apt-get upgrade -y && apt-get clean
+RUN apk update && apk upgrade && rm -rf /var/cache/apk/*
 
 COPY frontend/package.json ./
 COPY frontend/.env.example ./.env.example
