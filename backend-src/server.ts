@@ -276,9 +276,8 @@ async function startServer() {
     appendLog(`📍 Binding to: devapi.adaptivegis.com:${PORT}`);
     console.log(`📍 Binding to: devapi.adaptivegis.com:${PORT}`);
 
-    // Start listening on devapi.adaptivegis.com DNS
-    // This is required for DNS-only networking
-    const server = app.listen(PORT);
+    // Start listening on all interfaces for healthcheck compatibility
+    const server = app.listen(PORT, '0.0.0.0');
 
     appendLog(`✔️  app.listen() called successfully, server object created`);
     console.log(`✔️  app.listen() called successfully, server object created`);
@@ -288,8 +287,8 @@ async function startServer() {
       appendLog(separator);
       appendLog(`🚀 SERVER LISTENING - port ${PORT}`);
       appendLog(`📍 Environment: ${process.env.NODE_ENV || "development"}`);
-      appendLog(`🌐 Bound to: devapi.adaptivegis.com (DNS-only)`);
-      appendLog(`🌐 URL: https://devapi.adaptivegis.com`);
+      appendLog(`🌐 Bound to: 0.0.0.0 (all interfaces)`);
+      appendLog(`🌐 URL: http://127.0.0.1:${PORT}`);
       if (DEMO_MODE) {
         appendLog(`⚠️  DEMO_MODE: serving mock data`);
       }
@@ -299,8 +298,8 @@ async function startServer() {
       console.log(separator);
       console.log(`🚀 SERVER LISTENING - port ${PORT}`);
       console.log(`📍 Environment: ${process.env.NODE_ENV || "development"}`);
-      console.log(`🌐 Bound to: devapi.adaptivegis.com (DNS-only)`);
-      console.log(`🌐 URL: https://devapi.adaptivegis.com`);
+      console.log(`🌐 Bound to: 0.0.0.0 (all interfaces)`);
+      console.log(`🌐 URL: http://127.0.0.1:${PORT}`);
       if (DEMO_MODE) {
         console.log(`⚠️  DEMO_MODE: serving mock data`);
       }
