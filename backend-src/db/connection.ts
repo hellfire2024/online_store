@@ -38,13 +38,23 @@ export const pool = mysql.createPool(poolConfig);
 
 // Test connection function
 export async function testConnection(): Promise<void> {
-  try {
-    const connection = await pool.getConnection();
-    console.log("✅ Database connection established successfully");
-    connection.release();
-  } catch (error) {
-    console.error("❌ Database connection failed:", error);
-    throw error;
+  const maxRetries = 10;
+  const retryDelay = 3000; // ms
+  let attempt = 0;
+  while (attempt < maxRetries) {
+    try {
+      const connection = await pool.getConnection();
+      console.log("✅ Database connection established successfully");
+      connection.release();
+      return;
+    } catch (error) {
+      attempt++;
+      console.error(`❌ Database connection failed (attempt ${attempt}):`, error);
+      if (attempt >= maxRetries) {
+        throw error;
+      }
+      await new Promise((resolve) => setTimeout(resolve, retryDelay));
+    }
   }
 }
 
