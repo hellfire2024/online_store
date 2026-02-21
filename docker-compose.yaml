@@ -79,6 +79,7 @@ services:
       timeout: 10s
       retries: 20
       start_period: 120s
+    command: /bin/sh -c "echo 'ServerName devmysql.adaptivegis.com' >> /etc/apache2/apache2.conf && docker-php-entrypoint apache2-foreground"
   mysql:
     image: mysql:8.0
     restart: unless-stopped
