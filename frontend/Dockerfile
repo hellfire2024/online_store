@@ -1,7 +1,8 @@
 # This Dockerfile is now for the frontend only, and should be placed in the frontend/ directory.
 # It expects all build files to be present in the same directory.
-FROM node:20-alpine AS build
+FROM node:20.11.1-slim AS build
 WORKDIR /app
+RUN apt-get update && apt-get upgrade -y && apt-get clean
 
 COPY frontend/package.json ./
 COPY frontend/.env.example ./.env.example
@@ -34,10 +35,7 @@ RUN if [ ! -f /app/dist/index.html ] || [ ! -s /app/dist/index.html ]; then echo
 RUN echo "==== AFTER BUILD: files in /app/dist ====" && ls -al /app/dist && echo "==== CONTENTS OF /app/dist/index.html ====" && cat /app/dist/index.html
 RUN node verify-frontend-build.js
 
-FROM nginx:alpine
+FROM gcr.io/distroless/nginx-static:1.25
 COPY --from=build /app/dist /usr/share/nginx/html
 COPY frontend/nginx.conf /etc/nginx/nginx.conf
-RUN echo "==== CONTENTS OF /usr/share/nginx/html/index.html (final image) ====" && cat /usr/share/nginx/html/index.html
 EXPOSE 80
-HEALTHCHECK --interval=10s --timeout=5s --start-period=20s --retries=5 CMD curl -f http://localhost:80 || exit 1
-CMD ["nginx", "-g", "daemon off;"]

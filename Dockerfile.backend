@@ -1,7 +1,10 @@
 # Backend Dockerfile for Node/Express API (TypeScript)
-FROM node:20-alpine AS build
+
+# Build stage
+FROM node:20.11.1-slim AS build
 ENV DB_HOST=mysql
 WORKDIR /app
+RUN apt-get update && apt-get upgrade -y && apt-get clean
 COPY package.json .
 COPY tsconfig.backend.json .
 COPY backend-src ./backend-src
@@ -9,8 +12,8 @@ COPY verify-build.js .
 RUN npm install --frozen-lockfile || yarn install --frozen-lockfile
 RUN npm run build
 
-FROM node:20-alpine
-RUN apk add --no-cache curl
+# Runtime stage (distroless)
+FROM gcr.io/distroless/nodejs20-debian11
 ENV DB_HOST=mysql
 WORKDIR /app
 COPY --from=build /app/dist ./dist
@@ -18,7 +21,8 @@ COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/package.json ./package.json
 COPY --from=build /app/verify-build.js ./verify-build.js
 COPY --from=build /app/backend-src/wait-for-mysql.sh ./backend-src/wait-for-mysql.sh
-COPY backend-src/healthcheck-debug.sh ./backend-src/healthcheck-debug.sh
-COPY backend-src/db/site_settings.json ./db/site_settings.json
-CMD ["node", "dist/server.js"]
+COPY --from=build /app/backend-src/healthcheck-debug.sh ./backend-src/healthcheck-debug.sh
+COPY --from=build /app/backend-src/db/site_settings.json ./db/site_settings.json
+USER nonroot
 EXPOSE 3001
+CMD ["dist/server.js"]
