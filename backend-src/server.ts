@@ -287,8 +287,8 @@ async function startServer() {
       appendLog(separator);
       appendLog(`🚀 SERVER LISTENING - port ${PORT}`);
       appendLog(`📍 Environment: ${process.env.NODE_ENV || "development"}`);
-      appendLog(`🌐 Bound to: 0.0.0.0 (all interfaces)`);
-      appendLog(`🌐 URL: http://127.0.0.1:${PORT}`);
+      appendLog(`🌐 Bound to: devapi.adaptivegis.com (Docker DNS)`);
+      appendLog(`🌐 URL: https://devapi.adaptivegis.com`);
       if (DEMO_MODE) {
         appendLog(`⚠️  DEMO_MODE: serving mock data`);
       }
@@ -298,8 +298,8 @@ async function startServer() {
       console.log(separator);
       console.log(`🚀 SERVER LISTENING - port ${PORT}`);
       console.log(`📍 Environment: ${process.env.NODE_ENV || "development"}`);
-      console.log(`🌐 Bound to: 0.0.0.0 (all interfaces)`);
-      console.log(`🌐 URL: http://127.0.0.1:${PORT}`);
+      console.log(`🌐 Bound to: devapi.adaptivegis.com (Docker DNS)`);
+      console.log(`🌐 URL: https://devapi.adaptivegis.com`);
       if (DEMO_MODE) {
         console.log(`⚠️  DEMO_MODE: serving mock data`);
       }
