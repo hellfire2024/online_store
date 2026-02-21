@@ -27,7 +27,7 @@ cp .env.example .env
 
 Edit `.env`:
 ```env
-DB_HOST=localhost
+DB_HOST=devapi.adaptivegis.com
 DB_PORT=3306
 DB_USER=root
 DB_PASSWORD=your_password
@@ -90,7 +90,7 @@ npm run build
 npm start
 ```
 
-The API will be available at: `http://localhost:3001/api`
+The API will be available at: `https://devapi.adaptivegis.com/api`
 
 ## Frontend Setup
 
@@ -109,7 +109,7 @@ cp .env.example .env
 
 Edit `.env`:
 ```env
-VITE_API_URL=http://localhost:3001/api
+VITE_API_URL=https://devapi.adaptivegis.com/api
 ```
 
 ### 3. Start Frontend
@@ -118,7 +118,7 @@ VITE_API_URL=http://localhost:3001/api
 npm run dev
 ```
 
-Frontend will be available at: `http://localhost:5173`
+Frontend will be available at: `https://dev.adaptivegis.com`
 
 ## API Endpoints
 
@@ -215,7 +215,7 @@ pm2 save
 
 ### Migration Errors
 - Ensure database exists
-- Check user permissions: `GRANT ALL PRIVILEGES ON online_store.* TO 'user'@'localhost';`
+- Check user permissions: `GRANT ALL PRIVILEGES ON online_store.* TO 'user'@'devapi.adaptivegis.com';`
 
 ### Port Already in Use
 - Change `PORT` in `.env`

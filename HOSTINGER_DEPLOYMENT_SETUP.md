@@ -106,7 +106,7 @@ PORT=3001
 CORS_ORIGIN=https://yourdomain.com
 
 # Database (from Hostinger Control Panel)
-DB_HOST=localhost
+DB_HOST=devapi.adaptivegis.com
 DB_PORT=3306
 DB_USER=hostinger_username_dbuser
 DB_PASSWORD=your_db_password
@@ -127,7 +127,7 @@ LOG_LEVEL=info
 
 **Getting your database credentials:**
 1. Hostinger hPanel → Databases → Your Database
-2. Copy: Database Name, Database User, Password, Server (localhost)
+2. Copy: Database Name, Database User, Password, Server (devapi.adaptivegis.com)
 
 ---
 
@@ -147,7 +147,7 @@ cd server
 npm run start
 
 # Terminal 2: Test SMTP
-curl -X POST http://localhost:3001/api/smtp-test \
+curl -X POST https://devapi.adaptivegis.com/api/smtp-test \
   -H "Content-Type: application/json" \
   -d '{
     "host": "smtp.zoho.com",

@@ -90,7 +90,7 @@ Access Coolify at http://<your-vps-ip>:3000 and complete the web onboarding (set
 ## 6. Coolify Initial Setup
 
 1. Log in to Coolify web UI (http://<your-vps-ip>:3000).
-2. Add your VPS as a "Server" (should auto-detect localhost).
+2. Add your VPS as a "Server" (should auto-detect devapi.adaptivegis.com).
 3. Add your GitHub repository as a "Source" (connect via OAuth or deploy key).
 4. Create a new "Application" and select Docker Compose as the deployment type.
 5. Paste your docker-compose.yaml contents or point to the file in your repo.
