@@ -1,6 +1,6 @@
 # This Dockerfile is now for the frontend only, and should be placed in the frontend/ directory.
 # It expects all build files to be present in the same directory.
-FROM node:20.11.1-slim AS build
+FROM node:20.11.1-alpine AS build
 WORKDIR /app
 RUN apt-get update && apt-get upgrade -y && apt-get clean
 
