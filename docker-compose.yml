@@ -21,7 +21,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-    entrypoint: ["/app/backend-src/wait-for-mysql.sh", "node", "dist/server.js"]
+    entrypoint: ["/app/backend-src/wait-for-mysql.sh", "node", "/app/dist/server.js"]
 
   frontend:
     build:
