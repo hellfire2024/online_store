@@ -80,6 +80,38 @@ export async function runMigrations(): Promise<void> {
       FOREIGN KEY (gallery_id) REFERENCES galleries(id) ON DELETE SET NULL,
       INDEX idx_gallery (gallery_id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
+    `CREATE TABLE IF NOT EXISTS reviews (
+      id VARCHAR(36) PRIMARY KEY,
+      customer_id VARCHAR(36),
+      product_id VARCHAR(36),
+      rating INT NOT NULL,
+      comment TEXT,
+      images JSON,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE SET NULL,
+      FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE SET NULL,
+      INDEX idx_product (product_id),
+      INDEX idx_customer (customer_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
+    `CREATE TABLE IF NOT EXISTS staff (
+      id VARCHAR(36) PRIMARY KEY,
+      first_name VARCHAR(100),
+      last_name VARCHAR(100),
+      email VARCHAR(255) UNIQUE NOT NULL,
+      phone VARCHAR(50),
+      role VARCHAR(50),
+      is_active BOOLEAN DEFAULT TRUE,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      last_login TIMESTAMP NULL,
+      INDEX idx_email (email)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
+    `CREATE TABLE IF NOT EXISTS services (
+      id VARCHAR(36) PRIMARY KEY,
+      name VARCHAR(255) NOT NULL,
+      description TEXT,
+      price DECIMAL(10,2) NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
     `CREATE TABLE IF NOT EXISTS orders (
       id VARCHAR(36) PRIMARY KEY,
       customer_id VARCHAR(36),
@@ -160,6 +192,13 @@ export async function runMigrations(): Promise<void> {
 
     // Add columns for reviews
     await alterTableAddColumn("reviews", "images", "JSON");
+
+    // Add missing column for products
+    await alterTableAddColumn(
+      "products",
+      "low_stock_threshold",
+      "INT DEFAULT 0",
+    );
 
     console.log("✅ Database migrations completed successfully");
   } catch (error) {
