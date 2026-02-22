@@ -78,26 +78,6 @@ export async function runMigrations(): Promise<void> {
     console.error("❌ Migration failed:", error);
     throw error;
   }
-  await alterTableAddColumn("orders", "customer_name", "VARCHAR(255)");
-  await alterTableAddColumn("orders", "order_data", "LONGTEXT");
-  await alterTableAddColumn("orders", "shipper", "VARCHAR(100)");
-
-CREATE TABLE IF NOT EXISTS order_items (
-  id VARCHAR(36) PRIMARY KEY,
-  order_id VARCHAR(36) NOT NULL,
-  product_id VARCHAR(36) NOT NULL,
-  quantity INT NOT NULL,
-  unit_price DECIMAL(10,2) NOT NULL,
-  customization JSON,
-  selected_options JSON,
-  FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
-  FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE RESTRICT,
-  INDEX idx_order (order_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- ============================================
--- GALLERIES & MEDIA
--- ============================================
 
 CREATE TABLE IF NOT EXISTS galleries (
   id VARCHAR(36) PRIMARY KEY,
