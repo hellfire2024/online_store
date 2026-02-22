@@ -58,6 +58,7 @@ process.on("unhandledRejection", (reason, promise) => {
   process.exit(1);
 });
 
+
 appendLog("🔧 Loading environment variables...");
 dotenv.config();
 appendLog("✅ Environment loaded");
@@ -67,6 +68,11 @@ appendLog("🌍 NODE_ENV: " + process.env.NODE_ENV);
 appendLog("🔌 PORT: " + process.env.PORT);
 appendLog("🔒 CORS_ORIGIN: " + process.env.CORS_ORIGIN);
 appendLog("🗃️  SKIP_DB_CHECK: " + process.env.SKIP_DB_CHECK);
+appendLog("🔒 DB_HOST: " + process.env.DB_HOST);
+appendLog("🔒 DB_PORT: " + process.env.DB_PORT);
+appendLog("🔒 DB_USER: " + process.env.DB_USER);
+appendLog("🔒 DB_PASSWORD: " + process.env.DB_PASSWORD);
+appendLog("🔒 DB_NAME: " + process.env.DB_NAME);
 
 console.log("🔧 Loading environment variables...");
 console.log("✅ Environment loaded");
@@ -76,6 +82,35 @@ console.log("🌍 NODE_ENV:", process.env.NODE_ENV);
 console.log("🔌 PORT:", process.env.PORT);
 console.log("🔒 CORS_ORIGIN:", process.env.CORS_ORIGIN);
 console.log("🗃️  SKIP_DB_CHECK:", process.env.SKIP_DB_CHECK);
+console.log("🔒 DB_HOST:", process.env.DB_HOST);
+console.log("🔒 DB_PORT:", process.env.DB_PORT);
+console.log("🔒 DB_USER:", process.env.DB_USER);
+console.log("🔒 DB_PASSWORD:", process.env.DB_PASSWORD);
+console.log("🔒 DB_NAME:", process.env.DB_NAME);
+
+// Log DB config loaded from site_settings.json
+try {
+  const settingsPath = path.join(process.cwd(), "db", "site_settings.json");
+  if (fs.existsSync(settingsPath)) {
+    const settingsRaw = fs.readFileSync(settingsPath, "utf8");
+    const settings = JSON.parse(settingsRaw);
+    if (settings.dbConfig) {
+      appendLog("📄 Loaded DB config from site_settings.json:");
+      appendLog(JSON.stringify(settings.dbConfig, null, 2));
+      console.log("📄 Loaded DB config from site_settings.json:");
+      console.log(settings.dbConfig);
+    } else {
+      appendLog("⚠️  No dbConfig found in site_settings.json");
+      console.log("⚠️  No dbConfig found in site_settings.json");
+    }
+  } else {
+    appendLog("⚠️  site_settings.json not found");
+    console.log("⚠️  site_settings.json not found");
+  }
+} catch (e) {
+  appendLog("❌ Error reading site_settings.json: " + String(e));
+  console.log("❌ Error reading site_settings.json:", e);
+}
 
 appendLog("📦 Importing routes...");
 console.log("📦 Importing routes...");
