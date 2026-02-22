@@ -104,8 +104,8 @@ ALTER TABLE products
   MODIFY COLUMN image_url LONGTEXT;
 
 ALTER TABLE products
-  ADD COLUMN IF NOT EXISTS allow_custom_image_upload BOOLEAN DEFAULT FALSE,
-  ADD COLUMN IF NOT EXISTS custom_image_upload_price DECIMAL(10,2) DEFAULT 0.00;
+  ADD COLUMN allow_custom_image_upload BOOLEAN DEFAULT FALSE,
+  ADD COLUMN custom_image_upload_price DECIMAL(10,2) DEFAULT 0.00;
 
 -- Clean up: Set custom_image_upload_price to NULL for products where feature is disabled
 UPDATE products
@@ -164,10 +164,10 @@ CREATE TABLE IF NOT EXISTS orders (
 
 ALTER TABLE orders
   MODIFY COLUMN customer_id VARCHAR(36) NULL,
-  ADD COLUMN IF NOT EXISTS customer_email VARCHAR(255),
-  ADD COLUMN IF NOT EXISTS customer_name VARCHAR(255),
-  ADD COLUMN IF NOT EXISTS order_data LONGTEXT,
-  ADD COLUMN IF NOT EXISTS shipper VARCHAR(100);
+  ADD COLUMN customer_email VARCHAR(255),
+  ADD COLUMN customer_name VARCHAR(255),
+  ADD COLUMN order_data LONGTEXT,
+  ADD COLUMN shipper VARCHAR(100);
 
 CREATE TABLE IF NOT EXISTS order_items (
   id VARCHAR(36) PRIMARY KEY,
@@ -260,7 +260,7 @@ CREATE TABLE IF NOT EXISTS reviews (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 ALTER TABLE reviews
-  ADD COLUMN IF NOT EXISTS images JSON;
+  ADD COLUMN images JSON;
 
 -- ============================================
 -- STAFF & SERVICES
