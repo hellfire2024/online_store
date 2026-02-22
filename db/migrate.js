@@ -24,11 +24,10 @@ CREATE TABLE IF NOT EXISTS admins (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 ALTER TABLE admins
-  ADD COLUMN IF NOT EXISTS first_name VARCHAR(100),
-  ADD COLUMN IF NOT EXISTS last_name VARCHAR(100),
-  ADD COLUMN IF NOT EXISTS phone VARCHAR(50);
+  ADD COLUMN first_name VARCHAR(100),
+  ADD COLUMN last_name VARCHAR(100),
+  ADD COLUMN phone VARCHAR(50);
 
--- Backfill existing admins: Set first_name from username if not already set
 UPDATE admins
   SET first_name = CONCAT(UPPER(SUBSTRING(username, 1, 1)), LOWER(SUBSTRING(username, 2)))
   WHERE first_name IS NULL OR first_name = '';
@@ -49,8 +48,8 @@ CREATE TABLE IF NOT EXISTS customers (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 ALTER TABLE customers
-  ADD COLUMN IF NOT EXISTS first_name VARCHAR(255),
-  ADD COLUMN IF NOT EXISTS last_name VARCHAR(255);
+  ADD COLUMN first_name VARCHAR(255),
+  ADD COLUMN last_name VARCHAR(255);
 
 CREATE TABLE IF NOT EXISTS customer_addresses (
   id VARCHAR(36) PRIMARY KEY,
@@ -74,8 +73,8 @@ CREATE TABLE IF NOT EXISTS customer_addresses (
 
 -- Add first_name and last_name to existing customer_addresses table
 ALTER TABLE customer_addresses 
-  ADD COLUMN IF NOT EXISTS first_name VARCHAR(255),
-  ADD COLUMN IF NOT EXISTS last_name VARCHAR(255);
+  ADD COLUMN first_name VARCHAR(255),
+  ADD COLUMN last_name VARCHAR(255);
 
 -- ============================================
 -- PRODUCTS & INVENTORY
