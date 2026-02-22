@@ -82,7 +82,7 @@ export async function runMigrations(): Promise<void> {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
     `CREATE TABLE IF NOT EXISTS orders (
       id VARCHAR(36) PRIMARY KEY,
-      customer_id VARCHAR(36) NOT NULL,
+      customer_id VARCHAR(36),
       customer_email VARCHAR(255),
       customer_name VARCHAR(255),
       order_data LONGTEXT,
