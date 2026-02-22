@@ -33,15 +33,14 @@ export async function runMigrations(): Promise<void> {
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       last_login TIMESTAMP NULL,
       INDEX idx_email (email)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
-    // ...repeat for all other CREATE TABLE statements...
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`
   ];
 
   // --- ALTER TABLES: Add columns only if not exist ---
   const alterTableAddColumn = async (table: string, column: string, type: string) => {
     const [rows] = await pool.query(`SHOW COLUMNS FROM \\`${table}\\` LIKE ?`, [column]);
-    if ((rows as any[]).length === 0) {
-      await pool.query(`ALTER TABLE \\`${table}\\` ADD COLUMN \\`${column}\\` ${type}`);
+      const [rows] = await pool.query(`SHOW COLUMNS FROM \`${table}\` LIKE ?`, [column]);
+        await pool.query(`ALTER TABLE \`${table}\` ADD COLUMN \`${column}\` ${type}`);
       console.log(`Added column '${column}' to table '${table}'`);
     }
   };
@@ -65,24 +64,20 @@ export async function runMigrations(): Promise<void> {
     await alterTableAddColumn("customer_addresses", "first_name", "VARCHAR(255)");
     await alterTableAddColumn("customer_addresses", "last_name", "VARCHAR(255)");
 
-    // ...repeat for all other ALTER TABLE ... ADD COLUMN IF NOT EXISTS ...
+    // Add columns for orders
+    await alterTableAddColumn("orders", "customer_email", "VARCHAR(255)");
+    await alterTableAddColumn("orders", "customer_name", "VARCHAR(255)");
+    await alterTableAddColumn("orders", "order_data", "LONGTEXT");
+    await alterTableAddColumn("orders", "shipper", "VARCHAR(100)");
 
-    // ...existing code for other schema changes, updates, etc...
+    // Add columns for reviews
+    await alterTableAddColumn("reviews", "images", "JSON");
 
     console.log("✅ Database migrations completed successfully");
   } catch (error) {
     console.error("❌ Migration failed:", error);
     throw error;
   }
-  INDEX idx_order_number (order_number),
-  INDEX idx_status (status),
-  INDEX idx_created_at (created_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-ALTER TABLE orders
-  MODIFY COLUMN customer_id VARCHAR(36) NULL;
-  // Columns added conditionally below
-  await alterTableAddColumn("orders", "customer_email", "VARCHAR(255)");
   await alterTableAddColumn("orders", "customer_name", "VARCHAR(255)");
   await alterTableAddColumn("orders", "order_data", "LONGTEXT");
   await alterTableAddColumn("orders", "shipper", "VARCHAR(100)");
