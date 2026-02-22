@@ -63,7 +63,7 @@ export async function testConnection(): Promise<void> {
             // Log resolved DB config (never log password)
             console.error('DB connection failed:', {
               host: dbConfig.host,
-              port: dbConfig.port,
+              dbPort: dbConfig.port,
               user: dbConfig.user,
               envHost: process.env.DB_HOST,
               envPort: process.env.DB_PORT,
