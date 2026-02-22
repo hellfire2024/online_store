@@ -61,21 +61,22 @@ export async function testConnection(): Promise<void> {
         if (error.fatal) console.error('  Fatal:', error.fatal);
       }
       // Log resolved DB config (never log password)
-      console.error('  DB Host:', poolConfig.host);
-      console.error('  DB Port:', poolConfig.port);
-      console.error('  DB User:', poolConfig.user);
-      console.error('  DB Name:', poolConfig.database);
-      console.error('  Environment DB_HOST:', process.env.DB_HOST);
-      console.error('  Environment DB_PORT:', process.env.DB_PORT);
-      console.error('  Environment DB_USER:', process.env.DB_USER);
-      console.error('  Environment DB_NAME:', process.env.DB_NAME);
-      // Never log password or sensitive info
-      if (attempt >= maxRetries) {
-        throw error;
-      }
-      await new Promise((resolve) => setTimeout(resolve, retryDelay));
-    }
-  }
+        const errorDetails: any = error;
+        console.error('DB connection failed:', {
+            host: dbConfig.host,
+            port: dbConfig.port,
+            user: dbConfig.user,
+            envHost: process.env.DB_HOST,
+            envPort: process.env.DB_PORT,
+            envUser: process.env.DB_USER,
+            error: errorDetails,
+            address: errorDetails && typeof errorDetails === 'object' && 'address' in errorDetails ? errorDetails.address : undefined,
+            port: errorDetails && typeof errorDetails === 'object' && 'port' in errorDetails ? errorDetails.port : undefined,
+            code: errorDetails && typeof errorDetails === 'object' && 'code' in errorDetails ? errorDetails.code : undefined,
+            errno: errorDetails && typeof errorDetails === 'object' && 'errno' in errorDetails ? errorDetails.errno : undefined,
+            syscall: errorDetails && typeof errorDetails === 'object' && 'syscall' in errorDetails ? errorDetails.syscall : undefined,
+            fatal: errorDetails && typeof errorDetails === 'object' && 'fatal' in errorDetails ? errorDetails.fatal : undefined,
+        });
 }
 
 // Helper function for transactions
