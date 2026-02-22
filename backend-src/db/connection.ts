@@ -98,6 +98,7 @@ export async function withTransaction<T>(
     throw error;
   } finally {
     connection.release();
+    }
   }
 }
 
