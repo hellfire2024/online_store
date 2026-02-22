@@ -51,32 +51,31 @@ export async function testConnection(): Promise<void> {
       attempt++;
       // Detailed log for connection failure
       console.error(`❌ Database connection failed (attempt ${attempt}):`);
-      if (error && typeof error === 'object') {
-        console.error('  Error:', error);
-        if (error.address) console.error('  Address:', error.address);
-        if (error.port) console.error('  Port:', error.port);
-        if (error.code) console.error('  Code:', error.code);
-        if (error.errno) console.error('  Errno:', error.errno);
-        if (error.syscall) console.error('  Syscall:', error.syscall);
-        if (error.fatal) console.error('  Fatal:', error.fatal);
-      }
-      // Log resolved DB config (never log password)
-        const errorDetails: any = error;
-        console.error('DB connection failed:', {
-            host: dbConfig.host,
-            port: dbConfig.port,
-            user: dbConfig.user,
-            envHost: process.env.DB_HOST,
-            envPort: process.env.DB_PORT,
-            envUser: process.env.DB_USER,
-            error: errorDetails,
-            address: errorDetails && typeof errorDetails === 'object' && 'address' in errorDetails ? errorDetails.address : undefined,
-            port: errorDetails && typeof errorDetails === 'object' && 'port' in errorDetails ? errorDetails.port : undefined,
-            code: errorDetails && typeof errorDetails === 'object' && 'code' in errorDetails ? errorDetails.code : undefined,
-            errno: errorDetails && typeof errorDetails === 'object' && 'errno' in errorDetails ? errorDetails.errno : undefined,
-            syscall: errorDetails && typeof errorDetails === 'object' && 'syscall' in errorDetails ? errorDetails.syscall : undefined,
-            fatal: errorDetails && typeof errorDetails === 'object' && 'fatal' in errorDetails ? errorDetails.fatal : undefined,
-        });
+          if (error && typeof error === 'object') {
+            const err = error as Record<string, any>;
+            console.error('  Error:', err);
+            if ('address' in err) console.error('  Address:', err.address);
+            if ('port' in err) console.error('  Port:', err.port);
+            if ('code' in err) console.error('  Code:', err.code);
+            if ('errno' in err) console.error('  Errno:', err.errno);
+            if ('syscall' in err) console.error('  Syscall:', err.syscall);
+            if ('fatal' in err) console.error('  Fatal:', err.fatal);
+            // Log resolved DB config (never log password)
+            console.error('DB connection failed:', {
+              host: dbConfig.host,
+              port: dbConfig.port,
+              user: dbConfig.user,
+              envHost: process.env.DB_HOST,
+              envPort: process.env.DB_PORT,
+              envUser: process.env.DB_USER,
+              error: err,
+              address: 'address' in err ? err.address : undefined,
+              port: 'port' in err ? err.port : undefined,
+              code: 'code' in err ? err.code : undefined,
+              errno: 'errno' in err ? err.errno : undefined,
+              syscall: 'syscall' in err ? err.syscall : undefined,
+              fatal: 'fatal' in err ? err.fatal : undefined,
+            });
         }
         await new Promise((resolve) => setTimeout(resolve, retryDelay));
       }
