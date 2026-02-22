@@ -58,7 +58,6 @@ process.on("unhandledRejection", (reason, promise) => {
   process.exit(1);
 });
 
-
 appendLog("🔧 Loading environment variables...");
 dotenv.config();
 appendLog("✅ Environment loaded");
@@ -301,17 +300,27 @@ async function startServer() {
       console.log("✅ Database connected successfully");
 
       // Run migrations if tables are missing
-      const connectionModule = await import('./db/connection.js');
-      const migrateModule = await import('./db/migrate.js');
-      const seedModule = await import('./db/seed.js');
+      const connectionModule = await import("./db/connection.js");
+      const migrateModule = await import("./db/migrate.js");
+      const seedModule = await import("./db/seed.js");
 
       // Check for critical tables: admins and galleries
-      const dbName = process.env.DB_NAME || 'agis_dev_db';
-      const [adminTableRows]: any = await connectionModule.pool.query("SELECT COUNT(*) as count FROM information_schema.tables WHERE table_schema = ? AND table_name = 'admins'", [dbName]);
-      const [galleriesTableRows]: any = await connectionModule.pool.query("SELECT COUNT(*) as count FROM information_schema.tables WHERE table_schema = ? AND table_name = 'galleries'", [dbName]);
+      const dbName = process.env.DB_NAME || "agis_dev_db";
+      const [adminTableRows]: any = await connectionModule.pool.query(
+        "SELECT COUNT(*) as count FROM information_schema.tables WHERE table_schema = ? AND table_name = 'admins'",
+        [dbName],
+      );
+      const [galleriesTableRows]: any = await connectionModule.pool.query(
+        "SELECT COUNT(*) as count FROM information_schema.tables WHERE table_schema = ? AND table_name = 'galleries'",
+        [dbName],
+      );
       if (
-        Array.isArray(adminTableRows) && adminTableRows.length > 0 && adminTableRows[0].count === 0 ||
-        Array.isArray(galleriesTableRows) && galleriesTableRows.length > 0 && galleriesTableRows[0].count === 0
+        (Array.isArray(adminTableRows) &&
+          adminTableRows.length > 0 &&
+          adminTableRows[0].count === 0) ||
+        (Array.isArray(galleriesTableRows) &&
+          galleriesTableRows.length > 0 &&
+          galleriesTableRows[0].count === 0)
       ) {
         appendLog("🔄 Running migrations (critical table missing)...");
         await migrateModule.runMigrations();
@@ -319,17 +328,27 @@ async function startServer() {
       }
 
       // Seed if either admins or galleries table is empty
-      const [adminCountRows]: any = await connectionModule.pool.query("SELECT COUNT(*) as count FROM admins");
-      const [galleryCountRows]: any = await connectionModule.pool.query("SELECT COUNT(*) as count FROM galleries");
+      const [adminCountRows]: any = await connectionModule.pool.query(
+        "SELECT COUNT(*) as count FROM admins",
+      );
+      const [galleryCountRows]: any = await connectionModule.pool.query(
+        "SELECT COUNT(*) as count FROM galleries",
+      );
       if (
-        (Array.isArray(adminCountRows) && adminCountRows.length > 0 && adminCountRows[0].count === 0) ||
-        (Array.isArray(galleryCountRows) && galleryCountRows.length > 0 && galleryCountRows[0].count === 0)
+        (Array.isArray(adminCountRows) &&
+          adminCountRows.length > 0 &&
+          adminCountRows[0].count === 0) ||
+        (Array.isArray(galleryCountRows) &&
+          galleryCountRows.length > 0 &&
+          galleryCountRows[0].count === 0)
       ) {
         appendLog("🌱 Seeding database (admins or galleries empty)...");
         await seedModule.seedDatabase();
         appendLog("✅ Database seeded");
       } else {
-        appendLog("🌱 Database already seeded (admin users and galleries exist)");
+        appendLog(
+          "🌱 Database already seeded (admin users and galleries exist)",
+        );
       }
     } else {
       appendLog("⚠️  Skipping database check (DEMO_MODE enabled)");
@@ -344,7 +363,7 @@ async function startServer() {
     console.log(`📍 Binding to: devapi.adaptivegis.com:${PORT}`);
 
     // Start listening on all interfaces for healthcheck compatibility
-    const server = app.listen(PORT, '0.0.0.0');
+    const server = app.listen(PORT, "0.0.0.0");
 
     appendLog(`✔️  app.listen() called successfully, server object created`);
     console.log(`✔️  app.listen() called successfully, server object created`);

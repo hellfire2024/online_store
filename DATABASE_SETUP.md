@@ -26,6 +26,7 @@ cp .env.example .env
 ```
 
 Edit `.env`:
+
 ```env
 DB_HOST=devapi.adaptivegis.com
 DB_PORT=3306
@@ -38,11 +39,13 @@ JWT_SECRET=your-super-secret-key-change-this
 ### 3. Create Database
 
 Log into MySQL:
+
 ```bash
 mysql -u root -p
 ```
 
 Create the database:
+
 ```sql
 CREATE DATABASE online_store CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 EXIT;
@@ -55,6 +58,7 @@ npm run db:migrate
 ```
 
 This creates all necessary tables:
+
 - admins
 - customers & customer_addresses
 - products, product_option_lists, product_options
@@ -72,6 +76,7 @@ npm run db:seed
 ```
 
 This creates:
+
 - Default admin user (username: `admin`, password: `admin123`)
 - Sample products
 - Sample galleries
@@ -80,11 +85,13 @@ This creates:
 ### 6. Start Backend Server
 
 Development mode (with auto-reload):
+
 ```bash
 npm run dev
 ```
 
 Production mode:
+
 ```bash
 npm run build
 npm start
@@ -108,6 +115,7 @@ cp .env.example .env
 ```
 
 Edit `.env`:
+
 ```env
 VITE_API_URL=https://devapi.adaptivegis.com/api
 ```
@@ -123,11 +131,13 @@ Frontend will be available at: `https://dev.adaptivegis.com`
 ## API Endpoints
 
 ### Authentication
+
 - `POST /api/auth/admin/login` - Admin login
 - `POST /api/auth/customer/register` - Customer registration
 - `POST /api/auth/customer/login` - Customer login
 
 ### Products
+
 - `GET /api/products` - List all products
 - `GET /api/products/:id` - Get single product
 - `POST /api/products` - Create product
@@ -135,6 +145,7 @@ Frontend will be available at: `https://dev.adaptivegis.com`
 - `DELETE /api/products/:id` - Delete product
 
 ### Galleries
+
 - `GET /api/galleries` - List all galleries
 - `GET /api/galleries/:id/images` - Get gallery images
 - `POST /api/galleries` - Create gallery
@@ -143,7 +154,9 @@ Frontend will be available at: `https://dev.adaptivegis.com`
 - `DELETE /api/galleries/:galleryId/images/:imageId` - Delete image
 
 ### Other Resources
+
 Similar CRUD endpoints for:
+
 - `/api/pages`
 - `/api/reviews`
 - `/api/staff`
@@ -155,21 +168,25 @@ Similar CRUD endpoints for:
 ## Database Management
 
 ### Reset Database
+
 ```bash
 npm run db:reset
 ```
 
 This will:
+
 1. Drop all tables
 2. Run migrations
 3. Seed initial data
 
 ### Backup Database
+
 ```bash
 mysqldump -u root -p online_store > backup_$(date +%Y%m%d).sql
 ```
 
 ### Restore Database
+
 ```bash
 mysql -u root -p online_store < backup_20260126.sql
 ```
@@ -188,11 +205,13 @@ mysql -u root -p online_store < backup_20260126.sql
 ## Production Deployment
 
 ### Database
+
 - Use managed MySQL service (AWS RDS, Google Cloud SQL, etc.)
 - Enable automated backups
 - Use read replicas for scaling
 
 ### Application
+
 - Set `NODE_ENV=production`
 - Use process manager (PM2, systemd)
 - Configure reverse proxy (nginx, Apache)
@@ -200,6 +219,7 @@ mysql -u root -p online_store < backup_20260126.sql
 - Set up monitoring and logging
 
 ### Example PM2 Configuration
+
 ```bash
 pm2 start npm --name "online-store-api" -- start
 pm2 startup
@@ -209,21 +229,25 @@ pm2 save
 ## Troubleshooting
 
 ### Connection Refused
+
 - Check if MySQL is running: `sudo systemctl status mysql`
 - Verify port 3306 is not blocked
 - Check credentials in `.env`
 
 ### Migration Errors
+
 - Ensure database exists
 - Check user permissions: `GRANT ALL PRIVILEGES ON online_store.* TO 'user'@'devapi.adaptivegis.com';`
 
 ### Port Already in Use
+
 - Change `PORT` in `.env`
 - Kill process: `lsof -ti:3001 | xargs kill`
 
 ## Support
 
 For issues or questions, check:
+
 1. MySQL error logs
 2. Application logs
 3. Network connectivity

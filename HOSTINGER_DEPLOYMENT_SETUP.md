@@ -48,6 +48,7 @@ cd ..
 ### Option A: Single App (Recommended for less frequent UI changes)
 
 1. **Copy frontend to backend public folder:**
+
    ```bash
    mkdir -p server/public
    cp -r dist/* server/public/
@@ -56,6 +57,7 @@ cd ..
 2. **Deploy only the `/server` folder to Hostinger**
 
 **How it works:**
+
 - Everything runs as one Node.js app
 - Frontend served from `/server/public`
 - No CORS complexity
@@ -89,6 +91,7 @@ cd ..
    - `package-lock.json`
 
 **Important:** Do NOT upload:
+
 - `src/` folder
 - `node_modules/.bin/` (Hostinger will handle this)
 - `.git/` folder
@@ -126,6 +129,7 @@ LOG_LEVEL=info
 ```
 
 **Getting your database credentials:**
+
 1. Hostinger hPanel → Databases → Your Database
 2. Copy: Database Name, Database User, Password, Server (devapi.adaptivegis.com)
 
@@ -160,6 +164,7 @@ curl -X POST https://devapi.adaptivegis.com/api/smtp-test \
 ```
 
 **Expected success response:**
+
 ```json
 {
   "success": true,
@@ -195,6 +200,7 @@ curl -X POST https://yourdomain.com/api/smtp-test \
 ```
 
 Or use Postman/Insomnia:
+
 - **URL:** `https://yourdomain.com/api/smtp-test`
 - **Method:** POST
 - **Body (JSON):**
@@ -212,15 +218,18 @@ Or use Postman/Insomnia:
 **If test fails:**
 
 ❌ **Error: "SMTP connection failed - credentials invalid"**
+
 - Verify username/password with Zoho Mail
 - Check `:` character in password (may need escaping)
 - Confirm port 465 is open on Hostinger (contact support if blocked)
 
 ❌ **Error: "Connect timeout"**
+
 - Hostinger is blocking port 465 (contact Hostinger support)
 - Try port 587 (TLS) instead with `secure: false`
 
 ✅ **Success:** You received the test email
+
 - SMTP is working perfectly
 - Ready to save config in admin panel
 
@@ -265,23 +274,27 @@ In **hPanel → Node.js Applications:**
 ## Step 8: Verify Deployment
 
 ### Health Check
+
 ```bash
 curl https://yourdomain.com/health
 # Expected: {"status":"ok","timestamp":"2026-02-08T..."}
 ```
 
 ### API Test
+
 ```bash
 curl https://yourdomain.com/api/products
 # Should return products list or empty array
 ```
 
 ### Frontend Access
+
 - Navigate to `https://yourdomain.com`
 - Should load your store homepage
 - Check browser console for CORS errors
 
 **If CORS errors appear:**
+
 - Update `CORS_ORIGIN` in environment variables to match your domain
 - Restart Node.js application in Hostinger
 
@@ -292,6 +305,7 @@ curl https://yourdomain.com/api/products
 If this is first deployment, run migrations:
 
 **Via SSH (if available):**
+
 ```bash
 ssh user@hostinger_server
 cd /path/to/app
@@ -300,6 +314,7 @@ npx tsx src/db/migrate.ts
 
 **Via API Endpoint:**
 If you have a migration endpoint, call:
+
 ```bash
 curl -X POST https://yourdomain.com/api/db-migrate
 ```
@@ -309,29 +324,34 @@ curl -X POST https://yourdomain.com/api/db-migrate
 ## Troubleshooting
 
 ### Application won't start
+
 - Check application startup file path (should be `dist/server.js`)
 - Verify `package.json` exists in application root
 - Check Node.js version compatibility
 - View error logs in Hostinger hPanel
 
 ### Database connection fails
+
 - Verify `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_DATABASE` in environment variables
 - Confirm database exists in Hostinger MySQL
 - Test connection locally first with same credentials
 
 ### SMTP not sending emails
+
 - Run the `/api/smtp-test` endpoint to debug
 - Check spam folder (new SMTP providers often flag first emails)
 - Verify `From` email matches SMTP username (common requirement)
 - Contact Hostinger if port 465 is blocked
 
 ### Frontend not loading or showing blank page
+
 - Check browser Network tab for 404/500 errors
 - Verify `CORS_ORIGIN` environment variable
 - Ensure frontend was built and deployed with backend
 - Clear browser cache and try incognito window
 
 ### Too many database connections
+
 - Reduce `DB_POOL_SIZE` in environment if available
 - Restart Node.js application
 - Check for open connections in Hostinger MySQL panel
@@ -341,18 +361,21 @@ curl -X POST https://yourdomain.com/api/db-migrate
 ## Updating Your Application
 
 ### For Frontend Changes Only (Option A - Single App):
+
 1. Rebuild frontend: `npm run build`
 2. Copy to server: `cp -r dist/* server/public/`
 3. Upload `/server/public` folder via FTP
 4. No restart needed - server already serving from public
 
 ### For Backend Changes:
+
 1. Run `cd server && npm run build`
 2. Upload `/server/dist` folder via FTP
 3. Restart application in Hostinger hPanel
 4. Test health endpoint
 
 ### For Both:
+
 1. Build frontend: `npm run build`
 2. Copy frontend to server: `cp -r dist/* server/public/`
 3. Build backend: `cd server && npm run build`
@@ -364,17 +387,20 @@ curl -X POST https://yourdomain.com/api/db-migrate
 ## Monitoring & Maintenance
 
 ### Enable Error Logging
+
 ```env
 LOG_LEVEL=info
 NODE_ENV=production
 ```
 
 ### Regular Backups
+
 - Backup database monthly from Hostinger hPanel
 - Backup `.env` file in secure location (never in git)
 - Backup uploads folder if using file storage
 
 ### Security
+
 - Change admin password regularly
 - Update dependencies: `npm audit fix`
 - Monitor Hostinger security alerts

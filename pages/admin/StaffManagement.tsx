@@ -104,10 +104,13 @@ const StaffManagement: React.FC = () => {
         const formData = new FormData();
         formData.append("image", selectedImageFile);
 
-        const response = await fetch("https://devapi.adaptivegis.com/api/upload/image", {
-          method: "POST",
-          body: formData,
-        });
+        const response = await fetch(
+          "https://devapi.adaptivegis.com/api/upload/image",
+          {
+            method: "POST",
+            body: formData,
+          },
+        );
 
         if (!response.ok) {
           addToast("Image upload failed", "error");
