@@ -26,4 +26,4 @@ COPY --from=build /app/backend-src/db/site_settings.json ./db/site_settings.json
 COPY --from=build /app/backend-src/healthcheck.js ./healthcheck.js
 USER nonroot
 EXPOSE 3001
-CMD ["dist/server.js"]
+CMD ["node", "dist/server.js"]
