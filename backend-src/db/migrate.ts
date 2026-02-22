@@ -1,15 +1,15 @@
 import { pool } from "./connection.js";
 
 export async function runMigrations(): Promise<void> {
-            // ...existing code...
-            // The following tables are already present in the migration script, but this comment ensures completeness:
-            // - products
-            // - galleries
-            // - gallery_images
-            // - customer_addresses
-            // - pages
-            // All referenced tables are now included in the migration script.
-          `CREATE TABLE IF NOT EXISTS staff (
+  // ...existing code...
+  // The following tables are already present in the migration script, but this comment ensures completeness:
+  // - products
+  // - galleries
+  // - gallery_images
+  // - customer_addresses
+  // - pages
+  // All referenced tables are now included in the migration script.
+  (`CREATE TABLE IF NOT EXISTS staff (
             id VARCHAR(36) PRIMARY KEY,
             first_name VARCHAR(100),
             last_name VARCHAR(100),
@@ -19,20 +19,20 @@ export async function runMigrations(): Promise<void> {
             is_active BOOLEAN DEFAULT TRUE,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
           ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
-          `CREATE TABLE IF NOT EXISTS services (
+    `CREATE TABLE IF NOT EXISTS services (
             id VARCHAR(36) PRIMARY KEY,
             name VARCHAR(255) NOT NULL,
             description TEXT,
             price DECIMAL(10,2),
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
           ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
-          `CREATE TABLE IF NOT EXISTS settings (
+    `CREATE TABLE IF NOT EXISTS settings (
             id INT PRIMARY KEY DEFAULT 1,
             settings JSON NOT NULL,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             CHECK (id = 1)
           ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
-      `CREATE TABLE IF NOT EXISTS reviews (
+    `CREATE TABLE IF NOT EXISTS reviews (
         id VARCHAR(36) PRIMARY KEY,
         product_id VARCHAR(36),
         customer_id VARCHAR(36),
@@ -45,7 +45,7 @@ export async function runMigrations(): Promise<void> {
         INDEX idx_product (product_id),
         INDEX idx_customer (customer_id)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
-  console.log("🔄 Running database migrations...");
+    console.log("🔄 Running database migrations..."));
 
   const createTables = [
     `CREATE TABLE IF NOT EXISTS admins (
