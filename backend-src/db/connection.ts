@@ -49,7 +49,27 @@ export async function testConnection(): Promise<void> {
       return;
     } catch (error) {
       attempt++;
-      console.error(`❌ Database connection failed (attempt ${attempt}):`, error);
+      // Detailed log for connection failure
+      console.error(`❌ Database connection failed (attempt ${attempt}):`);
+      if (error && typeof error === 'object') {
+        console.error('  Error:', error);
+        if (error.address) console.error('  Address:', error.address);
+        if (error.port) console.error('  Port:', error.port);
+        if (error.code) console.error('  Code:', error.code);
+        if (error.errno) console.error('  Errno:', error.errno);
+        if (error.syscall) console.error('  Syscall:', error.syscall);
+        if (error.fatal) console.error('  Fatal:', error.fatal);
+      }
+      // Log resolved DB config (never log password)
+      console.error('  DB Host:', poolConfig.host);
+      console.error('  DB Port:', poolConfig.port);
+      console.error('  DB User:', poolConfig.user);
+      console.error('  DB Name:', poolConfig.database);
+      console.error('  Environment DB_HOST:', process.env.DB_HOST);
+      console.error('  Environment DB_PORT:', process.env.DB_PORT);
+      console.error('  Environment DB_USER:', process.env.DB_USER);
+      console.error('  Environment DB_NAME:', process.env.DB_NAME);
+      // Never log password or sensitive info
       if (attempt >= maxRetries) {
         throw error;
       }
