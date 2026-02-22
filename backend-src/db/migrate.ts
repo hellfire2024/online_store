@@ -105,11 +105,12 @@ ALTER TABLE admins
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 ALTER TABLE orders
-  MODIFY COLUMN customer_id VARCHAR(36) NULL,
-  ADD COLUMN IF NOT EXISTS customer_email VARCHAR(255),
-  ADD COLUMN IF NOT EXISTS customer_name VARCHAR(255),
-  ADD COLUMN IF NOT EXISTS order_data LONGTEXT,
-  ADD COLUMN IF NOT EXISTS shipper VARCHAR(100);
+  MODIFY COLUMN customer_id VARCHAR(36) NULL;
+  // Columns added conditionally below
+  await alterTableAddColumn("orders", "customer_email", "VARCHAR(255)");
+  await alterTableAddColumn("orders", "customer_name", "VARCHAR(255)");
+  await alterTableAddColumn("orders", "order_data", "LONGTEXT");
+  await alterTableAddColumn("orders", "shipper", "VARCHAR(100)");
 
 CREATE TABLE IF NOT EXISTS order_items (
   id VARCHAR(36) PRIMARY KEY,
@@ -202,7 +203,8 @@ CREATE TABLE IF NOT EXISTS reviews (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 ALTER TABLE reviews
-  ADD COLUMN IF NOT EXISTS images JSON;
+  // Column added conditionally below
+  await alterTableAddColumn("reviews", "images", "JSON");
 
 -- ============================================
 -- STAFF & SERVICES
