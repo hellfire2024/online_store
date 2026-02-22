@@ -77,7 +77,11 @@ export async function testConnection(): Promise<void> {
             syscall: errorDetails && typeof errorDetails === 'object' && 'syscall' in errorDetails ? errorDetails.syscall : undefined,
             fatal: errorDetails && typeof errorDetails === 'object' && 'fatal' in errorDetails ? errorDetails.fatal : undefined,
         });
-}
+        }
+        await new Promise((resolve) => setTimeout(resolve, retryDelay));
+      }
+      throw new Error(`❌ Could not establish database connection after ${maxRetries} attempts.`);
+  }
 
 // Helper function for transactions
 export async function withTransaction<T>(
