@@ -80,6 +80,23 @@ export async function runMigrations(): Promise<void> {
       FOREIGN KEY (gallery_id) REFERENCES galleries(id) ON DELETE SET NULL,
       INDEX idx_gallery (gallery_id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
+    `CREATE TABLE IF NOT EXISTS orders (
+      id VARCHAR(36) PRIMARY KEY,
+      customer_id VARCHAR(36) NOT NULL,
+      customer_email VARCHAR(255),
+      customer_name VARCHAR(255),
+      order_data LONGTEXT,
+      shipper VARCHAR(100),
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE SET NULL,
+      INDEX idx_customer (customer_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
+    `CREATE TABLE IF NOT EXISTS site_settings (
+      id INT PRIMARY KEY DEFAULT 1,
+      settings JSON NOT NULL,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      CHECK (id = 1)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
   ];
 
   // --- ALTER TABLES: Add columns only if not exist ---
