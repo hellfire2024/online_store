@@ -301,18 +301,22 @@ async function startServer() {
       console.log("✅ Database connected successfully");
 
       // Run migrations if tables are missing
-      const [adminRows] = await require('./db/connection.js').pool.query("SELECT COUNT(*) as count FROM information_schema.tables WHERE table_schema = ? AND table_name = 'admins'", [process.env.DB_NAME || 'agis_dev_db']);
+      const connectionModule = await import('./db/connection.js');
+      const migrateModule = await import('./db/migrate.js');
+      const seedModule = await import('./db/seed.js');
+
+      const [adminRows] = await connectionModule.pool.query("SELECT COUNT(*) as count FROM information_schema.tables WHERE table_schema = ? AND table_name = 'admins'", [process.env.DB_NAME || 'agis_dev_db']);
       if (adminRows[0].count === 0) {
         appendLog("🔄 Running migrations (admins table missing)...");
-        await require('./db/migrate.js').runMigrations();
+        await migrateModule.runMigrations();
         appendLog("✅ Migrations complete");
       }
 
       // Seed only if admins table is empty
-      const [adminCountRows] = await require('./db/connection.js').pool.query("SELECT COUNT(*) as count FROM admins");
+      const [adminCountRows] = await connectionModule.pool.query("SELECT COUNT(*) as count FROM admins");
       if (adminCountRows[0].count === 0) {
         appendLog("🌱 Seeding database (no admin users found)...");
-        await require('./db/seed.js').seedDatabase();
+        await seedModule.seedDatabase();
         appendLog("✅ Database seeded");
       } else {
         appendLog("🌱 Database already seeded (admin users exist)");
