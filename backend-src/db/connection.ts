@@ -81,6 +81,7 @@ export async function testConnection(): Promise<void> {
       }
       throw new Error(`❌ Could not establish database connection after ${maxRetries} attempts.`);
   }
+}
 
 // Helper function for transactions
 export async function withTransaction<T>(
