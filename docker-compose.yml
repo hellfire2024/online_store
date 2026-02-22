@@ -10,12 +10,18 @@ services:
       - .env
     environment:
       - NODE_ENV=production
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_USER=adaptivegis-dev
+      - DB_PASSWORD=we1r9dveIPTzjJ84HMD6
+      - DB_NAME=agis_dev_db
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "node", "healthcheck.js"]
       interval: 30s
       timeout: 10s
       retries: 5
+    entrypoint: ["/app/backend-src/wait-for-mysql.sh", "node", "dist/server.js"]
 
   frontend:
     build:
