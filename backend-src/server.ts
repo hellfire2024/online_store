@@ -305,21 +305,31 @@ async function startServer() {
       const migrateModule = await import('./db/migrate.js');
       const seedModule = await import('./db/seed.js');
 
-      const [adminRows]: any = await connectionModule.pool.query("SELECT COUNT(*) as count FROM information_schema.tables WHERE table_schema = ? AND table_name = 'admins'", [process.env.DB_NAME || 'agis_dev_db']);
-      if (Array.isArray(adminRows) && adminRows.length > 0 && adminRows[0].count === 0) {
-        appendLog("🔄 Running migrations (admins table missing)...");
+      // Check for critical tables: admins and galleries
+      const dbName = process.env.DB_NAME || 'agis_dev_db';
+      const [adminTableRows]: any = await connectionModule.pool.query("SELECT COUNT(*) as count FROM information_schema.tables WHERE table_schema = ? AND table_name = 'admins'", [dbName]);
+      const [galleriesTableRows]: any = await connectionModule.pool.query("SELECT COUNT(*) as count FROM information_schema.tables WHERE table_schema = ? AND table_name = 'galleries'", [dbName]);
+      if (
+        Array.isArray(adminTableRows) && adminTableRows.length > 0 && adminTableRows[0].count === 0 ||
+        Array.isArray(galleriesTableRows) && galleriesTableRows.length > 0 && galleriesTableRows[0].count === 0
+      ) {
+        appendLog("🔄 Running migrations (critical table missing)...");
         await migrateModule.runMigrations();
         appendLog("✅ Migrations complete");
       }
 
-      // Seed only if admins table is empty
+      // Seed if either admins or galleries table is empty
       const [adminCountRows]: any = await connectionModule.pool.query("SELECT COUNT(*) as count FROM admins");
-      if (Array.isArray(adminCountRows) && adminCountRows.length > 0 && adminCountRows[0].count === 0) {
-        appendLog("🌱 Seeding database (no admin users found)...");
+      const [galleryCountRows]: any = await connectionModule.pool.query("SELECT COUNT(*) as count FROM galleries");
+      if (
+        (Array.isArray(adminCountRows) && adminCountRows.length > 0 && adminCountRows[0].count === 0) ||
+        (Array.isArray(galleryCountRows) && galleryCountRows.length > 0 && galleryCountRows[0].count === 0)
+      ) {
+        appendLog("🌱 Seeding database (admins or galleries empty)...");
         await seedModule.seedDatabase();
         appendLog("✅ Database seeded");
       } else {
-        appendLog("🌱 Database already seeded (admin users exist)");
+        appendLog("🌱 Database already seeded (admin users and galleries exist)");
       }
     } else {
       appendLog("⚠️  Skipping database check (DEMO_MODE enabled)");
