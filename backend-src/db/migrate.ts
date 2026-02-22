@@ -49,6 +49,37 @@ export async function runMigrations(): Promise<void> {
       FOREIGN KEY (gallery_id) REFERENCES galleries(id) ON DELETE CASCADE,
       INDEX idx_gallery (gallery_id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
+    `CREATE TABLE IF NOT EXISTS customer_addresses (
+      id VARCHAR(36) PRIMARY KEY,
+      customer_id VARCHAR(36) NOT NULL,
+      first_name VARCHAR(255),
+      last_name VARCHAR(255),
+      address_line1 VARCHAR(255) NOT NULL,
+      address_line2 VARCHAR(255),
+      city VARCHAR(100) NOT NULL,
+      state VARCHAR(100),
+      postal_code VARCHAR(20) NOT NULL,
+      country VARCHAR(100) NOT NULL,
+      phone VARCHAR(50),
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE,
+      INDEX idx_customer (customer_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
+    `CREATE TABLE IF NOT EXISTS products (
+      id VARCHAR(36) PRIMARY KEY,
+      name VARCHAR(255) NOT NULL,
+      description TEXT,
+      price DECIMAL(10,2) NOT NULL,
+      image_url LONGTEXT,
+      inventory INT DEFAULT 0,
+      customizable BOOLEAN DEFAULT FALSE,
+      gallery_id VARCHAR(36),
+      allow_custom_image_upload BOOLEAN DEFAULT FALSE,
+      custom_image_upload_price DECIMAL(10,2) DEFAULT 0,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (gallery_id) REFERENCES galleries(id) ON DELETE SET NULL,
+      INDEX idx_gallery (gallery_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
   ];
 
   // --- ALTER TABLES: Add columns only if not exist ---
