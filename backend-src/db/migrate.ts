@@ -48,14 +48,22 @@ export async function runMigrations(): Promise<void> {
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (gallery_id) REFERENCES galleries(id) ON DELETE CASCADE,
       INDEX idx_gallery (gallery_id)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
   ];
 
   // --- ALTER TABLES: Add columns only if not exist ---
-  const alterTableAddColumn = async (table: string, column: string, type: string) => {
-    const [rows] = await pool.query(`SHOW COLUMNS FROM \`${table}\` LIKE ?`, [column]);
+  const alterTableAddColumn = async (
+    table: string,
+    column: string,
+    type: string,
+  ) => {
+    const [rows] = await pool.query(`SHOW COLUMNS FROM \`${table}\` LIKE ?`, [
+      column,
+    ]);
     if (Array.isArray(rows) && rows.length === 0) {
-      await pool.query(`ALTER TABLE \`${table}\` ADD COLUMN \`${column}\` ${type}`);
+      await pool.query(
+        `ALTER TABLE \`${table}\` ADD COLUMN \`${column}\` ${type}`,
+      );
       console.log(`Added column '${column}' to table '${table}'`);
     }
   };
@@ -76,8 +84,16 @@ export async function runMigrations(): Promise<void> {
     await alterTableAddColumn("customers", "last_name", "VARCHAR(255)");
 
     // 4. Conditionally add columns (customer_addresses)
-    await alterTableAddColumn("customer_addresses", "first_name", "VARCHAR(255)");
-    await alterTableAddColumn("customer_addresses", "last_name", "VARCHAR(255)");
+    await alterTableAddColumn(
+      "customer_addresses",
+      "first_name",
+      "VARCHAR(255)",
+    );
+    await alterTableAddColumn(
+      "customer_addresses",
+      "last_name",
+      "VARCHAR(255)",
+    );
 
     // Add columns for orders
     await alterTableAddColumn("orders", "customer_email", "VARCHAR(255)");
