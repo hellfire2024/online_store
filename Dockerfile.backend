@@ -23,6 +23,7 @@ COPY --from=build /app/verify-build.js ./verify-build.js
 COPY --from=build /app/backend-src/wait-for-mysql.sh ./backend-src/wait-for-mysql.sh
 COPY --from=build /app/backend-src/healthcheck-debug.sh ./backend-src/healthcheck-debug.sh
 COPY --from=build /app/backend-src/db/site_settings.json ./db/site_settings.json
+COPY --from=build /app/backend-src/healthcheck.js ./healthcheck.js
 USER nonroot
 EXPOSE 3001
 CMD ["dist/server.js"]
