@@ -193,11 +193,16 @@ export async function runMigrations(): Promise<void> {
     // Add columns for reviews
     await alterTableAddColumn("reviews", "images", "JSON");
 
-    // Add missing column for products
+    // Add missing columns for products
     await alterTableAddColumn(
       "products",
       "low_stock_threshold",
       "INT DEFAULT 0",
+    );
+    await alterTableAddColumn(
+      "products",
+      "enable_ai_ideas",
+      "BOOLEAN DEFAULT FALSE",
     );
 
     console.log("✅ Database migrations completed successfully");
