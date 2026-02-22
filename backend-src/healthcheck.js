@@ -1,5 +1,6 @@
 // healthcheck.js
 // Node.js healthcheck for distroless container
+
 const http = require('http');
 
 const options = {
@@ -9,16 +10,37 @@ const options = {
   timeout: 3000,
 };
 
-const req = http.get(options, (res) => {
-  if (res.statusCode === 200) {
-    process.exit(0);
-  } else {
-    process.exit(1);
-  }
-});
+const maxAttempts = 5;
+let attempt = 0;
 
-req.on('error', () => process.exit(1));
-req.on('timeout', () => {
-  req.destroy();
-  process.exit(1);
-});
+function checkHealth() {
+  attempt++;
+  const req = http.get(options, (res) => {
+    if (res.statusCode === 200) {
+      process.exit(0);
+    } else {
+      if (attempt < maxAttempts) {
+        setTimeout(checkHealth, 2000);
+      } else {
+        process.exit(1);
+      }
+    }
+  });
+  req.on('error', () => {
+    if (attempt < maxAttempts) {
+      setTimeout(checkHealth, 2000);
+    } else {
+      process.exit(1);
+    }
+  });
+  req.on('timeout', () => {
+    req.destroy();
+    if (attempt < maxAttempts) {
+      setTimeout(checkHealth, 2000);
+    } else {
+      process.exit(1);
+    }
+  });
+}
+
+checkHealth();
