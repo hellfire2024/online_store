@@ -299,6 +299,24 @@ async function startServer() {
       await testConnection();
       appendLog("✅ Database connected successfully");
       console.log("✅ Database connected successfully");
+
+      // Run migrations if tables are missing
+      const [adminRows] = await require('./db/connection.js').pool.query("SELECT COUNT(*) as count FROM information_schema.tables WHERE table_schema = ? AND table_name = 'admins'", [process.env.DB_NAME || 'agis_dev_db']);
+      if (adminRows[0].count === 0) {
+        appendLog("🔄 Running migrations (admins table missing)...");
+        await require('./db/migrate.js').runMigrations();
+        appendLog("✅ Migrations complete");
+      }
+
+      // Seed only if admins table is empty
+      const [adminCountRows] = await require('./db/connection.js').pool.query("SELECT COUNT(*) as count FROM admins");
+      if (adminCountRows[0].count === 0) {
+        appendLog("🌱 Seeding database (no admin users found)...");
+        await require('./db/seed.js').seedDatabase();
+        appendLog("✅ Database seeded");
+      } else {
+        appendLog("🌱 Database already seeded (admin users exist)");
+      }
     } else {
       appendLog("⚠️  Skipping database check (DEMO_MODE enabled)");
       console.log("⚠️  Skipping database check (DEMO_MODE enabled)");
