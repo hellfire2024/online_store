@@ -3,32 +3,7 @@ import { pool } from "./connection.js";
 export async function runMigrations(): Promise<void> {
   console.log("🔄 Running database migrations...");
 
-  const schema = `
--- ============================================
--- USERS & AUTHENTICATION
--- ============================================
-
-CREATE TABLE IF NOT EXISTS admins (
-  id VARCHAR(36) PRIMARY KEY,
-  first_name VARCHAR(100),
-  last_name VARCHAR(100),
-  phone VARCHAR(50),
-  username VARCHAR(50) UNIQUE NOT NULL,
-  email VARCHAR(255) UNIQUE NOT NULL,
-  password_hash VARCHAR(255) NOT NULL,
-  role ENUM('super_admin', 'admin', 'manager') NOT NULL DEFAULT 'admin',
-  permissions JSON,
-  is_active BOOLEAN DEFAULT TRUE,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  last_login TIMESTAMP NULL,
-  INDEX idx_email (email),
-  INDEX idx_username (username)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-ALTER TABLE admins
-  // --- CREATE TABLES (unchanged) ---
   const createTables = [
-    // ...existing code for CREATE TABLE statements...
     `CREATE TABLE IF NOT EXISTS admins (
       id VARCHAR(36) PRIMARY KEY,
       first_name VARCHAR(100),
