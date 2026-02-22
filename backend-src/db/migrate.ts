@@ -204,6 +204,21 @@ export async function runMigrations(): Promise<void> {
       "enable_ai_ideas",
       "BOOLEAN DEFAULT FALSE",
     );
+    await alterTableAddColumn(
+      "products",
+      "allow_custom_image_upload",
+      "BOOLEAN DEFAULT FALSE",
+    );
+    await alterTableAddColumn(
+      "products",
+      "custom_image_upload_price",
+      "DECIMAL(10,2) DEFAULT 0",
+    );
+    await alterTableAddColumn(
+      "products",
+      "gallery_id",
+      "VARCHAR(36)",
+    );
 
     console.log("✅ Database migrations completed successfully");
   } catch (error) {
