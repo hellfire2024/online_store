@@ -92,4 +92,6 @@ export const useGallery = () => {
   }
   return context;
 };
+
+export const useGalleries = useGallery;
 // ...existing code...

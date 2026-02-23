@@ -76,4 +76,6 @@ export const useProduct = () => {
   }
   return context;
 };
+
+export const useProducts = useProduct;
 // ...existing code...
