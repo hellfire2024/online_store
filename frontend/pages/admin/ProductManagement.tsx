@@ -27,10 +27,53 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
-// ...existing code from pages/admin/ProductManagement.tsx...
 
-// (The full implementation is copied here, see previous file for details)
+interface SortableOptionListProps {
+	optionList: ProductOptionList;
+	onChangeName: (value: string) => void;
+	onToggleRequired: () => void;
+	onDelete: () => void;
+	onAddOption: () => void;
+	onOptionChange: (
+		optionId: string,
+		field: "name" | "priceDelta",
+		value: string,
+	) => void;
+	onDeleteOption: (optionId: string) => void;
+	onDragEndOption: (event: DragEndEvent) => void;
+}
 
-// ...existing code...
+const SortableOptionList: React.FC<SortableOptionListProps> = ({
+	optionList,
+	onChangeName,
+	onToggleRequired,
+	onDelete,
+	onAddOption,
+	onOptionChange,
+	onDeleteOption,
+	onDragEndOption,
+}) => {
+	// ...existing code...
+};
+
+interface SortableOptionProps {
+	option: ProductOption;
+	onChangeName: (value: string) => void;
+	onChangePriceDelta: (value: string) => void;
+	onDelete: () => void;
+}
+
+const SortableOption: React.FC<SortableOptionProps> = ({
+	option,
+	onChangeName,
+	onChangePriceDelta,
+	onDelete,
+}) => {
+	// ...existing code...
+};
+
+const ProductManagement: React.FC = () => {
+	// ...existing code...
+};
 
 export default ProductManagement;
