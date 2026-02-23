@@ -10,14 +10,14 @@ COPY frontend/.env.example ./.env.example
 RUN if [ ! -f .env ]; then cp .env.example .env; fi
 COPY frontend/vite.config.ts ./
 COPY frontend/index.html ./
-COPY ../tailwind.config.js ./tailwind.config.js
-COPY ../postcss.config.js ./postcss.config.js
+COPY tailwind.config.js ./tailwind.config.js
+COPY postcss.config.js ./postcss.config.js
 
 COPY frontend/public ./public
-COPY pages ./pages
-COPY context ./context
-COPY components ./components
-COPY hooks ./hooks
+COPY frontend/pages ./pages
+COPY frontend/context ./context
+COPY frontend/components ./components
+COPY frontend/hooks ./hooks
 COPY services ./services
 COPY frontend/src ./src
 
