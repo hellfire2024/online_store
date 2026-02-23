@@ -1,0 +1,1 @@
+Move all files from c:\Temp\online_store\components\admin to c:\Temp\online_store\frontend\components\admin.
