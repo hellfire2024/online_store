@@ -1,6 +1,6 @@
 # This Dockerfile is now for the frontend only, and should be placed in the frontend/ directory.
 # It expects all build files to be present in the same directory.
-FROM node:21.6.0-alpine AS build
+FROM node:21.6.0-slim AS build
 WORKDIR /app
 RUN apk update && apk upgrade && rm -rf /var/cache/apk/*
 
@@ -35,7 +35,9 @@ RUN if [ ! -f /app/dist/index.html ] || [ ! -s /app/dist/index.html ]; then echo
 RUN echo "==== AFTER BUILD: files in /app/dist ====" && ls -al /app/dist && echo "==== CONTENTS OF /app/dist/index.html ====" && cat /app/dist/index.html
 RUN node verify-frontend-build.js
 
-FROM nginx:1.25.4-alpine
+FROM nginx:1.25.4 AS base
+RUN apt-get update && apt-get upgrade -y && rm -rf /var/lib/apt/lists/*
+FROM base
 COPY --from=build /app/dist /usr/share/nginx/html
 COPY frontend/nginx.conf /etc/nginx/nginx.conf
 EXPOSE 80
