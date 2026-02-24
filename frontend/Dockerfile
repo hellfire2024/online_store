@@ -2,7 +2,7 @@
 # It expects all build files to be present in the same directory.
 FROM node:21.6.0-slim AS build
 WORKDIR /app
-RUN apk update && apk upgrade && rm -rf /var/cache/apk/*
+RUN apt-get update && apt-get upgrade -y && rm -rf /var/lib/apt/lists/*
 
 COPY frontend/package.json ./
 COPY frontend/.env.example ./.env.example
