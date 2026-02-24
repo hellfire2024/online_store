@@ -6,7 +6,7 @@ import Spinner from "../../components/Spinner";
 import Pagination from "../../components/Pagination";
 import { StaffMember } from "../../../types";
 import { useUnsavedChanges } from "../../context/UnsavedChangesContext";
-import ImageUploadInput from "../../../components/admin/ImageUploadInput";
+import ImageUploadInput from "../../components/admin/ImageUploadInput";
 
 
 const StaffManagement: React.FC = () => {
