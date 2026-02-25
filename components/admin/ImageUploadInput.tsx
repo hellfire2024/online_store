@@ -47,6 +47,6 @@ const ImageUploadInput: React.FC<ImageUploadInputProps> = ({
   );
 };
 
-export { ImageUploadInput };
+export default ImageUploadInput;
 
 export default ImageUploadInput;
