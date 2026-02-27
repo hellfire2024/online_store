@@ -6,7 +6,12 @@ import React, {
   ReactNode,
 } from "react";
 import { apiClient } from "../services/apiClient";
-import { mockApi } from "../services/mockApi";
+import {
+  fetchReviews,
+  addReview,
+  updateReview,
+  deleteReview,
+} from "../services/mockApi";
 
 interface ReviewsContextType {
   reviews: Review[];
@@ -36,7 +41,7 @@ export const ReviewsProvider: React.FC<{ children: ReactNode }> = ({
           error,
         );
         try {
-          const mockReviewsData = await mockApi.fetchReviews();
+          const mockReviewsData = await fetchReviews();
           setReviews(mockReviewsData);
         } catch (mockError) {
           console.error("Failed to load mock reviews", mockError);
@@ -54,7 +59,7 @@ export const ReviewsProvider: React.FC<{ children: ReactNode }> = ({
       setReviews((prev) => [...prev, newReview]);
     } catch (error) {
       console.error("Failed to add review via API, using mock", error);
-      const newReview = await mockApi.addReview(review);
+      const newReview = await addReview(review);
       setReviews((prev) => [...prev, newReview]);
     }
   };
@@ -67,7 +72,7 @@ export const ReviewsProvider: React.FC<{ children: ReactNode }> = ({
       );
     } catch (error) {
       console.error("Failed to update review via API, using mock", error);
-      const updatedReview = await mockApi.updateReview(review);
+      const updatedReview = await updateReview(review);
       setReviews((prev) =>
         prev.map((r) => (r.id === updatedReview.id ? updatedReview : r)),
       );
@@ -80,7 +85,7 @@ export const ReviewsProvider: React.FC<{ children: ReactNode }> = ({
       setReviews((prev) => prev.filter((r) => r.id !== reviewId));
     } catch (error) {
       console.error("Failed to delete review via API, using mock", error);
-      await mockApi.deleteReview(reviewId);
+      await deleteReview(reviewId);
       setReviews((prev) => prev.filter((r) => r.id !== reviewId));
     }
   };

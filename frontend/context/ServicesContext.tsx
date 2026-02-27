@@ -6,7 +6,12 @@ import React, {
   ReactNode,
 } from "react";
 import { apiClient } from "../services/apiClient";
-import { mockApi } from "../services/mockApi";
+import {
+  fetchServices,
+  addService,
+  updateService,
+  deleteService,
+} from "../services/mockApi";
 
 interface ServicesContextType {
   services: Service[];
@@ -39,7 +44,7 @@ export const ServicesProvider: React.FC<{ children: ReactNode }> = ({
           error,
         );
         try {
-          const mockServicesData = await mockApi.fetchServices();
+          const mockServicesData = await fetchServices();
           setServices(mockServicesData);
         } catch (mockError) {
           console.error("Failed to load mock services", mockError);
@@ -57,7 +62,7 @@ export const ServicesProvider: React.FC<{ children: ReactNode }> = ({
       setServices((prev) => [...prev, newService]);
     } catch (error) {
       console.error("Failed to add service via API, using mock", error);
-      const newService = await mockApi.addService(service);
+      const newService = await addService(service);
       setServices((prev) => [...prev, newService]);
     }
   };
@@ -73,7 +78,7 @@ export const ServicesProvider: React.FC<{ children: ReactNode }> = ({
       );
     } catch (error) {
       console.error("Failed to update service via API, using mock", error);
-      const updatedService = await mockApi.updateService(service);
+      const updatedService = await updateService(service);
       setServices((prev) =>
         prev.map((s) => (s.id === updatedService.id ? updatedService : s)),
       );
@@ -86,7 +91,7 @@ export const ServicesProvider: React.FC<{ children: ReactNode }> = ({
       setServices((prev) => prev.filter((s) => s.id !== serviceId));
     } catch (error) {
       console.error("Failed to delete service via API, using mock", error);
-      await mockApi.deleteService(serviceId);
+      await deleteService(serviceId);
       setServices((prev) => prev.filter((s) => s.id !== serviceId));
     }
   };
