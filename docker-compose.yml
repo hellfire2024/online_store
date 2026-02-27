@@ -10,6 +10,7 @@ services:
       - .env
     environment:
       - NODE_ENV=production
+      - DEMO_MODE=1
       - DB_HOST=mysql
       - DB_PORT=3306
       - DB_USER=adaptivegis-dev
@@ -25,8 +26,8 @@ services:
 
   frontend:
     build:
-      context: ./frontend
-      dockerfile: ../Dockerfile
+      context: .
+      dockerfile: Dockerfile
     ports:
       - "8080:80"
     depends_on:

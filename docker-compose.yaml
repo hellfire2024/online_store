@@ -21,6 +21,7 @@ services:
       SERVICE_URL_FRONTEND: https://dev.adaptivegis.com
       SERVICE_URL_PHPMYADMIN: https://devmysql.adaptivegis.com
       NODE_ENV: production
+      DEMO_MODE: "1"
       PORT: 3001
       CORS_ORIGIN: https://dev.adaptivegis.com
       SKIP_DB_CHECK: ""
@@ -48,7 +49,7 @@ services:
       - "traefik.http.services.frontend.loadbalancer.server.port=80"
     build:
       context: .
-      dockerfile: frontend/Dockerfile
+      dockerfile: Dockerfile
     ports:
       - "8888:80"
     depends_on:
