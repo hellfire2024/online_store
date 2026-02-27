@@ -10,4 +10,3 @@ const GalleriesManagement: React.FC = () => {
 };
 
 export default GalleriesManagement;
-// ...existing code...
