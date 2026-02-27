@@ -132,7 +132,7 @@ import ticketsApiRoutes from "./routes/ticketsApi.js";
 import customerAddressesRoutes from "./routes/customerAddresses.js";
 import shippingRoutes from "./routes/shippingApi.js";
 import uploadRoutes from "./routes/upload.js";
-import demoRoutes from "./demoRoutes.js";
+import demoRoutes from "../demoRoutes.js";
 import smtpTestRoutes from "./routes/smtpTest.js";
 appendLog("✅ All routes imported successfully");
 console.log("✅ All routes imported successfully");
