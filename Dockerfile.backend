@@ -8,6 +8,8 @@ RUN apk update && apk upgrade && apk add --no-cache python3 make g++ && rm -rf /
 COPY package.json .
 COPY tsconfig.backend.json .
 COPY demoRoutes.js .
+COPY demoRoutes.d.ts .
+COPY demoRoutes.d.ts.map .
 COPY backend-src ./backend-src
 COPY verify-build.js .
 RUN npm install --frozen-lockfile || yarn install --frozen-lockfile
