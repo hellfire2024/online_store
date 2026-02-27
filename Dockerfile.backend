@@ -7,6 +7,7 @@ WORKDIR /app
 RUN apk update && apk upgrade && apk add --no-cache python3 make g++ && rm -rf /var/cache/apk/*
 COPY package.json .
 COPY tsconfig.backend.json .
+COPY demoRoutes.js .
 COPY backend-src ./backend-src
 COPY verify-build.js .
 RUN npm install --frozen-lockfile || yarn install --frozen-lockfile
