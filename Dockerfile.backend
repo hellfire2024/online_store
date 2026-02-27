@@ -26,9 +26,9 @@ COPY --from=build /app/backend-src/wait-for-mysql.sh ./backend-src/wait-for-mysq
 COPY --from=build /app/backend-src/healthcheck-debug.sh ./backend-src/healthcheck-debug.sh
 COPY --from=build /app/backend-src/db/site_settings.json ./db/site_settings.json
 COPY --from=build /app/backend-src/healthcheck.js ./healthcheck.js
+RUN chmod +x /app/healthcheck.js
 USER node
 EXPOSE 3001
-HEALTHCHECK --interval=10s --timeout=5s --start-period=15s --retries=3 \
-  CMD node /app/healthcheck.js
-CMD ["node", "dist/server.js"]
+HEALTHCHECK --interval=10s --timeout=5s --start-period=30s --retries=5 \
+    CMD node /app/healthcheck.js || exit 1
 CMD ["node", "dist/server.js"]
