@@ -18,6 +18,7 @@ import { ServicesProvider } from "../context/ServicesContext";
 import { PagesProvider } from "../context/PagesContext";
 import { SiteSettingsProvider } from "../context/SiteSettingsContext";
 import SiteEffectHandler from "../components/SiteEffectHandler";
+import KeyboardShortcutHandler from "../components/KeyboardShortcutHandler";
 
 function App() {
   return (
@@ -35,6 +36,7 @@ function App() {
                         <PagesProvider>
                           <CartProvider>
                             <Router>
+                              <KeyboardShortcutHandler />
                               <Routes>
                                 <Route path="/" element={<HomePage />} />
                                 <Route path="/store" element={<StorePage />} />

@@ -295,9 +295,9 @@ const HomePage: React.FC = () => {
               }
               setShowReviewForm(!showReviewForm);
             }}
-            className="bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-4 rounded-lg"
+            className="px-6 py-3 bg-gradient-to-r from-sky-500 to-sky-400 hover:from-sky-600 hover:to-sky-500 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 active:translate-y-0"
           >
-            {showReviewForm ? "Cancel" : "Write a Review"}
+            {showReviewForm ? "Cancel" : "✨ Write a Review"}
           </button>
         </div>
 
