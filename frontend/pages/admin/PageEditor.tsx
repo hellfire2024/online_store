@@ -451,51 +451,48 @@ const PageEditor: React.FC = () => {
 
   const isNewPage = !pageId;
 
-  const editor = useEditor(
-    {
-      extensions: [
-        StarterKit,
-        Image,
-        TextStyle,
-        Color,
-        FontFamily,
-        Underline,
-        TextAlign.configure({
-          types: ["heading", "paragraph"],
-        }),
-        Highlight.configure({
-          multicolor: false,
-        }),
-      ],
-      content: "",
-      editorProps: {
-        attributes: {
-          class:
-            "prose prose-invert max-w-none p-4 h-96 overflow-y-auto focus:outline-none",
-        },
-      },
-      onUpdate: ({ editor }) => {
-        setPage((prev) => {
-          if (!prev) return null;
-          const newPage = { ...prev };
-
-          if (newPage.pageType === "home") {
-            return newPage;
-          } else if (newPage.pageType === "about") {
-            newPage.contentData = {
-              ...(newPage.contentData as AboutPageContent),
-              aboutPageContent: editor.getHTML(),
-            };
-          } else {
-            newPage.content = editor.getHTML();
-          }
-
-          return newPage;
-        });
+  const editor = useEditor({
+    extensions: [
+      StarterKit,
+      Image,
+      TextStyle,
+      Color,
+      FontFamily,
+      Underline,
+      TextAlign.configure({
+        types: ["heading", "paragraph"],
+      }),
+      Highlight.configure({
+        multicolor: false,
+      }),
+    ],
+    content: "",
+    editorProps: {
+      attributes: {
+        class:
+          "prose prose-invert max-w-none p-4 h-96 overflow-y-auto focus:outline-none",
       },
     },
-    [],
-  );
+    onUpdate: ({ editor }) => {
+      setPage((prev) => {
+        if (!prev) return null;
+        const newPage = { ...prev };
+
+        if (newPage.pageType === "home") {
+          return newPage;
+        } else if (newPage.pageType === "about") {
+          newPage.contentData = {
+            ...(newPage.contentData as AboutPageContent),
+            aboutPageContent: editor.getHTML(),
+          };
+        } else {
+          newPage.content = editor.getHTML();
+        }
+
+        return newPage;
+      });
+    },
+  });
 
   const hasUnsavedChanges =
     JSON.stringify(page) !== JSON.stringify(originalPage) ||
