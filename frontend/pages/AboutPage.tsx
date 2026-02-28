@@ -10,7 +10,7 @@ const AboutPage: React.FC = () => {
 
   const aboutPage = pages.find((page) => page.pageType === "about");
 
-  if (isLoading || !aboutPage) {
+  if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-[60vh]">
         <Spinner />
@@ -19,12 +19,12 @@ const AboutPage: React.FC = () => {
   }
 
   const aboutContent =
-    (aboutPage.contentData as AboutPageContent)?.aboutPageContent ||
+    (aboutPage?.contentData as AboutPageContent)?.aboutPageContent ||
     "<p>Welcome to Custom Threads, where creativity meets quality.</p>";
-  const pageFont = (aboutPage.contentData as AboutPageContent)?.pageFont;
-  const pageTitleFont = (aboutPage.contentData as AboutPageContent)
+  const pageFont = (aboutPage?.contentData as AboutPageContent)?.pageFont;
+  const pageTitleFont = (aboutPage?.contentData as AboutPageContent)
     ?.pageTitleFont;
-  const pageTitleColor = (aboutPage.contentData as AboutPageContent)
+  const pageTitleColor = (aboutPage?.contentData as AboutPageContent)
     ?.pageTitleColor;
 
   return (
@@ -53,3 +53,5 @@ const AboutPage: React.FC = () => {
 };
 
 export default AboutPage;
+
+

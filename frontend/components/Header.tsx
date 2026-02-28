@@ -62,18 +62,17 @@ const Header: React.FC = () => {
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
   }, [isProfileOpen]);
-
-  // THIS IS THE CORRECT AND FINAL FIX.
-  // We will not attempt to render anything until all data is loaded and verified.
-  if (settingsLoading || pagesLoading || !siteSettings || !menus) {
-    return (
-      <header className="bg-slate-900/80 backdrop-blur-md shadow-lg sticky top-0 z-40">
-        <div className="container mx-auto px-4 h-18" />
-      </header>
-    );
-  }
-
-  const headerMenu = menus.find((m) => m.id === "menu_header");
+  const headerMenu = menus?.find((m) => m.id === "menu_header");
+  const fallbackMenuItems = [
+    { id: "home", text: "Home", url: "/" },
+    { id: "store", text: "Store", url: "/store" },
+    { id: "about", text: "About", url: "/about" },
+    { id: "contact", text: "Contact", url: "/contact" },
+  ];
+  const menuItems =
+    headerMenu?.items && headerMenu.items.length > 0
+      ? headerMenu.items
+      : fallbackMenuItems;
 
   const navLinkClass = ({ isActive }: { isActive: boolean }) =>
     `transition-colors ${isActive ? "text-white font-semibold" : "text-gray-400 hover:text-white"}`;
@@ -92,7 +91,7 @@ const Header: React.FC = () => {
             </span>
           </Link>
           <nav className="hidden md:flex items-center space-x-8 absolute left-1/2 transform -translate-x-1/2">
-            {headerMenu?.items.map((item) => (
+            {menuItems.map((item) => (
               <NavLink key={item.id} to={item.url} className={navLinkClass}>
                 {item.text}
               </NavLink>
@@ -188,7 +187,7 @@ const Header: React.FC = () => {
         </div>
         <div className={`md:hidden ${isMobileMenuOpen ? 'block' : 'hidden'} border-t border-slate-700 pb-4 pt-2`}> 
           <nav className="flex flex-col space-y-1">
-            {headerMenu?.items.map((item) => (
+            {menuItems.map((item) => (
               <NavLink
                 key={item.id}
                 to={item.url}
@@ -219,3 +218,5 @@ const Header: React.FC = () => {
 };
 
 export default Header;
+
+
