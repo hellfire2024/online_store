@@ -247,7 +247,10 @@ const HomePage: React.FC = () => {
         </h2>
         <div className="flex flex-wrap justify-center gap-8">
           {featuredProducts.map((product) => (
-            <div key={product.id} className="w-full sm:w-[calc(50%-1rem)] lg:w-[calc(25%-1.5rem)] max-w-sm">
+            <div
+              key={product.id}
+              className="w-full sm:w-[calc(50%-1rem)] lg:w-[calc(25%-1.5rem)] max-w-sm"
+            >
               <ProductCard product={product} />
             </div>
           ))}
