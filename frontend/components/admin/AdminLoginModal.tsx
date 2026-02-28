@@ -50,51 +50,37 @@ const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
         <h2 className="text-2xl font-bold text-white text-center mb-6">
           Admin Login
         </h2>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Username
-            </label>
+        <form onSubmit={handleSubmit}>
+          <div className="space-y-4">
             <input
               type="text"
+              placeholder="Username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
-              placeholder="Enter your username"
-              disabled={isLoading}
+              className="w-full p-3 bg-slate-700 border border-slate-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
+              autoFocus
             />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Password
-            </label>
             <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}
+                placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
-                placeholder="Enter your password"
-                disabled={isLoading}
+                className="w-full p-3 pr-12 bg-slate-700 border border-slate-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
               />
               <button
                 type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-300"
-                disabled={isLoading}
+                onClick={() => setShowPassword((prev) => !prev)}
+                className="absolute inset-y-0 right-0 px-3 text-sm text-gray-300 hover:text-white"
+                aria-label={showPassword ? "Hide password" : "Show password"}
               >
                 {showPassword ? "Hide" : "Show"}
               </button>
             </div>
-          </div>
-
-          <div className="pt-2">
             <button
               type="submit"
-              disabled={isLoading || !username || !password}
-              className="w-full bg-sky-600 hover:bg-sky-700 disabled:bg-slate-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+              className="w-full bg-sky-500 text-white font-bold py-3 rounded-lg hover:bg-sky-600 transition-colors disabled:opacity-50"
+              disabled={isLoading}
             >
               {isLoading ? "Logging in..." : "Login"}
             </button>

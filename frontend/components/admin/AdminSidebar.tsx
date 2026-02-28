@@ -118,13 +118,13 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
       {/* Sidebar */}
       <aside
         className={`
-					fixed lg:static inset-y-0 left-0 z-50
-					w-80 lg:w-64 shrink-0 bg-slate-800 p-5 flex flex-col 
-					border-r border-slate-700 overflow-y-auto
-					transition-transform duration-300 ease-in-out
-					${isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
-					scrollbar-thin scrollbar-track-slate-800 scrollbar-thumb-slate-700 hover:scrollbar-thumb-slate-600
-				`}
+          fixed lg:static inset-y-0 left-0 z-50
+          w-80 lg:w-64 shrink-0 bg-slate-800 p-5 flex flex-col 
+          border-r border-slate-700 overflow-y-auto
+          transition-transform duration-300 ease-in-out
+          ${isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
+          scrollbar-thin scrollbar-track-slate-800 scrollbar-thumb-slate-700 hover:scrollbar-thumb-slate-600
+        `}
         style={{
           scrollbarWidth: "thin",
           scrollbarColor: "#475569 #1e293b",
