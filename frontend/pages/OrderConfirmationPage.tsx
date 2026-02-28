@@ -134,7 +134,10 @@ const OrderConfirmationPage: React.FC = () => {
           // Try to fetch the order from the backend API
           const apiOrder = await apiClient.orders.getById(orderNumberParam);
           if (apiOrder && apiOrder.orderNumber) {
-            console.log("Successfully fetched order from API:", apiOrder.orderNumber);
+            console.log(
+              "Successfully fetched order from API:",
+              apiOrder.orderNumber,
+            );
             // Convert backend order format to our OrderDetails format if needed
             setOrderDetails(apiOrder);
             setIsLoaded(true);

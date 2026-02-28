@@ -548,10 +548,13 @@ const CheckoutPage: React.FC = () => {
 
       // Navigate with both state and orderNumber parameter for better cross-domain support
       // Pass orderNumber as param so OrderConfirmationPage can fetch from API if needed
-      navigate(`/order-confirmation?orderNumber=${encodeURIComponent(orderDetails.orderNumber)}`, { 
-        state: orderDetails, 
-        replace: true 
-      });
+      navigate(
+        `/order-confirmation?orderNumber=${encodeURIComponent(orderDetails.orderNumber)}`,
+        {
+          state: orderDetails,
+          replace: true,
+        },
+      );
 
       // Clear cart after navigation to avoid triggering the empty cart redirect
       setTimeout(() => clearCart(), 100);

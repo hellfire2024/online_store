@@ -111,6 +111,9 @@ const pages = [
   },
 ];
 
+// Demo orders storage for checkout flow
+const orders: any[] = [];
+
 // Demo tax configuration - realistic US state tax rates
 const taxRules = [
   {
@@ -717,7 +720,37 @@ router.delete("/customers/:id", (req, res) => {
   return res.json({ success: true, message: "Customer deleted" });
 });
 router.get("/admin-users", (_req, res) => res.json(adminUsers));
-router.get("/orders", (_req, res) => res.json([]));
+
+// Orders endpoints
+router.post("/orders", (req, res) => {
+  const orderData = req.body;
+  // Store the order in the demo orders array
+  orders.push(orderData);
+  console.log("📝 Demo order created:", orderData.orderNumber);
+  return res.status(201).json({
+    success: true,
+    orderNumber: orderData.orderNumber,
+    message: "Order received",
+    emailSent: false, // Demo mode doesn't send emails
+  });
+});
+
+router.get("/orders", (_req, res) => res.json(orders));
+
+router.get("/orders/:id", (req, res) => {
+  // Support both numeric ID and orderNumber (AGIS-XXXXXXXXXX)
+  const orderId = req.params.id;
+  const order = orders.find(
+    (o) => o.id === orderId || o.orderNumber === orderId,
+  );
+  
+  if (!order) {
+    return res.status(404).json({ error: "Order not found" });
+  }
+
+  return res.json(order);
+});
+
 router.get("/galleries", (_req, res) => res.json(galleries));
 router.get("/galleries/:id/images", (req, res) =>
   res.json(galleryImages[req.params.id] || []),
