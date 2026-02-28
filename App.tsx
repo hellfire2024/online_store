@@ -10,7 +10,10 @@ import { CustomerAuthProvider } from "./context/CustomerAuthContext";
 import { CartProvider } from "./context/CartContext";
 import { ToastProvider } from "./hooks/useToast";
 import { AdminProvider, useAdmin } from "./context/AdminContext";
-import { SiteSettingsProvider, useSiteSettings } from "./context/SiteSettingsContext";
+import {
+  SiteSettingsProvider,
+  useSiteSettings,
+} from "./context/SiteSettingsContext";
 import { UnsavedChangesProvider } from "./context/UnsavedChangesContext";
 import { ProductProvider } from "./context/ProductContext";
 import { GalleryProvider } from "./context/GalleryContext";
