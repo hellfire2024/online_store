@@ -245,9 +245,11 @@ const HomePage: React.FC = () => {
         <h2 className="text-3xl font-bold text-white text-center mb-8">
           Featured Products
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="flex flex-wrap justify-center gap-8">
           {featuredProducts.map((product) => (
-            <ProductCard key={product.id} product={product} />
+            <div key={product.id} className="w-full sm:w-[calc(50%-1rem)] lg:w-[calc(25%-1.5rem)] max-w-sm">
+              <ProductCard product={product} />
+            </div>
           ))}
         </div>
       </div>
@@ -258,14 +260,14 @@ const HomePage: React.FC = () => {
           <h2 className="text-3xl font-bold text-white text-center mb-8">
             Services We Offer
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="flex flex-wrap justify-center gap-8">
             {services.map((service) => {
               const IconComponent =
                 (Icons as any)[service.icon] || Icons.LayersIcon;
               return (
                 <div
                   key={service.id}
-                  className="bg-slate-800 p-6 rounded-lg border border-slate-700 text-center"
+                  className="bg-slate-800 p-6 rounded-lg border border-slate-700 text-center w-full sm:w-[calc(50%-1rem)] lg:w-[calc(33.333%-1.33rem)] max-w-sm"
                 >
                   <div className="flex justify-center mb-4">
                     <IconComponent className="w-12 h-12 text-sky-400" />
