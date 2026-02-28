@@ -10,6 +10,7 @@ import { CustomerAuthProvider } from "./context/CustomerAuthContext";
 import { CartProvider } from "./context/CartContext";
 import { ToastProvider } from "./hooks/useToast";
 import { AdminProvider, useAdmin } from "./context/AdminContext";
+import { SiteSettingsProvider, useSiteSettings } from "./context/SiteSettingsContext";
 import { UnsavedChangesProvider } from "./context/UnsavedChangesContext";
 import { ProductProvider } from "./context/ProductContext";
 import { GalleryProvider } from "./context/GalleryContext";
@@ -17,11 +18,11 @@ import { StaffProvider } from "./context/StaffContext";
 import { ReviewsProvider } from "./context/ReviewsContext";
 import { ServicesProvider } from "./context/ServicesContext";
 import { PagesProvider } from "./context/PagesContext";
-import { SiteSettingsProvider } from "./context/SiteSettingsContext";
 
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 import Spinner from "./components/Spinner";
+import DemoModeBanner from "./components/DemoModeBanner";
 import HomePage from "./pages/HomePage";
 import AboutPage from "./pages/AboutPage";
 import ContactPage from "./pages/ContactPage";
@@ -148,9 +149,11 @@ const App: React.FC = () => {
 const AppContent: React.FC = () => {
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith("/admin");
+  const { settings } = useSiteSettings();
 
   return (
     <div className="flex flex-col min-h-screen">
+      <DemoModeBanner isDemo={settings.demo_mode ?? false} />
       {!isAdminRoute && <Header />}
       <main className={isAdminRoute ? "" : "grow container mx-auto px-4 py-8"}>
         <Routes>

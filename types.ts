@@ -505,4 +505,8 @@ export interface SiteSettings {
   };
   defaultShippingCarrier: "easypost" | "shippo" | "shipstation";
   fromAddress: ShippingAddress;
+
+  // API Configuration
+  apiBaseUrl?: string;
+  demo_mode?: boolean;
 }

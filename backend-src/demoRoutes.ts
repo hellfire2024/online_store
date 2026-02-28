@@ -199,6 +199,8 @@ const siteSettings = {
   siteBackgroundImageUrl: "https://picsum.photos/seed/hero/1200/800",
   siteBackgroundOpacity: 100,
   maxReviewsDisplayed: 10,
+  apiBaseUrl: "/api",
+  demo_mode: true,
 };
 
 const customers = [
@@ -699,6 +701,21 @@ router.get("/health", (_req, res) => {
 
 router.get("/products", (_req, res) => res.json(products));
 router.get("/customers", (_req, res) => res.json(customers));
+router.get("/customers/:id", (req, res) => {
+  const customer = customers.find((c) => c.id === req.params.id);
+  if (!customer) {
+    return res.status(404).json({ error: "Customer not found" });
+  }
+  return res.json(customer);
+});
+router.delete("/customers/:id", (req, res) => {
+  const index = customers.findIndex((c) => c.id === req.params.id);
+  if (index === -1) {
+    return res.status(404).json({ error: "Customer not found" });
+  }
+  customers.splice(index, 1);
+  return res.json({ success: true, message: "Customer deleted" });
+});
 router.get("/admin-users", (_req, res) => res.json(adminUsers));
 router.get("/orders", (_req, res) => res.json([]));
 router.get("/galleries", (_req, res) => res.json(galleries));
