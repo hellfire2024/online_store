@@ -7,10 +7,10 @@ import React, {
 } from "react";
 import { apiClient } from "../services/apiClient";
 import {
-  fetchServices,
-  addService,
-  updateService,
-  deleteService,
+  fetchServices as fetchMockServices,
+  addService as addMockService,
+  updateService as updateMockService,
+  deleteService as deleteMockService,
 } from "../services/mockApi";
 
 interface ServicesContextType {
@@ -44,7 +44,7 @@ export const ServicesProvider: React.FC<{ children: ReactNode }> = ({
           error,
         );
         try {
-          const mockServicesData = await fetchServices();
+          const mockServicesData = await fetchMockServices();
           setServices(mockServicesData);
         } catch (mockError) {
           console.error("Failed to load mock services", mockError);
@@ -62,7 +62,7 @@ export const ServicesProvider: React.FC<{ children: ReactNode }> = ({
       setServices((prev) => [...prev, newService]);
     } catch (error) {
       console.error("Failed to add service via API, using mock", error);
-      const newService = await addService(service);
+      const newService = await addMockService(service);
       setServices((prev) => [...prev, newService]);
     }
   };
@@ -78,7 +78,7 @@ export const ServicesProvider: React.FC<{ children: ReactNode }> = ({
       );
     } catch (error) {
       console.error("Failed to update service via API, using mock", error);
-      const updatedService = await updateService(service);
+      const updatedService = await updateMockService(service);
       setServices((prev) =>
         prev.map((s) => (s.id === updatedService.id ? updatedService : s)),
       );
@@ -91,7 +91,7 @@ export const ServicesProvider: React.FC<{ children: ReactNode }> = ({
       setServices((prev) => prev.filter((s) => s.id !== serviceId));
     } catch (error) {
       console.error("Failed to delete service via API, using mock", error);
-      await deleteService(serviceId);
+      await deleteMockService(serviceId);
       setServices((prev) => prev.filter((s) => s.id !== serviceId));
     }
   };

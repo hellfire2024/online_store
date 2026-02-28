@@ -1439,13 +1439,13 @@ const CustomerManagement: React.FC = () => {
                             0,
                           );
                           const quantity = toNumber(item.quantity, 1);
-                          
+
                           // Build selected options string if available
                           let selectedOptionsText = "";
                           if (typeof item.selectedOptions === "string") {
                             selectedOptionsText = item.selectedOptions;
                           }
-                          
+
                           return {
                             id: String(item.id || idx),
                             name,
@@ -1463,8 +1463,11 @@ const CustomerManagement: React.FC = () => {
                       );
 
                       const orderData = order.orderData || {};
-                      const shipping = orderData.shippingAddress || order.shippingAddress || {};
-                      
+                      const shipping =
+                        orderData.shippingAddress ||
+                        order.shippingAddress ||
+                        {};
+
                       const invoiceHtml = generateInvoiceHTML(
                         {
                           orderNumber: order.orderNumber,
@@ -1477,16 +1480,13 @@ const CustomerManagement: React.FC = () => {
                           customerPhone: customer.phone,
                           shippingAddress: {
                             street:
-                              shipping.street || 
-                              shipping.streetAddress || 
-                              shipping.street1 || 
+                              shipping.street ||
+                              shipping.streetAddress ||
+                              shipping.street1 ||
                               "",
                             city: shipping.city || "",
                             state: shipping.state || "",
-                            zip: 
-                              shipping.zip || 
-                              shipping.zipCode || 
-                              "",
+                            zip: shipping.zip || shipping.zipCode || "",
                             country: shipping.country || "USA",
                           },
                           items,

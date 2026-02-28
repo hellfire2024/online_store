@@ -7,6 +7,12 @@ import React, {
 } from "react";
 import { Product } from "../types";
 import { apiClient } from "../services/apiClient";
+import {
+  fetchProducts as fetchMockProducts,
+  addProduct as addMockProduct,
+  updateProduct as updateMockProduct,
+  deleteProduct as deleteMockProduct,
+} from "../services/mockApi";
 
 interface ProductContextType {
   products: Product[];
@@ -31,7 +37,12 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({
       const productsData = await apiClient.products.getAll();
       setProducts(Array.isArray(productsData) ? productsData : []);
     } catch (error) {
-      setProducts([]);
+      try {
+        const mockProductsData = await fetchMockProducts();
+        setProducts(Array.isArray(mockProductsData) ? mockProductsData : []);
+      } catch {
+        setProducts([]);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -42,15 +53,44 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({
   }, []);
 
   const addProduct = async (product: Omit<Product, "id">) => {
-    // Dummy implementation
-    return { ...product, id: "new" } as Product;
+    try {
+      const newProduct = await apiClient.products.create(product);
+      setProducts((prev) => [...prev, newProduct]);
+      return newProduct;
+    } catch (error) {
+      const newProduct = await addMockProduct(product);
+      setProducts((prev) => [...prev, newProduct]);
+      return newProduct;
+    }
   };
+
   const updateProduct = async (product: Product) => {
-    // Dummy implementation
-    return product;
+    try {
+      const updatedProduct = await apiClient.products.update(
+        product.id,
+        product,
+      );
+      setProducts((prev) =>
+        prev.map((p) => (p.id === updatedProduct.id ? updatedProduct : p)),
+      );
+      return updatedProduct;
+    } catch (error) {
+      const updatedProduct = await updateMockProduct(product);
+      setProducts((prev) =>
+        prev.map((p) => (p.id === updatedProduct.id ? updatedProduct : p)),
+      );
+      return updatedProduct;
+    }
   };
+
   const deleteProduct = async (productId: string) => {
-    // Dummy implementation
+    try {
+      await apiClient.products.delete(productId);
+      setProducts((prev) => prev.filter((p) => p.id !== productId));
+    } catch (error) {
+      await deleteMockProduct(productId);
+      setProducts((prev) => prev.filter((p) => p.id !== productId));
+    }
   };
 
   return (

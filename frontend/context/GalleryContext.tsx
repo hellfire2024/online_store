@@ -7,6 +7,15 @@ import React, {
 } from "react";
 import { Gallery, GalleryImage } from "../types";
 import { apiClient } from "../services/apiClient";
+import {
+  fetchGalleries as fetchMockGalleries,
+  fetchGalleryImages as fetchMockGalleryImages,
+  addGallery as addMockGallery,
+  deleteGallery as deleteMockGallery,
+  addGalleryImage as addMockGalleryImage,
+  updateGalleryImage as updateMockGalleryImage,
+  deleteGalleryImage as deleteMockGalleryImage,
+} from "../services/mockApi";
 
 interface GalleryContextType {
   galleries: Gallery[];
@@ -42,9 +51,15 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({
     const loadGalleries = async () => {
       setIsLoading(true);
       try {
-        setGalleries([]);
+        const galleriesData = await apiClient.galleries.getAll();
+        setGalleries(Array.isArray(galleriesData) ? galleriesData : []);
       } catch (error) {
-        setGalleries([]);
+        try {
+          const mockGalleries = await fetchMockGalleries();
+          setGalleries(Array.isArray(mockGalleries) ? mockGalleries : []);
+        } catch {
+          setGalleries([]);
+        }
       } finally {
         setIsLoading(false);
       }
@@ -52,19 +67,114 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({
     loadGalleries();
   }, []);
 
-  const fetchGalleryImages = async (galleryId: string) => {};
-  const addGallery = async (gallery: Omit<Gallery, "id">) => {};
-  const deleteGallery = async (galleryId: string) => {};
+  const fetchGalleryImages = async (galleryId: string) => {
+    try {
+      const images = await apiClient.galleries.getImages(galleryId);
+      setGalleryImages((prev) => ({
+        ...prev,
+        [galleryId]: Array.isArray(images) ? images : [],
+      }));
+    } catch (error) {
+      const images = await fetchMockGalleryImages(galleryId);
+      setGalleryImages((prev) => ({
+        ...prev,
+        [galleryId]: Array.isArray(images) ? images : [],
+      }));
+    }
+  };
+
+  const addGallery = async (gallery: Omit<Gallery, "id">) => {
+    try {
+      const newGallery = await apiClient.galleries.create(gallery);
+      setGalleries((prev) => [...prev, newGallery]);
+    } catch (error) {
+      const newGallery = await addMockGallery(gallery);
+      setGalleries((prev) => [...prev, newGallery]);
+    }
+  };
+
+  const deleteGallery = async (galleryId: string) => {
+    try {
+      await apiClient.galleries.delete(galleryId);
+    } catch (error) {
+      await deleteMockGallery(galleryId);
+    }
+
+    setGalleries((prev) => prev.filter((g) => g.id !== galleryId));
+    setGalleryImages((prev) => {
+      const next = { ...prev };
+      delete next[galleryId];
+      return next;
+    });
+  };
+
   const addGalleryImage = async (
     galleryId: string,
     image: Omit<GalleryImage, "id">,
-  ) => {};
+  ) => {
+    try {
+      const newImage = await apiClient.galleries.addImage(galleryId, image);
+      setGalleryImages((prev) => ({
+        ...prev,
+        [galleryId]: [...(prev[galleryId] || []), newImage],
+      }));
+    } catch (error) {
+      const newImage = await addMockGalleryImage(galleryId, image);
+      setGalleryImages((prev) => ({
+        ...prev,
+        [galleryId]: [...(prev[galleryId] || []), newImage],
+      }));
+    }
+  };
+
   const updateGalleryImage = async (
     galleryId: string,
     imageId: string,
     updates: Partial<Omit<GalleryImage, "id">>,
-  ) => {};
-  const deleteGalleryImage = async (galleryId: string, imageId: string) => {};
+  ) => {
+    try {
+      const updatedImage = await apiClient.galleries.updateImage(
+        galleryId,
+        imageId,
+        updates,
+      );
+      setGalleryImages((prev) => ({
+        ...prev,
+        [galleryId]: (prev[galleryId] || []).map((img) =>
+          img.id === imageId ? updatedImage : img,
+        ),
+      }));
+    } catch (error) {
+      const currentImage = (galleryImages[galleryId] || []).find(
+        (img) => img.id === imageId,
+      );
+      if (!currentImage) return;
+
+      const updatedImage = await updateMockGalleryImage(galleryId, {
+        ...currentImage,
+        ...updates,
+      });
+      setGalleryImages((prev) => ({
+        ...prev,
+        [galleryId]: (prev[galleryId] || []).map((img) =>
+          img.id === imageId ? updatedImage : img,
+        ),
+      }));
+    }
+  };
+
+  const deleteGalleryImage = async (galleryId: string, imageId: string) => {
+    try {
+      await apiClient.galleries.deleteImage(galleryId, imageId);
+    } catch (error) {
+      await deleteMockGalleryImage(galleryId, imageId);
+    }
+
+    setGalleryImages((prev) => ({
+      ...prev,
+      [galleryId]: (prev[galleryId] || []).filter((img) => img.id !== imageId),
+    }));
+  };
 
   return (
     <GalleryContext.Provider

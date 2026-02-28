@@ -99,20 +99,38 @@ export const SiteSettingsProvider: React.FC<{ children: ReactNode }> = ({
 }) => {
   const [siteSettings, setSiteSettings] =
     useState<SiteSettings>(defaultSettings);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      setIsLoading(true);
+      try {
+        const loadedSettings = await apiClient.settings.get();
+        if (loadedSettings && typeof loadedSettings === "object") {
+          setSiteSettings((prev) => ({ ...prev, ...loadedSettings }));
+        }
+      } catch (error) {
+        setSiteSettings(defaultSettings);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchSettings();
+  }, []);
 
   const updateSiteSettings = async (updates: Partial<SiteSettings>) => {
     setIsLoading(true);
     try {
       // Create the updated settings object
       const updatedSettings = { ...siteSettings, ...updates };
-      
+
       // Update local state
       setSiteSettings(updatedSettings);
-      
+
       // Persist to backend
       await apiClient.settings.update(updatedSettings);
-      
+
       setIsLoading(false);
       return { success: true };
     } catch (error) {

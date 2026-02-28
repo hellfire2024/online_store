@@ -371,7 +371,9 @@ export const StarIcon: React.FC<{ className?: string }> = ({ className }) => (
   </svg>
 );
 
-export const ContentIcon: React.FC<{ className?: string }> = ({ className }) => (
+export const ContentIcon: React.FC<{ className?: string }> = ({
+  className,
+}) => (
   <svg
     className={className}
     xmlns="http://www.w3.org/2000/svg"
