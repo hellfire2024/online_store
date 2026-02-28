@@ -5,8 +5,12 @@ import "./index.css";
 import { setApiClientBaseUrl } from "../services/apiClient";
 
 // Suppress browser extension errors from polluting console
-window.addEventListener('unhandledrejection', (event) => {
-  if (event.reason?.message?.includes('message channel closed before a response was received')) {
+window.addEventListener("unhandledrejection", (event) => {
+  if (
+    event.reason?.message?.includes(
+      "message channel closed before a response was received",
+    )
+  ) {
     event.preventDefault();
     // Silently ignore browser extension async listener errors
   }
