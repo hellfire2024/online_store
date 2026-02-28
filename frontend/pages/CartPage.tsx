@@ -88,16 +88,16 @@ const CartItemRow: React.FC<{ item: CartItem }> = ({ item }) => {
     basePrice + optionsDelta + customTextCost + customImageCost;
 
   return (
-    <div className="flex items-start py-5 border-b border-slate-700 gap-4">
-      <div className="shrink-0">
+    <div className="flex flex-col sm:flex-row items-start py-5 border-b border-slate-700 gap-4">
+      <div className="shrink-0 w-full sm:w-auto flex sm:block justify-center">
         <img
           src={item.product.imageUrl}
           alt={item.product.name}
-          className="w-24 h-24 object-cover rounded-md"
+          className="w-32 h-32 sm:w-24 sm:h-24 object-cover rounded-md"
         />
       </div>
-      <div className="grow">
-        <h3 className="font-semibold text-white">{item.product.name}</h3>
+      <div className="grow w-full sm:w-auto">
+        <h3 className="font-semibold text-white text-base sm:text-lg">{item.product.name}</h3>
         <p className="text-sm text-gray-300">
           Base price (each): ${basePrice.toFixed(2)}
         </p>
@@ -131,19 +131,19 @@ const CartItemRow: React.FC<{ item: CartItem }> = ({ item }) => {
         </p>
         {item.customization && (
           <div className="mt-2 bg-slate-700 p-2 rounded-lg">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <img
                 src={item.customization.value}
                 alt="Customization"
-                className="w-16 h-16 object-cover rounded border-2 border-slate-600"
+                className="w-16 h-16 object-cover rounded border-2 border-slate-600 shrink-0"
               />
-              <div>
-                <p className="text-xs font-semibold text-sky-400">
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-semibold text-sky-400 break-words">
                   {item.customization.type === "gallery"
                     ? "Gallery Design"
                     : "Uploaded Design"}
                 </p>
-                <p className="text-xs text-gray-400 mt-0.5">
+                <p className="text-xs text-gray-400 mt-0.5 break-words">
                   Custom engraving image
                 </p>
               </div>
@@ -155,7 +155,7 @@ const CartItemRow: React.FC<{ item: CartItem }> = ({ item }) => {
             <p className="text-xs font-semibold text-purple-400 mb-1">
               Custom Engraving Text:
             </p>
-            <p className="text-sm text-white italic">"{item.customText}"</p>
+            <p className="text-sm text-white italic break-words">"{item.customText}"</p>
             {item.product.customTextPricePerChar && (
               <p className="text-xs text-gray-400 mt-1">
                 {item.customText.length} characters • +$
@@ -167,26 +167,31 @@ const CartItemRow: React.FC<{ item: CartItem }> = ({ item }) => {
           </div>
         )}
       </div>
-      <div className="flex items-center space-x-4 shrink-0">
-        <input
-          type="number"
-          min="1"
-          value={item.quantity}
-          onChange={(e) =>
-            updateQuantity(
-              item.product.id,
-              parseInt(e.target.value),
-              item.selectedOptions,
-            )
-          }
-          className="w-16 p-1 bg-slate-700 border border-slate-600 rounded-md text-center text-white"
-        />
-        <p className="w-20 text-right font-semibold text-white">
-          ${(finalPrice * item.quantity).toFixed(2)}
-        </p>
+      <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-3 sm:gap-4 w-full sm:w-auto shrink-0">
+        <div className="flex items-center gap-3 sm:flex-col sm:items-end">
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-400 sm:hidden">Qty:</span>
+            <input
+              type="number"
+              min="1"
+              value={item.quantity}
+              onChange={(e) =>
+                updateQuantity(
+                  item.product.id,
+                  parseInt(e.target.value),
+                  item.selectedOptions,
+                )
+              }
+              className="w-16 p-1 bg-slate-700 border border-slate-600 rounded-md text-center text-white"
+            />
+          </div>
+          <p className="font-semibold text-white text-base sm:text-lg whitespace-nowrap">
+            ${(finalPrice * item.quantity).toFixed(2)}
+          </p>
+        </div>
         <button
           onClick={() => removeFromCart(item.product.id, item.selectedOptions)}
-          className="text-gray-500 hover:text-red-500 transition-colors"
+          className="text-gray-500 hover:text-red-500 transition-colors p-2"
         >
           <TrashIcon />
         </button>
@@ -224,8 +229,8 @@ const CartPage: React.FC = () => {
   const estimatedTotal = totalPrice + estimatedShipping + estimatedTax;
 
   return (
-    <div className="bg-slate-800 p-8 rounded-lg shadow-2xl border border-slate-700">
-      <h1 className="text-3xl font-bold text-white mb-6">Your Shopping Cart</h1>
+    <div className="bg-slate-800 p-4 sm:p-6 md:p-8 rounded-lg shadow-2xl border border-slate-700">
+      <h1 className="text-2xl sm:text-3xl font-bold text-white mb-4 sm:mb-6">Your Shopping Cart</h1>
       <div>
         {cartItems.map((item, idx) => (
           <CartItemRow
@@ -235,21 +240,21 @@ const CartPage: React.FC = () => {
         ))}
       </div>
       <div className="mt-6 flex justify-end">
-        <div className="w-full max-w-sm space-y-2">
-          <div className="flex justify-between text-white">
+        <div className="w-full sm:max-w-sm space-y-2">
+          <div className="flex justify-between text-white text-sm sm:text-base">
             <span>Subtotal</span>
             <span>${totalPrice.toFixed(2)}</span>
           </div>
-          <div className="flex justify-between text-gray-400 text-sm">
+          <div className="flex justify-between text-gray-400 text-xs sm:text-sm">
             <span>Estimated Shipping</span>
             <span>${estimatedShipping.toFixed(2)}</span>
           </div>
-          <div className="flex justify-between text-gray-400 text-sm">
+          <div className="flex justify-between text-gray-400 text-xs sm:text-sm">
             <span>Estimated Tax ({(estimatedTaxRate * 100).toFixed(0)}%)</span>
             <span>${estimatedTax.toFixed(2)}</span>
           </div>
           <div className="border-t border-slate-700 pt-2 mt-2"></div>
-          <div className="flex justify-between text-lg font-semibold text-white">
+          <div className="flex justify-between text-base sm:text-lg font-semibold text-white">
             <span>Estimated Total</span>
             <span>${estimatedTotal.toFixed(2)}</span>
           </div>
@@ -258,7 +263,7 @@ const CartPage: React.FC = () => {
             location.
           </p>
           <Link to="/checkout">
-            <button className="w-full mt-4 bg-sky-500 text-white font-bold py-3 rounded-lg hover:bg-sky-600 transition-colors">
+            <button className="w-full mt-4 bg-sky-500 text-white font-bold py-3 rounded-lg hover:bg-sky-600 transition-colors text-sm sm:text-base">
               Proceed to Checkout
             </button>
           </Link>
