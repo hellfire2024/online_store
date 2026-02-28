@@ -363,7 +363,16 @@ const ProductManagement: React.FC = () => {
           throw new Error("Failed to upload image");
         }
 
-        const data = await response.json();
+        const contentType = (
+          response.headers.get("content-type") || ""
+        ).toLowerCase();
+        const raw = await response.text();
+        if (!contentType.includes("application/json")) {
+          throw new Error(
+            `Upload endpoint returned non-JSON response (${contentType || "unknown"})`,
+          );
+        }
+        const data = raw.trim() ? JSON.parse(raw) : {};
         const imageUrl = data.imageUrl;
 
         setImagePreview(imageUrl);

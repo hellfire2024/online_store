@@ -329,7 +329,16 @@ const CheckoutPage: React.FC = () => {
             throw new Error(`Tax API error: ${response.statusText}`);
           }
 
-          const result = await response.json();
+          const contentType = (
+            response.headers.get("content-type") || ""
+          ).toLowerCase();
+          const raw = await response.text();
+          if (!contentType.includes("application/json")) {
+            throw new Error(
+              `Tax API returned non-JSON response (${contentType || "unknown"})`,
+            );
+          }
+          const result = raw.trim() ? JSON.parse(raw) : {};
           setTaxCalculation(sanitizeTaxResult(result, subtotal, shippingCost));
         } catch (error) {
           console.error(

@@ -23,6 +23,29 @@ export interface StripeTaxCalculationResult {
   stripeTaxTransactionId?: string; // For record keeping
 }
 
+async function parseJsonResponse(response: Response): Promise<any> {
+  const contentType = (
+    response.headers.get("content-type") || ""
+  ).toLowerCase();
+  const raw = await response.text();
+
+  if (!contentType.includes("application/json")) {
+    throw new Error(
+      `Tax calculation returned non-JSON response (${contentType || "unknown"})`,
+    );
+  }
+
+  if (!raw.trim()) {
+    return {};
+  }
+
+  try {
+    return JSON.parse(raw);
+  } catch {
+    throw new Error("Tax calculation returned invalid JSON");
+  }
+}
+
 /**
  * Calculate tax using Stripe Tax API
  * This would be called from the backend to keep API key secure
@@ -47,7 +70,7 @@ export const calculateTaxWithStripe = async (
     throw new Error(`Tax calculation failed: ${response.statusText}`);
   }
 
-  return response.json();
+  return parseJsonResponse(response);
 };
 
 /**

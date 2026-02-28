@@ -117,7 +117,15 @@ const StaffManagement: React.FC = () => {
           return;
         }
 
-        const result = await response.json();
+        const contentType = (
+          response.headers.get("content-type") || ""
+        ).toLowerCase();
+        const raw = await response.text();
+        if (!contentType.includes("application/json")) {
+          addToast("Image upload returned invalid response", "error");
+          return;
+        }
+        const result = raw.trim() ? JSON.parse(raw) : {};
         finalImageUrl = result.imageUrl;
         addToast("Image uploaded successfully!", "success");
       } catch (error) {

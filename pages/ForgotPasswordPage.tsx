@@ -37,8 +37,20 @@ const ForgotPasswordPage: React.FC = () => {
       );
 
       if (!response.ok) {
-        const error = await response.json();
-        addToast(error.message || "Failed to send reset email", "error");
+        let message = "Failed to send reset email";
+        const contentType = (
+          response.headers.get("content-type") || ""
+        ).toLowerCase();
+        const raw = await response.text();
+        if (contentType.includes("application/json") && raw.trim()) {
+          try {
+            const parsed = JSON.parse(raw);
+            message = parsed?.message || parsed?.error || message;
+          } catch {
+            message = "Failed to send reset email";
+          }
+        }
+        addToast(message, "error");
         return;
       }
 

@@ -3,6 +3,7 @@ let API_BASE_URL = "https://devapi.adaptivegis.com/api";
 
 export function setApiClientBaseUrl(url: string) {
   API_BASE_URL = url;
+  apiClient.setBaseUrl(url);
   if (window && typeof window === "object") {
     (window as any).__API_BASE_URL__ = url;
   }
@@ -22,6 +23,10 @@ class ApiClient {
     this.baseUrl = baseUrl;
     // Try to load token from localStorage
     this.token = localStorage.getItem("auth_token");
+  }
+
+  setBaseUrl(url: string) {
+    this.baseUrl = url;
   }
 
   setToken(token: string | null) {
@@ -132,7 +137,7 @@ class ApiClient {
             return {} as T;
           }
 
-          const data = await response.json();
+          const data = await this.parseJsonResponse(response, method, endpoint);
 
           if (method === "GET") {
             this.cache.set(cacheKey, {
@@ -174,12 +179,20 @@ class ApiClient {
 
         const error = await response.json().catch((parseErr) => {
           console.error(
-            `[API] Failed to parse JSON for ${method} ${endpoint}:`,
+            `[API] Failed to parse JSON error for ${method} ${endpoint}:`,
             parseErr,
           );
-          return { error: "Request failed" };
+          return null;
         });
-        throw new Error(error.error || `HTTP ${response.status}`);
+
+        if (error && typeof error === "object") {
+          const maybeError = (error as any).error || (error as any).message;
+          if (maybeError) {
+            throw new Error(String(maybeError));
+          }
+        }
+
+        throw new Error(`HTTP ${response.status} ${response.statusText}`);
       }
     };
 
@@ -192,6 +205,33 @@ class ApiClient {
     }
 
     return this.enqueue(execute);
+  }
+
+  private async parseJsonResponse(
+    response: Response,
+    method: string,
+    endpoint: string,
+  ): Promise<any> {
+    const contentType = (
+      response.headers.get("content-type") || ""
+    ).toLowerCase();
+    const bodyText = await response.text();
+
+    if (!bodyText.trim()) {
+      return {};
+    }
+
+    if (!contentType.includes("application/json")) {
+      throw new Error(
+        `Expected JSON but received '${contentType || "unknown"}' for ${method} ${endpoint}`,
+      );
+    }
+
+    try {
+      return JSON.parse(bodyText);
+    } catch {
+      throw new Error(`Invalid JSON response for ${method} ${endpoint}`);
+    }
   }
 
   // Products
