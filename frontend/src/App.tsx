@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useCallback } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 // Import main pages
 import HomePage from "../pages/HomePage";
@@ -19,8 +19,14 @@ import { PagesProvider } from "../context/PagesContext";
 import { SiteSettingsProvider } from "../context/SiteSettingsContext";
 import SiteEffectHandler from "../components/SiteEffectHandler";
 import KeyboardShortcutHandler from "../components/KeyboardShortcutHandler";
+import AdminLoginModal from "../components/admin/AdminLoginModal";
 
 function App() {
+  const [isAdminLoginOpen, setIsAdminLoginOpen] = useState(false);
+
+  const handleOpenAdminLogin = useCallback(() => {
+    setIsAdminLoginOpen(true);
+  }, []);
   return (
     <AdminProvider>
       <CustomerAuthProvider>
@@ -36,7 +42,11 @@ function App() {
                         <PagesProvider>
                           <CartProvider>
                             <Router>
-                              <KeyboardShortcutHandler />
+                              <AdminLoginModal
+                                isOpen={isAdminLoginOpen}
+                                onClose={() => setIsAdminLoginOpen(false)}
+                              />
+                              <KeyboardShortcutHandler onAdminKeyPress={handleOpenAdminLogin} />
                               <Routes>
                                 <Route path="/" element={<HomePage />} />
                                 <Route path="/store" element={<StorePage />} />

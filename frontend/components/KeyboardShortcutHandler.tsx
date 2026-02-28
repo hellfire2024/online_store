@@ -1,23 +1,26 @@
 import React, { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 
-const KeyboardShortcutHandler: React.FC = () => {
-  const navigate = useNavigate();
+interface KeyboardShortcutHandlerProps {
+  onAdminKeyPress?: () => void;
+}
 
+const KeyboardShortcutHandler: React.FC<KeyboardShortcutHandlerProps> = ({ onAdminKeyPress }) => {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      // Ctrl+Shift+A for admin login
-      if (event.ctrlKey && event.shiftKey && event.key === "A") {
+      // Ctrl+Alt+A for admin login
+      if (event.ctrlKey && event.altKey && event.key === "A") {
         event.preventDefault();
-        navigate("/admin");
+        if (onAdminKeyPress) {
+          onAdminKeyPress();
+        }
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [navigate]);
+  }, [onAdminKeyPress]);
 
-  return null; // This component doesn't render anything visible
+  return null;
 };
 
 export default KeyboardShortcutHandler;
