@@ -138,8 +138,11 @@ const OrderConfirmationPage: React.FC = () => {
               "Successfully fetched order from API:",
               apiOrder.orderNumber,
             );
-            // Convert backend order format to our OrderDetails format if needed
-            setOrderDetails(apiOrder);
+            // Extract orderData if it exists (backend returns nested structure)
+            // Backend format: { id, orderNumber, orderData: { items, ... }, ... }
+            // Frontend format: { orderNumber, items, ... }
+            const orderToDisplay: OrderDetails = apiOrder.orderData || apiOrder;
+            setOrderDetails(orderToDisplay);
             setIsLoaded(true);
             return;
           }
