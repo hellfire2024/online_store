@@ -10,7 +10,7 @@ services:
       - .env
     environment:
       - NODE_ENV=production
-      - DEMO_MODE=1
+      - DEMO_MODE=0
       - DB_HOST=mysql
       - DB_PORT=3306
       - DB_USER=adaptivegis-dev

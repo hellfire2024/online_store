@@ -723,32 +723,71 @@ router.get("/admin-users", (_req, res) => res.json(adminUsers));
 
 // Orders endpoints
 router.post("/orders", (req, res) => {
-  const orderData = req.body;
-  // Store the order in the demo orders array
-  orders.push(orderData);
-  console.log("📝 Demo order created:", orderData.orderNumber);
+  const { orderNumber, customerId, customerEmail, customerName, orderData } = req.body;
+  
+  // Store order in database-compatible format
+  const orderRecord = {
+    id: `order-${Date.now()}`,
+    customer_id: customerId || null,
+    customer_email: customerEmail,
+    customer_name: customerName,
+    order_number: orderNumber,
+    order_data: JSON.stringify(orderData),
+    subtotal: orderData.subtotal || 0,
+    tax_amount: orderData.tax || 0,
+    shipping_cost: orderData.shipping || 0,
+    total: orderData.total || 0,
+    status: 'pending',
+    tracking_number: null,
+    shipper: null,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+  
+  orders.push(orderRecord);
+  console.log("📝 Demo order created:", orderNumber);
+  
   return res.status(201).json({
     success: true,
-    orderNumber: orderData.orderNumber,
+    orderNumber: orderNumber,
     message: "Order received",
     emailSent: false, // Demo mode doesn't send emails
   });
 });
 
-router.get("/orders", (_req, res) => res.json(orders));
+router.get("/orders", (_req, res) => {
+  // Return orders in database format
+  return res.json(orders);
+});
 
 router.get("/orders/:id", (req, res) => {
   // Support both numeric ID and orderNumber (AGIS-XXXXXXXXXX)
   const orderId = req.params.id;
   const order = orders.find(
-    (o) => o.id === orderId || o.orderNumber === orderId,
+    (o) => o.id === orderId || o.order_number === orderId,
   );
   
   if (!order) {
     return res.status(404).json({ error: "Order not found" });
   }
 
-  return res.json(order);
+  // Return in same format as production API
+  const orderData = typeof order.order_data === 'string' 
+    ? JSON.parse(order.order_data) 
+    : order.order_data;
+
+  return res.json({
+    id: order.id,
+    orderNumber: order.order_number,
+    customerEmail: order.customer_email,
+    customerName: order.customer_name,
+    status: order.status,
+    trackingNumber: order.tracking_number,
+    shipper: order.shipper,
+    orderData,
+    createdAt: order.created_at,
+    updatedAt: order.updated_at,
+  });
 });
 
 router.get("/galleries", (_req, res) => res.json(galleries));
