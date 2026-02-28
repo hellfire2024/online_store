@@ -97,7 +97,9 @@ const CartItemRow: React.FC<{ item: CartItem }> = ({ item }) => {
         />
       </div>
       <div className="grow w-full sm:w-auto">
-        <h3 className="font-semibold text-white text-base sm:text-lg">{item.product.name}</h3>
+        <h3 className="font-semibold text-white text-base sm:text-lg">
+          {item.product.name}
+        </h3>
         <p className="text-sm text-gray-300">
           Base price (each): ${basePrice.toFixed(2)}
         </p>
@@ -155,7 +157,9 @@ const CartItemRow: React.FC<{ item: CartItem }> = ({ item }) => {
             <p className="text-xs font-semibold text-purple-400 mb-1">
               Custom Engraving Text:
             </p>
-            <p className="text-sm text-white italic break-words">"{item.customText}"</p>
+            <p className="text-sm text-white italic break-words">
+              "{item.customText}"
+            </p>
             {item.product.customTextPricePerChar && (
               <p className="text-xs text-gray-400 mt-1">
                 {item.customText.length} characters • +$
@@ -230,7 +234,9 @@ const CartPage: React.FC = () => {
 
   return (
     <div className="bg-slate-800 p-4 sm:p-6 md:p-8 rounded-lg shadow-2xl border border-slate-700">
-      <h1 className="text-2xl sm:text-3xl font-bold text-white mb-4 sm:mb-6">Your Shopping Cart</h1>
+      <h1 className="text-2xl sm:text-3xl font-bold text-white mb-4 sm:mb-6">
+        Your Shopping Cart
+      </h1>
       <div>
         {cartItems.map((item, idx) => (
           <CartItemRow
