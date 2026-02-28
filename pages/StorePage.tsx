@@ -28,9 +28,14 @@ const StorePage: React.FC = () => {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+          <div className="flex flex-wrap justify-center gap-8">
             {paginatedProducts.map((product) => (
-              <ProductCard key={product.id} product={product} />
+              <div
+                key={product.id}
+                className="w-full sm:w-[calc(50%-1rem)] lg:w-[calc(25%-1.5rem)] max-w-sm"
+              >
+                <ProductCard product={product} />
+              </div>
             ))}
           </div>
           <Pagination
