@@ -546,8 +546,12 @@ const CheckoutPage: React.FC = () => {
 
       addToast("Order placed successfully!", "success");
 
-      // Navigate FIRST, then clear cart (clearing cart first causes redirect back to cart)
-      navigate("/order-confirmation", { state: orderDetails, replace: true });
+      // Navigate with both state and orderNumber parameter for better cross-domain support
+      // Pass orderNumber as param so OrderConfirmationPage can fetch from API if needed
+      navigate(`/order-confirmation?orderNumber=${encodeURIComponent(orderDetails.orderNumber)}`, { 
+        state: orderDetails, 
+        replace: true 
+      });
 
       // Clear cart after navigation to avoid triggering the empty cart redirect
       setTimeout(() => clearCart(), 100);

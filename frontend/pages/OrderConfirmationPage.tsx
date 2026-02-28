@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import { useSiteSettings } from "../context/SiteSettingsContext";
+import { apiClient } from "../services/apiClient";
 import {
   downloadInvoicePDF,
   DEFAULT_TEMPLATE,
@@ -112,53 +113,85 @@ const OrderConfirmationPage: React.FC = () => {
 
   // Load order details on mount
   React.useEffect(() => {
-    console.log(
-      "OrderConfirmationPage mounted - attempting to load order details",
-    );
-    console.log("location.state:", location.state);
-    console.log("sessionStorage:", sessionStorage.getItem("orderDetails"));
-    console.log("localStorage:", localStorage.getItem("orderDetails"));
+    const loadOrderDetails = async () => {
+      console.log(
+        "OrderConfirmationPage mounted - attempting to load order details",
+      );
+      console.log("location.state:", location.state);
+      console.log("URL search:", location.search);
 
-    // First check location.state
-    const stateData = (location.state as OrderDetails) || null;
-    if (stateData && stateData.orderNumber) {
-      console.log("Found order in location.state:", stateData.orderNumber);
-      setOrderDetails(stateData);
+      // First check URL params for orderNumber (cross-domain safe)
+      const params = new URLSearchParams(location.search);
+      const orderNumberParam = params.get("orderNumber");
+
+      if (orderNumberParam) {
+        console.log(
+          "Found orderNumber in URL params:",
+          orderNumberParam,
+          "- attempting API fetch",
+        );
+        try {
+          // Try to fetch the order from the backend API
+          const apiOrder = await apiClient.orders.getById(orderNumberParam);
+          if (apiOrder && apiOrder.orderNumber) {
+            console.log("Successfully fetched order from API:", apiOrder.orderNumber);
+            // Convert backend order format to our OrderDetails format if needed
+            setOrderDetails(apiOrder);
+            setIsLoaded(true);
+            return;
+          }
+        } catch (error) {
+          console.warn(
+            "Could not fetch order from API (expected if not persisted yet):",
+            error,
+          );
+          // Continue to check location.state and storage
+        }
+      }
+
+      // Check location.state
+      const stateData = (location.state as OrderDetails) || null;
+      if (stateData && stateData.orderNumber) {
+        console.log("Found order in location.state:", stateData.orderNumber);
+        setOrderDetails(stateData);
+        setIsLoaded(true);
+        return;
+      }
+
+      // Fall back to localStorage first (more reliable than sessionStorage)
+      try {
+        const stored = localStorage.getItem("orderDetails");
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          console.log("Found order in localStorage:", parsed.orderNumber);
+          setOrderDetails(parsed);
+          setIsLoaded(true);
+          return;
+        }
+      } catch (e) {
+        console.error("Error parsing localStorage order details:", e);
+      }
+
+      // Fall back to sessionStorage as last resort
+      try {
+        const stored = sessionStorage.getItem("orderDetails");
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          console.log("Found order in sessionStorage:", parsed.orderNumber);
+          setOrderDetails(parsed);
+          setIsLoaded(true);
+          return;
+        }
+      } catch (e) {
+        console.error("Error parsing sessionStorage order details:", e);
+      }
+
+      console.warn("No order details found anywhere");
       setIsLoaded(true);
-      return;
-    }
+    };
 
-    // Fall back to localStorage first (more reliable than sessionStorage)
-    try {
-      const stored = localStorage.getItem("orderDetails");
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        console.log("Found order in localStorage:", parsed.orderNumber);
-        setOrderDetails(parsed);
-        setIsLoaded(true);
-        return;
-      }
-    } catch (e) {
-      console.error("Error parsing localStorage order details:", e);
-    }
-
-    // Fall back to sessionStorage as last resort
-    try {
-      const stored = sessionStorage.getItem("orderDetails");
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        console.log("Found order in sessionStorage:", parsed.orderNumber);
-        setOrderDetails(parsed);
-        setIsLoaded(true);
-        return;
-      }
-    } catch (e) {
-      console.error("Error parsing sessionStorage order details:", e);
-    }
-
-    console.warn("No order details found anywhere");
-    setIsLoaded(true);
-  }, [location.state]);
+    loadOrderDetails();
+  }, [location.state, location.search]);
 
   // Redirect if no order details after loading
   React.useEffect(() => {
