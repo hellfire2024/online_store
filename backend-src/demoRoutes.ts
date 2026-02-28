@@ -458,6 +458,10 @@ router.get('/reviews', (_req, res) => res.json([]));
 router.get('/staff', (_req, res) => res.json([]));
 router.get('/services', (_req, res) => res.json(services));
 router.get('/settings', (_req, res) => res.json(siteSettings));
+router.put('/settings', (req, res) => {
+  Object.assign(siteSettings, req.body);
+  res.json(siteSettings);
+});
 
 // Auth demo endpoints
 router.post('/auth/admin/login', (_req, res) => {
@@ -591,6 +595,151 @@ router.post('/tax/providers/anrok', (req, res) => {
   const { cartItems, shippingCost, shippingState } = req.body || {};
   const result = calculateDemoTax(cartItems, shippingCost, shippingState);
   return res.json({ ...result, provider: 'Anrok' });
+});
+
+// Update handlers for demo mode persistence
+router.post('/products', (req, res) => {
+  const newProduct = { ...req.body, id: 'p-' + Date.now() };
+  products.push(newProduct);
+  res.json(newProduct);
+});
+
+router.put('/products/:id', (req, res) => {
+  const index = products.findIndex(p => p.id === req.params.id);
+  if (index !== -1) {
+    products[index] = { ...products[index], ...req.body };
+    res.json(products[index]);
+  } else {
+    res.status(404).json({ error: 'Product not found' });
+  }
+});
+
+router.delete('/products/:id', (req, res) => {
+  const index = products.findIndex(p => p.id === req.params.id);
+  if (index !== -1) {
+    products.splice(index, 1);
+    res.json({ success: true });
+  } else {
+    res.status(404).json({ error: 'Product not found' });
+  }
+});
+
+router.post('/pages', (req, res) => {
+  const newPage = { ...req.body, id: 'page-' + Date.now() };
+  pages.push(newPage);
+  res.json(newPage);
+});
+
+router.put('/pages/:id', (req, res) => {
+  const index = pages.findIndex(p => p.id === req.params.id);
+  if (index !== -1) {
+    pages[index] = { ...pages[index], ...req.body };
+    res.json(pages[index]);
+  } else {
+    res.status(404).json({ error: 'Page not found' });
+  }
+});
+
+router.delete('/pages/:id', (req, res) => {
+  const index = pages.findIndex(p => p.id === req.params.id);
+  if (index !== -1) {
+    pages.splice(index, 1);
+    res.json({ success: true });
+  } else {
+    res.status(404).json({ error: 'Page not found' });
+  }
+});
+
+router.post('/galleries', (req, res) => {
+  const newGallery = { ...req.body, id: 'g-' + Date.now() };
+  galleries.push(newGallery);
+  res.json(newGallery);
+});
+
+router.put('/galleries/:id', (req, res) => {
+  const index = galleries.findIndex(g => g.id === req.params.id);
+  if (index !== -1) {
+    galleries[index] = { ...galleries[index], ...req.body };
+    res.json(galleries[index]);
+  } else {
+    res.status(404).json({ error: 'Gallery not found' });
+  }
+});
+
+router.delete('/galleries/:id', (req, res) => {
+  const index = galleries.findIndex(g => g.id === req.params.id);
+  if (index !== -1) {
+    galleries.splice(index, 1);
+    delete galleryImages[req.params.id];
+    res.json({ success: true });
+  } else {
+    res.status(404).json({ error: 'Gallery not found' });
+  }
+});
+
+router.post('/galleries/:id/images', (req, res) => {
+  if (!galleryImages[req.params.id]) {
+    galleryImages[req.params.id] = [];
+  }
+  const newImage = { ...req.body, id: 'gi-' + Date.now() };
+  galleryImages[req.params.id].push(newImage);
+  res.json(newImage);
+});
+
+router.put('/galleries/:id/images/:imageId', (req, res) => {
+  const images = galleryImages[req.params.id];
+  if (images) {
+    const index = images.findIndex(img => img.id === req.params.imageId);
+    if (index !== -1) {
+      images[index] = { ...images[index], ...req.body };
+      res.json(images[index]);
+    } else {
+      res.status(404).json({ error: 'Image not found' });
+    }
+  } else {
+    res.status(404).json({ error: 'Gallery not found' });
+  }
+});
+
+router.delete('/galleries/:id/images/:imageId', (req, res) => {
+  const images = galleryImages[req.params.id];
+  if (images) {
+    const index = images.findIndex(img => img.id === req.params.imageId);
+    if (index !== -1) {
+      images.splice(index, 1);
+      res.json({ success: true });
+    } else {
+      res.status(404).json({ error: 'Image not found' });
+    }
+  } else {
+    res.status(404).json({ error: 'Gallery not found' });
+  }
+});
+
+router.post('/services', (req, res) => {
+  const newService = { ...req.body, id: 'svc-' + Date.now() };
+  services.push(newService);
+  res.json(newService);
+});
+
+router.put('/services/:id', (req, res) => {
+  const index = services.findIndex(s => s.id === req.params.id);
+  if (index !== -1) {
+    services[index] = { ...services[index], ...req.body };
+    res.json(services[index]);
+  } else {
+    res.status(404).json({ error: 'Service not found' });
+  }
+});
+
+router.delete('/services/:id', (req, res) => {
+  const index = services.findIndex(s => s.id === req.params.id);
+  if (index !== -1) {
+    services.splice(index, 1);
+    res.json({ success: true });
+  } else {
+    res.status(404).json({ error: 'Service not found' });
+  }
 });
 
 export default router;

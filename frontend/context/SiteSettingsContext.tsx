@@ -104,7 +104,15 @@ export const SiteSettingsProvider: React.FC<{ children: ReactNode }> = ({
   const updateSiteSettings = async (updates: Partial<SiteSettings>) => {
     setIsLoading(true);
     try {
-      setSiteSettings((prev) => ({ ...prev, ...updates }));
+      // Create the updated settings object
+      const updatedSettings = { ...siteSettings, ...updates };
+      
+      // Update local state
+      setSiteSettings(updatedSettings);
+      
+      // Persist to backend
+      await apiClient.settings.update(updatedSettings);
+      
       setIsLoading(false);
       return { success: true };
     } catch (error) {
