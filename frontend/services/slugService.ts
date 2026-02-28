@@ -1,14 +1,13 @@
-// Utility to generate a URL-friendly slug from a string
-export function generateSlug(text: string): string {
-  return text
-    .toString()
+/**
+ * Generate a URL-friendly slug from a product name
+ * Example: "Custom Red T-Shirt" -> "custom-red-t-shirt"
+ */
+export const generateSlug = (name: string): string => {
+  return name
     .toLowerCase()
     .trim()
-    .replace(/\s+/g, "-") // Replace spaces with -
-    .replace(/&/g, "-and-") // Replace & with 'and'
-    .replace(/[\u0300-\u036f]/g, "") // Remove accents
-    .replace(/[^a-z0-9-]/g, "") // Remove all non-word chars
-    .replace(/--+/g, "-") // Replace multiple - with single -
-    .replace(/^-+/, "") // Trim - from start of text
-    .replace(/-+$/, ""); // Trim - from end of text
-}
+    .replace(/[^\w\s-]/g, "") // Remove special characters
+    .replace(/\s+/g, "-") // Replace spaces with hyphens
+    .replace(/-+/g, "-") // Replace multiple hyphens with single hyphen
+    .replace(/^-+|-+$/g, ""); // Remove leading/trailing hyphens
+};

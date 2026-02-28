@@ -8,6 +8,7 @@ import { useSiteSettings } from "../context/SiteSettingsContext";
 import { useCustomerAuth } from "../context/CustomerAuthContext";
 import { useServices } from "../context/ServicesContext";
 import { useGalleries } from "../context/GalleryContext";
+// WARNING: This page uses useGalleries and must be rendered within a GalleryProvider (see App.tsx)
 import { HomePageContent } from "../types";
 import Spinner from "../components/Spinner";
 import { useToast } from "../hooks/useToast";
@@ -56,6 +57,7 @@ const HomePage: React.FC = () => {
     ) {
       return;
     }
+
     const filteredImages = galleryImages.filter(
       (img: any) => img.galleryId === homeContent.galleryRotationId,
     );
@@ -293,9 +295,9 @@ const HomePage: React.FC = () => {
               }
               setShowReviewForm(!showReviewForm);
             }}
-            className="bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-4 rounded-lg"
+            className="px-6 py-3 bg-gradient-to-r from-sky-500 to-sky-400 hover:from-sky-600 hover:to-sky-500 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 active:translate-y-0"
           >
-            {showReviewForm ? "Cancel" : "Write a Review"}
+            {showReviewForm ? "Cancel" : "✨ Write a Review"}
           </button>
         </div>
 
@@ -362,38 +364,42 @@ const HomePage: React.FC = () => {
                   onChange={(e) =>
                     setReviewForm({ ...reviewForm, text: e.target.value })
                   }
-                  placeholder="Share your experience..."
-                  className="w-full p-2 bg-slate-700 border border-slate-600 rounded text-white"
+                  placeholder="Share your experience with our products..."
                   rows={4}
-                  required
+                  className="w-full p-2 bg-slate-700 border border-slate-600 rounded text-white"
                 />
               </div>
               <div>
                 <label className="block text-gray-300 text-sm font-bold mb-2">
-                  Upload Images (optional, max 3)
+                  Product Images (Optional - Max 3)
                 </label>
                 <input
                   type="file"
                   accept="image/*"
                   multiple
                   onChange={handleImageUpload}
-                  className="w-full"
+                  disabled={reviewImages.length >= 3}
+                  className="w-full p-2 bg-slate-700 border border-slate-600 rounded text-white file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-sky-600 file:text-white hover:file:bg-sky-700 disabled:opacity-50"
                 />
+                <p className="text-xs text-gray-400 mt-1">
+                  Upload photos of your product ({reviewImages.length}/3 used).
+                  Max 5MB per image.
+                </p>
                 {reviewImages.length > 0 && (
-                  <div className="flex gap-2 mt-2">
+                  <div className="grid grid-cols-3 gap-2 mt-3">
                     {reviewImages.map((img, idx) => (
-                      <div key={idx} className="relative">
+                      <div key={idx} className="relative group">
                         <img
                           src={img}
                           alt={`Review image ${idx + 1}`}
-                          className="w-16 h-16 object-cover rounded border border-slate-600"
+                          className="w-full h-24 object-cover rounded border border-slate-600"
                         />
                         <button
                           type="button"
                           onClick={() => removeImage(idx)}
-                          className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center"
+                          className="absolute top-1 right-1 bg-red-600 hover:bg-red-700 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
                         >
-                          &times;
+                          ×
                         </button>
                       </div>
                     ))}
@@ -402,10 +408,14 @@ const HomePage: React.FC = () => {
               </div>
               <button
                 type="submit"
-                className="bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-4 rounded-lg mt-4"
+                className="w-full bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 rounded-lg"
               >
-                Submit Review
+                Submit Review for Approval
               </button>
+              <p className="text-xs text-gray-400 text-center">
+                Your review will be reviewed by our team before appearing on the
+                site.
+              </p>
             </form>
           </div>
         )}

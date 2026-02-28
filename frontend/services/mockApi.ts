@@ -398,8 +398,6 @@ let mockSiteSettings: SiteSettings = {
       { id: "fsl2", text: "Instagram", url: "#" },
       { id: "fsl3", text: "Twitter", url: "#" },
     ],
-  },
-  contactInfo: {
     contactEmail: "support@customthreads.com",
     contactPhone: "(123) 456-7890",
     contactAddress: "123 Design Lane, Creativity City",
