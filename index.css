@@ -1,9 +1,0 @@
-@import "tailwindcss";
-
-:root {
-	--site-font: Arial, sans-serif;
-}
-
-body {
-	font-family: var(--site-font, Arial, sans-serif);
-}
