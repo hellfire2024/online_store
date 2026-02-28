@@ -194,7 +194,7 @@ const HomePage: React.FC = () => {
       {homeContent.galleryRotationEnabled &&
         homeContent.galleryRotationId &&
         !galleriesLoading && (
-          <div>
+          <div className="max-w-7xl mx-auto">
             <h2 className="text-3xl font-bold text-white text-center mb-8">
               Gallery
             </h2>
@@ -241,7 +241,7 @@ const HomePage: React.FC = () => {
       )}
 
       {/* Featured Products */}
-      <div>
+      <div className="max-w-7xl mx-auto">
         <h2 className="text-3xl font-bold text-white text-center mb-8">
           Featured Products
         </h2>
@@ -254,7 +254,7 @@ const HomePage: React.FC = () => {
 
       {/* Services Offered */}
       {services.length > 0 && (
-        <div>
+        <div className="max-w-7xl mx-auto">
           <h2 className="text-3xl font-bold text-white text-center mb-8">
             Services We Offer
           </h2>
@@ -282,7 +282,7 @@ const HomePage: React.FC = () => {
       )}
 
       {/* Featured Reviews */}
-      <div>
+      <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-8">
           <h2 className="text-3xl font-bold text-white">
             What Our Customers Say
