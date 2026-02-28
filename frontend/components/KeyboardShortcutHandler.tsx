@@ -4,7 +4,9 @@ interface KeyboardShortcutHandlerProps {
   onAdminKeyPress?: () => void;
 }
 
-const KeyboardShortcutHandler: React.FC<KeyboardShortcutHandlerProps> = ({ onAdminKeyPress }) => {
+const KeyboardShortcutHandler: React.FC<KeyboardShortcutHandlerProps> = ({
+  onAdminKeyPress,
+}) => {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       // Ctrl+Alt+A for admin login
