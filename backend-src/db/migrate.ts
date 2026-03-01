@@ -180,6 +180,16 @@ export async function runMigrations(): Promise<void> {
       INDEX idx_ticket (ticket_id),
       INDEX idx_created (created_at)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
+    `CREATE TABLE IF NOT EXISTS staff_roles (
+      id VARCHAR(36) PRIMARY KEY,
+      key VARCHAR(100) UNIQUE NOT NULL,
+      label VARCHAR(255) NOT NULL,
+      description TEXT,
+      permissions JSON,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX idx_key (key)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
   ];
 
   // --- ALTER TABLES: Add columns only if not exist ---
