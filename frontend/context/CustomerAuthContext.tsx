@@ -84,29 +84,15 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Initialize from localStorage
+// Initialize on app startup
   useEffect(() => {
-    const storedCustomer = localStorage.getItem("customer");
-    const storedToken = localStorage.getItem("auth_token");
-
-    if (storedCustomer && storedToken) {
-      try {
-        // Restore customer and token from localStorage
-        apiClient.setToken(storedToken);
-        const parsed = JSON.parse(storedCustomer);
-
-        // Set customer immediately from cached data
-        // Don't refresh from API on startup - use cached profile
-        // Profile can be refreshed manually when needed via explicit actions
-        setCustomer(parsed);
-      } catch (error) {
-        console.error("Failed to restore customer session", error);
-        // Clear invalid session
-        localStorage.removeItem("customer");
-        localStorage.removeItem("auth_token");
-        apiClient.setToken(null);
-      }
-    }
+    // Clear any stale session data on app init
+    // Users must explicitly login - don't auto-restore sessions
+    // This prevents API errors from stale/expired tokens
+    localStorage.removeItem("customer");
+    localStorage.removeItem("auth_token");
+    apiClient.setToken(null);
+    setCustomer(null);
   }, []);
 
   const mapAddress = (address: any): CustomerAddress => {
