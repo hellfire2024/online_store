@@ -108,7 +108,9 @@ router.get("/", async (req: Request, res: Response): Promise<void> => {
 
     res.json(ticketsWithReplies);
   } catch (error) {
-    console.error("Error fetching tickets:", error);
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    console.error("GET /api/tickets - Error fetching tickets:", errorMsg);
+    console.error("Full error:", error);
     res.status(500).json({ error: "Failed to fetch tickets" });
   }
 });

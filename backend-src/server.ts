@@ -309,7 +309,7 @@ async function startServer() {
       const migrateModule = await import("./db/migrate.js");
       const seedModule = await import("./db/seed.js");
 
-      // Check for critical tables: admins and galleries
+      // Check for critical tables: admins, galleries, and support_tickets
       const dbName = process.env.DB_NAME || "agis_dev_db";
       const [adminTableRows]: any = await connectionModule.pool.query(
         "SELECT COUNT(*) as count FROM information_schema.tables WHERE table_schema = ? AND table_name = 'admins'",
@@ -319,13 +319,20 @@ async function startServer() {
         "SELECT COUNT(*) as count FROM information_schema.tables WHERE table_schema = ? AND table_name = 'galleries'",
         [dbName],
       );
+      const [ticketsTableRows]: any = await connectionModule.pool.query(
+        "SELECT COUNT(*) as count FROM information_schema.tables WHERE table_schema = ? AND table_name = 'support_tickets'",
+        [dbName],
+      );
       if (
         (Array.isArray(adminTableRows) &&
           adminTableRows.length > 0 &&
           adminTableRows[0].count === 0) ||
         (Array.isArray(galleriesTableRows) &&
           galleriesTableRows.length > 0 &&
-          galleriesTableRows[0].count === 0)
+          galleriesTableRows[0].count === 0) ||
+        (Array.isArray(ticketsTableRows) &&
+          ticketsTableRows.length > 0 &&
+          ticketsTableRows[0].count === 0)
       ) {
         appendLog("🔄 Running migrations (critical table missing)...");
         await migrateModule.runMigrations();
