@@ -84,7 +84,7 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-// Initialize on app startup
+  // Initialize on app startup
   useEffect(() => {
     // Clear any stale session data on app init
     // Users must explicitly login - don't auto-restore sessions
