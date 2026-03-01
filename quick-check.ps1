@@ -6,9 +6,11 @@ try {
     if ($health.PSObject.Properties.Name -contains 'demo_mode') {
         Write-Host "✅ Latest code deployed!" -ForegroundColor Green
         Write-Host "demo_mode: $($health.demo_mode)" -ForegroundColor $(if ($health.demo_mode -eq $false) { 'Green' } else { 'Red' })
-    } else {
+    }
+    else {
         Write-Host "❌ Old code still running - redeploy needed" -ForegroundColor Red
     }
-} catch {
+}
+catch {
     Write-Host "❌ Error: $($_.Exception.Message)" -ForegroundColor Red
 }
