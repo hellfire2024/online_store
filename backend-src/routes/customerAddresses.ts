@@ -152,8 +152,14 @@ router.post(
         phone: phone || "",
         isDefault: !!isDefault,
       });
-    } catch (error) {
-      console.error("Error creating address:", error);
+    } catch (error: any) {
+      console.error("Error creating address:", {
+        message: error?.message,
+        code: error?.code,
+        errno: error?.errno,
+        sqlState: error?.sqlState,
+        sqlMessage: error?.sqlMessage,
+      });
       return res.status(500).json({ error: "Failed to create address" });
     }
   },

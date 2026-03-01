@@ -304,40 +304,13 @@ async function startServer() {
       appendLog("✅ Database connected successfully");
       console.log("✅ Database connected successfully");
 
-      // Run migrations if tables are missing
+      // Always run migrations (idempotent) to reconcile schema drift safely
       const connectionModule = await import("./db/connection.js");
       const migrateModule = await import("./db/migrate.js");
       const seedModule = await import("./db/seed.js");
-
-      // Check for critical tables: admins, galleries, and support_tickets
-      const dbName = process.env.DB_NAME || "agis_dev_db";
-      const [adminTableRows]: any = await connectionModule.pool.query(
-        "SELECT COUNT(*) as count FROM information_schema.tables WHERE table_schema = ? AND table_name = 'admins'",
-        [dbName],
-      );
-      const [galleriesTableRows]: any = await connectionModule.pool.query(
-        "SELECT COUNT(*) as count FROM information_schema.tables WHERE table_schema = ? AND table_name = 'galleries'",
-        [dbName],
-      );
-      const [ticketsTableRows]: any = await connectionModule.pool.query(
-        "SELECT COUNT(*) as count FROM information_schema.tables WHERE table_schema = ? AND table_name = 'support_tickets'",
-        [dbName],
-      );
-      if (
-        (Array.isArray(adminTableRows) &&
-          adminTableRows.length > 0 &&
-          adminTableRows[0].count === 0) ||
-        (Array.isArray(galleriesTableRows) &&
-          galleriesTableRows.length > 0 &&
-          galleriesTableRows[0].count === 0) ||
-        (Array.isArray(ticketsTableRows) &&
-          ticketsTableRows.length > 0 &&
-          ticketsTableRows[0].count === 0)
-      ) {
-        appendLog("🔄 Running migrations (critical table missing)...");
-        await migrateModule.runMigrations();
-        appendLog("✅ Migrations complete");
-      }
+      appendLog("🔄 Running migrations...");
+      await migrateModule.runMigrations();
+      appendLog("✅ Migrations complete");
 
       // Seed if either admins or galleries table is empty
       const [adminCountRows]: any = await connectionModule.pool.query(
