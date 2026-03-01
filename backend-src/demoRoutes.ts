@@ -723,8 +723,9 @@ router.get("/admin-users", (_req, res) => res.json(adminUsers));
 
 // Orders endpoints
 router.post("/orders", (req, res) => {
-  const { orderNumber, customerId, customerEmail, customerName, orderData } = req.body;
-  
+  const { orderNumber, customerId, customerEmail, customerName, orderData } =
+    req.body;
+
   // Store order in database-compatible format
   const orderRecord = {
     id: `order-${Date.now()}`,
@@ -737,16 +738,16 @@ router.post("/orders", (req, res) => {
     tax_amount: orderData.tax || 0,
     shipping_cost: orderData.shipping || 0,
     total: orderData.total || 0,
-    status: 'pending',
+    status: "pending",
     tracking_number: null,
     shipper: null,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   };
-  
+
   orders.push(orderRecord);
   console.log("📝 Demo order created:", orderNumber);
-  
+
   return res.status(201).json({
     success: true,
     orderNumber: orderNumber,
@@ -766,15 +767,16 @@ router.get("/orders/:id", (req, res) => {
   const order = orders.find(
     (o) => o.id === orderId || o.order_number === orderId,
   );
-  
+
   if (!order) {
     return res.status(404).json({ error: "Order not found" });
   }
 
   // Return in same format as production API
-  const orderData = typeof order.order_data === 'string' 
-    ? JSON.parse(order.order_data) 
-    : order.order_data;
+  const orderData =
+    typeof order.order_data === "string"
+      ? JSON.parse(order.order_data)
+      : order.order_data;
 
   return res.json({
     id: order.id,

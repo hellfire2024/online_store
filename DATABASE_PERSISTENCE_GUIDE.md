@@ -1,20 +1,26 @@
 # Database Persistence Guide
 
 ## Issue
+
 Your database data (orders, products, settings, etc.) is being reset on every deployment.
 
 ## Root Cause
+
 The backend was running in `DEMO_MODE=1` which stores all data in memory. When the server restarts, all data is lost.
 
 ## Solution Applied
 
 ### 1. Disabled Demo Mode in Production
+
 **File: `docker-compose.yml`**
+
 - Changed `DEMO_MODE=1` to `DEMO_MODE=0`
 - This tells the backend to use the real MySQL database instead of in-memory storage
 
 ### 2. Fixed Order Format in Demo Routes
+
 **File: `backend-src/demoRoutes.ts`**
+
 - Updated order storage to match production database format
 - Orders now stored with `order_data`, `created_at`, `customer_email`, etc.
 - Admin panel can now properly read orders from both demo and production modes
@@ -35,6 +41,7 @@ The backend was running in `DEMO_MODE=1` which stores all data in memory. When t
      ```
 
 2. **Deploy Updated Code**
+
    ```bash
    git pull origin dev
    # Coolify will automatically rebuild with the new docker-compose.yml settings
@@ -49,11 +56,13 @@ The backend was running in `DEMO_MODE=1` which stores all data in memory. When t
 ### If Using Docker Compose Manually
 
 1. **Pull Latest Changes**
+
    ```bash
    git pull origin dev
    ```
 
 2. **Rebuild and Restart Services**
+
    ```bash
    docker-compose down
    docker-compose up -d --build
@@ -63,6 +72,7 @@ The backend was running in `DEMO_MODE=1` which stores all data in memory. When t
    ```bash
    docker-compose logs -f backend
    ```
+
    - Look for: `🔌 Testing database connection...`
    - Should NOT see: `⚠️  Skipping database check (DEMO_MODE enabled)`
 
@@ -94,6 +104,7 @@ After deployment, verify:
 ## Troubleshooting
 
 ### Orders Still Not Showing in Admin Panel
+
 1. Check backend logs: `docker-compose logs backend | grep -i order`
 2. Verify orders are in database:
    ```sql
@@ -102,6 +113,7 @@ After deployment, verify:
 3. Check browser console for API errors
 
 ### Database Connection Failed
+
 1. Verify MySQL is running: `docker ps | grep mysql` (if using Docker)
 2. Test connection from backend container:
    ```bash
@@ -111,6 +123,7 @@ After deployment, verify:
 3. Ensure firewall allows connection between backend and database
 
 ### Data Lost After Deployment
+
 - If data is still being lost, check if Coolify/hosting provider is:
   - Recreating database on each deploy (should use persistent volume)
   - Running migrations that drop tables (shouldn't happen with our code)
@@ -119,6 +132,7 @@ After deployment, verify:
 ## Environment Variables Reference
 
 **Required for Production (DEMO_MODE=0):**
+
 ```env
 NODE_ENV=production
 DEMO_MODE=0
@@ -130,12 +144,15 @@ DB_NAME=<db-name>
 ```
 
 **For Testing/Development Only:**
+
 ```env
 DEMO_MODE=1  # Uses in-memory data, NOT persistent
 ```
 
 ## Contact
+
 If issues persist after following this guide, check:
+
 1. Server logs for database connection errors
 2. MySQL service status and logs
 3. Network connectivity between services
