@@ -287,9 +287,9 @@ const HomePage: React.FC = () => {
       )}
 
       {/* Featured Reviews */}
-      <div>
-        <div className="flex justify-between items-center mb-8">
-          <h2 className="text-3xl font-bold text-white">
+      <div className="flex flex-col items-center w-full">
+        <div className="text-center mb-8 w-full">
+          <h2 className="text-3xl font-bold text-white mb-6">
             What Our Customers Say
           </h2>
           <button
@@ -307,7 +307,7 @@ const HomePage: React.FC = () => {
         </div>
 
         {showReviewForm && isAuthenticated && (
-          <div className="bg-slate-800 p-6 rounded-lg border border-slate-700 mb-8">
+          <div className="bg-slate-800 p-6 rounded-lg border border-slate-700 mb-8 w-full max-w-2xl">
             <form onSubmit={handleSubmitReview} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -426,11 +426,12 @@ const HomePage: React.FC = () => {
         )}
 
         {featuredReviews.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="flex flex-wrap justify-center gap-8 w-full">
             {featuredReviews.map((review) => (
               <div
                 key={review.id}
-                className="bg-slate-800 p-6 rounded-lg border border-slate-700"
+                className="bg-slate-800 p-6 rounded-lg border border-slate-700 flex-shrink-0"
+                style={{ width: "calc(33.333% - 22px)", minWidth: "250px" }}
               >
                 <div className="flex justify-between items-start gap-4 mb-2">
                   <div className="flex-1 min-w-0">
