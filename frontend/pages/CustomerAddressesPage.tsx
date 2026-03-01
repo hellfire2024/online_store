@@ -47,7 +47,10 @@ const CustomerAddressesPage: React.FC = () => {
       !formData.firstName ||
       !formData.lastName ||
       !formData.streetAddress ||
-      !formData.city
+      !formData.city ||
+      !formData.state ||
+      !formData.zipCode ||
+      !formData.country
     ) {
       addToast("Please fill in all required fields", "error");
       return;
@@ -75,6 +78,8 @@ const CustomerAddressesPage: React.FC = () => {
           isDefault: false,
         });
         setSaveAddress(true);
+      } else {
+        addToast(result.error || "Failed to add address", "error");
       }
     } else {
       addToast("One-time address entered (not saved)", "info");
@@ -122,7 +127,10 @@ const CustomerAddressesPage: React.FC = () => {
       !formData.firstName ||
       !formData.lastName ||
       !formData.streetAddress ||
-      !formData.city
+      !formData.city ||
+      !formData.state ||
+      !formData.zipCode ||
+      !formData.country
     ) {
       addToast("Please fill in all required fields", "error");
       return;
@@ -151,6 +159,8 @@ const CustomerAddressesPage: React.FC = () => {
         phone: "",
         isDefault: false,
       });
+    } else {
+      addToast(result.error || "Failed to update address", "error");
     }
   };
 
@@ -335,7 +345,7 @@ const CustomerAddressesPage: React.FC = () => {
               </div>
               <div>
                 <label className="block text-gray-300 text-sm font-medium mb-1">
-                  State
+                  State *
                 </label>
                 <input
                   type="text"
@@ -349,7 +359,7 @@ const CustomerAddressesPage: React.FC = () => {
               </div>
               <div>
                 <label className="block text-gray-300 text-sm font-medium mb-1">
-                  Zip Code
+                  Zip Code *
                 </label>
                 <input
                   type="text"
@@ -365,7 +375,7 @@ const CustomerAddressesPage: React.FC = () => {
 
             <div>
               <label className="block text-gray-300 text-sm font-medium mb-1">
-                Country
+                Country *
               </label>
               <input
                 type="text"
