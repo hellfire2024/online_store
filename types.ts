@@ -89,13 +89,13 @@ export interface CustomerAddress {
   firstName: string;
   lastName: string;
   fullName: string; // Computed from firstName + lastName for backward compatibility
-  streetAddress: string;
+  street1: string; // Address Line 1 (street address)
+  street2?: string; // Address Line 2 (apt, suite, etc.)
   city: string;
-  state: string;
-  zipCode: string;
-  country: string;
+  state: string; // 2-letter state code (e.g., "CA")
+  zip: string; // ZIP code (5 or 9 digits)
+  country: string; // 2-letter ISO code (e.g., "US")
   phone: string;
-  county?: string;
   isDefault: boolean;
 }
 

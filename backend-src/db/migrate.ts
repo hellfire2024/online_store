@@ -316,8 +316,15 @@ export async function runMigrations(): Promise<void> {
        WHERE type IS NULL OR type = ''`,
     );
 
-    // Add county column to customer_addresses if it doesn't exist
-    await alterTableAddColumn("customer_addresses", "county", "VARCHAR(100)");
+    // Add street2 column for shipping address compliance (Address Line 2)
+    await alterTableAddColumn("customer_addresses", "street_2", "VARCHAR(255)");
+
+    // Update country codes to ISO 2-letter format for shipping compliance
+    await pool.query(
+      `UPDATE customer_addresses
+       SET country = 'US'
+       WHERE country IN ('USA', 'United States', 'United States of America')`,
+    );
 
     // Add columns for orders (all columns needed by ordersApi.ts)
     await alterTableAddColumn("orders", "customer_email", "VARCHAR(255)");

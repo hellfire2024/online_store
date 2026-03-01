@@ -102,13 +102,13 @@ const CustomerAddressesPage: React.FC = () => {
     firstName: "",
     lastName: "",
     fullName: "",
-    streetAddress: "",
+    street1: "",
+    street2: "",
     city: "",
     state: "",
-    zipCode: "",
-    country: "USA",
+    zip: "",
+    country: "US",
     phone: "",
-    county: "",
     isDefault: false,
   });
   const [saveAddress, setSaveAddress] = useState(true);
@@ -125,10 +125,10 @@ const CustomerAddressesPage: React.FC = () => {
     if (
       !formData.firstName ||
       !formData.lastName ||
-      !formData.streetAddress ||
+      !formData.street1 ||
       !formData.city ||
       !formData.state ||
-      !formData.zipCode ||
+      !formData.zip ||
       !formData.country
     ) {
       addToast("Please fill in all required fields", "error");
@@ -148,11 +148,12 @@ const CustomerAddressesPage: React.FC = () => {
           firstName: "",
           lastName: "",
           fullName: "",
-          streetAddress: "",
+          street1: "",
+          street2: "",
           city: "",
           state: "",
-          zipCode: "",
-          country: "USA",
+          zip: "",
+          country: "US",
           phone: "",
           isDefault: false,
         });
@@ -168,11 +169,12 @@ const CustomerAddressesPage: React.FC = () => {
         firstName: "",
         lastName: "",
         fullName: "",
-        streetAddress: "",
+        street1: "",
+        street2: "",
         city: "",
         state: "",
-        zipCode: "",
-        country: "USA",
+        zip: "",
+        country: "US",
         phone: "",
         isDefault: false,
       });
@@ -191,10 +193,11 @@ const CustomerAddressesPage: React.FC = () => {
       firstName,
       lastName,
       fullName: address.fullName,
-      streetAddress: address.streetAddress,
+      street1: address.street1,
+      street2: address.street2 || "",
       city: address.city,
       state: address.state,
-      zipCode: address.zipCode,
+      zip: address.zip,
       country: address.country,
       phone: address.phone,
       isDefault: address.isDefault,
@@ -205,10 +208,10 @@ const CustomerAddressesPage: React.FC = () => {
     if (
       !formData.firstName ||
       !formData.lastName ||
-      !formData.streetAddress ||
+      !formData.street1 ||
       !formData.city ||
       !formData.state ||
-      !formData.zipCode ||
+      !formData.zip ||
       !formData.country
     ) {
       addToast("Please fill in all required fields", "error");
@@ -230,11 +233,12 @@ const CustomerAddressesPage: React.FC = () => {
         firstName: "",
         lastName: "",
         fullName: "",
-        streetAddress: "",
+        street1: "",
+        street2: "",
         city: "",
         state: "",
-        zipCode: "",
-        country: "USA",
+        zip: "",
+        country: "US",
         phone: "",
         isDefault: false,
       });
@@ -251,13 +255,13 @@ const CustomerAddressesPage: React.FC = () => {
       firstName: "",
       lastName: "",
       fullName: "",
-      streetAddress: "",
+      street1: "",
+      street2: "",
       city: "",
       state: "",
-      zipCode: "",
-      country: "USA",
+      zip: "",
+      country: "US",
       phone: "",
-      county: "",
       isDefault: false,
     });
     setSaveAddress(true);
@@ -274,13 +278,13 @@ const CustomerAddressesPage: React.FC = () => {
         firstName: defaultAddress.firstName || "",
         lastName: defaultAddress.lastName || "",
         fullName: defaultAddress.fullName || "",
-        streetAddress: defaultAddress.streetAddress || "",
+        street1: defaultAddress.street1 || "",
+        street2: defaultAddress.street2 || "",
         city: defaultAddress.city || "",
         state: defaultAddress.state || "",
-        zipCode: defaultAddress.zipCode || "",
-        country: defaultAddress.country || "USA",
+        zip: defaultAddress.zip || "",
+        country: defaultAddress.country || "US",
         phone: defaultAddress.phone || "",
-        county: defaultAddress.county || "",
       });
       addToast("Copied from default address", "success");
     } else {
@@ -433,14 +437,29 @@ const CustomerAddressesPage: React.FC = () => {
 
             <div>
               <label className="block text-gray-300 text-sm font-medium mb-1">
-                Street Address *
+                Address Line 1 *
               </label>
               <input
                 type="text"
-                placeholder="Street Address"
-                value={formData.streetAddress}
+                placeholder="Street address, P.O. box"
+                value={formData.street1}
                 onChange={(e) =>
-                  setFormData({ ...formData, streetAddress: e.target.value })
+                  setFormData({ ...formData, street1: e.target.value })
+                }
+                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white placeholder-gray-400"
+              />
+            </div>
+
+            <div>
+              <label className="block text-gray-300 text-sm font-medium mb-1">
+                Address Line 2
+              </label>
+              <input
+                type="text"
+                placeholder="Apartment, suite, unit, building, floor, etc. (optional)"
+                value={formData.street2}
+                onChange={(e) =>
+                  setFormData({ ...formData, street2: e.target.value })
                 }
                 className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white placeholder-gray-400"
               />
@@ -482,14 +501,14 @@ const CustomerAddressesPage: React.FC = () => {
               </div>
               <div>
                 <label className="block text-gray-300 text-sm font-medium mb-1">
-                  Zip Code *
+                  ZIP Code *
                 </label>
                 <input
                   type="text"
                   placeholder="#####"
-                  value={formData.zipCode}
+                  value={formData.zip}
                   onChange={(e) =>
-                    setFormData({ ...formData, zipCode: formatZipCode(e.target.value) })
+                    setFormData({ ...formData, zip: formatZipCode(e.target.value) })
                   }
                   maxLength={10}
                   className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white placeholder-gray-400"
@@ -499,32 +518,21 @@ const CustomerAddressesPage: React.FC = () => {
 
             <div>
               <label className="block text-gray-300 text-sm font-medium mb-1">
-                County
-              </label>
-              <input
-                type="text"
-                placeholder="County (optional)"
-                value={formData.county || ""}
-                onChange={(e) =>
-                  setFormData({ ...formData, county: e.target.value })
-                }
-                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white placeholder-gray-400"
-              />
-            </div>
-
-            <div>
-              <label className="block text-gray-300 text-sm font-medium mb-1">
                 Country *
               </label>
-              <input
-                type="text"
-                placeholder="Country"
+              <select
                 value={formData.country}
                 onChange={(e) =>
                   setFormData({ ...formData, country: e.target.value })
                 }
-                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white placeholder-gray-400"
-              />
+                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white"
+              >
+                <option value="US">United States</option>
+                <option value="CA">Canada</option>
+                <option value="MX">Mexico</option>
+                <option value="GB">United Kingdom</option>
+                <option value="AU">Australia</option>
+              </select>
             </div>
 
             <div className="flex items-center">

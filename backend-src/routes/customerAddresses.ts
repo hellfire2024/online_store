@@ -15,12 +15,12 @@ interface AddressRow extends RowDataPacket {
   last_name: string;
   full_name: string;
   street_address: string;
+  street_2?: string;
   city: string;
   state: string;
   zip_code: string;
   country: string;
   phone: string;
-  county?: string;
   is_default: boolean;
   created_at: Date;
   updated_at: Date;
@@ -32,8 +32,8 @@ router.get("/:customerId", async (req: Request, res: Response) => {
     const { customerId } = req.params;
 
     const [addresses] = await pool.query<AddressRow[]>(
-      `SELECT id, type, first_name, last_name, full_name, street_address, city, state, zip_code, 
-              country, phone, county, is_default FROM customer_addresses WHERE customer_id = ? ORDER BY created_at DESC`,
+      `SELECT id, type, first_name, last_name, full_name, street_address, street_2, city, state, zip_code, 
+              country, phone, is_default FROM customer_addresses WHERE customer_id = ? ORDER BY created_at DESC`,
       [customerId],
     );
 
@@ -43,13 +43,13 @@ router.get("/:customerId", async (req: Request, res: Response) => {
       firstName: addr.first_name,
       lastName: addr.last_name,
       fullName: addr.full_name,
-      streetAddress: addr.street_address,
+      street1: addr.street_address,
+      street2: addr.street_2 || "",
       city: addr.city,
       state: addr.state,
-      zipCode: addr.zip_code,
+      zip: addr.zip_code,
       country: addr.country,
       phone: addr.phone,
-      county: addr.county || "",
       isDefault: addr.is_default,
     }));
 
@@ -70,13 +70,14 @@ router.post(
       .withMessage("Invalid address type"),
     body("firstName").trim().notEmpty().withMessage("First name required"),
     body("lastName").trim().notEmpty().withMessage("Last name required"),
-    body("streetAddress")
+    body("street1")
       .trim()
       .notEmpty()
       .withMessage("Street address required"),
+    body("street2").optional().trim(),
     body("city").trim().notEmpty().withMessage("City required"),
     body("state").trim().notEmpty().withMessage("State required"),
-    body("zipCode").trim().notEmpty().withMessage("ZIP code required"),
+    body("zip").trim().notEmpty().withMessage("ZIP code required"),
     body("country").trim().notEmpty().withMessage("Country required"),
     body("phone").optional().trim(),
   ],
@@ -99,13 +100,13 @@ router.post(
         type,
         firstName,
         lastName,
-        streetAddress,
+        street1,
+        street2,
         city,
         state,
-        zipCode,
+        zip,
         country,
         phone,
-        county,
         isDefault,
       } = req.body;
 
@@ -122,7 +123,7 @@ router.post(
 
       await pool.query(
         `INSERT INTO customer_addresses 
-         (id, customer_id, type, first_name, last_name, full_name, street_address, city, state, zip_code, country, phone, county, is_default)
+         (id, customer_id, type, first_name, last_name, full_name, street_address, street_2, city, state, zip_code, country, phone, is_default)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           id,
@@ -131,13 +132,13 @@ router.post(
           firstName,
           lastName,
           fullName,
-          streetAddress,
+          street1,
+          street2 || null,
           city,
           state,
-          zipCode,
+          zip,
           country,
           phone || null,
-          county || null,
           isDefault ? 1 : 0,
         ],
       );
@@ -148,13 +149,13 @@ router.post(
         firstName,
         lastName,
         fullName,
-        streetAddress,
+        street1,
+        street2: street2 || "",
         city,
         state,
-        zipCode,
+        zip,
         country,
         phone: phone || "",
-        county: county || "",
         isDefault: !!isDefault,
       });
     } catch (error: any) {
@@ -180,13 +181,14 @@ router.put(
       .withMessage("Invalid address type"),
     body("firstName").trim().notEmpty().withMessage("First name required"),
     body("lastName").trim().notEmpty().withMessage("Last name required"),
-    body("streetAddress")
+    body("street1")
       .trim()
       .notEmpty()
       .withMessage("Street address required"),
+    body("street2").optional().trim(),
     body("city").trim().notEmpty().withMessage("City required"),
     body("state").trim().notEmpty().withMessage("State required"),
-    body("zipCode").trim().notEmpty().withMessage("ZIP code required"),
+    body("zip").trim().notEmpty().withMessage("ZIP code required"),
     body("country").trim().notEmpty().withMessage("Country required"),
     body("phone").optional().trim(),
   ],
@@ -209,13 +211,13 @@ router.put(
         type,
         firstName,
         lastName,
-        streetAddress,
+        street1,
+        street2,
         city,
         state,
-        zipCode,
+        zip,
         country,
         phone,
-        county,
         isDefault,
       } = req.body;
 
@@ -231,20 +233,20 @@ router.put(
 
       const [result] = await pool.query<ResultSetHeader>(
         `UPDATE customer_addresses 
-         SET type = ?, first_name = ?, last_name = ?, full_name = ?, street_address = ?, city = ?, state = ?, zip_code = ?, country = ?, phone = ?, county = ?, is_default = ?
+         SET type = ?, first_name = ?, last_name = ?, full_name = ?, street_address = ?, street_2 = ?, city = ?, state = ?, zip_code = ?, country = ?, phone = ?, is_default = ?
          WHERE id = ? AND customer_id = ?`,
         [
           type,
           firstName,
           lastName,
           fullName,
-          streetAddress,
+          street1,
+          street2 || null,
           city,
           state,
-          zipCode,
+          zip,
           country,
           phone || null,
-          county || null,
           isDefault ? 1 : 0,
           addressId,
           customerId,
@@ -261,13 +263,13 @@ router.put(
         firstName,
         lastName,
         fullName,
-        streetAddress,
+        street1,
+        street2: street2 || "",
         city,
         state,
-        zipCode,
+        zip,
         country,
         phone: phone || "",
-        county: county || "",
         isDefault: !!isDefault,
       });
     } catch (error) {
