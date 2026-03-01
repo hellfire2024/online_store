@@ -291,6 +291,19 @@ export async function runMigrations(): Promise<void> {
       );
     }
 
+    // Drop legacy columns after backfill
+    if (hasAddressLine1) {
+      await pool.query(
+        `ALTER TABLE customer_addresses DROP COLUMN address_line1`,
+      );
+    }
+
+    if (hasPostalCode) {
+      await pool.query(
+        `ALTER TABLE customer_addresses DROP COLUMN postal_code`,
+      );
+    }
+
     await pool.query(
       `UPDATE customer_addresses
        SET full_name = TRIM(CONCAT(COALESCE(first_name, ''), ' ', COALESCE(last_name, '')))
