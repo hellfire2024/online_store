@@ -95,6 +95,7 @@ export interface CustomerAddress {
   zipCode: string;
   country: string;
   phone: string;
+  county?: string;
   isDefault: boolean;
 }
 

@@ -316,6 +316,9 @@ export async function runMigrations(): Promise<void> {
        WHERE type IS NULL OR type = ''`,
     );
 
+    // Add county column to customer_addresses if it doesn't exist
+    await alterTableAddColumn("customer_addresses", "county", "VARCHAR(100)");
+
     // Add columns for orders (all columns needed by ordersApi.ts)
     await alterTableAddColumn("orders", "customer_email", "VARCHAR(255)");
     await alterTableAddColumn("orders", "customer_name", "VARCHAR(255)");

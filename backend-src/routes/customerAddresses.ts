@@ -20,6 +20,7 @@ interface AddressRow extends RowDataPacket {
   zip_code: string;
   country: string;
   phone: string;
+  county?: string;
   is_default: boolean;
   created_at: Date;
   updated_at: Date;
@@ -32,7 +33,7 @@ router.get("/:customerId", async (req: Request, res: Response) => {
 
     const [addresses] = await pool.query<AddressRow[]>(
       `SELECT id, type, first_name, last_name, full_name, street_address, city, state, zip_code, 
-              country, phone, is_default FROM customer_addresses WHERE customer_id = ? ORDER BY created_at DESC`,
+              country, phone, county, is_default FROM customer_addresses WHERE customer_id = ? ORDER BY created_at DESC`,
       [customerId],
     );
 
@@ -48,6 +49,7 @@ router.get("/:customerId", async (req: Request, res: Response) => {
       zipCode: addr.zip_code,
       country: addr.country,
       phone: addr.phone,
+      county: addr.county || "",
       isDefault: addr.is_default,
     }));
 
@@ -103,6 +105,7 @@ router.post(
         zipCode,
         country,
         phone,
+        county,
         isDefault,
       } = req.body;
 
@@ -119,8 +122,8 @@ router.post(
 
       await pool.query(
         `INSERT INTO customer_addresses 
-         (id, customer_id, type, first_name, last_name, full_name, street_address, city, state, zip_code, country, phone, is_default)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         (id, customer_id, type, first_name, last_name, full_name, street_address, city, state, zip_code, country, phone, county, is_default)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           id,
           customerId,
@@ -134,6 +137,7 @@ router.post(
           zipCode,
           country,
           phone || null,
+          county || null,
           isDefault ? 1 : 0,
         ],
       );
@@ -150,6 +154,7 @@ router.post(
         zipCode,
         country,
         phone: phone || "",
+        county: county || "",
         isDefault: !!isDefault,
       });
     } catch (error: any) {
@@ -210,6 +215,7 @@ router.put(
         zipCode,
         country,
         phone,
+        county,
         isDefault,
       } = req.body;
 
@@ -225,7 +231,7 @@ router.put(
 
       const [result] = await pool.query<ResultSetHeader>(
         `UPDATE customer_addresses 
-         SET type = ?, first_name = ?, last_name = ?, full_name = ?, street_address = ?, city = ?, state = ?, zip_code = ?, country = ?, phone = ?, is_default = ?
+         SET type = ?, first_name = ?, last_name = ?, full_name = ?, street_address = ?, city = ?, state = ?, zip_code = ?, country = ?, phone = ?, county = ?, is_default = ?
          WHERE id = ? AND customer_id = ?`,
         [
           type,
@@ -238,6 +244,7 @@ router.put(
           zipCode,
           country,
           phone || null,
+          county || null,
           isDefault ? 1 : 0,
           addressId,
           customerId,
@@ -260,6 +267,7 @@ router.put(
         zipCode,
         country,
         phone: phone || "",
+        county: county || "",
         isDefault: !!isDefault,
       });
     } catch (error) {
