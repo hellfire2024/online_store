@@ -186,6 +186,15 @@ class ApiClient {
         });
 
         if (error && typeof error === "object") {
+          const validationErrors = (error as any).errors;
+          if (Array.isArray(validationErrors) && validationErrors.length > 0) {
+            const firstValidationError =
+              validationErrors[0]?.msg || validationErrors[0]?.message;
+            if (firstValidationError) {
+              throw new Error(String(firstValidationError));
+            }
+          }
+
           const maybeError = (error as any).error || (error as any).message;
           if (maybeError) {
             throw new Error(String(maybeError));

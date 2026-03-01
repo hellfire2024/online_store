@@ -847,6 +847,129 @@ router.post("/auth/customer/register", (req, res) => {
   return res.status(201).json({ token: "demo-customer-token", customer });
 });
 
+// Customer addresses demo endpoints
+router.get("/customer-addresses/:customerId", (req, res) => {
+  const { customerId } = req.params;
+  const customer = customers.find((c) => c.id === customerId);
+  if (!customer) {
+    return res.status(404).json({ error: "Customer not found" });
+  }
+
+  return res.json(Array.isArray(customer.addresses) ? customer.addresses : []);
+});
+
+router.post("/customer-addresses/:customerId", (req, res) => {
+  const { customerId } = req.params;
+  const customer = customers.find((c) => c.id === customerId);
+  if (!customer) {
+    return res.status(404).json({ error: "Customer not found" });
+  }
+
+  const {
+    type = "shipping",
+    firstName = "",
+    lastName = "",
+    streetAddress = "",
+    city = "",
+    state = "",
+    zipCode = "",
+    country = "USA",
+    phone = "",
+    isDefault = false,
+  } = req.body || {};
+
+  if (!firstName || !lastName || !streetAddress || !city) {
+    return res.status(400).json({ error: "Missing required address fields" });
+  }
+
+  const newAddress = {
+    id: `addr-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+    type,
+    firstName,
+    lastName,
+    fullName: `${firstName} ${lastName}`.trim(),
+    streetAddress,
+    city,
+    state,
+    zipCode,
+    country,
+    phone,
+    isDefault: Boolean(isDefault),
+  };
+
+  if (!Array.isArray(customer.addresses)) {
+    customer.addresses = [];
+  }
+
+  if (newAddress.isDefault) {
+    customer.addresses = customer.addresses.map((addr: any) =>
+      addr.type === newAddress.type ? { ...addr, isDefault: false } : addr,
+    );
+  }
+
+  customer.addresses.push(newAddress);
+  return res.status(201).json(newAddress);
+});
+
+router.put("/customer-addresses/:customerId/:addressId", (req, res) => {
+  const { customerId, addressId } = req.params;
+  const customer = customers.find((c) => c.id === customerId);
+  if (!customer) {
+    return res.status(404).json({ error: "Customer not found" });
+  }
+
+  const addresses = Array.isArray(customer.addresses) ? customer.addresses : [];
+  const index = addresses.findIndex((addr: any) => addr.id === addressId);
+  if (index === -1) {
+    return res.status(404).json({ error: "Address not found" });
+  }
+
+  const current: any = addresses[index] as any;
+  const updated = {
+    ...current,
+    ...req.body,
+    id: addressId,
+    fullName:
+      req.body?.fullName ||
+      `${req.body?.firstName || current.firstName || ""} ${req.body?.lastName || current.lastName || ""}`.trim(),
+  };
+
+  if (updated.isDefault) {
+    customer.addresses = addresses.map((addr: any) =>
+      addr.type === updated.type && addr.id !== addressId
+        ? { ...addr, isDefault: false }
+        : addr,
+    );
+  }
+
+  const refreshed = Array.isArray(customer.addresses) ? customer.addresses : [];
+  const refreshedIndex = refreshed.findIndex(
+    (addr: any) => addr.id === addressId,
+  );
+  if (refreshedIndex >= 0) {
+    refreshed[refreshedIndex] = updated;
+  }
+
+  return res.json(updated);
+});
+
+router.delete("/customer-addresses/:customerId/:addressId", (req, res) => {
+  const { customerId, addressId } = req.params;
+  const customer = customers.find((c) => c.id === customerId);
+  if (!customer) {
+    return res.status(404).json({ error: "Customer not found" });
+  }
+
+  const addresses = Array.isArray(customer.addresses) ? customer.addresses : [];
+  const nextAddresses = addresses.filter((addr: any) => addr.id !== addressId);
+  if (nextAddresses.length === addresses.length) {
+    return res.status(404).json({ error: "Address not found" });
+  }
+
+  customer.addresses = nextAddresses;
+  return res.status(204).send();
+});
+
 // Tax calculation demo endpoint
 router.post("/tax/calculate", (req, res) => {
   const { cartItems, shippingCost, shippingState } = req.body || {};
