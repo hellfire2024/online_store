@@ -21,7 +21,7 @@ services:
       SERVICE_URL_FRONTEND: https://dev.adaptivegis.com
       SERVICE_URL_PHPMYADMIN: https://devmysql.adaptivegis.com
       NODE_ENV: production
-      DEMO_MODE: "1"
+      DEMO_MODE: "0"
       PORT: 3001
       CORS_ORIGIN: https://dev.adaptivegis.com
       SKIP_DB_CHECK: ""
@@ -97,5 +97,10 @@ services:
       MYSQL_PASSWORD: we1r9dveIPTzjJ84HMD6
     ports:
       - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./backend-src/db/migrations:/docker-entrypoint-initdb.d:ro
+volumes:
+  mysql_data:
 
 

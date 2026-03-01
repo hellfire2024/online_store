@@ -1,9 +1,30 @@
 version: '3.8'
 services:
+  mysql:
+    image: mysql:8.0
+    container_name: online_store_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: agis_dev_db
+      MYSQL_USER: adaptivegis-dev
+      MYSQL_PASSWORD: we1r9dveIPTzjJ84HMD6
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
   backend:
     build:
       context: .
       dockerfile: Dockerfile.backend
+    container_name: online_store_backend
     ports:
       - "3001:3001"
     env_file:
@@ -16,6 +37,9 @@ services:
       - DB_USER=adaptivegis-dev
       - DB_PASSWORD=we1r9dveIPTzjJ84HMD6
       - DB_NAME=agis_dev_db
+    depends_on:
+      mysql:
+        condition: service_healthy
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "node", "/app/healthcheck.js"]
@@ -28,6 +52,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    container_name: online_store_frontend
     ports:
       - "8080:80"
     depends_on:
@@ -39,3 +64,6 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
+
+volumes:
+  mysql_data:
