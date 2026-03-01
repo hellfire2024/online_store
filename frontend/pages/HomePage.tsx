@@ -430,8 +430,7 @@ const HomePage: React.FC = () => {
             {featuredReviews.map((review) => (
               <div
                 key={review.id}
-                className="bg-slate-800 p-6 rounded-lg border border-slate-700 flex-shrink-0"
-                style={{ width: "calc(33.333% - 22px)", minWidth: "250px" }}
+                className="bg-slate-800 p-6 rounded-lg border border-slate-700 w-full sm:w-[calc(50%-1rem)] lg:w-[calc(33.333%-1.33rem)] max-w-sm"
               >
                 <div className="flex justify-between items-start gap-4 mb-2">
                   <div className="flex-1 min-w-0">
