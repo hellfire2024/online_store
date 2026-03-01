@@ -24,7 +24,6 @@ services:
       DEMO_MODE: "0"
       PORT: 3001
       CORS_ORIGIN: https://dev.adaptivegis.com
-      SKIP_DB_CHECK: ""
       DB_HOST: mysql
       DB_PORT: 3306
       DB_USER: adaptivegis-dev

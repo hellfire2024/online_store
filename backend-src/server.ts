@@ -144,9 +144,11 @@ const PORT = parseInt(process.env.PORT || "3001", 10);
 const DEMO_MODE =
   process.env.DEMO_MODE === "1" ||
   process.env.DEMO_MODE === "true" ||
-  !!process.env.SKIP_DB_CHECK;
+  (process.env.SKIP_DB_CHECK && process.env.SKIP_DB_CHECK !== "" && process.env.SKIP_DB_CHECK !== "false" && process.env.SKIP_DB_CHECK !== "0");
 
 console.log("🎭 DEMO_MODE:", DEMO_MODE);
+console.log("🔍 DEMO_MODE env value:", process.env.DEMO_MODE);
+console.log("🔍 SKIP_DB_CHECK env value:", process.env.SKIP_DB_CHECK);
 
 // ============================================
 // MIDDLEWARE
