@@ -182,13 +182,13 @@ export async function runMigrations(): Promise<void> {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
     `CREATE TABLE IF NOT EXISTS staff_roles (
       id VARCHAR(36) PRIMARY KEY,
-      key VARCHAR(100) UNIQUE NOT NULL,
+      \`key\` VARCHAR(100) UNIQUE NOT NULL,
       label VARCHAR(255) NOT NULL,
       description TEXT,
       permissions JSON,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-      INDEX idx_key (key)
+      INDEX idx_key (\`key\`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
   ];
 
