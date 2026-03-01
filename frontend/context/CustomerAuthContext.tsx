@@ -91,29 +91,20 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
 
     if (storedCustomer && storedToken) {
       try {
-        // Restore JWT token first
+        // Restore customer and token from localStorage
         apiClient.setToken(storedToken);
         const parsed = JSON.parse(storedCustomer);
+        
+        // Set customer immediately from cached data
+        // Don't refresh from API on startup - use cached profile
+        // Profile can be refreshed manually when needed via explicit actions
         setCustomer(parsed);
-
-        // Refresh customer profile to pull addresses
-        if (parsed?.id) {
-          apiClient.customers
-            .getById(parsed.id)
-            .then((profile) => {
-              const normalized = mapCustomer(profile);
-              setCustomer(normalized);
-              storeCustomerToLocalStorage(normalized);
-            })
-            .catch((error) => {
-              console.warn("Failed to refresh customer profile", error);
-            });
-        }
       } catch (error) {
         console.error("Failed to restore customer session", error);
         // Clear invalid session
         localStorage.removeItem("customer");
         localStorage.removeItem("auth_token");
+        apiClient.setToken(null);
       }
     }
   }, []);
@@ -230,19 +221,9 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
         // Store JWT token
         apiClient.setToken(result.token);
 
-        let newCustomer: Customer = mapCustomer(result.customer);
-
-        // Fetch full profile to include addresses
-        try {
-          const profile = await apiClient.customers.getById(result.customer.id);
-          newCustomer = mapCustomer(profile);
-        } catch (error) {
-          console.warn(
-            "Failed to load customer profile after registration",
-            error,
-          );
-        }
-
+        // Use the customer object returned from registration endpoint
+        // No need for extra API call - registration endpoint returns full customer data
+        const newCustomer: Customer = mapCustomer(result.customer);
         setCustomer(newCustomer);
         storeCustomerToLocalStorage(newCustomer);
         return { success: true };
@@ -265,16 +246,9 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
         // Store JWT token
         apiClient.setToken(result.token);
 
-        let loggedInCustomer: Customer = mapCustomer(result.customer);
-
-        // Fetch full profile to include addresses
-        try {
-          const profile = await apiClient.customers.getById(result.customer.id);
-          loggedInCustomer = mapCustomer(profile);
-        } catch (error) {
-          console.warn("Failed to load customer profile after login", error);
-        }
-
+        // Use the customer object returned from login endpoint
+        // No need for extra API call - login endpoint returns full customer data
+        const loggedInCustomer: Customer = mapCustomer(result.customer);
         setCustomer(loggedInCustomer);
         storeCustomerToLocalStorage(loggedInCustomer);
         return { success: true };
