@@ -269,9 +269,9 @@ const CustomerAddressesPage: React.FC = () => {
 
   const handleCopyFromDefault = () => {
     const defaultAddress = customer?.addresses?.find(
-      (addr) => addr.isDefault && addr.type === formData.type
+      (addr) => addr.isDefault && addr.type === formData.type,
     );
-    
+
     if (defaultAddress) {
       setFormData({
         ...formData,
@@ -357,17 +357,29 @@ const CustomerAddressesPage: React.FC = () => {
             <h2 className="text-xl font-bold text-white">
               {editingId ? "Edit Address" : "Add New Address"}
             </h2>
-            {isAdding && customer?.addresses && customer.addresses.length > 0 && (
-              <button
-                onClick={handleCopyFromDefault}
-                className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-white text-sm rounded-md transition-colors flex items-center gap-2"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                </svg>
-                Copy from Default
-              </button>
-            )}
+            {isAdding &&
+              customer?.addresses &&
+              customer.addresses.length > 0 && (
+                <button
+                  onClick={handleCopyFromDefault}
+                  className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-white text-sm rounded-md transition-colors flex items-center gap-2"
+                >
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                    />
+                  </svg>
+                  Copy from Default
+                </button>
+              )}
           </div>
           <div className="space-y-4">
             <div>
@@ -429,7 +441,10 @@ const CustomerAddressesPage: React.FC = () => {
                 placeholder="###-###-####"
                 value={formData.phone}
                 onChange={(e) =>
-                  setFormData({ ...formData, phone: formatPhoneNumber(e.target.value) })
+                  setFormData({
+                    ...formData,
+                    phone: formatPhoneNumber(e.target.value),
+                  })
                 }
                 className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white placeholder-gray-400"
               />
@@ -508,7 +523,10 @@ const CustomerAddressesPage: React.FC = () => {
                   placeholder="#####"
                   value={formData.zip}
                   onChange={(e) =>
-                    setFormData({ ...formData, zip: formatZipCode(e.target.value) })
+                    setFormData({
+                      ...formData,
+                      zip: formatZipCode(e.target.value),
+                    })
                   }
                   maxLength={10}
                   className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white placeholder-gray-400"

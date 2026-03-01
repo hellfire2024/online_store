@@ -70,10 +70,7 @@ router.post(
       .withMessage("Invalid address type"),
     body("firstName").trim().notEmpty().withMessage("First name required"),
     body("lastName").trim().notEmpty().withMessage("Last name required"),
-    body("street1")
-      .trim()
-      .notEmpty()
-      .withMessage("Street address required"),
+    body("street1").trim().notEmpty().withMessage("Street address required"),
     body("street2").optional().trim(),
     body("city").trim().notEmpty().withMessage("City required"),
     body("state").trim().notEmpty().withMessage("State required"),
@@ -181,10 +178,7 @@ router.put(
       .withMessage("Invalid address type"),
     body("firstName").trim().notEmpty().withMessage("First name required"),
     body("lastName").trim().notEmpty().withMessage("Last name required"),
-    body("street1")
-      .trim()
-      .notEmpty()
-      .withMessage("Street address required"),
+    body("street1").trim().notEmpty().withMessage("Street address required"),
     body("street2").optional().trim(),
     body("city").trim().notEmpty().withMessage("City required"),
     body("state").trim().notEmpty().withMessage("State required"),
