@@ -119,11 +119,20 @@ export async function runMigrations(): Promise<void> {
       customer_id VARCHAR(36),
       customer_email VARCHAR(255),
       customer_name VARCHAR(255),
+      order_number VARCHAR(255) NOT NULL UNIQUE,
       order_data LONGTEXT,
+      subtotal DECIMAL(10,2),
+      tax_amount DECIMAL(10,2),
+      shipping_cost DECIMAL(10,2),
+      total DECIMAL(10,2) NOT NULL,
+      status VARCHAR(50) DEFAULT 'pending',
+      tracking_number VARCHAR(255),
       shipper VARCHAR(100),
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE SET NULL,
-      INDEX idx_customer (customer_id)
+      INDEX idx_customer (customer_id),
+      INDEX idx_order_number (order_number)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
     `CREATE TABLE IF NOT EXISTS site_settings (
       id INT PRIMARY KEY DEFAULT 1,
