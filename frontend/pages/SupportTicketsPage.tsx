@@ -71,8 +71,14 @@ const SupportTicketsPage: React.FC = () => {
   }, [location.state]);
 
   useEffect(() => {
+    // Only load tickets if explicitly authenticated with a customer ID
+    // This guard prevents API calls during authentication state transitions
+    if (!isAuthenticated || !customer?.id) {
+      setTickets([]);
+      return;
+    }
+
     const loadTickets = async () => {
-      if (!isAuthenticated || !customer?.id) return;
       try {
         setIsLoading(true);
         const apiTickets = await apiClient.tickets.getForCustomer(customer.id);
@@ -80,6 +86,7 @@ const SupportTicketsPage: React.FC = () => {
       } catch (error) {
         console.error("Failed to load tickets:", error);
         addToast("Failed to load support tickets", "error");
+        setTickets([]);
       } finally {
         setIsLoading(false);
       }
