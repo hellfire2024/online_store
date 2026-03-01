@@ -31,6 +31,6 @@ COPY --from=build /app/backend-src/db/site_settings.json ./db/site_settings.json
 COPY --from=build /app/backend-src/healthcheck.js ./healthcheck.js
 RUN chmod +x /app/healthcheck.js
 EXPOSE 3001
-HEALTHCHECK --interval=10s --timeout=5s --start-period=30s --retries=5 \
+HEALTHCHECK --interval=10s --timeout=5s --start-period=60s --retries=5 \
     CMD node /app/healthcheck.js || exit 1
 CMD ["node", "dist/server.js"]

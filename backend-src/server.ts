@@ -309,8 +309,20 @@ async function startServer() {
       const migrateModule = await import("./db/migrate.js");
       const seedModule = await import("./db/seed.js");
       appendLog("🔄 Running migrations...");
-      await migrateModule.runMigrations();
-      appendLog("✅ Migrations complete");
+      
+      // Add timeout to prevent migrations from hanging
+      const migrationTimeout = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error("Migrations timeout after 60s")), 60000)
+      );
+      try {
+        await Promise.race([migrateModule.runMigrations(), migrationTimeout]);
+        appendLog("✅ Migrations complete");
+      } catch (migErr) {
+        appendLog("⚠️  Migration error (continuing): " + String(migErr));
+        console.warn("⚠️  Migration error (continuing):", migErr);
+        // Don't throw - allow server to start even if migrations fail
+        // This prevents complete outage if migrations have issues
+      }
 
       // Seed if either admins or galleries table is empty
       const [adminCountRows]: any = await connectionModule.pool.query(
