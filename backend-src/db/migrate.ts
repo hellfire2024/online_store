@@ -52,15 +52,17 @@ export async function runMigrations(): Promise<void> {
     `CREATE TABLE IF NOT EXISTS customer_addresses (
       id VARCHAR(36) PRIMARY KEY,
       customer_id VARCHAR(36) NOT NULL,
+      type ENUM('shipping', 'billing') NOT NULL DEFAULT 'shipping',
       first_name VARCHAR(255),
       last_name VARCHAR(255),
-      address_line1 VARCHAR(255) NOT NULL,
-      address_line2 VARCHAR(255),
+      full_name VARCHAR(255),
+      street_address VARCHAR(255) NOT NULL,
       city VARCHAR(100) NOT NULL,
       state VARCHAR(100),
-      postal_code VARCHAR(20) NOT NULL,
+      zip_code VARCHAR(20) NOT NULL,
       country VARCHAR(100) NOT NULL,
       phone VARCHAR(50),
+      is_default BOOLEAN DEFAULT FALSE,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE,
       INDEX idx_customer (customer_id)
@@ -167,6 +169,13 @@ export async function runMigrations(): Promise<void> {
     }
   };
 
+  const hasColumn = async (table: string, column: string): Promise<boolean> => {
+    const [rows] = await pool.query(`SHOW COLUMNS FROM \`${table}\` LIKE ?`, [
+      column,
+    ]);
+    return Array.isArray(rows) && rows.length > 0;
+  };
+
   try {
     // 1. Create all tables
     for (const stmt of createTables) {
@@ -192,6 +201,66 @@ export async function runMigrations(): Promise<void> {
       "customer_addresses",
       "last_name",
       "VARCHAR(255)",
+    );
+    await alterTableAddColumn(
+      "customer_addresses",
+      "type",
+      "ENUM('shipping','billing') NOT NULL DEFAULT 'shipping'",
+    );
+    await alterTableAddColumn(
+      "customer_addresses",
+      "full_name",
+      "VARCHAR(255)",
+    );
+    await alterTableAddColumn(
+      "customer_addresses",
+      "street_address",
+      "VARCHAR(255) NULL",
+    );
+    await alterTableAddColumn(
+      "customer_addresses",
+      "zip_code",
+      "VARCHAR(20) NULL",
+    );
+    await alterTableAddColumn(
+      "customer_addresses",
+      "is_default",
+      "BOOLEAN DEFAULT FALSE",
+    );
+
+    // Backfill compatibility data from legacy columns if present
+    const hasAddressLine1 = await hasColumn(
+      "customer_addresses",
+      "address_line1",
+    );
+    const hasPostalCode = await hasColumn("customer_addresses", "postal_code");
+
+    if (hasAddressLine1) {
+      await pool.query(
+        `UPDATE customer_addresses
+         SET street_address = COALESCE(NULLIF(street_address, ''), address_line1)
+         WHERE street_address IS NULL OR street_address = ''`,
+      );
+    }
+
+    if (hasPostalCode) {
+      await pool.query(
+        `UPDATE customer_addresses
+         SET zip_code = COALESCE(NULLIF(zip_code, ''), postal_code)
+         WHERE zip_code IS NULL OR zip_code = ''`,
+      );
+    }
+
+    await pool.query(
+      `UPDATE customer_addresses
+       SET full_name = TRIM(CONCAT(COALESCE(first_name, ''), ' ', COALESCE(last_name, '')))
+       WHERE full_name IS NULL OR full_name = ''`,
+    );
+
+    await pool.query(
+      `UPDATE customer_addresses
+       SET type = 'shipping'
+       WHERE type IS NULL OR type = ''`,
     );
 
     // Add columns for orders
