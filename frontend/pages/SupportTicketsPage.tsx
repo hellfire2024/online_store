@@ -71,13 +71,16 @@ const SupportTicketsPage: React.FC = () => {
   }, [location.state]);
 
   useEffect(() => {
-    // Only load tickets if explicitly authenticated with a customer ID
-    // This guard prevents API calls during authentication state transitions
+    // CRITICAL: Guard prevents ALL execution if not authenticated
+    // This must execute BEFORE any async operations
     if (!isAuthenticated || !customer?.id) {
+      // Clear state and return - no API calls at all
       setTickets([]);
-      return;
+      setIsLoading(false);
+      return; // ← MUST EXIT before defining async function
     }
 
+    // Only runs if both isAuthenticated AND customer.id exist
     const loadTickets = async () => {
       try {
         setIsLoading(true);
