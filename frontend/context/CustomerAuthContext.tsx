@@ -94,7 +94,7 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
         // Restore customer and token from localStorage
         apiClient.setToken(storedToken);
         const parsed = JSON.parse(storedCustomer);
-        
+
         // Set customer immediately from cached data
         // Don't refresh from API on startup - use cached profile
         // Profile can be refreshed manually when needed via explicit actions
@@ -169,7 +169,7 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
     } catch (e) {
       console.warn("Could not clear localStorage", e);
     }
-    
+
     const minimalCustomer = {
       id: customer.id,
       name: customer.name,
