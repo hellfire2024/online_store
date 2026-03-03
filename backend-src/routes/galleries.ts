@@ -22,23 +22,27 @@ router.get("/:id/images", async (req: Request, res: Response) => {
   try {
     const galleryId = req.params.id;
     console.log(`[Gallery GET] Fetching images for gallery: ${galleryId}`);
-    
+
     const [rows] = await pool.query<RowDataPacket[]>(
       "SELECT id, name, image_url as imageUrl FROM gallery_images WHERE gallery_id = ?",
       [galleryId],
     );
-    
+
     console.log(
       `[Gallery GET] Gallery ${galleryId}: found ${rows.length} images in database`,
     );
-    
+
     if (rows.length > 0) {
       console.log(
         `[Gallery GET] Image details:`,
-        rows.map((row: any) => ({ id: row.id, name: row.name, urlLength: row.imageUrl?.length || 0 })),
+        rows.map((row: any) => ({
+          id: row.id,
+          name: row.name,
+          urlLength: row.imageUrl?.length || 0,
+        })),
       );
     }
-    
+
     return res.json(rows);
   } catch (error) {
     console.error("[Gallery GET] Failed to fetch images:", error);
@@ -67,30 +71,38 @@ router.post("/:id/images", async (req: Request, res: Response) => {
     const imageId = randomUUID();
     const imageName = req.body.name || "untitled";
     const imageUrl = req.body.imageUrl;
-    
-    console.log(`[Gallery POST] Attempting to insert image into gallery ${galleryId}`);
-    console.log(`[Gallery POST] Image details: id=${imageId}, name=${imageName}, urlLength=${imageUrl?.length || 0}`);
-    
+
+    console.log(
+      `[Gallery POST] Attempting to insert image into gallery ${galleryId}`,
+    );
+    console.log(
+      `[Gallery POST] Image details: id=${imageId}, name=${imageName}, urlLength=${imageUrl?.length || 0}`,
+    );
+
     if (!imageUrl) {
       console.error("[Gallery POST] ERROR: No imageUrl provided");
       return res.status(400).json({ error: "imageUrl is required" });
     }
-    
+
     const result = await pool.query(
       "INSERT INTO gallery_images (id, gallery_id, name, image_url) VALUES (?, ?, ?, ?)",
       [imageId, galleryId, imageName, imageUrl],
     );
-    
+
     console.log(`[Gallery POST] Image inserted successfully: ${imageId}`);
     console.log(`[Gallery POST] Database result:`, result);
-    
+
     return res
       .status(201)
       .json({ id: imageId, name: imageName, imageUrl: imageUrl });
   } catch (error) {
     console.error("[Gallery POST] Failed to add image:", error);
     if (error instanceof Error) {
-      console.error("[Gallery POST] Error details:", error.message, error.stack);
+      console.error(
+        "[Gallery POST] Error details:",
+        error.message,
+        error.stack,
+      );
     }
     return res.status(500).json({ error: "Failed to add image" });
   }
