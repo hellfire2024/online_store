@@ -70,6 +70,7 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({
   const fetchGalleryImages = async (galleryId: string) => {
     try {
       const images = await apiClient.galleries.getImages(galleryId);
+      console.log(`Fetched ${images.length} images for gallery ${galleryId}:`, images);
       setGalleryImages((prev) => ({
         ...prev,
         [galleryId]: Array.isArray(images) ? images : [],
@@ -112,10 +113,15 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({
   ) => {
     try {
       const newImage = await apiClient.galleries.addImage(galleryId, image);
-      setGalleryImages((prev) => ({
-        ...prev,
-        [galleryId]: [...(prev[galleryId] || []), newImage],
-      }));
+      console.log("Image uploaded successfully:", newImage);
+      setGalleryImages((prev) => {
+        const updated = {
+          ...prev,
+          [galleryId]: [...(prev[galleryId] || []), newImage],
+        };
+        console.log(`Gallery ${galleryId} now has ${updated[galleryId].length} images:`, updated[galleryId]);
+        return updated;
+      });
     } catch (error) {
       console.error("Failed to add gallery image to API:", error);
       // Don't fall back to mock API - let the error propagate so UI can handle it

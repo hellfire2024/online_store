@@ -73,7 +73,15 @@ const GalleriesManagement: React.FC = () => {
 
   useEffect(() => {
     if (selectedGallery) {
-      fetchGalleryImages(selectedGallery);
+      fetchGalleryImages(selectedGallery).catch((error) => {
+        console.error("Failed to fetch gallery images:", error);
+        addToast(
+          `Failed to load gallery images: ${
+            error instanceof Error ? error.message : "Unknown error"
+          }`,
+          "error",
+        );
+      });
     }
   }, [selectedGallery]);
 
