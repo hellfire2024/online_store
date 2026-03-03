@@ -105,7 +105,7 @@ const GalleriesManagement: React.FC = () => {
       `Starting upload of ${files.length} files to gallery ${selectedGallery}`,
     );
 
-    const uploadPromises: Promise<void>[] = [];
+    const uploadPromises: Promise<{ name: string; success: boolean }>[] = [];
 
     for (const file of Array.from(files)) {
       if (file.type.startsWith("image/")) {
@@ -130,16 +130,10 @@ const GalleriesManagement: React.FC = () => {
             });
 
             console.log(`Successfully added ${file.name} to gallery`);
-            addToast(`Image "${file.name}" uploaded successfully`, "success");
+            return { name: file.name, success: true };
           } catch (error) {
-            console.error("Image upload failed:", error);
-            addToast(
-              `Failed to upload "${file.name}": ${
-                error instanceof Error ? error.message : "Unknown error"
-              }`,
-              "error",
-            );
-            throw error;
+            console.error(`Image upload failed for ${file.name}:`, error);
+            return { name: file.name, success: false };
           }
         })();
         uploadPromises.push(uploadPromise);
@@ -148,15 +142,22 @@ const GalleriesManagement: React.FC = () => {
 
     // Wait for all uploads to complete
     try {
-      await Promise.all(uploadPromises);
-      console.log(`All ${uploadPromises.length} files uploaded successfully`);
-      // Refresh gallery images after upload
-      if (selectedGallery) {
-        console.log(`Refreshing gallery ${selectedGallery} after uploads`);
-        await fetchGalleryImages(selectedGallery);
+      const results = await Promise.all(uploadPromises);
+      const successCount = results.filter(r => r.success).length;
+      const failureCount = results.filter(r => r.success === false).length;
+      
+      console.log(`Upload complete: ${successCount} succeeded, ${failureCount} failed`);
+      
+      if (failureCount === 0) {
+        addToast(`Successfully uploaded ${successCount} image(s)`, "success");
+      } else if (successCount > 0) {
+        addToast(`Uploaded ${successCount} image(s), ${failureCount} failed`, "warning");
+      } else {
+        addToast(`All ${failureCount} upload(s) failed`, "error");
       }
     } catch (error) {
-      console.error("Some uploads failed:", error);
+      console.error("Upload error:", error);
+      addToast("Upload failed - check console for details", "error");
     }
 
     // Reset the input value to allow re-uploading the same file/folder
