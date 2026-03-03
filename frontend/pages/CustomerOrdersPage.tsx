@@ -628,22 +628,30 @@ const CustomerOrdersPage: React.FC = () => {
                             )}
                           </div>
                         </div>
-                        <svg
-                          className={`w-6 h-6 text-gray-400 transition-transform duration-200 ${
-                            selectedOrder?.id === order.id ? "rotate-90" : ""
+                        <div
+                          className={`ml-4 shrink-0 flex h-9 w-9 items-center justify-center rounded-full border transition-all duration-200 ${
+                            selectedOrder?.id === order.id
+                              ? "border-sky-400/50 bg-sky-500/15 text-sky-300"
+                              : "border-slate-600 bg-slate-700/40 text-slate-300"
                           }`}
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                          aria-hidden="true"
                         >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M9 5l7 7-7 7"
-                          />
-                        </svg>
+                          <svg
+                            className={`w-4 h-4 transition-transform duration-200 ${
+                              selectedOrder?.id === order.id ? "rotate-180" : ""
+                            }`}
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                            aria-hidden="true"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2.5}
+                              d="M6 9l6 6 6-6"
+                            />
+                          </svg>
+                        </div>
                       </div>
                     </div>
 
