@@ -48,22 +48,23 @@ router.get("/:id", async (req: Request, res: Response) => {
 
     // Get customer's addresses
     const [addresses] = await pool.query<RowDataPacket[]>(
-      `SELECT id, type, first_name, last_name, full_name, street_address, city, state, zip_code, 
+      `SELECT id, type, first_name, last_name, full_name, street_address, street_2, city, state, zip_code, 
               country, phone, is_default FROM customer_addresses WHERE customer_id = ?`,
       [req.params.id],
     );
 
-    // Normalize address fields to camelCase
+    // Normalize address fields to camelCase (using industry-standard shipping format)
     customer.addresses = addresses.map((addr: any) => ({
       id: addr.id,
       type: addr.type,
       firstName: addr.first_name,
       lastName: addr.last_name,
       fullName: addr.full_name,
-      streetAddress: addr.street_address,
+      street1: addr.street_address,
+      street2: addr.street_2 || "",
       city: addr.city,
       state: addr.state,
-      zipCode: addr.zip_code,
+      zip: addr.zip_code,
       country: addr.country,
       phone: addr.phone,
       isDefault: !!addr.is_default,
