@@ -141,13 +141,11 @@ appendLog("🏗️  Creating Express app...");
 console.log("🏗️  Creating Express app...");
 const app: Express = express();
 const PORT = parseInt(process.env.PORT || "3001", 10);
+// DEMO_MODE should only be enabled by explicit DEMO_MODE=1 or DEMO_MODE=true
+// SKIP_DB_CHECK is separate and just skips the initial DB connection test
 const DEMO_MODE =
   process.env.DEMO_MODE === "1" ||
-  process.env.DEMO_MODE === "true" ||
-  (process.env.SKIP_DB_CHECK &&
-    process.env.SKIP_DB_CHECK !== "" &&
-    process.env.SKIP_DB_CHECK !== "false" &&
-    process.env.SKIP_DB_CHECK !== "0");
+  process.env.DEMO_MODE === "true";
 
 console.log("🎭 DEMO_MODE:", DEMO_MODE);
 console.log("🔍 DEMO_MODE env value:", process.env.DEMO_MODE);
