@@ -59,7 +59,10 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({
   const fetchGalleryImages = async (galleryId: string) => {
     try {
       const images = await apiClient.galleries.getImages(galleryId);
-      console.log(`Fetched ${images.length} images for gallery ${galleryId}:`, images);
+      console.log(
+        `Fetched ${images.length} images for gallery ${galleryId}:`,
+        images,
+      );
       setGalleryImages((prev) => ({
         ...prev,
         [galleryId]: Array.isArray(images) ? images : [],
@@ -108,7 +111,10 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({
           ...prev,
           [galleryId]: [...(prev[galleryId] || []), newImage],
         };
-        console.log(`Gallery ${galleryId} now has ${updated[galleryId].length} images:`, updated[galleryId]);
+        console.log(
+          `Gallery ${galleryId} now has ${updated[galleryId].length} images:`,
+          updated[galleryId],
+        );
         return updated;
       });
     } catch (error) {
@@ -146,7 +152,9 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({
       await apiClient.galleries.deleteImage(galleryId, imageId);
       setGalleryImages((prev) => ({
         ...prev,
-        [galleryId]: (prev[galleryId] || []).filter((img) => img.id !== imageId),
+        [galleryId]: (prev[galleryId] || []).filter(
+          (img) => img.id !== imageId,
+        ),
       }));
     } catch (error) {
       console.error("Failed to delete gallery image:", error);
