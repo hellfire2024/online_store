@@ -1,6 +1,6 @@
 # This Dockerfile is now for the frontend only, and should be placed in the frontend/ directory.
 # It expects all build files to be present in the same directory.
-FROM cgr.dev/chainguard/node:22-dev AS build
+FROM node:22-alpine AS build
 WORKDIR /app
 
 COPY frontend/package.json ./
@@ -34,7 +34,7 @@ RUN if [ ! -f /app/dist/index.html ] || [ ! -s /app/dist/index.html ]; then echo
 RUN echo "==== AFTER BUILD: files in /app/dist ====" && ls -al /app/dist && echo "==== CONTENTS OF /app/dist/index.html ====" && cat /app/dist/index.html
 RUN node verify-frontend-build.js
 
-FROM cgr.dev/chainguard/nginx:latest
+FROM nginx:alpine
 COPY --from=build /app/dist /usr/share/nginx/html
 COPY frontend/nginx.conf /etc/nginx/nginx.conf
 EXPOSE 80

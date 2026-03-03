@@ -1,7 +1,7 @@
 # Production-ready Dockerfile for React frontend (Vite build + nginx)
 
 # Build stage
-FROM cgr.dev/chainguard/node:22-dev AS build
+FROM node:22-alpine AS build
 WORKDIR /app
 
 # Copy frontend files (building from root context, so need frontend/ prefix)
@@ -32,7 +32,7 @@ RUN node verify-frontend-build.js
 RUN rm -rf ~/.npm /tmp/*
 
 # Runtime stage (nginx)
-FROM cgr.dev/chainguard/nginx:latest
+FROM nginx:alpine
 COPY --from=build /app/dist /usr/share/nginx/html
 COPY frontend/nginx.conf /etc/nginx/nginx.conf
 EXPOSE 80
