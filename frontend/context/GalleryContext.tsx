@@ -4,6 +4,7 @@ import React, {
   useContext,
   ReactNode,
   useEffect,
+  useCallback,
 } from "react";
 import { Gallery, GalleryImage } from "../types";
 import { apiClient } from "../services/apiClient";
@@ -56,7 +57,7 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({
     loadGalleries();
   }, []);
 
-  const fetchGalleryImages = async (galleryId: string) => {
+  const fetchGalleryImages = useCallback(async (galleryId: string) => {
     try {
       const images = await apiClient.galleries.getImages(galleryId);
       console.log(
@@ -72,9 +73,9 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({
       // Don't fall back to mock data - let the error surface so admin knows there's an issue
       throw error;
     }
-  };
+  }, []);
 
-  const addGallery = async (gallery: Omit<Gallery, "id">) => {
+  const addGallery = useCallback(async (gallery: Omit<Gallery, "id">) => {
     try {
       const newGallery = await apiClient.galleries.create(gallery);
       setGalleries((prev) => [...prev, newGallery]);
@@ -88,9 +89,9 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({
       console.error("Failed to create gallery:", error);
       throw error;
     }
-  };
+  }, []);
 
-  const deleteGallery = async (galleryId: string) => {
+  const deleteGallery = useCallback(async (galleryId: string) => {
     try {
       await apiClient.galleries.delete(galleryId);
       setGalleries((prev) => prev.filter((g) => g.id !== galleryId));
@@ -103,83 +104,89 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({
       console.error("Failed to delete gallery:", error);
       throw error;
     }
-  };
+  }, []);
 
-  const addGalleryImage = async (
-    galleryId: string,
-    image: Omit<GalleryImage, "id">,
-  ) => {
-    try {
-      console.log(
-        `[GalleryContext] Adding image "${image.name}" to gallery ${galleryId}`,
-      );
-      const newImage = await apiClient.galleries.addImage(galleryId, image);
-      console.log(`[GalleryContext] API returned image:`, newImage);
+  const addGalleryImage = useCallback(
+    async (galleryId: string, image: Omit<GalleryImage, "id">) => {
+      try {
+        console.log(
+          `[GalleryContext] Adding image "${image.name}" to gallery ${galleryId}`,
+        );
+        const newImage = await apiClient.galleries.addImage(galleryId, image);
+        console.log(`[GalleryContext] API returned image:`, newImage);
 
-      setGalleryImages((prev) => {
-        const currentImages = prev[galleryId] || [];
-        const updated = {
+        setGalleryImages((prev) => {
+          const currentImages = prev[galleryId] || [];
+          const updated = {
+            ...prev,
+            [galleryId]: [...currentImages, newImage],
+          };
+          console.log(
+            `[GalleryContext] Gallery ${galleryId} now has ${updated[galleryId].length} images (was ${currentImages.length})`,
+          );
+          console.log(
+            `[GalleryContext] All image IDs in gallery:`,
+            updated[galleryId].map((img) => img.id),
+          );
+          return updated;
+        });
+
+        return newImage;
+      } catch (error) {
+        console.error(
+          "[GalleryContext] Failed to add gallery image to API:",
+          error,
+        );
+        // Don't fall back to mock API - let the error propagate so UI can handle it
+        throw error;
+      }
+    },
+    [],
+  );
+
+  const updateGalleryImage = useCallback(
+    async (
+      galleryId: string,
+      imageId: string,
+      updates: Partial<Omit<GalleryImage, "id">>,
+    ) => {
+      try {
+        const updatedImage = await apiClient.galleries.updateImage(
+          galleryId,
+          imageId,
+          updates,
+        );
+        setGalleryImages((prev) => ({
           ...prev,
-          [galleryId]: [...currentImages, newImage],
-        };
-        console.log(
-          `[GalleryContext] Gallery ${galleryId} now has ${updated[galleryId].length} images (was ${currentImages.length})`,
-        );
-        console.log(
-          `[GalleryContext] All image IDs in gallery:`,
-          updated[galleryId].map((img) => img.id),
-        );
-        return updated;
-      });
+          [galleryId]: (prev[galleryId] || []).map((img) =>
+            img.id === imageId ? updatedImage : img,
+          ),
+        }));
+      } catch (error) {
+        console.error("Failed to update gallery image:", error);
+        throw error;
+      }
+    },
+    [],
+  );
 
-      return newImage;
-    } catch (error) {
-      console.error(
-        "[GalleryContext] Failed to add gallery image to API:",
-        error,
-      );
-      // Don't fall back to mock API - let the error propagate so UI can handle it
-      throw error;
-    }
-  };
-
-  const updateGalleryImage = async (
-    galleryId: string,
-    imageId: string,
-    updates: Partial<Omit<GalleryImage, "id">>,
-  ) => {
-    try {
-      const updatedImage = await apiClient.galleries.updateImage(
-        galleryId,
-        imageId,
-        updates,
-      );
-      setGalleryImages((prev) => ({
-        ...prev,
-        [galleryId]: (prev[galleryId] || []).map((img) =>
-          img.id === imageId ? updatedImage : img,
-        ),
-      }));
-    } catch (error) {
-      console.error("Failed to update gallery image:", error);
-      throw error;
-    }
-  };
-
-  const deleteGalleryImage = async (galleryId: string, imageId: string) => {
-    try {
-      await apiClient.galleries.deleteImage(galleryId, imageId);
-      setGalleryImages((prev) => ({
-        ...prev,
-        [galleryId]: (prev[galleryId] || []).filter(
-          (img) => img.id !== imageId,
-        ),
-      }));
-    } catch (error) {
-      console.error("Failed to delete gallery image:", error);
-      throw error;
-    }
-  };
+  const deleteGalleryImage = useCallback(
+    async (galleryId: string, imageId: string) => {
+      try {
+        await apiClient.galleries.deleteImage(galleryId, imageId);
+        setGalleryImages((prev) => ({
+          ...prev,
+          [galleryId]: (prev[galleryId] || []).filter(
+            (img) => img.id !== imageId,
+          ),
+        }));
+      } catch (error) {
+        console.error("Failed to delete gallery image:", error);
+        throw error;
+      }
+    },
+    [],
+  );
 
   return (
     <GalleryContext.Provider

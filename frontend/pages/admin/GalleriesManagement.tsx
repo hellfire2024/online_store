@@ -88,7 +88,7 @@ const GalleriesManagement: React.FC = () => {
         );
       });
     }
-  }, [selectedGallery]);
+  }, [selectedGallery, fetchGalleryImages, addToast]);
 
   const handleFileSelected = async (
     event: React.ChangeEvent<HTMLInputElement>,
