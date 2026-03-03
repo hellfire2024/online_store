@@ -92,7 +92,10 @@ const GalleriesManagement: React.FC = () => {
         reader.onload = async (e) => {
           const imageUrl = e.target?.result as string;
           try {
-            await addGalleryImage(selectedGallery, { name: file.name, imageUrl });
+            await addGalleryImage(selectedGallery, {
+              name: file.name,
+              imageUrl,
+            });
             addToast(`Image "${file.name}" uploaded successfully`, "success");
           } catch (error) {
             console.error("Image upload failed:", error);
