@@ -93,17 +93,21 @@ const GalleriesManagement: React.FC = () => {
     if (!files || files.length === 0) return;
 
     addToast(`Uploading ${files.length} image(s)...`, "info");
-    console.log(`Starting upload of ${files.length} files to gallery ${selectedGallery}`);
+    console.log(
+      `Starting upload of ${files.length} files to gallery ${selectedGallery}`,
+    );
 
     const uploadPromises: Promise<void>[] = [];
-    
+
     for (const file of Array.from(files)) {
       if (file.type.startsWith("image/")) {
         const uploadPromise = new Promise<void>((resolve, reject) => {
           const reader = new FileReader();
           reader.onload = async (e) => {
             const imageUrl = e.target?.result as string;
-            console.log(`Read file ${file.name}, size: ${imageUrl.length} bytes`);
+            console.log(
+              `Read file ${file.name}, size: ${imageUrl.length} bytes`,
+            );
             try {
               await addGalleryImage(selectedGallery, {
                 name: file.name,

@@ -24,7 +24,9 @@ router.get("/:id/images", async (req: Request, res: Response) => {
       "SELECT id, name, image_url as imageUrl FROM gallery_images WHERE gallery_id = ?",
       [req.params.id],
     );
-    console.log(`[Gallery] GET images for gallery ${req.params.id}: returned ${rows.length} images`);
+    console.log(
+      `[Gallery] GET images for gallery ${req.params.id}: returned ${rows.length} images`,
+    );
     return res.json(rows);
   } catch (error) {
     console.error("[Gallery] Failed to fetch images:", error);
@@ -50,7 +52,9 @@ router.post("/", async (req: Request, res: Response) => {
 router.post("/:id/images", async (req: Request, res: Response) => {
   try {
     const id = randomUUID();
-    console.log(`[Gallery] INSERT image: id=${id}, gallery_id=${req.params.id}, name=${req.body.name}, imageUrl length=${req.body.imageUrl?.length || 0}`);
+    console.log(
+      `[Gallery] INSERT image: id=${id}, gallery_id=${req.params.id}, name=${req.body.name}, imageUrl length=${req.body.imageUrl?.length || 0}`,
+    );
     await pool.query(
       "INSERT INTO gallery_images (id, gallery_id, name, image_url) VALUES (?, ?, ?, ?)",
       [id, req.params.id, req.body.name, req.body.imageUrl],
