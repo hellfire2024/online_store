@@ -143,15 +143,20 @@ const GalleriesManagement: React.FC = () => {
     // Wait for all uploads to complete
     try {
       const results = await Promise.all(uploadPromises);
-      const successCount = results.filter(r => r.success).length;
-      const failureCount = results.filter(r => r.success === false).length;
-      
-      console.log(`Upload complete: ${successCount} succeeded, ${failureCount} failed`);
-      
+      const successCount = results.filter((r) => r.success).length;
+      const failureCount = results.filter((r) => r.success === false).length;
+
+      console.log(
+        `Upload complete: ${successCount} succeeded, ${failureCount} failed`,
+      );
+
       if (failureCount === 0) {
         addToast(`Successfully uploaded ${successCount} image(s)`, "success");
       } else if (successCount > 0) {
-        addToast(`Uploaded ${successCount} image(s), ${failureCount} failed`, "warning");
+        addToast(
+          `Uploaded ${successCount} image(s), ${failureCount} failed`,
+          "warning",
+        );
       } else {
         addToast(`All ${failureCount} upload(s) failed`, "error");
       }

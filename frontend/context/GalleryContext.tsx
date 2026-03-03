@@ -110,10 +110,12 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({
     image: Omit<GalleryImage, "id">,
   ) => {
     try {
-      console.log(`[GalleryContext] Adding image "${image.name}" to gallery ${galleryId}`);
+      console.log(
+        `[GalleryContext] Adding image "${image.name}" to gallery ${galleryId}`,
+      );
       const newImage = await apiClient.galleries.addImage(galleryId, image);
       console.log(`[GalleryContext] API returned image:`, newImage);
-      
+
       setGalleryImages((prev) => {
         const currentImages = prev[galleryId] || [];
         const updated = {
@@ -123,13 +125,19 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({
         console.log(
           `[GalleryContext] Gallery ${galleryId} now has ${updated[galleryId].length} images (was ${currentImages.length})`,
         );
-        console.log(`[GalleryContext] All image IDs in gallery:`, updated[galleryId].map(img => img.id));
+        console.log(
+          `[GalleryContext] All image IDs in gallery:`,
+          updated[galleryId].map((img) => img.id),
+        );
         return updated;
       });
-      
+
       return newImage;
     } catch (error) {
-      console.error("[GalleryContext] Failed to add gallery image to API:", error);
+      console.error(
+        "[GalleryContext] Failed to add gallery image to API:",
+        error,
+      );
       // Don't fall back to mock API - let the error propagate so UI can handle it
       throw error;
     }
