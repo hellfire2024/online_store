@@ -8,21 +8,11 @@ import { useSiteSettings } from "../context/SiteSettingsContext";
 import { useCustomerAuth } from "../context/CustomerAuthContext";
 import { useServices } from "../context/ServicesContext";
 import { useGalleries } from "../context/GalleryContext";
-import { HomePageContent, GalleryImage } from "../types";
+// WARNING: This page uses useGalleries and must be rendered within a GalleryProvider (see App.tsx)
+import { HomePageContent } from "../types";
 import Spinner from "../components/Spinner";
 import { useToast } from "../hooks/useToast";
 import * as Icons from "../components/Icons";
-
-type GalleryImageCompat = {
-  id: string;
-  galleryId?: string;
-  imageUrl?: string;
-  name?: string;
-  url?: string;
-  title?: string;
-};
-
-type NormalizedGalleryImage = GalleryImage & { galleryId?: string };
 
 const HomePage: React.FC = () => {
   const { products, isLoading: productsLoading } = useProducts();
@@ -36,7 +26,6 @@ const HomePage: React.FC = () => {
   const { siteSettings } = useSiteSettings();
   const { addToast } = useToast();
   const { isAuthenticated } = useCustomerAuth();
-
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [reviewForm, setReviewForm] = useState({
     author: "",
@@ -47,32 +36,10 @@ const HomePage: React.FC = () => {
   const [reviewImages, setReviewImages] = useState<string[]>([]);
   const [carouselIndex, setCarouselIndex] = useState(0);
 
-  const galleryImages = useMemo<GalleryImageCompat[]>(
-    () =>
-      Object.values(galleryImagesRecord)
-        .flat()
-        .map((img) => img as GalleryImageCompat),
+  // Flatten gallery images from Record into array
+  const galleryImages = useMemo(
+    () => Object.values(galleryImagesRecord).flat(),
     [galleryImagesRecord],
-  );
-
-  const normalizedGalleryImages = useMemo<NormalizedGalleryImage[]>(
-    () =>
-      galleryImages.reduce<NormalizedGalleryImage[]>((acc, img) => {
-        const imageUrl = img.imageUrl || img.url;
-        if (!imageUrl) {
-          return acc;
-        }
-
-        acc.push({
-          id: img.id,
-          ...(img.galleryId ? { galleryId: img.galleryId } : {}),
-          imageUrl,
-          name: img.name || img.title || "Gallery image",
-        });
-
-        return acc;
-      }, []),
-    [galleryImages],
   );
 
   const homePage = pages.find((page) => page.pageType === "home");
@@ -81,6 +48,7 @@ const HomePage: React.FC = () => {
     [homePage],
   );
 
+  // Carousel rotation effect - must be before early return to avoid hook ordering issues
   useEffect(() => {
     if (
       !homeContent.galleryRotationEnabled ||
@@ -90,8 +58,8 @@ const HomePage: React.FC = () => {
       return;
     }
 
-    const filteredImages = normalizedGalleryImages.filter(
-      (img) => img.galleryId === homeContent.galleryRotationId,
+    const filteredImages = galleryImages.filter(
+      (img: any) => img.galleryId === homeContent.galleryRotationId,
     );
     if (filteredImages.length === 0) return;
 
@@ -101,7 +69,7 @@ const HomePage: React.FC = () => {
     }, interval * 1000);
 
     return () => clearInterval(timer);
-  }, [homeContent, normalizedGalleryImages, galleriesLoading]);
+  }, [homeContent, galleryImages, galleriesLoading]);
 
   if (
     productsLoading ||
@@ -182,6 +150,7 @@ const HomePage: React.FC = () => {
       }
 
       if (file.size > 5 * 1024 * 1024) {
+        // 5MB limit
         addToast("Image size must be less than 5MB", "error");
         return;
       }
@@ -200,6 +169,7 @@ const HomePage: React.FC = () => {
 
   return (
     <div className="space-y-16" style={{ fontFamily: pageFont || undefined }}>
+      {/* Hero Section */}
       {homePage.pageType === "home" && homePage.contentData && (
         <div className="relative text-center text-white bg-slate-900 rounded-lg overflow-hidden h-96">
           <img
@@ -220,6 +190,7 @@ const HomePage: React.FC = () => {
         </div>
       )}
 
+      {/* Gallery Carousel */}
       {homeContent.galleryRotationEnabled &&
         homeContent.galleryRotationId &&
         !galleriesLoading && (
@@ -228,12 +199,11 @@ const HomePage: React.FC = () => {
               Gallery
             </h2>
             {(() => {
-              const carouselImages = normalizedGalleryImages.filter(
-                (img) => img.galleryId === homeContent.galleryRotationId,
+              const carouselImages = galleryImages.filter(
+                (img: any) => img.galleryId === homeContent.galleryRotationId,
               );
               if (carouselImages.length === 0) return null;
               const currentImage = carouselImages[carouselIndex];
-
               return (
                 <div className="relative bg-slate-800 rounded-lg overflow-hidden">
                   <img
@@ -242,7 +212,7 @@ const HomePage: React.FC = () => {
                     className="w-full h-96 object-cover"
                   />
                   <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2">
-                    {carouselImages.map((_, idx: number) => (
+                    {carouselImages.map((_: any, idx: number) => (
                       <button
                         key={idx}
                         onClick={() => setCarouselIndex(idx)}
@@ -258,45 +228,44 @@ const HomePage: React.FC = () => {
           </div>
         )}
 
+      {/* Recent Creations Section */}
       {homeContent.recentCreationsGalleryId && !galleriesLoading && (
         <RecentCreationsGallery
-          galleryImages={normalizedGalleryImages.filter(
-            (img) => img.galleryId === homeContent.recentCreationsGalleryId,
+          galleryImages={galleryImages.filter(
+            (img: any) =>
+              img.galleryId === homeContent.recentCreationsGalleryId,
           )}
-          autoScroll={homeContent.recentCreationsAutoScroll !== false}
+          autoScroll={homeContent.recentCreationsAutoScroll !== false} // Default to true
           autoScrollInterval={homeContent.recentCreationsInterval || 5}
         />
       )}
 
+      {/* Featured Products */}
       <div>
         <h2 className="text-3xl font-bold text-white text-center mb-8">
           Featured Products
         </h2>
-        <div className="flex flex-wrap justify-center gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           {featuredProducts.map((product) => (
-            <div
-              key={product.id}
-              className="w-full sm:w-[calc(50%-1rem)] lg:w-[calc(25%-1.5rem)] max-w-sm"
-            >
-              <ProductCard product={product} />
-            </div>
+            <ProductCard key={product.id} product={product} />
           ))}
         </div>
       </div>
 
+      {/* Services Offered */}
       {services.length > 0 && (
         <div>
           <h2 className="text-3xl font-bold text-white text-center mb-8">
             Services We Offer
           </h2>
-          <div className="flex flex-wrap justify-center gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {services.map((service) => {
               const IconComponent =
                 (Icons as any)[service.icon] || Icons.LayersIcon;
               return (
                 <div
                   key={service.id}
-                  className="bg-slate-800 p-6 rounded-lg border border-slate-700 text-center w-full sm:w-[calc(50%-1rem)] lg:w-[calc(33.333%-1.33rem)] max-w-sm"
+                  className="bg-slate-800 p-6 rounded-lg border border-slate-700 text-center"
                 >
                   <div className="flex justify-center mb-4">
                     <IconComponent className="w-12 h-12 text-sky-400" />
@@ -312,9 +281,10 @@ const HomePage: React.FC = () => {
         </div>
       )}
 
-      <div className="flex flex-col items-center w-full">
-        <div className="text-center mb-8 w-full">
-          <h2 className="text-3xl font-bold text-white mb-6">
+      {/* Featured Reviews */}
+      <div>
+        <div className="flex justify-between items-center mb-8">
+          <h2 className="text-3xl font-bold text-white">
             What Our Customers Say
           </h2>
           <button
@@ -332,7 +302,7 @@ const HomePage: React.FC = () => {
         </div>
 
         {showReviewForm && isAuthenticated && (
-          <div className="bg-slate-800 p-6 rounded-lg border border-slate-700 mb-8 w-full max-w-2xl">
+          <div className="bg-slate-800 p-6 rounded-lg border border-slate-700 mb-8">
             <form onSubmit={handleSubmitReview} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -451,18 +421,18 @@ const HomePage: React.FC = () => {
         )}
 
         {featuredReviews.length > 0 ? (
-          <div className="flex flex-wrap justify-center gap-8 w-full">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {featuredReviews.map((review) => (
               <div
                 key={review.id}
-                className="bg-slate-800 p-6 rounded-lg border border-slate-700 w-full sm:w-[calc(50%-1rem)] lg:w-[calc(33.333%-1.33rem)] max-w-sm"
+                className="bg-slate-800 p-6 rounded-lg border border-slate-700"
               >
                 <div className="flex justify-between items-start gap-4 mb-2">
                   <div className="flex-1 min-w-0">
                     <p className="text-gray-300">"{review.text}"</p>
                     {review.images && review.images.length > 0 && (
                       <div className="grid grid-cols-3 gap-2 mt-3 mb-3">
-                        {review.images.map((img: string, idx: number) => (
+                        {review.images.map((img, idx) => (
                           <img
                             key={idx}
                             src={img}

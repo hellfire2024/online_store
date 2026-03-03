@@ -1,10 +1,9 @@
 # Backend Dockerfile for Node/Express API (TypeScript)
 
 # Build stage
-FROM node:20.11.1-alpine AS build
+FROM cgr.dev/chainguard/node:22-dev AS build
 ENV DB_HOST=mysql
 WORKDIR /app
-RUN apk update && apk upgrade && apk add --no-cache python3 make g++ && rm -rf /var/cache/apk/*
 COPY package.json .
 COPY tsconfig.backend.json .
 COPY demoRoutes.js .
@@ -15,7 +14,7 @@ COPY verify-build.js .
 RUN npm install --frozen-lockfile || yarn install --frozen-lockfile
 RUN npm run build
 
-FROM node:20-alpine AS runtime
+FROM cgr.dev/chainguard/node:22 AS runtime
 ENV DB_HOST=mysql
 WORKDIR /app
 COPY --from=build /app/dist ./dist

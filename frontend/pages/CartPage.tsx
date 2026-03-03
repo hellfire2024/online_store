@@ -140,12 +140,12 @@ const CartItemRow: React.FC<{ item: CartItem }> = ({ item }) => {
                 className="w-16 h-16 object-cover rounded border-2 border-slate-600 shrink-0"
               />
               <div className="min-w-0 flex-1">
-                <p className="text-xs font-semibold text-sky-400 break-words">
+                <p className="text-xs font-semibold text-sky-400 wrap-break-word">
                   {item.customization.type === "gallery"
                     ? "Gallery Design"
                     : "Uploaded Design"}
                 </p>
-                <p className="text-xs text-gray-400 mt-0.5 break-words">
+                <p className="text-xs text-gray-400 mt-0.5 wrap-break-word">
                   Custom engraving image
                 </p>
               </div>
@@ -157,7 +157,7 @@ const CartItemRow: React.FC<{ item: CartItem }> = ({ item }) => {
             <p className="text-xs font-semibold text-purple-400 mb-1">
               Custom Engraving Text:
             </p>
-            <p className="text-sm text-white italic break-words">
+            <p className="text-sm text-white italic wrap-break-word">
               "{item.customText}"
             </p>
             {item.product.customTextPricePerChar && (
