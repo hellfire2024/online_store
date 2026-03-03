@@ -78,6 +78,12 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({
     try {
       const newGallery = await apiClient.galleries.create(gallery);
       setGalleries((prev) => [...prev, newGallery]);
+      // Initialize empty images array for new gallery
+      setGalleryImages((prev) => ({
+        ...prev,
+        [newGallery.id]: [],
+      }));
+      return newGallery;
     } catch (error) {
       console.error("Failed to create gallery:", error);
       throw error;

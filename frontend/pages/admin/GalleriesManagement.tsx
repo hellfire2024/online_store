@@ -6,6 +6,7 @@ import { useToast } from "../../hooks/useToast";
 import Spinner from "../../components/Spinner";
 import { useUnsavedChanges } from "../../context/UnsavedChangesContext";
 import Pagination from "../../components/Pagination";
+import { apiClient } from "../../services/apiClient";
 
 const GalleriesManagement: React.FC = () => {
   const {
@@ -42,9 +43,13 @@ const GalleriesManagement: React.FC = () => {
 
   const handleAddGallery = async () => {
     if (newGalleryName.trim()) {
-      await addGallery({ name: newGalleryName.trim() });
+      const newGallery = await addGallery({ name: newGalleryName.trim() });
       setNewGalleryName("");
       addToast("Gallery created successfully!", "success");
+      // Auto-select the newly created gallery
+      if (newGallery && newGallery.id) {
+        setSelectedGallery(newGallery.id);
+      }
     }
   };
 
@@ -88,7 +93,10 @@ const GalleriesManagement: React.FC = () => {
   const handleFileSelected = async (
     event: React.ChangeEvent<HTMLInputElement>,
   ) => {
-    if (!selectedGallery) return;
+    if (!selectedGallery) {
+      addToast("Please select a gallery first", "error");
+      return;
+    }
     const files = event.target.files;
     if (!files || files.length === 0) return;
 
@@ -101,38 +109,39 @@ const GalleriesManagement: React.FC = () => {
 
     for (const file of Array.from(files)) {
       if (file.type.startsWith("image/")) {
-        const uploadPromise = new Promise<void>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = async (e) => {
-            const imageUrl = e.target?.result as string;
-            console.log(
-              `Read file ${file.name}, size: ${imageUrl.length} bytes`,
-            );
-            try {
-              await addGalleryImage(selectedGallery, {
-                name: file.name,
-                imageUrl,
-              });
-              console.log(`Successfully uploaded ${file.name}`);
-              addToast(`Image "${file.name}" uploaded successfully`, "success");
-              resolve();
-            } catch (error) {
-              console.error("Image upload failed:", error);
-              addToast(
-                `Failed to upload "${file.name}": ${
-                  error instanceof Error ? error.message : "Unknown error"
-                }`,
-                "error",
-              );
-              reject(error);
+        const uploadPromise = (async () => {
+          try {
+            console.log(`Uploading file ${file.name} (${file.size} bytes)`);
+            // First upload to the upload endpoint to get base64
+            const uploadResponse = await apiClient.upload.image(file);
+
+            if (!uploadResponse.success || !uploadResponse.imageUrl) {
+              throw new Error("Upload endpoint failed to return image URL");
             }
-          };
-          reader.onerror = () => {
-            console.error(`FileReader error for ${file.name}`);
-            reject(new Error(`Failed to read file ${file.name}`));
-          };
-          reader.readAsDataURL(file);
-        });
+
+            console.log(
+              `File ${file.name} uploaded to upload endpoint, adding to gallery...`,
+            );
+
+            // Then add the returned base64 URL to the gallery
+            await addGalleryImage(selectedGallery, {
+              name: file.name,
+              imageUrl: uploadResponse.imageUrl,
+            });
+
+            console.log(`Successfully added ${file.name} to gallery`);
+            addToast(`Image "${file.name}" uploaded successfully`, "success");
+          } catch (error) {
+            console.error("Image upload failed:", error);
+            addToast(
+              `Failed to upload "${file.name}": ${
+                error instanceof Error ? error.message : "Unknown error"
+              }`,
+              "error",
+            );
+            throw error;
+          }
+        })();
         uploadPromises.push(uploadPromise);
       }
     }
