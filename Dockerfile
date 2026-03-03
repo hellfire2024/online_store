@@ -1,7 +1,9 @@
 # Production-ready Dockerfile for React frontend (Vite build + nginx)
 
 # Build stage
-FROM node:22-slim AS build
+FROM node:lts-alpine AS build
+# Patch Alpine vulnerabilities
+RUN apk upgrade --no-cache
 WORKDIR /app
 
 # Copy frontend files (building from root context, so need frontend/ prefix)
@@ -32,7 +34,7 @@ RUN node verify-frontend-build.js
 RUN rm -rf ~/.npm /tmp/*
 
 # Runtime stage (nginx)
-FROM nginx:stable-alpine3.20
+FROM nginxinc/nginx-unprivileged:stable-alpine-slim
 COPY --from=build /app/dist /usr/share/nginx/html
 COPY frontend/nginx.conf /etc/nginx/nginx.conf
 EXPOSE 80
