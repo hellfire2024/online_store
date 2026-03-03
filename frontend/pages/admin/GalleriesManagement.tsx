@@ -93,30 +93,57 @@ const GalleriesManagement: React.FC = () => {
     if (!files || files.length === 0) return;
 
     addToast(`Uploading ${files.length} image(s)...`, "info");
+    console.log(`Starting upload of ${files.length} files to gallery ${selectedGallery}`);
 
+    const uploadPromises: Promise<void>[] = [];
+    
     for (const file of Array.from(files)) {
       if (file.type.startsWith("image/")) {
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-          const imageUrl = e.target?.result as string;
-          try {
-            await addGalleryImage(selectedGallery, {
-              name: file.name,
-              imageUrl,
-            });
-            addToast(`Image "${file.name}" uploaded successfully`, "success");
-          } catch (error) {
-            console.error("Image upload failed:", error);
-            addToast(
-              `Failed to upload "${file.name}": ${
-                error instanceof Error ? error.message : "Unknown error"
-              }`,
-              "error",
-            );
-          }
-        };
-        reader.readAsDataURL(file);
+        const uploadPromise = new Promise<void>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = async (e) => {
+            const imageUrl = e.target?.result as string;
+            console.log(`Read file ${file.name}, size: ${imageUrl.length} bytes`);
+            try {
+              await addGalleryImage(selectedGallery, {
+                name: file.name,
+                imageUrl,
+              });
+              console.log(`Successfully uploaded ${file.name}`);
+              addToast(`Image "${file.name}" uploaded successfully`, "success");
+              resolve();
+            } catch (error) {
+              console.error("Image upload failed:", error);
+              addToast(
+                `Failed to upload "${file.name}": ${
+                  error instanceof Error ? error.message : "Unknown error"
+                }`,
+                "error",
+              );
+              reject(error);
+            }
+          };
+          reader.onerror = () => {
+            console.error(`FileReader error for ${file.name}`);
+            reject(new Error(`Failed to read file ${file.name}`));
+          };
+          reader.readAsDataURL(file);
+        });
+        uploadPromises.push(uploadPromise);
       }
+    }
+
+    // Wait for all uploads to complete
+    try {
+      await Promise.all(uploadPromises);
+      console.log(`All ${uploadPromises.length} files uploaded successfully`);
+      // Refresh gallery images after upload
+      if (selectedGallery) {
+        console.log(`Refreshing gallery ${selectedGallery} after uploads`);
+        await fetchGalleryImages(selectedGallery);
+      }
+    } catch (error) {
+      console.error("Some uploads failed:", error);
     }
 
     // Reset the input value to allow re-uploading the same file/folder
