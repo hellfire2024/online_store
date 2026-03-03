@@ -153,8 +153,6 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({
       throw error;
     }
   };
-    }));
-  };
 
   return (
     <GalleryContext.Provider
