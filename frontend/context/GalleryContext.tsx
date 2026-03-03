@@ -119,11 +119,9 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({
         [galleryId]: [...(prev[galleryId] || []), newImage],
       }));
     } catch (error) {
-      const newImage = await addMockGalleryImage(galleryId, image);
-      setGalleryImages((prev) => ({
-        ...prev,
-        [galleryId]: [...(prev[galleryId] || []), newImage],
-      }));
+      console.error("Failed to add gallery image to API:", error);
+      // Don't fall back to mock API - let the error propagate so UI can handle it
+      throw error;
     }
   };
 

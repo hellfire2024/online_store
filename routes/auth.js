@@ -78,8 +78,8 @@ router.post("/customer/register", [
         const fullName = `${firstName} ${lastName}`;
         // Create customer
         const id = crypto.randomUUID();
-        await pool.query(`INSERT INTO customers (id, first_name, last_name, name, email, phone, password_hash, email_preferences)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, [
+        await pool.query(`INSERT INTO customers (id, first_name, last_name, name, email, phone, password_hash, email_preferences, is_active)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`, [
             id,
             firstName,
             lastName,
@@ -92,6 +92,7 @@ router.post("/customer/register", [
                 orderUpdates: true,
                 announcements: true,
             }),
+            true,
         ]);
         // Generate JWT
         const secret = process.env.JWT_SECRET || "dev-secret";

@@ -91,13 +91,23 @@ const GalleriesManagement: React.FC = () => {
         const reader = new FileReader();
         reader.onload = async (e) => {
           const imageUrl = e.target?.result as string;
-          await addGalleryImage(selectedGallery, { name: file.name, imageUrl });
+          try {
+            await addGalleryImage(selectedGallery, { name: file.name, imageUrl });
+            addToast(`Image "${file.name}" uploaded successfully`, "success");
+          } catch (error) {
+            console.error("Image upload failed:", error);
+            addToast(
+              `Failed to upload "${file.name}": ${
+                error instanceof Error ? error.message : "Unknown error"
+              }`,
+              "error",
+            );
+          }
         };
         reader.readAsDataURL(file);
       }
     }
 
-    addToast(`Finished processing ${files.length} files.`, "success");
     // Reset the input value to allow re-uploading the same file/folder
     event.target.value = "";
   };
