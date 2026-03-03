@@ -150,6 +150,16 @@ export async function runMigrations(): Promise<void> {
       FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
       INDEX idx_product (product_id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
+    `CREATE TABLE IF NOT EXISTS product_options (
+      id VARCHAR(36) PRIMARY KEY,
+      list_id VARCHAR(36) NOT NULL,
+      name VARCHAR(255) NOT NULL,
+      price_delta DECIMAL(10,2) DEFAULT 0.00,
+      option_order INT DEFAULT 0,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (list_id) REFERENCES product_option_lists(id) ON DELETE CASCADE,
+      INDEX idx_list (list_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
     `CREATE TABLE IF NOT EXISTS support_tickets (
       id VARCHAR(36) PRIMARY KEY,
       ticket_number VARCHAR(50) UNIQUE NOT NULL,
