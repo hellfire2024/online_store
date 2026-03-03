@@ -268,6 +268,10 @@ const GalleriesManagement: React.FC = () => {
 
               {(() => {
                 const images = galleryImages[selectedGallery] || [];
+                console.log(
+                  `[GalleriesUI] Rendering gallery ${selectedGallery}: ${images.length} images`,
+                  images.map((img) => ({ id: img.id, name: img.name })),
+                );
                 const paginatedImages =
                   itemsPerPage === -1
                     ? images
@@ -278,6 +282,9 @@ const GalleriesManagement: React.FC = () => {
 
                 return (
                   <>
+                    <div className="mb-4 p-3 bg-slate-700 rounded text-xs text-gray-300">
+                      Gallery: {selectedGallery} | Total images: {images.length} | Displayed: {paginatedImages.length}
+                    </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                       {paginatedImages.map((image) => (
                         <div
