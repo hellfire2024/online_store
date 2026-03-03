@@ -106,15 +106,17 @@ const CartItemRow: React.FC<{ item: CartItem }> = ({ item }) => {
         {selectedOptionDetails.length > 0 && (
           <div className="mt-1 space-y-0.5">
             <p className="text-xs text-gray-300">Options (each):</p>
-            {selectedOptionDetails.map((detail, idx) => (
-              <p key={idx} className="text-xs text-sky-400">
-                {detail.listName}: {detail.optionName} • +$
-                {detail.priceDelta.toFixed(2)}
+            <div className="pl-4 space-y-0.5">
+              {selectedOptionDetails.map((detail, idx) => (
+                <p key={idx} className="text-xs text-sky-400">
+                  {detail.listName}: {detail.optionName} • +$
+                  {detail.priceDelta.toFixed(2)}
+                </p>
+              ))}
+              <p className="text-xs text-gray-300">
+                Options total (each): +${optionsDelta.toFixed(2)}
               </p>
-            ))}
-            <p className="text-xs text-gray-300">
-              Options total (each): +${optionsDelta.toFixed(2)}
-            </p>
+            </div>
           </div>
         )}
         {customTextCost > 0 && (
