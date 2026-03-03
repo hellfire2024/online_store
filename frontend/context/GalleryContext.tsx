@@ -75,11 +75,9 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({
         [galleryId]: Array.isArray(images) ? images : [],
       }));
     } catch (error) {
-      const images = await fetchMockGalleryImages(galleryId);
-      setGalleryImages((prev) => ({
-        ...prev,
-        [galleryId]: Array.isArray(images) ? images : [],
-      }));
+      console.error("Failed to fetch gallery images:", error);
+      // Don't fall back to mock data - let the error surface so admin knows there's an issue
+      throw error;
     }
   };
 
@@ -88,24 +86,24 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({
       const newGallery = await apiClient.galleries.create(gallery);
       setGalleries((prev) => [...prev, newGallery]);
     } catch (error) {
-      const newGallery = await addMockGallery(gallery);
-      setGalleries((prev) => [...prev, newGallery]);
+      console.error("Failed to create gallery:", error);
+      throw error;
     }
   };
 
   const deleteGallery = async (galleryId: string) => {
     try {
       await apiClient.galleries.delete(galleryId);
+      setGalleries((prev) => prev.filter((g) => g.id !== galleryId));
+      setGalleryImages((prev) => {
+        const next = { ...prev };
+        delete next[galleryId];
+        return next;
+      });
     } catch (error) {
-      await deleteMockGallery(galleryId);
+      console.error("Failed to delete gallery:", error);
+      throw error;
     }
-
-    setGalleries((prev) => prev.filter((g) => g.id !== galleryId));
-    setGalleryImages((prev) => {
-      const next = { ...prev };
-      delete next[galleryId];
-      return next;
-    });
   };
 
   const addGalleryImage = async (
