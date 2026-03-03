@@ -39,4 +39,4 @@ RUN node verify-frontend-build.js
 FROM nginxinc/nginx-unprivileged:stable-alpine-slim
 COPY --from=build /app/dist /usr/share/nginx/html
 COPY frontend/nginx.conf /etc/nginx/nginx.conf
-EXPOSE 80
+EXPOSE 8080

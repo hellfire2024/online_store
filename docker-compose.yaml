@@ -45,12 +45,12 @@ services:
       - "traefik.http.routers.frontend.rule=Host(`dev.adaptivegis.com`)"
       - "traefik.http.routers.frontend.entrypoints=websecure"
       - "traefik.http.routers.frontend.tls.certresolver=letsencrypt"
-      - "traefik.http.services.frontend.loadbalancer.server.port=80"
+      - "traefik.http.services.frontend.loadbalancer.server.port=8080"
     build:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "8888:80"
+      - "8888:8080"
     depends_on:
       backend:
         condition: service_healthy
