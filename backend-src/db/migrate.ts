@@ -241,7 +241,9 @@ export async function runMigrations(): Promise<void> {
     const hasOldStructure = await hasColumn("staff", "email");
 
     if (hasOldStructure) {
-      console.log("[Migration] Detected old staff table structure, recreating table...");
+      console.log(
+        "[Migration] Detected old staff table structure, recreating table...",
+      );
 
       // Drop the old table (only if it has the wrong structure)
       await pool.query("DROP TABLE IF EXISTS staff");
@@ -259,9 +261,7 @@ export async function runMigrations(): Promise<void> {
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
       `);
 
-      console.log(
-        "[Migration] Staff table recreated with correct structure",
-      );
+      console.log("[Migration] Staff table recreated with correct structure");
     } else {
       // Check if the table exists and has the correct structure
       const hasNameColumn = await hasColumn("staff", "name");
@@ -281,9 +281,7 @@ export async function runMigrations(): Promise<void> {
             INDEX idx_created (created_at)
           ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         `);
-        console.log(
-          "[Migration] Staff table created with correct structure",
-        );
+        console.log("[Migration] Staff table created with correct structure");
       }
     }
   };
