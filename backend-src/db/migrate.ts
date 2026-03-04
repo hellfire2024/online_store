@@ -97,15 +97,12 @@ export async function runMigrations(): Promise<void> {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
     `CREATE TABLE IF NOT EXISTS staff (
       id VARCHAR(36) PRIMARY KEY,
-      first_name VARCHAR(100),
-      last_name VARCHAR(100),
-      email VARCHAR(255) UNIQUE NOT NULL,
-      phone VARCHAR(50),
-      role VARCHAR(50),
-      is_active BOOLEAN DEFAULT TRUE,
+      name VARCHAR(255) NOT NULL,
+      role VARCHAR(100) NOT NULL,
+      image_url TEXT,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      last_login TIMESTAMP NULL,
-      INDEX idx_email (email)
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX idx_created (created_at)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
     `CREATE TABLE IF NOT EXISTS services (
       id VARCHAR(36) PRIMARY KEY,
@@ -224,6 +221,52 @@ export async function runMigrations(): Promise<void> {
       column,
     ]);
     return Array.isArray(rows) && rows.length > 0;
+  };
+
+  const fixStaffTableStructure = async () => {
+    // Check if staff table has old structure (email column exists)
+    const hasOldStructure = await hasColumn("staff", "email");
+    
+    if (hasOldStructure) {
+      console.log("Detected old staff table structure, recreating table...");
+      
+      // Drop the old table (only if it has the wrong structure)
+      await pool.query("DROP TABLE IF EXISTS staff");
+      
+      // Create new table with correct structure
+      await pool.query(`
+        CREATE TABLE staff (
+          id VARCHAR(36) PRIMARY KEY,
+          name VARCHAR(255) NOT NULL,
+          role VARCHAR(100) NOT NULL,
+          image_url TEXT,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          INDEX idx_created (created_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+      `);
+      
+      console.log("Staff table recreated with correct structure");
+    } else {
+      // Check if the table exists and has the correct structure
+      const hasNameColumn = await hasColumn("staff", "name");
+      if (!hasNameColumn) {
+        console.log("Staff table has incorrect structure, recreating...");
+        await pool.query("DROP TABLE IF EXISTS staff");
+        await pool.query(`
+          CREATE TABLE staff (
+            id VARCHAR(36) PRIMARY KEY,
+            name VARCHAR(255) NOT NULL,
+            role VARCHAR(100) NOT NULL,
+            image_url TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            INDEX idx_created (created_at)
+          ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        `);
+        console.log("Staff table created with correct structure");
+      }
+    }
   };
 
   try {
@@ -402,6 +445,9 @@ export async function runMigrations(): Promise<void> {
       "INT DEFAULT 100",
     );
     await alterTableAddColumn("products", "gallery_id", "VARCHAR(36)");
+
+    // Fix staff table structure if it has old schema
+    await fixStaffTableStructure();
 
     console.log("✅ Database migrations completed successfully");
   } catch (error) {

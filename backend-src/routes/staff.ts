@@ -8,7 +8,7 @@ const router = Router();
 router.get('/', async (_req: Request, res: Response) => {
   try {
     const [rows] = await pool.query<RowDataPacket[]>(
-      'SELECT * FROM staff ORDER BY created_at DESC'
+      'SELECT id, name, role, image_url as imageUrl, created_at as createdAt FROM staff ORDER BY created_at DESC'
     );
     return res.json(rows || []);
   } catch (error) {
@@ -21,7 +21,7 @@ router.get('/', async (_req: Request, res: Response) => {
 router.get('/:id', async (req: Request, res: Response) => {
   try {
     const [rows] = await pool.query<RowDataPacket[]>(
-      'SELECT * FROM staff WHERE id = ?',
+      'SELECT id, name, role, image_url as imageUrl, created_at as createdAt FROM staff WHERE id = ?',
       [req.params.id]
     );
     
@@ -39,7 +39,8 @@ router.get('/:id', async (req: Request, res: Response) => {
 // Create staff member
 router.post('/', async (req: Request, res: Response) => {
   try {
-    const { id, name, role, image_url } = req.body;
+    const { id, name, role, imageUrl, image_url } = req.body;
+    const finalImageUrl = imageUrl || image_url;
     
     if (!id || !name || !role) {
       return res.status(400).json({ error: 'id, name, and role are required' });
@@ -48,10 +49,10 @@ router.post('/', async (req: Request, res: Response) => {
     await pool.query(
       `INSERT INTO staff (id, name, role, image_url, created_at)
        VALUES (?, ?, ?, ?, NOW())`,
-      [id, name, role, image_url || null]
+      [id, name, role, finalImageUrl || null]
     );
     
-    return res.status(201).json({ id, name, role, image_url });
+    return res.status(201).json({ id, name, role, imageUrl: finalImageUrl });
   } catch (error) {
     console.error('Error creating staff member:', error);
     return res.status(500).json({ error: 'Failed to create staff member' });
@@ -61,18 +62,19 @@ router.post('/', async (req: Request, res: Response) => {
 // Update staff member
 router.put('/:id', async (req: Request, res: Response) => {
   try {
-    const { name, role, image_url } = req.body;
+    const { name, role, imageUrl, image_url } = req.body;
+    const finalImageUrl = imageUrl || image_url;
     
     const [result] = await pool.query(
       `UPDATE staff SET name = ?, role = ?, image_url = ? WHERE id = ?`,
-      [name, role, image_url || null, req.params.id]
+      [name, role, finalImageUrl || null, req.params.id]
     );
     
     if ((result as any).affectedRows === 0) {
       return res.status(404).json({ error: 'Staff member not found' });
     }
     
-    return res.json({ id: req.params.id, name, role, image_url });
+    return res.json({ id: req.params.id, name, role, imageUrl: finalImageUrl });
   } catch (error) {
     console.error('Error updating staff member:', error);
     return res.status(500).json({ error: 'Failed to update staff member' });
