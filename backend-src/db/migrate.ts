@@ -386,6 +386,21 @@ export async function runMigrations(): Promise<void> {
       "custom_image_upload_price",
       "DECIMAL(10,2) DEFAULT 0",
     );
+    await alterTableAddColumn(
+      "products",
+      "allow_custom_text",
+      "BOOLEAN DEFAULT FALSE",
+    );
+    await alterTableAddColumn(
+      "products",
+      "custom_text_price_per_char",
+      "DECIMAL(10,2) DEFAULT 0",
+    );
+    await alterTableAddColumn(
+      "products",
+      "custom_text_max_length",
+      "INT DEFAULT 100",
+    );
     await alterTableAddColumn("products", "gallery_id", "VARCHAR(36)");
 
     console.log("✅ Database migrations completed successfully");

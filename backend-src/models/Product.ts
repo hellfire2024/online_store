@@ -15,6 +15,9 @@ interface Product {
   galleryId?: string;
   allowCustomImageUpload?: boolean;
   customImageUploadPrice?: number;
+  allowCustomText?: boolean;
+  customTextPricePerChar?: number;
+  customTextMaxLength?: number;
   optionLists?: ProductOptionList[];
 }
 
@@ -49,7 +52,10 @@ export async function findAll(): Promise<Product[]> {
             low_stock_threshold as lowStockThreshold, customizable, 
             enable_ai_ideas as enableAIIdeas, gallery_id as galleryId,
             allow_custom_image_upload as allowCustomImageUpload,
-            custom_image_upload_price as customImageUploadPrice
+            custom_image_upload_price as customImageUploadPrice,
+            allow_custom_text as allowCustomText,
+            custom_text_price_per_char as customTextPricePerChar,
+            custom_text_max_length as customTextMaxLength
      FROM products ORDER BY name`,
   );
 
@@ -73,7 +79,10 @@ export async function findById(id: string): Promise<Product | null> {
             low_stock_threshold as lowStockThreshold, customizable,
             enable_ai_ideas as enableAIIdeas, gallery_id as galleryId,
             allow_custom_image_upload as allowCustomImageUpload,
-            custom_image_upload_price as customImageUploadPrice
+            custom_image_upload_price as customImageUploadPrice,
+            allow_custom_text as allowCustomText,
+            custom_text_price_per_char as customTextPricePerChar,
+            custom_text_max_length as customTextMaxLength
      FROM products WHERE id = ?`,
     [id],
   );
@@ -128,8 +137,9 @@ export async function create(data: Partial<Product>): Promise<Product> {
     await connection.query(
       `INSERT INTO products (id, name, description, price, image_url, inventory,
                              low_stock_threshold, customizable, enable_ai_ideas, gallery_id,
-                             allow_custom_image_upload, custom_image_upload_price)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                             allow_custom_image_upload, custom_image_upload_price,
+                             allow_custom_text, custom_text_price_per_char, custom_text_max_length)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id,
         data.name,
@@ -143,6 +153,9 @@ export async function create(data: Partial<Product>): Promise<Product> {
         data.galleryId || null,
         data.allowCustomImageUpload || false,
         data.customImageUploadPrice ?? null,
+        data.allowCustomText || false,
+        data.customTextPricePerChar ?? null,
+        data.customTextMaxLength ?? 100,
       ],
     );
 
@@ -181,7 +194,8 @@ export async function update(
       `UPDATE products SET name = ?, description = ?, price = ?, image_url = ?,
                           inventory = ?, low_stock_threshold = ?, customizable = ?,
                           enable_ai_ideas = ?, gallery_id = ?,
-                          allow_custom_image_upload = ?, custom_image_upload_price = ?
+                          allow_custom_image_upload = ?, custom_image_upload_price = ?,
+                          allow_custom_text = ?, custom_text_price_per_char = ?, custom_text_max_length = ?
        WHERE id = ?`,
       [
         data.name ?? currentProduct.name,
@@ -195,6 +209,9 @@ export async function update(
         data.galleryId ?? currentProduct.galleryId,
         data.allowCustomImageUpload ?? currentProduct.allowCustomImageUpload,
         data.customImageUploadPrice ?? currentProduct.customImageUploadPrice ?? null,
+        data.allowCustomText ?? currentProduct.allowCustomText,
+        data.customTextPricePerChar ?? currentProduct.customTextPricePerChar ?? null,
+        data.customTextMaxLength ?? currentProduct.customTextMaxLength ?? 100,
         id,
       ],
     );
