@@ -6,7 +6,6 @@ import React, {
   useEffect,
 } from "react";
 import { StaffMember } from "../types";
-import * as mockApi from "../services/mockApi";
 import { apiClient } from "../services/apiClient";
 
 interface StaffContextType {
@@ -32,13 +31,8 @@ export const StaffProvider: React.FC<{ children: ReactNode }> = ({
         const staffData = await apiClient.staff.getAll();
         setStaff(Array.isArray(staffData) ? staffData : []);
       } catch (error) {
-        console.error("Failed to load staff from API, using mock data", error);
-        try {
-          const mockStaffData = await mockApi.fetchStaff();
-          setStaff(mockStaffData);
-        } catch (mockError) {
-          console.error("Failed to load mock staff", mockError);
-        }
+        console.error("Failed to load staff from API", error);
+        setStaff([]);
       } finally {
         setIsLoading(false);
       }
@@ -47,55 +41,25 @@ export const StaffProvider: React.FC<{ children: ReactNode }> = ({
   }, []);
 
   const addStaff = async (staffMember: Omit<StaffMember, "id">) => {
-    try {
-      console.log("[StaffContext] Creating staff member:", staffMember);
-      const newStaff = await apiClient.staff.create(staffMember);
-      console.log(
-        "[StaffContext] Staff member created successfully:",
-        newStaff,
-      );
-      setStaff((prev) => [...prev, newStaff]);
-    } catch (error) {
-      console.error("[StaffContext] Failed to add staff via API:", error);
-      try {
-        console.log("[StaffContext] Attempting to use mock API");
-        const newStaff = await mockApi.addStaff(staffMember);
-        console.log("[StaffContext] Mock staff member created:", newStaff);
-        setStaff((prev) => [...prev, newStaff]);
-      } catch (mockError) {
-        console.error("[StaffContext] Mock API also failed:", mockError);
-        throw error; // Re-throw the original API error
-      }
-    }
+    console.log("[StaffContext] Creating staff member:", staffMember);
+    const newStaff = await apiClient.staff.create(staffMember);
+    console.log("[StaffContext] Staff member created successfully:", newStaff);
+    setStaff((prev) => [...prev, newStaff]);
   };
 
   const updateStaff = async (staffMember: StaffMember) => {
-    try {
-      const updatedStaff = await apiClient.staff.update(
-        staffMember.id,
-        staffMember,
-      );
-      setStaff((prev) =>
-        prev.map((s) => (s.id === updatedStaff.id ? updatedStaff : s)),
-      );
-    } catch (error) {
-      console.error("Failed to update staff via API, using mock", error);
-      const updatedStaff = await mockApi.updateStaff(staffMember);
-      setStaff((prev) =>
-        prev.map((s) => (s.id === updatedStaff.id ? updatedStaff : s)),
-      );
-    }
+    const updatedStaff = await apiClient.staff.update(
+      staffMember.id,
+      staffMember,
+    );
+    setStaff((prev) =>
+      prev.map((s) => (s.id === updatedStaff.id ? updatedStaff : s)),
+    );
   };
 
   const deleteStaff = async (staffId: string) => {
-    try {
-      await apiClient.staff.delete(staffId);
-      setStaff((prev) => prev.filter((s) => s.id !== staffId));
-    } catch (error) {
-      console.error("Failed to delete staff via API, using mock", error);
-      await mockApi.deleteStaff(staffId);
-      setStaff((prev) => prev.filter((s) => s.id !== staffId));
-    }
+    await apiClient.staff.delete(staffId);
+    setStaff((prev) => prev.filter((s) => s.id !== staffId));
   };
 
   return (
