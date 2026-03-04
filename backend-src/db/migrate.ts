@@ -224,11 +224,24 @@ export async function runMigrations(): Promise<void> {
   };
 
   const fixStaffTableStructure = async () => {
+    // Check if staff table exists first
+    try {
+      const [staffRows]: any = await pool.query(
+        "SELECT COUNT(*) as count FROM staff",
+      );
+      const staffCount = staffRows[0]?.count || 0;
+      console.log(
+        `[Migration] Staff table check: exists with ${staffCount} records`,
+      );
+    } catch (checkError) {
+      console.log("[Migration] Staff table does not exist yet");
+    }
+
     // Check if staff table has old structure (email column exists)
     const hasOldStructure = await hasColumn("staff", "email");
 
     if (hasOldStructure) {
-      console.log("Detected old staff table structure, recreating table...");
+      console.log("[Migration] Detected old staff table structure, recreating table...");
 
       // Drop the old table (only if it has the wrong structure)
       await pool.query("DROP TABLE IF EXISTS staff");
@@ -246,12 +259,16 @@ export async function runMigrations(): Promise<void> {
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
       `);
 
-      console.log("Staff table recreated with correct structure");
+      console.log(
+        "[Migration] Staff table recreated with correct structure",
+      );
     } else {
       // Check if the table exists and has the correct structure
       const hasNameColumn = await hasColumn("staff", "name");
       if (!hasNameColumn) {
-        console.log("Staff table has incorrect structure, recreating...");
+        console.log(
+          "[Migration] Staff table has incorrect structure, recreating...",
+        );
         await pool.query("DROP TABLE IF EXISTS staff");
         await pool.query(`
           CREATE TABLE staff (
@@ -264,7 +281,9 @@ export async function runMigrations(): Promise<void> {
             INDEX idx_created (created_at)
           ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         `);
-        console.log("Staff table created with correct structure");
+        console.log(
+          "[Migration] Staff table created with correct structure",
+        );
       }
     }
   };

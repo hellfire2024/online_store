@@ -60,10 +60,21 @@ router.post("/", async (req: Request, res: Response) => {
       imageUrl: finalImageUrl,
     });
 
-    await pool.query(
+    const insertResult = await pool.query(
       `INSERT INTO staff (id, name, role, image_url, created_at)
        VALUES (?, ?, ?, ?, NOW())`,
       [staffId, name, role, finalImageUrl || null],
+    );
+    console.log("[Staff API] Insert result:", insertResult[0]);
+
+    // Verify the insert was successful by immediately reading it back
+    const [verifyRows] = await pool.query<RowDataPacket[]>(
+      "SELECT * FROM staff WHERE id = ?",
+      [staffId],
+    );
+    console.log(
+      "[Staff API] Verification - Staff in database:",
+      verifyRows && verifyRows.length > 0 ? verifyRows[0] : "NOT FOUND",
     );
 
     const responseData = { id: staffId, name, role, imageUrl: finalImageUrl };
