@@ -56,10 +56,10 @@ const CustomerAnalytics: React.FC = () => {
 
   const totalCustomers = customers.length;
   const activeCustomers = customers.filter(c => c.isActive).length;
-  const totalOrders = customers.reduce((sum, c) => sum + c.orderCount, 0);
-  const totalRevenue = customers.reduce((sum, c) => sum + c.totalSpent, 0);
+  const totalOrders = customers.reduce((sum, c) => sum + Number(c.orderCount || 0), 0);
+  const totalRevenue = customers.reduce((sum, c) => sum + Number(c.totalSpent || 0), 0);
   const avgOrderValue = totalOrders ? totalRevenue / totalOrders : 0;
-  const topCustomers = [...customers].sort((a, b) => b.totalSpent - a.totalSpent).slice(0, 5);
+  const topCustomers = [...customers].sort((a, b) => Number(b.totalSpent || 0) - Number(a.totalSpent || 0)).slice(0, 5);
   const inactiveCount = customers.filter(c => !c.isActive).length;
 
   // Count customers by segment
@@ -77,8 +77,8 @@ const CustomerAnalytics: React.FC = () => {
 
   // Sort filtered results
   let sortedCustomers = [...filteredCustomers];
-  if (sortBy === 'revenue') sortedCustomers.sort((a, b) => b.totalSpent - a.totalSpent);
-  else if (sortBy === 'orders') sortedCustomers.sort((a, b) => b.orderCount - a.orderCount);
+  if (sortBy === 'revenue') sortedCustomers.sort((a, b) => Number(b.totalSpent || 0) - Number(a.totalSpent || 0));
+  else if (sortBy === 'orders') sortedCustomers.sort((a, b) => Number(b.orderCount || 0) - Number(a.orderCount || 0));
   else if (sortBy === 'recent') sortedCustomers.sort((a, b) => new Date(b.lastOrderDate || b.createdAt).getTime() - new Date(a.lastOrderDate || a.createdAt).getTime());
   else if (sortBy === 'name') sortedCustomers.sort((a, b) => `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`));
 
@@ -119,9 +119,9 @@ const CustomerAnalytics: React.FC = () => {
       c.email,
       c.phone,
       c.isActive ? 'Active' : 'Inactive',
-      String(c.orderCount),
-      c.totalSpent.toFixed(2),
-      c.averageOrderValue.toFixed(2),
+      String(c.orderCount || 0),
+      Number(c.totalSpent || 0).toFixed(2),
+      Number(c.averageOrderValue || 0).toFixed(2),
       c.lastOrderDate ? new Date(c.lastOrderDate).toISOString().slice(0,10) : 'Never',
     ]);
     const csv = [headers.join(','), ...rows.map(r => r.map(cell => `"${cell}"`).join(','))].join('\n');
@@ -222,9 +222,9 @@ const CustomerAnalytics: React.FC = () => {
               labels: ['1-5 Orders', '6-10 Orders', '11+ Orders'],
               datasets: [{
                 data: [
-                  customers.filter(c => c.orderCount <= 5).length,
-                  customers.filter(c => c.orderCount > 5 && c.orderCount <= 10).length,
-                  customers.filter(c => c.orderCount > 10).length,
+                  customers.filter(c => Number(c.orderCount || 0) <= 5).length,
+                  customers.filter(c => Number(c.orderCount || 0) > 5 && Number(c.orderCount || 0) <= 10).length,
+                  customers.filter(c => Number(c.orderCount || 0) > 10).length,
                 ],
                 backgroundColor: ['#8b5cf6', '#06b6d4', '#f59e0b'],
                 borderColor: ['#7c3aed', '#0891b2', '#d97706'],
@@ -248,7 +248,7 @@ const CustomerAnalytics: React.FC = () => {
             labels: topCustomers.map(c => `${c.firstName} ${c.lastName}`),
             datasets: [{
               label: 'Total Spent ($)',
-              data: topCustomers.map(c => c.totalSpent),
+              data: topCustomers.map(c => Number(c.totalSpent || 0)),
               backgroundColor: '#0ea5e9',
               borderColor: '#0284c7',
               borderWidth: 1,
