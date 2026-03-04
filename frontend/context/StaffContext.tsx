@@ -50,7 +50,10 @@ export const StaffProvider: React.FC<{ children: ReactNode }> = ({
     try {
       console.log("[StaffContext] Creating staff member:", staffMember);
       const newStaff = await apiClient.staff.create(staffMember);
-      console.log("[StaffContext] Staff member created successfully:", newStaff);
+      console.log(
+        "[StaffContext] Staff member created successfully:",
+        newStaff,
+      );
       setStaff((prev) => [...prev, newStaff]);
     } catch (error) {
       console.error("[StaffContext] Failed to add staff via API:", error);

@@ -98,7 +98,9 @@ const StaffManagement: React.FC = () => {
     }
 
     if (isSaving) {
-      console.log("[StaffManagement] Already saving, ignoring duplicate request");
+      console.log(
+        "[StaffManagement] Already saving, ignoring duplicate request",
+      );
       return;
     }
 
@@ -123,7 +125,10 @@ const StaffManagement: React.FC = () => {
         );
 
         if (!response.ok) {
-          console.error("[StaffManagement] Image upload failed with status:", response.status);
+          console.error(
+            "[StaffManagement] Image upload failed with status:",
+            response.status,
+          );
           addToast("Image upload failed", "error");
           setIsSaving(false);
           return;
@@ -134,14 +139,19 @@ const StaffManagement: React.FC = () => {
         ).toLowerCase();
         const raw = await response.text();
         if (!contentType.includes("application/json")) {
-          console.error("[StaffManagement] Image upload returned non-JSON response");
+          console.error(
+            "[StaffManagement] Image upload returned non-JSON response",
+          );
           addToast("Image upload returned invalid response", "error");
           setIsSaving(false);
           return;
         }
         const result = raw.trim() ? JSON.parse(raw) : {};
         finalImageUrl = result.imageUrl;
-        console.log("[StaffManagement] Image uploaded successfully:", finalImageUrl);
+        console.log(
+          "[StaffManagement] Image uploaded successfully:",
+          finalImageUrl,
+        );
         addToast("Image uploaded successfully!", "success");
       }
 
@@ -168,7 +178,7 @@ const StaffManagement: React.FC = () => {
         console.log("[StaffManagement] Staff member updated successfully");
         addToast("Staff member updated successfully!", "success");
       }
-      
+
       console.log("[StaffManagement] Closing modal and resetting state");
       setNewStaffMember(null);
       setEditingStaff(null);

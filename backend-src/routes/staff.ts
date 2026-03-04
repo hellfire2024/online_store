@@ -53,10 +53,12 @@ router.post("/", async (req: Request, res: Response) => {
       clientId ||
       `staff_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-    console.log(
-      "[Staff API] Inserting staff:",
-      { id: staffId, name, role, imageUrl: finalImageUrl },
-    );
+    console.log("[Staff API] Inserting staff:", {
+      id: staffId,
+      name,
+      role,
+      imageUrl: finalImageUrl,
+    });
 
     await pool.query(
       `INSERT INTO staff (id, name, role, image_url, created_at)
