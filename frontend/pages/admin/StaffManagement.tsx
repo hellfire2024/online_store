@@ -29,6 +29,7 @@ const StaffManagement: React.FC = () => {
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [isSaving, setIsSaving] = useState(false);
   const { addToast } = useToast();
   const { setHasUnsavedChanges } = useUnsavedChanges();
 
@@ -96,10 +97,19 @@ const StaffManagement: React.FC = () => {
       return;
     }
 
+    if (isSaving) {
+      console.log("[StaffManagement] Already saving, ignoring duplicate request");
+      return;
+    }
+
+    setIsSaving(true);
+    console.log("[StaffManagement] Starting save process");
+
     let finalImageUrl = currentStaff?.imageUrl || "";
 
-    if (selectedImageFile) {
-      try {
+    try {
+      if (selectedImageFile) {
+        console.log("[StaffManagement] Uploading image...");
         // Upload image to server
         const formData = new FormData();
         formData.append("image", selectedImageFile);
@@ -113,7 +123,9 @@ const StaffManagement: React.FC = () => {
         );
 
         if (!response.ok) {
+          console.error("[StaffManagement] Image upload failed with status:", response.status);
           addToast("Image upload failed", "error");
+          setIsSaving(false);
           return;
         }
 
@@ -122,27 +134,27 @@ const StaffManagement: React.FC = () => {
         ).toLowerCase();
         const raw = await response.text();
         if (!contentType.includes("application/json")) {
+          console.error("[StaffManagement] Image upload returned non-JSON response");
           addToast("Image upload returned invalid response", "error");
+          setIsSaving(false);
           return;
         }
         const result = raw.trim() ? JSON.parse(raw) : {};
         finalImageUrl = result.imageUrl;
+        console.log("[StaffManagement] Image uploaded successfully:", finalImageUrl);
         addToast("Image uploaded successfully!", "success");
-      } catch (error) {
-        addToast("Image upload failed!", "error");
-        console.error("Image upload error:", error);
-        return;
       }
-    }
 
-    try {
+      console.log("[StaffManagement] Saving staff member to database...");
       if (newStaffMember) {
         const dataToSave = {
           name: currentStaff.name,
           role: currentStaff.role,
           imageUrl: finalImageUrl,
         };
+        console.log("[StaffManagement] Creating new staff:", dataToSave);
         await addStaff(dataToSave);
+        console.log("[StaffManagement] Staff member created successfully");
         addToast("Staff member added successfully!", "success");
       } else if (editingStaff) {
         const dataToSave: StaffMember = {
@@ -151,15 +163,24 @@ const StaffManagement: React.FC = () => {
           role: currentStaff.role,
           imageUrl: finalImageUrl,
         };
+        console.log("[StaffManagement] Updating staff:", dataToSave);
         await updateStaff(dataToSave);
+        console.log("[StaffManagement] Staff member updated successfully");
         addToast("Staff member updated successfully!", "success");
       }
+      
+      console.log("[StaffManagement] Closing modal and resetting state");
       setNewStaffMember(null);
       setEditingStaff(null);
       setSelectedImageFile(null);
+      setIsSaving(false);
     } catch (error) {
-      addToast("Failed to save staff member", "error");
-      console.error("Save error:", error);
+      console.error("[StaffManagement] Error during save:", error);
+      addToast(
+        `Failed to save staff member: ${error instanceof Error ? error.message : "Unknown error"}`,
+        "error",
+      );
+      setIsSaving(false);
     }
   };
 
@@ -379,9 +400,9 @@ const StaffManagement: React.FC = () => {
               <button
                 onClick={handleSave}
                 className="bg-sky-500 text-white font-bold py-2 px-6 rounded-lg hover:bg-sky-600 disabled:opacity-50"
-                disabled={!hasUnsavedChanges}
+                disabled={!hasUnsavedChanges || isSaving}
               >
-                Save Staff Member
+                {isSaving ? "Saving..." : "Save Staff Member"}
               </button>
             </div>
           </div>

@@ -39,10 +39,12 @@ router.get("/:id", async (req: Request, res: Response) => {
 // Create staff member
 router.post("/", async (req: Request, res: Response) => {
   try {
+    console.log("[Staff API] POST request body:", req.body);
     const { id: clientId, name, role, imageUrl, image_url } = req.body;
     const finalImageUrl = imageUrl || image_url;
 
     if (!name || !role) {
+      console.error("[Staff API] Validation failed: missing name or role");
       return res.status(400).json({ error: "name and role are required" });
     }
 
@@ -51,17 +53,22 @@ router.post("/", async (req: Request, res: Response) => {
       clientId ||
       `staff_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
+    console.log(
+      "[Staff API] Inserting staff:",
+      { id: staffId, name, role, imageUrl: finalImageUrl },
+    );
+
     await pool.query(
       `INSERT INTO staff (id, name, role, image_url, created_at)
        VALUES (?, ?, ?, ?, NOW())`,
       [staffId, name, role, finalImageUrl || null],
     );
 
-    return res
-      .status(201)
-      .json({ id: staffId, name, role, imageUrl: finalImageUrl });
+    const responseData = { id: staffId, name, role, imageUrl: finalImageUrl };
+    console.log("[Staff API] Staff created successfully:", responseData);
+    return res.status(201).json(responseData);
   } catch (error) {
-    console.error("Error creating staff member:", error);
+    console.error("[Staff API] Error creating staff member:", error);
     return res.status(500).json({ error: "Failed to create staff member" });
   }
 });

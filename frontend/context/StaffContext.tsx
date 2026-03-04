@@ -48,12 +48,21 @@ export const StaffProvider: React.FC<{ children: ReactNode }> = ({
 
   const addStaff = async (staffMember: Omit<StaffMember, "id">) => {
     try {
+      console.log("[StaffContext] Creating staff member:", staffMember);
       const newStaff = await apiClient.staff.create(staffMember);
+      console.log("[StaffContext] Staff member created successfully:", newStaff);
       setStaff((prev) => [...prev, newStaff]);
     } catch (error) {
-      console.error("Failed to add staff via API, using mock", error);
-      const newStaff = await mockApi.addStaff(staffMember);
-      setStaff((prev) => [...prev, newStaff]);
+      console.error("[StaffContext] Failed to add staff via API:", error);
+      try {
+        console.log("[StaffContext] Attempting to use mock API");
+        const newStaff = await mockApi.addStaff(staffMember);
+        console.log("[StaffContext] Mock staff member created:", newStaff);
+        setStaff((prev) => [...prev, newStaff]);
+      } catch (mockError) {
+        console.error("[StaffContext] Mock API also failed:", mockError);
+        throw error; // Re-throw the original API error
+      }
     }
   };
 
