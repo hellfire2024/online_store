@@ -71,6 +71,10 @@ export async function findAll(): Promise<Product[]> {
     ) {
       product.customImageUploadPrice = undefined;
     }
+    // Convert 0 to undefined for customTextPricePerChar when feature is not enabled
+    if (!product.allowCustomText || product.customTextPricePerChar === 0) {
+      product.customTextPricePerChar = undefined;
+    }
   }
 
   return products;
@@ -97,6 +101,10 @@ export async function findById(id: string): Promise<Product | null> {
   // Convert 0 to undefined for customImageUploadPrice when feature is not enabled
   if (!product.allowCustomImageUpload || product.customImageUploadPrice === 0) {
     product.customImageUploadPrice = undefined;
+  }
+  // Convert 0 to undefined for customTextPricePerChar when feature is not enabled
+  if (!product.allowCustomText || product.customTextPricePerChar === 0) {
+    product.customTextPricePerChar = undefined;
   }
 
   return product;
