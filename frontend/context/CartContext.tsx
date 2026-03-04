@@ -8,11 +8,15 @@ interface CartContextType {
   removeFromCart: (
     productId: string,
     selectedOptions?: { [listId: string]: string[] },
+    customization?: CartItem["customization"],
+    customText?: string,
   ) => void;
   updateQuantity: (
     productId: string,
     quantity: number,
     selectedOptions?: { [listId: string]: string[] },
+    customization?: CartItem["customization"],
+    customText?: string,
   ) => void;
   clearCart: () => void;
   itemCount: number;
@@ -27,15 +31,32 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const { addToast } = useToast();
 
+  const normalizeCustomText = (text?: string) => (text || "").trim();
+
+  const isSameCartLine = (
+    item: CartItem,
+    productId: string,
+    selectedOptions?: { [listId: string]: string[] },
+    customization?: CartItem["customization"],
+    customText?: string,
+  ) =>
+    item.product.id === productId &&
+    JSON.stringify(item.selectedOptions || {}) ===
+      JSON.stringify(selectedOptions || {}) &&
+    JSON.stringify(item.customization || null) ===
+      JSON.stringify(customization || null) &&
+    normalizeCustomText(item.customText) === normalizeCustomText(customText);
+
   const addToCart = (newItem: CartItem) => {
     setCartItems((prevItems) => {
-      const existingItemIndex = prevItems.findIndex(
-        (item) =>
-          item.product.id === newItem.product.id &&
-          JSON.stringify(item.selectedOptions) ===
-            JSON.stringify(newItem.selectedOptions) &&
-          JSON.stringify(item.customization) ===
-            JSON.stringify(newItem.customization),
+      const existingItemIndex = prevItems.findIndex((item) =>
+        isSameCartLine(
+          item,
+          newItem.product.id,
+          newItem.selectedOptions,
+          newItem.customization,
+          newItem.customText,
+        ),
       );
 
       if (existingItemIndex !== -1) {
@@ -58,14 +79,18 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
   const removeFromCart = (
     productId: string,
     selectedOptions?: { [listId: string]: string[] },
+    customization?: CartItem["customization"],
+    customText?: string,
   ) => {
     setCartItems((prevItems) =>
       prevItems.filter(
         (item) =>
-          !(
-            item.product.id === productId &&
-            JSON.stringify(item.selectedOptions) ===
-              JSON.stringify(selectedOptions)
+          !isSameCartLine(
+            item,
+            productId,
+            selectedOptions,
+            customization,
+            customText,
           ),
       ),
     );
@@ -76,11 +101,18 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
     productId: string,
     quantity: number,
     selectedOptions?: { [listId: string]: string[] },
+    customization?: CartItem["customization"],
+    customText?: string,
   ) => {
     setCartItems((prevItems) =>
       prevItems.map((item) =>
-        item.product.id === productId &&
-        JSON.stringify(item.selectedOptions) === JSON.stringify(selectedOptions)
+        isSameCartLine(
+          item,
+          productId,
+          selectedOptions,
+          customization,
+          customText,
+        )
           ? { ...item, quantity: Math.max(1, quantity) }
           : item,
       ),

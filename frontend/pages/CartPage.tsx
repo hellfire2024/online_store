@@ -186,6 +186,8 @@ const CartItemRow: React.FC<{ item: CartItem }> = ({ item }) => {
                   item.product.id,
                   parseInt(e.target.value),
                   item.selectedOptions,
+                  item.customization,
+                  item.customText,
                 )
               }
               className="w-16 p-1 bg-slate-700 border border-slate-600 rounded-md text-center text-white"
@@ -196,7 +198,14 @@ const CartItemRow: React.FC<{ item: CartItem }> = ({ item }) => {
           </p>
         </div>
         <button
-          onClick={() => removeFromCart(item.product.id, item.selectedOptions)}
+          onClick={() =>
+            removeFromCart(
+              item.product.id,
+              item.selectedOptions,
+              item.customization,
+              item.customText,
+            )
+          }
           className="text-gray-500 hover:text-red-500 transition-colors p-2"
         >
           <TrashIcon />
