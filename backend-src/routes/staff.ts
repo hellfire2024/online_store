@@ -39,20 +39,25 @@ router.get("/:id", async (req: Request, res: Response) => {
 // Create staff member
 router.post("/", async (req: Request, res: Response) => {
   try {
-    const { id, name, role, imageUrl, image_url } = req.body;
+    const { id: clientId, name, role, imageUrl, image_url } = req.body;
     const finalImageUrl = imageUrl || image_url;
 
-    if (!id || !name || !role) {
-      return res.status(400).json({ error: "id, name, and role are required" });
+    if (!name || !role) {
+      return res.status(400).json({ error: "name and role are required" });
     }
+
+    // Use client-provided id if available, otherwise generate UUID
+    const staffId = clientId || `staff_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
     await pool.query(
       `INSERT INTO staff (id, name, role, image_url, created_at)
        VALUES (?, ?, ?, ?, NOW())`,
-      [id, name, role, finalImageUrl || null],
+      [staffId, name, role, finalImageUrl || null],
     );
 
-    return res.status(201).json({ id, name, role, imageUrl: finalImageUrl });
+    return res
+      .status(201)
+      .json({ id: staffId, name, role, imageUrl: finalImageUrl });
   } catch (error) {
     console.error("Error creating staff member:", error);
     return res.status(500).json({ error: "Failed to create staff member" });

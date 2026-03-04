@@ -135,19 +135,23 @@ const StaffManagement: React.FC = () => {
       }
     }
 
-    const staffToSave = {
-      id: editingStaff?.id || `staff_${Date.now()}`,
-      name: currentStaff.name,
-      role: currentStaff.role,
-      imageUrl: finalImageUrl,
-    };
-
     try {
       if (newStaffMember) {
-        await addStaff(staffToSave as Omit<StaffMember, "id">);
+        const dataToSave = {
+          name: currentStaff.name,
+          role: currentStaff.role,
+          imageUrl: finalImageUrl,
+        };
+        await addStaff(dataToSave);
         addToast("Staff member added successfully!", "success");
       } else if (editingStaff) {
-        await updateStaff(staffToSave as StaffMember);
+        const dataToSave: StaffMember = {
+          id: editingStaff.id,
+          name: currentStaff.name,
+          role: currentStaff.role,
+          imageUrl: finalImageUrl,
+        };
+        await updateStaff(dataToSave);
         addToast("Staff member updated successfully!", "success");
       }
       setNewStaffMember(null);
