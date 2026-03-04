@@ -138,6 +138,12 @@ const StaffManagement: React.FC = () => {
           response.headers.get("content-type") || ""
         ).toLowerCase();
         const raw = await response.text();
+        console.log(
+          "[StaffManagement] Image upload raw response length:",
+          raw.length,
+          "first 200 chars:",
+          raw.substring(0, 200),
+        );
         if (!contentType.includes("application/json")) {
           console.error(
             "[StaffManagement] Image upload returned non-JSON response",
@@ -147,10 +153,15 @@ const StaffManagement: React.FC = () => {
           return;
         }
         const result = raw.trim() ? JSON.parse(raw) : {};
-        finalImageUrl = result.imageUrl;
+        console.log("[StaffManagement] Parsed upload result:", {
+          hasImageUrl: !!result.imageUrl,
+          urlLength: result.imageUrl?.length || 0,
+          isDataUrl: result.imageUrl?.startsWith("data:") || false,
+        });
+        finalImageUrl = result.imageUrl || "";
         console.log(
-          "[StaffManagement] Image uploaded successfully:",
-          finalImageUrl,
+          "[StaffManagement] Image uploaded successfully, URL length:",
+          finalImageUrl.length,
         );
         addToast("Image uploaded successfully!", "success");
       }
