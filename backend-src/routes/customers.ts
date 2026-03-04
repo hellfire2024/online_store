@@ -279,7 +279,9 @@ router.put("/:id", async (req: Request, res: Response) => {
       );
 
       if (existing.length > 0) {
-        return res.status(400).json({ error: "Email already in use by another customer" });
+        return res
+          .status(400)
+          .json({ error: "Email already in use by another customer" });
       }
     }
 

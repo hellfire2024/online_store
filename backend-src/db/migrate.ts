@@ -226,13 +226,13 @@ export async function runMigrations(): Promise<void> {
   const fixStaffTableStructure = async () => {
     // Check if staff table has old structure (email column exists)
     const hasOldStructure = await hasColumn("staff", "email");
-    
+
     if (hasOldStructure) {
       console.log("Detected old staff table structure, recreating table...");
-      
+
       // Drop the old table (only if it has the wrong structure)
       await pool.query("DROP TABLE IF EXISTS staff");
-      
+
       // Create new table with correct structure
       await pool.query(`
         CREATE TABLE staff (
@@ -245,7 +245,7 @@ export async function runMigrations(): Promise<void> {
           INDEX idx_created (created_at)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
       `);
-      
+
       console.log("Staff table recreated with correct structure");
     } else {
       // Check if the table exists and has the correct structure

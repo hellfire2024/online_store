@@ -217,17 +217,17 @@ const CustomerManagement: React.FC = () => {
     try {
       // Calculate full name for backend
       const name = `${formData.firstName.trim()} ${formData.lastName.trim()}`;
-      
+
       if (editingCustomer) {
-        await apiClient.customers.update(editingCustomer.id, { 
+        await apiClient.customers.update(editingCustomer.id, {
           ...formData,
-          name 
+          name,
         });
         addToast("Customer updated successfully", "success");
       } else {
-        await apiClient.customers.create({ 
+        await apiClient.customers.create({
           ...formData,
-          name 
+          name,
         });
         addToast("Customer created successfully", "success");
       }
