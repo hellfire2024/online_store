@@ -109,7 +109,11 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
       firstName,
       lastName,
       fullName,
-      street1: address.street1 ?? address.streetAddress ?? address.street_address ?? "",
+      street1:
+        address.street1 ??
+        address.streetAddress ??
+        address.street_address ??
+        "",
       street2: address.street2 ?? "",
       city: address.city ?? "",
       state: address.state ?? "",
