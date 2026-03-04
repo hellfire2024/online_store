@@ -215,11 +215,20 @@ const CustomerManagement: React.FC = () => {
       return;
     }
     try {
+      // Calculate full name for backend
+      const name = `${formData.firstName.trim()} ${formData.lastName.trim()}`;
+      
       if (editingCustomer) {
-        await apiClient.customers.update(editingCustomer.id, { ...formData });
+        await apiClient.customers.update(editingCustomer.id, { 
+          ...formData,
+          name 
+        });
         addToast("Customer updated successfully", "success");
       } else {
-        await apiClient.customers.create({ ...formData });
+        await apiClient.customers.create({ 
+          ...formData,
+          name 
+        });
         addToast("Customer created successfully", "success");
       }
       const updated = await apiClient.customers.getAll();

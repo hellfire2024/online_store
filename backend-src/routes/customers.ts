@@ -271,6 +271,18 @@ router.put("/:id", async (req: Request, res: Response) => {
       emailPreferences,
     } = req.body;
 
+    // Check if email is being changed and if it's already in use by another customer
+    if (email !== undefined) {
+      const [existing] = await pool.query<RowDataPacket[]>(
+        "SELECT id FROM customers WHERE email = ? AND id != ?",
+        [email, req.params.id],
+      );
+
+      if (existing.length > 0) {
+        return res.status(400).json({ error: "Email already in use by another customer" });
+      }
+    }
+
     const updates: string[] = [];
     const values: any[] = [];
 
