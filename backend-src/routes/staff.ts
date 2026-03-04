@@ -47,7 +47,9 @@ router.post("/", async (req: Request, res: Response) => {
     }
 
     // Use client-provided id if available, otherwise generate UUID
-    const staffId = clientId || `staff_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const staffId =
+      clientId ||
+      `staff_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
     await pool.query(
       `INSERT INTO staff (id, name, role, image_url, created_at)
