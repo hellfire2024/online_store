@@ -58,9 +58,7 @@ router.post("/", async (req: Request, res: Response) => {
       name,
       role,
       imageUrlLength: finalImageUrl?.length || 0,
-      imageUrlPreview: finalImageUrl
-        ? finalImageUrl.substring(0, 100)
-        : "null",
+      imageUrlPreview: finalImageUrl ? finalImageUrl.substring(0, 100) : "null",
     });
 
     const insertResult = await pool.query(
@@ -88,10 +86,7 @@ router.post("/", async (req: Request, res: Response) => {
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     const errorStack = error instanceof Error ? error.stack : "";
-    console.error(
-      "[Staff API] Error creating staff member:",
-      errorMessage,
-    );
+    console.error("[Staff API] Error creating staff member:", errorMessage);
     if (errorStack) {
       console.error("[Staff API] Error stack:", errorStack);
     }
