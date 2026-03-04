@@ -428,9 +428,31 @@ const ProductManagement: React.FC = () => {
   const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, checked } = e.target;
     if (newProduct) {
-      setNewProduct((prev) => ({ ...prev!, [name]: checked }));
+      setNewProduct((prev) => {
+        const updated = { ...prev!, [name]: checked };
+        // Clear related fields when feature is disabled
+        if (name === "allowCustomText" && !checked) {
+          updated.customTextPricePerChar = undefined;
+          updated.customTextMaxLength = undefined;
+        }
+        if (name === "allowCustomImageUpload" && !checked) {
+          updated.customImageUploadPrice = undefined;
+        }
+        return updated;
+      });
     } else if (editingProduct) {
-      setEditingProduct((prev) => ({ ...prev!, [name]: checked }));
+      setEditingProduct((prev) => {
+        const updated = { ...prev!, [name]: checked };
+        // Clear related fields when feature is disabled
+        if (name === "allowCustomText" && !checked) {
+          updated.customTextPricePerChar = undefined;
+          updated.customTextMaxLength = undefined;
+        }
+        if (name === "allowCustomImageUpload" && !checked) {
+          updated.customImageUploadPrice = undefined;
+        }
+        return updated;
+      });
     }
   };
 
