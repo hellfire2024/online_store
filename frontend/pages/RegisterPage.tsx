@@ -8,6 +8,20 @@ import {
   getPasswordStrengthBgColor,
 } from "../services/passwordValidator";
 
+// Format phone number as ###-###-####
+const formatPhoneNumber = (value: string): string => {
+  const cleaned = value.replace(/\D/g, "");
+  const limited = cleaned.slice(0, 10);
+
+  if (limited.length <= 3) {
+    return limited;
+  } else if (limited.length <= 6) {
+    return `${limited.slice(0, 3)}-${limited.slice(3)}`;
+  } else {
+    return `${limited.slice(0, 3)}-${limited.slice(3, 6)}-${limited.slice(6)}`;
+  }
+};
+
 const RegisterPage: React.FC = () => {
   // Initialize from sessionStorage or default to empty
   const [firstName, setFirstName] = useState(
@@ -202,7 +216,7 @@ const RegisterPage: React.FC = () => {
             type="tel"
             id="phone"
             value={phone}
-            onChange={(e) => setPhone(e.target.value)}
+            onChange={(e) => setPhone(formatPhoneNumber(e.target.value))}
             className={inputClasses}
             placeholder="555-123-4567"
           />
