@@ -65,7 +65,10 @@ export async function findAll(): Promise<Product[]> {
   for (const product of products) {
     product.optionLists = await findOptionLists(product.id);
     // Convert 0 to undefined for customImageUploadPrice when feature is not enabled
-    if (!product.allowCustomImageUpload || product.customImageUploadPrice === 0) {
+    if (
+      !product.allowCustomImageUpload ||
+      product.customImageUploadPrice === 0
+    ) {
       product.customImageUploadPrice = undefined;
     }
   }
@@ -208,9 +211,13 @@ export async function update(
         data.enableAIIdeas ?? currentProduct.enableAIIdeas,
         data.galleryId ?? currentProduct.galleryId,
         data.allowCustomImageUpload ?? currentProduct.allowCustomImageUpload,
-        data.customImageUploadPrice ?? currentProduct.customImageUploadPrice ?? null,
+        data.customImageUploadPrice ??
+          currentProduct.customImageUploadPrice ??
+          null,
         data.allowCustomText ?? currentProduct.allowCustomText,
-        data.customTextPricePerChar ?? currentProduct.customTextPricePerChar ?? null,
+        data.customTextPricePerChar ??
+          currentProduct.customTextPricePerChar ??
+          null,
         data.customTextMaxLength ?? currentProduct.customTextMaxLength ?? 100,
         id,
       ],
