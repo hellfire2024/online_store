@@ -361,7 +361,7 @@ router.get(
     try {
       const authUser = (req as AuthenticatedRequest).authUser;
       console.log("[Auth] GET /customer/me called, authUser:", authUser?.id);
-      
+
       if (!authUser?.id) {
         return res.status(401).json({ error: "Unauthorized" });
       }
@@ -440,12 +440,10 @@ router.get(
         console.error("Error message:", error.message);
         console.error("Error stack:", error.stack);
       }
-      return res
-        .status(500)
-        .json({
-          error: "Failed to fetch customer profile",
-          details: error instanceof Error ? error.message : String(error),
-        });
+      return res.status(500).json({
+        error: "Failed to fetch customer profile",
+        details: error instanceof Error ? error.message : String(error),
+      });
     }
   },
 );
