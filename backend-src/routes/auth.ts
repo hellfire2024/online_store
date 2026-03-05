@@ -360,66 +360,92 @@ router.get(
   async (req: Request, res: Response) => {
     try {
       const authUser = (req as AuthenticatedRequest).authUser;
+      console.log("[Auth] GET /customer/me called, authUser:", authUser?.id);
+      
       if (!authUser?.id) {
         return res.status(401).json({ error: "Unauthorized" });
       }
 
       // Fetch customer with all details
-      const [customerRows] = await pool.query<RowDataPacket[]>(
-        "SELECT id, first_name, last_name, name, email, phone, email_preferences, is_active, created_at, last_login FROM customers WHERE id = ? AND is_active = TRUE",
-        [authUser.id],
-      );
+      try {
+        const [customerRows] = await pool.query<RowDataPacket[]>(
+          "SELECT id, first_name, last_name, name, email, phone, email_preferences, is_active, created_at, last_login FROM customers WHERE id = ? AND is_active = TRUE",
+          [authUser.id],
+        );
 
-      if (!customerRows || customerRows.length === 0) {
-        return res.status(404).json({ error: "Customer not found" });
-      }
+        if (!customerRows || customerRows.length === 0) {
+          console.log("[Auth] Customer not found for ID:", authUser.id);
+          return res.status(404).json({ error: "Customer not found" });
+        }
 
-      const customer = customerRows[0];
+        const customer = customerRows[0];
 
-      // Fetch customer's addresses
-      const [addresses] = await pool.query<RowDataPacket[]>(
-        `SELECT id, type, first_name, last_name, full_name, street_address, street_2, city, state, zip_code, 
-              country, phone, is_default FROM customer_addresses WHERE customer_id = ? ORDER BY created_at DESC`,
-        [customer.id],
-      );
+        // Fetch customer's addresses - wrap in try-catch to prevent failure if table doesn't exist
+        let addresses: RowDataPacket[] = [];
+        try {
+          const [addressRows] = await pool.query<RowDataPacket[]>(
+            `SELECT id, type, first_name, last_name, full_name, street_address, city, state, zip_code, 
+                  country, phone, is_default FROM customer_addresses WHERE customer_id = ? ORDER BY created_at DESC`,
+            [customer.id],
+          );
+          addresses = addressRows || [];
+        } catch (addrError) {
+          console.warn("[Auth] Failed to fetch customer addresses:", addrError);
+          // Don't fail the whole request if addresses fetch fails
+          addresses = [];
+        }
 
-      // Normalize address fields to camelCase
-      const normalizedAddresses = (addresses || []).map((addr: any) => ({
-        id: addr.id,
-        type: addr.type,
-        firstName: addr.first_name,
-        lastName: addr.last_name,
-        fullName: addr.full_name,
-        street1: addr.street_address,
-        street2: addr.street_2 || "",
-        city: addr.city,
-        state: addr.state,
-        zip: addr.zip_code,
-        country: addr.country,
-        phone: addr.phone || "",
-        isDefault: !!addr.is_default,
-      }));
+        // Normalize address fields to camelCase
+        const normalizedAddresses = addresses.map((addr: any) => ({
+          id: addr.id,
+          type: addr.type,
+          firstName: addr.first_name,
+          lastName: addr.last_name,
+          fullName: addr.full_name,
+          street1: addr.street_address,
+          street2: "", // No street_2 column in database
+          city: addr.city,
+          state: addr.state,
+          zip: addr.zip_code,
+          country: addr.country,
+          phone: addr.phone || "",
+          isDefault: !!addr.is_default,
+        }));
 
-      return res.json({
-        id: customer.id,
-        firstName: customer.first_name,
-        lastName: customer.last_name,
-        name: customer.name,
-        email: customer.email,
-        phone: customer.phone || "",
-        addresses: normalizedAddresses,
-        emailPreferences: customer.email_preferences
+        const emailPreferences = customer.email_preferences
           ? JSON.parse(customer.email_preferences as string)
-          : { marketing: false, orderUpdates: true, announcements: false },
-        isActive: customer.is_active,
-        createdAt: customer.created_at,
-        lastLogin: customer.last_login,
-      });
+          : { marketing: false, orderUpdates: true, announcements: false };
+
+        console.log("[Auth] Successfully fetched customer:", customer.id);
+        return res.json({
+          id: customer.id,
+          firstName: customer.first_name,
+          lastName: customer.last_name,
+          name: customer.name,
+          email: customer.email,
+          phone: customer.phone || "",
+          addresses: normalizedAddresses,
+          emailPreferences,
+          isActive: customer.is_active,
+          createdAt: customer.created_at,
+          lastLogin: customer.last_login,
+        });
+      } catch (queryError) {
+        console.error("[Auth] Database query error:", queryError);
+        throw queryError;
+      }
     } catch (error) {
       console.error("Get current customer error:", error);
+      if (error instanceof Error) {
+        console.error("Error message:", error.message);
+        console.error("Error stack:", error.stack);
+      }
       return res
         .status(500)
-        .json({ error: "Failed to fetch customer profile" });
+        .json({
+          error: "Failed to fetch customer profile",
+          details: error instanceof Error ? error.message : String(error),
+        });
     }
   },
 );
