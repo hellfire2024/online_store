@@ -97,6 +97,8 @@ class ApiClient {
 
     if (this.token) {
       headers["Authorization"] = `Bearer ${this.token}`;
+    } else if (endpoint.includes("/customer")) {
+      console.warn("[ApiClient] No token available for customer endpoint:", endpoint);
     }
 
     const method = (options.method || "GET").toUpperCase();

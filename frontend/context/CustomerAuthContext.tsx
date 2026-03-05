@@ -87,40 +87,59 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
   // Initialize on app startup - restore session if token exists
   useEffect(() => {
     const restoreSession = async () => {
+      console.log("[Auth] Starting session restoration...");
       setIsLoading(true);
       try {
         const storedToken = localStorage.getItem("auth_token");
         const storedCustomer = localStorage.getItem("customer");
 
+        console.log("[Auth] Stored token exists:", !!storedToken);
+        console.log("[Auth] Token length:", storedToken?.length || 0);
+        console.log("[Auth] Stored customer exists:", !!storedCustomer);
+
         if (storedToken) {
           // Set token in API client for authenticated requests
+          console.log("[Auth] Setting token in API client...");
           apiClient.setToken(storedToken);
+          console.log("[Auth] API client token after set:", !!apiClient.getToken());
 
           // Try to validate token by fetching current customer data
           try {
+            console.log("[Auth] Calling getCurrentCustomer...");
             const currentCustomer = await apiClient.auth.getCurrentCustomer();
+            console.log("[Auth] getCurrentCustomer response:", !!currentCustomer);
+            
             if (currentCustomer) {
+              console.log("[Auth] Mapping customer data...");
               const mappedCustomer = mapCustomer(currentCustomer);
+              console.log("[Auth] Customer mapped, setting state...");
               setCustomer(mappedCustomer);
               storeCustomerToLocalStorage(mappedCustomer);
+              console.log("[Auth] Session restored successfully!");
               return;
+            } else {
+              console.warn("[Auth] getCurrentCustomer returned no data");
             }
           } catch (validateError) {
-            console.warn(
+            console.error(
               "[Auth] Token validation failed, clearing session:",
-              validateError,
+              validateError
             );
             // Token is invalid, clear it
             localStorage.removeItem("auth_token");
             localStorage.removeItem("customer");
             apiClient.setToken(null);
           }
+        } else {
+          console.log("[Auth] No stored token found");
         }
 
         // No valid token found
+        console.log("[Auth] No valid session, user logged out");
         setCustomer(null);
       } finally {
         setIsLoading(false);
+        console.log("[Auth] Session restoration complete");
       }
     };
 
@@ -247,21 +266,32 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
   };
 
   const login = async (email: string, password: string) => {
+    console.log("[Auth] Login attempt for:", email);
     setIsLoading(true);
     try {
       const result = await apiClient.auth.customerLogin(email, password);
+      console.log("[Auth] Login API response received:", !!result);
+      console.log("[Auth] Has token:", !!result?.token);
+      console.log("[Auth] Token length:", result?.token?.length || 0);
 
       if (result && result.customer && result.token) {
         // Store JWT token
+        console.log("[Auth] Setting token in apiClient...");
         apiClient.setToken(result.token);
+        console.log("[Auth] Token stored in localStorage:", !!localStorage.getItem("auth_token"));
 
         // Fetch fresh customer data with addresses from /customer/me endpoint
         try {
+          console.log("[Auth] Fetching customer details with addresses...");
           const currentCustomer = await apiClient.auth.getCurrentCustomer();
+          console.log("[Auth] Customer details received:", !!currentCustomer);
+          
           if (currentCustomer) {
             const loggedInCustomer: Customer = mapCustomer(currentCustomer);
+            console.log("[Auth] Customer mapped, addresses count:", loggedInCustomer.addresses?.length || 0);
             setCustomer(loggedInCustomer);
             storeCustomerToLocalStorage(loggedInCustomer);
+            console.log("[Auth] Login successful!");
             return { success: true };
           }
         } catch (fetchError) {
@@ -276,6 +306,7 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
           return { success: true };
         }
       }
+      console.error("[Auth] Login failed - invalid response format");
       return { success: false, error: "Login failed" };
     } catch (error: any) {
       console.error("Login error:", error);
