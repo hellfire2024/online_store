@@ -101,14 +101,20 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
           // Set token in API client for authenticated requests
           console.log("[Auth] Setting token in API client...");
           apiClient.setToken(storedToken);
-          console.log("[Auth] API client token after set:", !!apiClient.getToken());
+          console.log(
+            "[Auth] API client token after set:",
+            !!apiClient.getToken(),
+          );
 
           // Try to validate token by fetching current customer data
           try {
             console.log("[Auth] Calling getCurrentCustomer...");
             const currentCustomer = await apiClient.auth.getCurrentCustomer();
-            console.log("[Auth] getCurrentCustomer response:", !!currentCustomer);
-            
+            console.log(
+              "[Auth] getCurrentCustomer response:",
+              !!currentCustomer,
+            );
+
             if (currentCustomer) {
               console.log("[Auth] Mapping customer data...");
               const mappedCustomer = mapCustomer(currentCustomer);
@@ -123,7 +129,7 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
           } catch (validateError) {
             console.error(
               "[Auth] Token validation failed, clearing session:",
-              validateError
+              validateError,
             );
             // Token is invalid, clear it
             localStorage.removeItem("auth_token");
@@ -278,17 +284,23 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
         // Store JWT token
         console.log("[Auth] Setting token in apiClient...");
         apiClient.setToken(result.token);
-        console.log("[Auth] Token stored in localStorage:", !!localStorage.getItem("auth_token"));
+        console.log(
+          "[Auth] Token stored in localStorage:",
+          !!localStorage.getItem("auth_token"),
+        );
 
         // Fetch fresh customer data with addresses from /customer/me endpoint
         try {
           console.log("[Auth] Fetching customer details with addresses...");
           const currentCustomer = await apiClient.auth.getCurrentCustomer();
           console.log("[Auth] Customer details received:", !!currentCustomer);
-          
+
           if (currentCustomer) {
             const loggedInCustomer: Customer = mapCustomer(currentCustomer);
-            console.log("[Auth] Customer mapped, addresses count:", loggedInCustomer.addresses?.length || 0);
+            console.log(
+              "[Auth] Customer mapped, addresses count:",
+              loggedInCustomer.addresses?.length || 0,
+            );
             setCustomer(loggedInCustomer);
             storeCustomerToLocalStorage(loggedInCustomer);
             console.log("[Auth] Login successful!");
