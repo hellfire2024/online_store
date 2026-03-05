@@ -185,14 +185,8 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
   };
 
   const storeCustomerToLocalStorage = (customer: Customer) => {
-    // Only store minimal customer data to avoid localStorage quota issues
-    // Clear localStorage first to free up space
-    try {
-      localStorage.clear();
-    } catch (e) {
-      console.warn("Could not clear localStorage", e);
-    }
-
+    // Store minimal customer data to avoid localStorage quota issues
+    // DO NOT clear localStorage - that would delete the auth_token!
     const minimalCustomer = {
       id: customer.id,
       name: customer.name,
@@ -209,17 +203,9 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
     };
     try {
       localStorage.setItem("customer", JSON.stringify(minimalCustomer));
-      localStorage.setItem("auth_token", apiClient.getToken() || "");
+      // Auth token is managed by apiClient.setToken(), don't overwrite it here
     } catch (error) {
       console.error("Failed to store customer data to localStorage:", error);
-      // If still failing, try to at least store ID and token
-      try {
-        localStorage.clear();
-        localStorage.setItem("customer_id", customer.id);
-        localStorage.setItem("auth_token", apiClient.getToken() || "");
-      } catch (e) {
-        console.error("Critical: Cannot store to localStorage at all", e);
-      }
     }
   };
 
@@ -269,12 +255,23 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
         // Store JWT token
         apiClient.setToken(result.token);
 
-        // Use the customer object returned from login endpoint
-        // No need for extra API call - login endpoint returns full customer data
-        const loggedInCustomer: Customer = mapCustomer(result.customer);
-        setCustomer(loggedInCustomer);
-        storeCustomerToLocalStorage(loggedInCustomer);
-        return { success: true };
+        // Fetch fresh customer data with addresses from /customer/me endpoint
+        try {
+          const currentCustomer = await apiClient.auth.getCurrentCustomer();
+          if (currentCustomer) {
+            const loggedInCustomer: Customer = mapCustomer(currentCustomer);
+            setCustomer(loggedInCustomer);
+            storeCustomerToLocalStorage(loggedInCustomer);
+            return { success: true };
+          }
+        } catch (fetchError) {
+          console.warn("Could not fetch customer details after login:", fetchError);
+          // Fallback to login response data (without addresses)
+          const loggedInCustomer: Customer = mapCustomer(result.customer);
+          setCustomer(loggedInCustomer);
+          storeCustomerToLocalStorage(loggedInCustomer);
+          return { success: true };
+        }
       }
       return { success: false, error: "Login failed" };
     } catch (error: any) {
@@ -347,7 +344,7 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
         };
 
         setCustomer(newCustomer);
-        localStorage.setItem("customer", JSON.stringify(newCustomer));
+        storeCustomerToLocalStorage(newCustomer);
         return { success: true };
       }
       return { success: false, error: "Failed to add address" };
