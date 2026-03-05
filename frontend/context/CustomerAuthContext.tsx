@@ -82,7 +82,7 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
   const [customer, setCustomer] = useState<Customer | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Initialize on app startup - restore session if token exists
   useEffect(() => {
@@ -126,15 +126,27 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
             } else {
               console.warn("[Auth] getCurrentCustomer returned no data");
             }
-          } catch (validateError) {
+          } catch (validateError: any) {
             console.error(
-              "[Auth] Token validation failed, clearing session:",
-              validateError,
+              "[Auth] Token validation failed:",
+              validateError?.message || validateError,
             );
-            // Token is invalid, clear it
-            localStorage.removeItem("auth_token");
-            localStorage.removeItem("customer");
-            apiClient.setToken(null);
+            // Only clear token on 401 (unauthorized) - keep token for other errors (network issues, etc.)
+            if (
+              validateError?.status === 401 ||
+              validateError?.response?.status === 401
+            ) {
+              console.log("[Auth] Token is invalid (401), clearing session");
+              localStorage.removeItem("auth_token");
+              localStorage.removeItem("customer");
+              apiClient.setToken(null);
+            } else {
+              console.log(
+                "[Auth] Keeping token - error might be temporary:",
+                validateError?.message,
+              );
+              // Keep the token, but don't set customer state - user can try logging in again
+            }
           }
         } else {
           console.log("[Auth] No stored token found");

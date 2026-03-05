@@ -22,7 +22,18 @@ class ApiClient {
   constructor(baseUrl: string) {
     this.baseUrl = baseUrl;
     // Try to load token from localStorage
-    this.token = localStorage.getItem("auth_token");
+    try {
+      this.token = localStorage.getItem("auth_token");
+      if (this.token) {
+        console.log("[ApiClient] Token loaded from localStorage at init");
+      }
+    } catch (error) {
+      console.warn(
+        "[ApiClient] Could not load token from localStorage:",
+        error,
+      );
+      this.token = null;
+    }
   }
 
   setBaseUrl(url: string) {
@@ -92,6 +103,19 @@ class ApiClient {
     } else if (optHeaders && typeof optHeaders === "object") {
       for (const [key, value] of Object.entries(optHeaders)) {
         headers[String(key)] = String(value);
+      }
+    }
+
+    // Ensure token is loaded from localStorage if not already set
+    if (!this.token && typeof localStorage !== "undefined") {
+      try {
+        const storedToken = localStorage.getItem("auth_token");
+        if (storedToken) {
+          this.token = storedToken;
+          console.log("[ApiClient] Token reloaded from localStorage");
+        }
+      } catch (error) {
+        // Ignore localStorage errors
       }
     }
 
@@ -190,23 +214,37 @@ class ApiClient {
           return null;
         });
 
+        // Create a custom error object that includes the status code
+        const createApiError = (message: string, status: number) => {
+          const err: any = new Error(message);
+          err.status = status;
+          err.response = { status };
+          return err;
+        };
+
         if (error && typeof error === "object") {
           const validationErrors = (error as any).errors;
           if (Array.isArray(validationErrors) && validationErrors.length > 0) {
             const firstValidationError =
               validationErrors[0]?.msg || validationErrors[0]?.message;
             if (firstValidationError) {
-              throw new Error(String(firstValidationError));
+              throw createApiError(
+                String(firstValidationError),
+                response.status,
+              );
             }
           }
 
           const maybeError = (error as any).error || (error as any).message;
           if (maybeError) {
-            throw new Error(String(maybeError));
+            throw createApiError(String(maybeError), response.status);
           }
         }
 
-        throw new Error(`HTTP ${response.status} ${response.statusText}`);
+        throw createApiError(
+          `HTTP ${response.status} ${response.statusText}`,
+          response.status,
+        );
       }
     };
 
