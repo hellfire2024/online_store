@@ -265,7 +265,10 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
             return { success: true };
           }
         } catch (fetchError) {
-          console.warn("Could not fetch customer details after login:", fetchError);
+          console.warn(
+            "Could not fetch customer details after login:",
+            fetchError,
+          );
           // Fallback to login response data (without addresses)
           const loggedInCustomer: Customer = mapCustomer(result.customer);
           setCustomer(loggedInCustomer);
