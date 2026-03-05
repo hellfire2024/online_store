@@ -425,6 +425,10 @@ class ApiClient {
         method: "POST",
         body: JSON.stringify({ email, password }),
       }),
+    getCurrentCustomer: () =>
+      this.request<any>("/auth/customer/me", {
+        method: "GET",
+      }),
   };
 
   // Generic CRUD helpers for other entities

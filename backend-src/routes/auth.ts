@@ -5,6 +5,7 @@ import { body, validationResult } from "express-validator";
 import { pool } from "../db/connection.js";
 import { RowDataPacket } from "mysql2";
 import crypto from "crypto";
+import { requireCustomer, AuthenticatedRequest } from "../middleware/auth.js";
 
 const router = Router();
 
@@ -351,5 +352,70 @@ router.post(
     }
   },
 );
+
+// Get current authenticated customer profile with addresses
+router.get("/customer/me", requireCustomer, async (req: Request, res: Response) => {
+  try {
+    const authUser = (req as AuthenticatedRequest).authUser;
+    if (!authUser?.id) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    // Fetch customer with all details
+    const [customerRows] = await pool.query<RowDataPacket[]>(
+      "SELECT id, first_name, last_name, name, email, phone, email_preferences, is_active, created_at, last_login FROM customers WHERE id = ? AND is_active = TRUE",
+      [authUser.id],
+    );
+
+    if (!customerRows || customerRows.length === 0) {
+      return res.status(404).json({ error: "Customer not found" });
+    }
+
+    const customer = customerRows[0];
+
+    // Fetch customer's addresses
+    const [addresses] = await pool.query<RowDataPacket[]>(
+      `SELECT id, type, first_name, last_name, full_name, street_address, street_2, city, state, zip_code, 
+              country, phone, is_default FROM customer_addresses WHERE customer_id = ? ORDER BY created_at DESC`,
+      [customer.id],
+    );
+
+    // Normalize address fields to camelCase
+    const normalizedAddresses = (addresses || []).map((addr: any) => ({
+      id: addr.id,
+      type: addr.type,
+      firstName: addr.first_name,
+      lastName: addr.last_name,
+      fullName: addr.full_name,
+      street1: addr.street_address,
+      street2: addr.street_2 || "",
+      city: addr.city,
+      state: addr.state,
+      zip: addr.zip_code,
+      country: addr.country,
+      phone: addr.phone || "",
+      isDefault: !!addr.is_default,
+    }));
+
+    return res.json({
+      id: customer.id,
+      firstName: customer.first_name,
+      lastName: customer.last_name,
+      name: customer.name,
+      email: customer.email,
+      phone: customer.phone || "",
+      addresses: normalizedAddresses,
+      emailPreferences: customer.email_preferences
+        ? JSON.parse(customer.email_preferences as string)
+        : { marketing: false, orderUpdates: true, announcements: false },
+      isActive: customer.is_active,
+      createdAt: customer.created_at,
+      lastLogin: customer.last_login,
+    });
+  } catch (error) {
+    console.error("Get current customer error:", error);
+    return res.status(500).json({ error: "Failed to fetch customer profile" });
+  }
+});
 
 export default router;

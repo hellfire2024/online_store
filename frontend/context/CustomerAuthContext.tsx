@@ -84,15 +84,47 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Initialize on app startup
+  // Initialize on app startup - restore session if token exists
   useEffect(() => {
-    // Clear any stale session data on app init
-    // Users must explicitly login - don't auto-restore sessions
-    // This prevents API errors from stale/expired tokens
-    localStorage.removeItem("customer");
-    localStorage.removeItem("auth_token");
-    apiClient.setToken(null);
-    setCustomer(null);
+    const restoreSession = async () => {
+      setIsLoading(true);
+      try {
+        const storedToken = localStorage.getItem("auth_token");
+        const storedCustomer = localStorage.getItem("customer");
+
+        if (storedToken) {
+          // Set token in API client for authenticated requests
+          apiClient.setToken(storedToken);
+
+          // Try to validate token by fetching current customer data
+          try {
+            const currentCustomer = await apiClient.auth.getCurrentCustomer();
+            if (currentCustomer) {
+              const mappedCustomer = mapCustomer(currentCustomer);
+              setCustomer(mappedCustomer);
+              storeCustomerToLocalStorage(mappedCustomer);
+              return;
+            }
+          } catch (validateError) {
+            console.warn(
+              "[Auth] Token validation failed, clearing session:",
+              validateError,
+            );
+            // Token is invalid, clear it
+            localStorage.removeItem("auth_token");
+            localStorage.removeItem("customer");
+            apiClient.setToken(null);
+          }
+        }
+
+        // No valid token found
+        setCustomer(null);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    restoreSession();
   }, []);
 
   const mapAddress = (address: any): CustomerAddress => {
