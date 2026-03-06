@@ -97,6 +97,15 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
         console.log("[Auth] Stored token exists:", !!storedToken);
         console.log("[Auth] Token length:", storedToken?.length || 0);
         console.log("[Auth] Stored customer exists:", !!storedCustomer);
+        
+        // Check if admin is logged in - if so, skip customer restoration
+        const adminToken = localStorage.getItem("adminToken");
+        if (adminToken) {
+          console.log("[Auth] Admin is logged in, skipping customer session restoration");
+          setCustomer(null);
+          setIsLoading(false);
+          return;
+        }
 
         if (storedToken) {
           // Optimistically hydrate from localStorage first to preserve session UX on refresh
@@ -318,9 +327,15 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
       console.log("[Auth] Token length:", result?.token?.length || 0);
 
       if (result && result.customer && result.token) {
+        // Clear admin session when customer logs in
+        console.log("[Auth] Clearing admin session for customer login");
+        localStorage.removeItem("adminToken");
+        localStorage.removeItem("adminUser");
+        
         // Store JWT token
         console.log("[Auth] Setting token in apiClient...");
         apiClient.setToken(result.token);
+        localStorage.setItem("auth_token", result.token);
         console.log(
           "[Auth] Token stored in localStorage:",
           !!localStorage.getItem("auth_token"),
