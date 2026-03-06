@@ -319,6 +319,17 @@ router.post(
     try {
       const { email } = req.body;
 
+      const [emailConfigRows] = await pool.query<RowDataPacket[]>(
+        "SELECT provider FROM email_config WHERE id = 1",
+      );
+      const provider = emailConfigRows[0]?.provider;
+      if (!provider || provider === "none") {
+        return res.status(503).json({
+          error:
+            "Password reset email service is not configured. Please contact support.",
+        });
+      }
+
       // Check if customer exists
       const [rows] = await pool.query<RowDataPacket[]>(
         "SELECT id FROM customers WHERE email = ? AND is_active = TRUE",
@@ -334,15 +345,14 @@ router.post(
         });
       }
 
-      // In a production app, you would:
-      // 1. Generate a unique reset token
-      // 2. Store it in the database with an expiration time
-      // 3. Send an email with a link containing the token
-      console.log(`Password reset requested for email: ${email}`);
-
-      return res.json({
-        success: true,
-        message: "Password reset email sent successfully",
+      // Password reset tokens/email delivery flow is not implemented yet.
+      // We return a controlled error instead of a misleading success.
+      console.warn(
+        "Password reset requested but token email delivery is not implemented",
+        { email },
+      );
+      return res.status(501).json({
+        error: "Password reset delivery is not implemented yet",
       });
     } catch (error) {
       console.error("Password reset request error:", error);

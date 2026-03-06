@@ -10,7 +10,7 @@ import {
 
 const ChangePasswordPage: React.FC = () => {
   const navigate = useNavigate();
-  const { customer } = useCustomerAuth();
+  const { customer, changePassword } = useCustomerAuth();
   const { addToast } = useToast();
 
   const [currentPassword, setCurrentPassword] = useState("");
@@ -68,35 +68,9 @@ const ChangePasswordPage: React.FC = () => {
 
     setIsLoading(true);
     try {
-      // TODO: Replace with actual API call
-      // For now, we'll simulate the request
-      const response = await fetch("/api/customer/change-password", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("customerToken")}`,
-        },
-        body: JSON.stringify({
-          currentPassword,
-          newPassword,
-        }),
-      });
-
-      if (!response.ok) {
-        let message = "Failed to change password";
-        const contentType = (
-          response.headers.get("content-type") || ""
-        ).toLowerCase();
-        const raw = await response.text();
-        if (contentType.includes("application/json") && raw.trim()) {
-          try {
-            const parsed = JSON.parse(raw);
-            message = parsed?.message || parsed?.error || message;
-          } catch {
-            message = "Failed to change password";
-          }
-        }
-        addToast(message, "error");
+      const result = await changePassword(currentPassword, newPassword);
+      if (!result.success) {
+        addToast(result.error || "Failed to change password", "error");
         return;
       }
 

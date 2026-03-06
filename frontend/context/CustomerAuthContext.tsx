@@ -569,34 +569,52 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
 
   const requestPasswordReset = async (email: string) => {
     try {
-      // In a real app, this would send an email with a reset link
-      console.log(`Password reset email sent to ${email}`);
-      return { success: true };
-    } catch (error) {
-      return { success: false, error: "Failed to request password reset" };
+      const result = await apiClient.auth.customerRequestPasswordReset(email);
+      if (result?.success) {
+        return { success: true };
+      }
+      return {
+        success: false,
+        error: result?.message || "Failed to request password reset",
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error?.message || "Failed to request password reset",
+      };
     }
   };
 
   const resetPassword = async (_token: string, _newPassword: string) => {
-    try {
-      // In a real app, this would validate the token and update the password
-      return { success: true };
-    } catch (error) {
-      return { success: false, error: "Failed to reset password" };
-    }
+    return {
+      success: false,
+      error: "Password reset by token is not implemented yet",
+    };
   };
 
   const changePassword = async (
-    _currentPassword: string,
-    _newPassword: string,
+    currentPassword: string,
+    newPassword: string,
   ) => {
     if (!customer) return { success: false, error: "Not authenticated" };
 
     try {
-      // In a real app, this would validate the current password
-      return { success: true };
-    } catch (error) {
-      return { success: false, error: "Failed to change password" };
+      const result = await apiClient.auth.customerChangePassword(
+        currentPassword,
+        newPassword,
+      );
+      if (result?.success) {
+        return { success: true };
+      }
+      return {
+        success: false,
+        error: result?.message || "Failed to change password",
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error?.message || "Failed to change password",
+      };
     }
   };
 

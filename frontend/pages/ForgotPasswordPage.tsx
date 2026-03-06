@@ -1,12 +1,14 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { useToast } from "../hooks/useToast";
+import { useCustomerAuth } from "../context/CustomerAuthContext";
 
 const ForgotPasswordPage: React.FC = () => {
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const { addToast } = useToast();
+  const { requestPasswordReset } = useCustomerAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,34 +25,9 @@ const ForgotPasswordPage: React.FC = () => {
 
     setIsLoading(true);
     try {
-      // TODO: Replace with actual API call to /api/auth/customer/request-password-reset
-      // For now, we'll simulate the request
-      const response = await fetch(
-        "/api/auth/customer/request-password-reset",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ email }),
-        },
-      );
-
-      if (!response.ok) {
-        let message = "Failed to send reset email";
-        const contentType = (
-          response.headers.get("content-type") || ""
-        ).toLowerCase();
-        const raw = await response.text();
-        if (contentType.includes("application/json") && raw.trim()) {
-          try {
-            const parsed = JSON.parse(raw);
-            message = parsed?.message || parsed?.error || message;
-          } catch {
-            message = "Failed to send reset email";
-          }
-        }
-        addToast(message, "error");
+      const result = await requestPasswordReset(email);
+      if (!result.success) {
+        addToast(result.error || "Failed to send reset email", "error");
         return;
       }
 

@@ -472,6 +472,22 @@ class ApiClient {
       this.request<any>("/auth/customer/me", {
         method: "GET",
       }),
+    customerRequestPasswordReset: (email: string) =>
+      this.request<{ success: boolean; message?: string }>(
+        "/auth/customer/request-password-reset",
+        {
+          method: "POST",
+          body: JSON.stringify({ email }),
+        },
+      ),
+    customerChangePassword: (currentPassword: string, newPassword: string) =>
+      this.request<{ success: boolean; message?: string }>(
+        "/auth/customer/change-password",
+        {
+          method: "POST",
+          body: JSON.stringify({ currentPassword, newPassword }),
+        },
+      ),
   };
 
   // Generic CRUD helpers for other entities
