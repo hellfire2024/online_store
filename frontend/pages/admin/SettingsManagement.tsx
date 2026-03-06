@@ -209,6 +209,20 @@ const TermsEditor: React.FC<{
   );
 };
 
+// Format phone number as ###-###-####
+const formatPhoneNumber = (value: string): string => {
+  const cleaned = value.replace(/\D/g, "");
+  const limited = cleaned.slice(0, 10);
+
+  if (limited.length <= 3) {
+    return limited;
+  } else if (limited.length <= 6) {
+    return `${limited.slice(0, 3)}-${limited.slice(3)}`;
+  } else {
+    return `${limited.slice(0, 3)}-${limited.slice(3, 6)}-${limited.slice(6)}`;
+  }
+};
+
 const SettingsManagement: React.FC = () => {
   const { siteSettings, updateSiteSettings, uploadFavicon } = useSiteSettings();
   const { pages, menus, updateMenu } = usePages();
@@ -816,8 +830,17 @@ const SettingsManagement: React.FC = () => {
                     id="footerContactPhone"
                     name="footerContactPhone"
                     value={settings.footerConfig?.contactPhone || ""}
-                    onChange={handleInputChange}
-                    placeholder="(123) 456-7890"
+                    onChange={(e) => {
+                      const formatted = formatPhoneNumber(e.target.value);
+                      setSettings({
+                        ...settings,
+                        footerConfig: {
+                          ...settings.footerConfig!,
+                          contactPhone: formatted,
+                        },
+                      });
+                    }}
+                    placeholder="###-###-####"
                     className={inputClasses}
                   />
                 </div>
@@ -834,7 +857,7 @@ const SettingsManagement: React.FC = () => {
                     name="footerContactAddress"
                     value={settings.footerConfig?.contactAddress || ""}
                     onChange={handleInputChange}
-                    placeholder="123 Example St, City, State"
+                    placeholder="123 Main St, City, ST 12345"
                     className={inputClasses}
                   />
                 </div>
