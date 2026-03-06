@@ -3,11 +3,22 @@ import { useToast } from "../hooks/useToast";
 import { usePages } from "../context/PagesContext";
 import { ContactPageContent, ContactFormField } from "../types";
 import Spinner from "../components/Spinner";
+import { apiClient } from "../services/apiClient";
+
+// Format phone number to (###) ###-####
+const formatPhoneNumber = (value: string): string => {
+  const cleaned = value.replace(/\D/g, "");
+  if (cleaned.length === 0) return "";
+  if (cleaned.length <= 3) return cleaned;
+  if (cleaned.length <= 6) return `${cleaned.slice(0, 3)}-${cleaned.slice(3)}`;
+  return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(6, 10)}`;
+};
 
 const ContactPage: React.FC = () => {
   const { pages, isLoading } = usePages();
   const { addToast } = useToast();
   const [formData, setFormData] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const contactPage = pages.find((page) => page.pageType === "contact");
   const content = (contactPage?.contentData as ContactPageContent) || {
@@ -20,7 +31,13 @@ const ContactPage: React.FC = () => {
   };
 
   const handleChange = (fieldId: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [fieldId]: value }));
+    // Apply phone formatting if it's a phone field
+    const field = content.formFields.find((f) => f.id === fieldId);
+    let formattedValue = value;
+    if (field?.type === "phone") {
+      formattedValue = formatPhoneNumber(value);
+    }
+    setFormData((prev) => ({ ...prev, [fieldId]: formattedValue }));
   };
 
   const validateField = (
@@ -79,31 +96,61 @@ const ContactPage: React.FC = () => {
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
 
-    // Validate all required fields
-    const enabledFields = content.formFields.filter((f) => f.enabled);
-    for (const field of enabledFields) {
-      const error = validateField(field, formData[field.id] || "");
-      if (error) {
-        addToast(error, "error");
-        return;
+    try {
+      // Validate all required fields
+      const enabledFields = content.formFields.filter((f) => f.enabled);
+      for (const field of enabledFields) {
+        const error = validateField(field, formData[field.id] || "");
+        if (error) {
+          addToast(error, "error");
+          setIsSubmitting(false);
+          return;
+        }
       }
+
+      // Prepare contact form data
+      const contactData = {
+        firstName: formData.firstName || "",
+        lastName: formData.lastName || "",
+        email: formData.email || "",
+        phone: formData.phone || undefined,
+        subject: formData.subject || "No Subject",
+        message: formData.message || "",
+        targetEmail: content.targetEmail,
+      };
+
+      // Clean up undefined fields
+      Object.keys(contactData).forEach(
+        (key) =>
+          contactData[key as keyof typeof contactData] === undefined &&
+          delete contactData[key as keyof typeof contactData],
+      );
+
+      // Submit to backend
+      const response = await apiClient.contact.submit(contactData);
+
+      if (response.success) {
+        addToast(content.successMessage, "success");
+        setFormData({});
+      } else {
+        addToast(
+          response.message || "Failed to send message. Please try again.",
+          "error",
+        );
+      }
+    } catch (error) {
+      console.error("Contact form submission error:", error);
+      addToast(
+        "Failed to send message. Please try again later.",
+        "error",
+      );
+    } finally {
+      setIsSubmitting(false);
     }
-
-    // Simulate form submission
-    console.log("Form submission:", {
-      to: content.targetEmail,
-      subject: content.subjectTemplate.replace(
-        "{subject}",
-        formData.subject || "No Subject",
-      ),
-      data: formData,
-    });
-
-    addToast(content.successMessage, "success");
-    setFormData({});
   };
 
   if (isLoading) {
@@ -214,9 +261,10 @@ const ContactPage: React.FC = () => {
         <div>
           <button
             type="submit"
-            className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-sky-500 hover:bg-sky-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-sky-500"
+            disabled={isSubmitting}
+            className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-sky-500 hover:bg-sky-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-sky-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Send Message
+            {isSubmitting ? "Sending..." : "Send Message"}
           </button>
         </div>
       </form>

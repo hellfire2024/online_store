@@ -394,3 +394,81 @@ export async function sendTicketEmail(
     return { success: false, message: "Failed to send email", error };
   }
 }
+
+export async function sendContactFormEmail(
+  toEmail: string,
+  fromEmail: string,
+  firstName: string,
+  lastName: string,
+  subject: string,
+  message: string,
+  phone?: string,
+) {
+  try {
+    const transport = transporter || (await initializeTransporter());
+    if (!transport || !cachedConfig) {
+      console.log(
+        "Email service not available - skipping contact form email",
+      );
+      return { success: false, message: "Email service not configured" };
+    }
+
+    const html = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: #1e293b; color: #fff; padding: 20px; border-radius: 5px; margin-bottom: 20px; }
+          .contact-info { background: #f0f9ff; padding: 15px; border-radius: 5px; margin: 20px 0; }
+          .message-section { background: #f9fafb; padding: 15px; border-left: 4px solid #0ea5e9; margin: 20px 0; }
+          .divider { border-top: 1px solid #ddd; margin: 20px 0; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>New Contact Form Submission</h1>
+            <p>Message received from website contact form</p>
+          </div>
+          
+          <div class="contact-info">
+            <h2>Contact Information</h2>
+            <p><strong>Name:</strong> ${firstName} ${lastName}</p>
+            <p><strong>Email:</strong> <a href="mailto:${fromEmail}">${fromEmail}</a></p>
+            ${phone ? `<p><strong>Phone:</strong> ${phone}</p>` : ""}
+            <p><strong>Subject:</strong> ${subject}</p>
+            <p><strong>Date:</strong> ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}</p>
+          </div>
+
+          <div class="message-section">
+            <h3>Message:</h3>
+            <p>${message.replace(/\n/g, "<br>")}</p>
+          </div>
+
+          <div class="divider"></div>
+
+          <p style="color: #666; font-size: 12px;">
+            This email was automatically generated from the website contact form.
+          </p>
+        </div>
+      </body>
+    </html>
+    `;
+
+    const result = await transport.sendMail({
+      from: `${cachedConfig.from_name} <${cachedConfig.from_email}>`,
+      to: toEmail,
+      subject: `Website Contact: ${subject}`,
+      html,
+      replyTo: fromEmail,
+    });
+
+    console.log("Contact form email sent:", result);
+    return { success: true, message: "Email sent successfully" };
+  } catch (error) {
+    console.error("Error sending contact form email:", error);
+    return { success: false, message: "Failed to send email", error };
+  }
+}

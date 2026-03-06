@@ -570,6 +570,23 @@ class ApiClient {
         body: JSON.stringify(data),
       }),
   };
+
+  // Contact form submission
+  contact = {
+    submit: (data: {
+      firstName: string;
+      lastName: string;
+      email: string;
+      phone?: string;
+      subject: string;
+      message: string;
+      targetEmail?: string;
+    }) =>
+      this.request<any>("/contact", {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+  };
 }
 
 export const apiClient = new ApiClient(API_BASE_URL);

@@ -132,6 +132,7 @@ import ticketsApiRoutes from "./routes/ticketsApi.js";
 import customerAddressesRoutes from "./routes/customerAddresses.js";
 import shippingRoutes from "./routes/shippingApi.js";
 import uploadRoutes from "./routes/upload.js";
+import contactRoutes from "./routes/contact.js";
 import demoRoutes from "./demoRoutes.js";
 import smtpTestRoutes from "./routes/smtpTest.js";
 appendLog("✅ All routes imported successfully");
@@ -261,6 +262,7 @@ if (DEMO_MODE) {
   app.use("/api/customer-addresses", customerAddressesRoutes);
   app.use("/api/smtp-test", smtpTestRoutes);
   app.use("/api/shipping", shippingRoutes);
+  app.use("/api/contact", contactRoutes);
 }
 
 console.log("✅ All routes configured successfully");
