@@ -4,55 +4,129 @@ import { sendContactFormEmail } from "../services/emailService.js";
 const router = express.Router();
 
 interface ContactFormData {
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone?: string;
   subject: string;
-  message: string;
-  targetEmail: string;
+  fields: Array<{
+    id: string;
+    type: string;
+    label: string;
+    required: boolean;
+    value: string;
+  }>;
+  targetEmail?: string;
 }
+
+interface NormalizedContactField {
+  id: string;
+  type: string;
+  label: string;
+  required: boolean;
+  value: string;
+}
+
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const normalizeField = (
+  field: ContactFormData["fields"][number],
+): NormalizedContactField => ({
+  id: String(field.id || ""),
+  type: String(field.type || "text"),
+  label: String(field.label || field.id || "Field"),
+  required: Boolean(field.required),
+  value: String(field.value ?? "").trim(),
+});
+
+const findPrimaryEmail = (
+  fields: NormalizedContactField[],
+): string | undefined => {
+  const emailByType = fields.find(
+    (field) => field.type === "email" && emailRegex.test(field.value),
+  )?.value;
+  if (emailByType) {
+    return emailByType;
+  }
+
+  const emailByLabel = fields.find(
+    (field) =>
+      field.label.toLowerCase().includes("email") &&
+      emailRegex.test(field.value),
+  )?.value;
+
+  return emailByLabel;
+};
+
+const buildSenderName = (fields: NormalizedContactField[]): string => {
+  const fullName = fields.find((field) => field.type === "fullName")?.value;
+  if (fullName) {
+    return fullName;
+  }
+
+  const firstName = fields.find((field) => field.type === "firstName")?.value;
+  const lastName = fields.find((field) => field.type === "lastName")?.value;
+  const joinedName = [firstName, lastName].filter(Boolean).join(" ").trim();
+  if (joinedName) {
+    return joinedName;
+  }
+
+  const genericName = fields.find(
+    (field) => field.label.toLowerCase().includes("name") && field.value,
+  )?.value;
+
+  return genericName || "Website Visitor";
+};
 
 router.post("/", async (req: Request, res: Response) => {
   try {
-    const {
-      firstName,
-      lastName,
-      email,
-      phone,
-      subject,
-      message,
-      targetEmail,
-    }: ContactFormData = req.body;
+    const { subject, fields, targetEmail }: ContactFormData = req.body;
 
-    // Validate required fields
-    if (!firstName || !lastName || !email || !subject || !message) {
+    if (!subject || !String(subject).trim()) {
       res.status(400).json({
-        error: "Missing required fields",
-        required: ["firstName", "lastName", "email", "subject", "message"],
+        error: "Invalid form submission",
+        message: "Subject is required",
       });
       return;
     }
 
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      res.status(400).json({ error: "Invalid email format" });
+    if (!Array.isArray(fields) || fields.length === 0) {
+      res.status(400).json({
+        error: "Invalid form submission",
+        message: "No form fields were provided",
+      });
       return;
     }
 
-    // Determine target email - use provided targetEmail or default to admin
-    const contactEmail = targetEmail || process.env.CONTACT_EMAIL || "noreply@adaptivegis.com";
+    const normalizedFields = fields.map(normalizeField);
 
-    // Send email to the target address
+    const missingRequired = normalizedFields
+      .filter((field) => field.required && !field.value)
+      .map((field) => field.label);
+
+    if (missingRequired.length > 0) {
+      res.status(400).json({
+        error: "Missing required fields",
+        required: missingRequired,
+      });
+      return;
+    }
+
+    const senderEmail = findPrimaryEmail(normalizedFields);
+    if (!senderEmail) {
+      res.status(400).json({
+        error: "Invalid email format",
+        message: "A valid email field is required in the configured form",
+      });
+      return;
+    }
+
+    const senderName = buildSenderName(normalizedFields);
+    const contactEmail =
+      targetEmail || process.env.CONTACT_EMAIL || "noreply@adaptivegis.com";
+
     const emailResult = await sendContactFormEmail(
       contactEmail,
-      email,
-      firstName,
-      lastName,
+      senderEmail,
+      senderName,
       subject,
-      message,
-      phone,
+      normalizedFields,
     );
 
     if (!emailResult.success) {

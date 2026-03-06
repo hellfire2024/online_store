@@ -574,13 +574,15 @@ class ApiClient {
   // Contact form submission
   contact = {
     submit: (data: {
-      firstName: string;
-      lastName: string;
-      email: string;
-      phone?: string;
-      subject: string;
-      message: string;
       targetEmail?: string;
+      subject: string;
+      fields: Array<{
+        id: string;
+        type: string;
+        label: string;
+        required: boolean;
+        value: string;
+      }>;
     }) =>
       this.request<any>("/contact", {
         method: "POST",

@@ -104,7 +104,6 @@ async function initializeTransporter() {
   }
 }
 
-
 export async function sendOrderConfirmationEmail(
   customerEmail: string,
   customerName: string,
@@ -398,20 +397,47 @@ export async function sendTicketEmail(
 export async function sendContactFormEmail(
   toEmail: string,
   fromEmail: string,
-  firstName: string,
-  lastName: string,
+  senderName: string,
   subject: string,
-  message: string,
-  phone?: string,
+  fields: Array<{
+    id: string;
+    type: string;
+    label: string;
+    required: boolean;
+    value: string;
+  }>,
 ) {
   try {
     const transport = transporter || (await initializeTransporter());
     if (!transport || !cachedConfig) {
-      console.log(
-        "Email service not available - skipping contact form email",
-      );
+      console.log("Email service not available - skipping contact form email");
       return { success: false, message: "Email service not configured" };
     }
+
+    const escapeHtml = (value: string) =>
+      value
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+
+    const messageField =
+      fields.find(
+        (field) => field.type === "message" || field.type === "textarea",
+      ) || fields.find((field) => field.label.toLowerCase() === "message");
+
+    const detailsRows = fields
+      .filter((field) => field.value)
+      .filter((field) => field.id !== messageField?.id)
+      .map(
+        (field) => `
+            <tr>
+              <td style="padding: 8px; border-bottom: 1px solid #ddd; font-weight: bold; width: 35%;">${escapeHtml(field.label)}</td>
+              <td style="padding: 8px; border-bottom: 1px solid #ddd;">${escapeHtml(field.value).replace(/\n/g, "<br>")}</td>
+            </tr>`,
+      )
+      .join("");
 
     const html = `
     <!DOCTYPE html>
@@ -423,6 +449,7 @@ export async function sendContactFormEmail(
           .header { background: #1e293b; color: #fff; padding: 20px; border-radius: 5px; margin-bottom: 20px; }
           .contact-info { background: #f0f9ff; padding: 15px; border-radius: 5px; margin: 20px 0; }
           .message-section { background: #f9fafb; padding: 15px; border-left: 4px solid #0ea5e9; margin: 20px 0; }
+          table { width: 100%; border-collapse: collapse; }
           .divider { border-top: 1px solid #ddd; margin: 20px 0; }
         </style>
       </head>
@@ -435,17 +462,24 @@ export async function sendContactFormEmail(
           
           <div class="contact-info">
             <h2>Contact Information</h2>
-            <p><strong>Name:</strong> ${firstName} ${lastName}</p>
-            <p><strong>Email:</strong> <a href="mailto:${fromEmail}">${fromEmail}</a></p>
-            ${phone ? `<p><strong>Phone:</strong> ${phone}</p>` : ""}
-            <p><strong>Subject:</strong> ${subject}</p>
+            <p><strong>Name:</strong> ${escapeHtml(senderName)}</p>
+            <p><strong>Email:</strong> <a href="mailto:${escapeHtml(fromEmail)}">${escapeHtml(fromEmail)}</a></p>
+            <p><strong>Subject:</strong> ${escapeHtml(subject)}</p>
             <p><strong>Date:</strong> ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}</p>
           </div>
 
-          <div class="message-section">
-            <h3>Message:</h3>
-            <p>${message.replace(/\n/g, "<br>")}</p>
+          <div class="contact-info">
+            <h3>Submitted Fields</h3>
+            <table>
+              ${detailsRows || '<tr><td style="padding: 8px;">No additional fields provided.</td></tr>'}
+            </table>
           </div>
+
+          ${
+            messageField?.value
+              ? `<div class="message-section"><h3>Message:</h3><p>${escapeHtml(messageField.value).replace(/\n/g, "<br>")}</p></div>`
+              : ""
+          }
 
           <div class="divider"></div>
 

@@ -96,14 +96,18 @@ const ContactPage: React.FC = () => {
     });
   };
 
+  const visibleFields =
+    content.formFields?.filter(
+      (f) => f.enabled && evaluateConditionalRules(f),
+    ) || [];
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
 
     try {
-      // Validate all required fields
-      const enabledFields = content.formFields.filter((f) => f.enabled);
-      for (const field of enabledFields) {
+      // Validate only currently visible/enabled fields
+      for (const field of visibleFields) {
         const error = validateField(field, formData[field.id] || "");
         if (error) {
           addToast(error, "error");
@@ -112,23 +116,27 @@ const ContactPage: React.FC = () => {
         }
       }
 
-      // Prepare contact form data
-      const contactData = {
-        firstName: formData.firstName || "",
-        lastName: formData.lastName || "",
-        email: formData.email || "",
-        phone: formData.phone || undefined,
-        subject: formData.subject || "No Subject",
-        message: formData.message || "",
-        targetEmail: content.targetEmail,
-      };
+      const submissionFields = visibleFields.map((field) => ({
+        id: field.id,
+        type: field.type,
+        label: field.label,
+        required: field.required,
+        value: formData[field.id] || "",
+      }));
 
-      // Clean up undefined fields
-      Object.keys(contactData).forEach(
-        (key) =>
-          contactData[key as keyof typeof contactData] === undefined &&
-          delete contactData[key as keyof typeof contactData],
+      const subjectField = submissionFields.find(
+        (field) => field.type === "subject",
       );
+      const subjectValue = subjectField?.value?.trim() || "No Subject";
+      const resolvedSubject = content.subjectTemplate
+        ? content.subjectTemplate.replace("{subject}", subjectValue)
+        : `Contact Form: ${subjectValue}`;
+
+      const contactData = {
+        targetEmail: content.targetEmail,
+        subject: resolvedSubject,
+        fields: submissionFields,
+      };
 
       // Submit to backend
       const response = await apiClient.contact.submit(contactData);
@@ -144,10 +152,7 @@ const ContactPage: React.FC = () => {
       }
     } catch (error) {
       console.error("Contact form submission error:", error);
-      addToast(
-        "Failed to send message. Please try again later.",
-        "error",
-      );
+      addToast("Failed to send message. Please try again later.", "error");
     } finally {
       setIsSubmitting(false);
     }
@@ -161,10 +166,6 @@ const ContactPage: React.FC = () => {
     );
   }
 
-  const visibleFields =
-    content.formFields?.filter(
-      (f) => f.enabled && evaluateConditionalRules(f),
-    ) || [];
   const pageFont = content.pageFont;
   const pageTitleFont = content.pageTitleFont;
   const pageTitleColor = content.pageTitleColor;
