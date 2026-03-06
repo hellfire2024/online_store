@@ -189,6 +189,47 @@ app.use(
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
+// Image Download Prevention Middleware
+// Add headers to prevent image downloads and right-click saves
+app.use((req, res, next) => {
+  // Check if requesting an image
+  const imageExtensions = [
+    ".jpg",
+    ".jpeg",
+    ".png",
+    ".gif",
+    ".webp",
+    ".svg",
+  ];
+  const isImageRequest = imageExtensions.some((ext) =>
+    req.path.toLowerCase().endsWith(ext),
+  );
+
+  if (isImageRequest) {
+    // Prevent caching to ensure fresh request each time
+    res.set("Cache-Control", "no-cache, no-store, must-revalidate, private");
+    res.set("Pragma", "no-cache");
+    res.set("Expires", "0");
+
+    // Prevent inline viewing and downloading
+    res.set("Content-Disposition", "inline; filename=image");
+
+    // Prevent X-Frame-Options (though less relevant for images)
+    res.set("X-Frame-Options", "DENY");
+
+    // Disable MIME type sniffing
+    res.set("X-Content-Type-Options", "nosniff");
+
+    // Content Security Policy to prevent script execution in images
+    const csp = res.get("Content-Security-Policy") || "";
+    if (!csp.includes("img-src")) {
+      res.set("Content-Security-Policy", csp + "; img-src 'self' data:");
+    }
+  }
+
+  next();
+});
+
 // Serve static files from public directory
 app.use(express.static(path.join(process.cwd(), "public")));
 

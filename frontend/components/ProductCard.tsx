@@ -10,6 +10,16 @@ interface ProductCardProps {
 const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const watermarkText = "CustomThreads";
 
+  // Prevent image download
+  const handleImageContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    return false;
+  };
+
+  const handleImageDragStart = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
   return (
     <div className="bg-slate-800 rounded-lg overflow-hidden group transition-all duration-300 hover:shadow-2xl hover:shadow-sky-900/50 hover:-translate-y-1 border border-slate-700 hover:border-sky-500">
       <Link to={`/product/${generateSlug(product.name)}`}>
@@ -17,7 +27,10 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           <img
             src={product.imageUrl}
             alt={product.name}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 select-none pointer-events-none"
+            onContextMenu={handleImageContextMenu}
+            onDragStart={handleImageDragStart}
+            draggable={false}
           />
           <div className="absolute inset-0 pointer-events-none select-none">
             <div

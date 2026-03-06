@@ -51,6 +51,16 @@ const ProductDetailPage: React.FC = () => {
     [listId: string]: string[];
   }>({});
 
+  // Prevent image download
+  const handleImageContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    return false;
+  };
+
+  const handleImageDragStart = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
   useEffect(() => {
     if (!product?.allowCustomImageUpload && activeTab === "upload") {
       setActiveTab("gallery");
@@ -214,7 +224,10 @@ const ProductDetailPage: React.FC = () => {
             <img
               src={img.imageUrl}
               alt={img.name}
-              className="w-full h-full object-cover pointer-events-none"
+              className="w-full h-full object-cover select-none pointer-events-none"
+              onContextMenu={handleImageContextMenu}
+              onDragStart={handleImageDragStart}
+              draggable={false}
             />
             <div
               className="absolute inset-0 pointer-events-none select-none opacity-30 flex items-center justify-center"
@@ -303,7 +316,10 @@ const ProductDetailPage: React.FC = () => {
           <img
             src={product.imageUrl}
             alt={product.name}
-            className="max-w-full max-h-full object-contain"
+            className="max-w-full max-h-full object-contain select-none pointer-events-none"
+            onContextMenu={handleImageContextMenu}
+            onDragStart={handleImageDragStart}
+            draggable={false}
           />
           <div
             className="absolute inset-0 pointer-events-none select-none opacity-30 flex items-center justify-center"

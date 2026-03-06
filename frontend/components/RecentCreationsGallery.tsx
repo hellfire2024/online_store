@@ -44,6 +44,16 @@ const RecentCreationsGallery: React.FC<RecentCreationsGalleryProps> = ({
     setCurrentIndex((prev) => (prev + 1) % galleryImages.length);
   };
 
+  // Prevent image download
+  const handleImageContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    return false;
+  };
+
+  const handleImageDragStart = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
   return (
     <div className="py-16 bg-linear-to-b from-slate-900 to-slate-800">
       <div className="max-w-6xl mx-auto px-4">
@@ -59,7 +69,10 @@ const RecentCreationsGallery: React.FC<RecentCreationsGalleryProps> = ({
               key={currentImage.id}
               src={currentImage.imageUrl}
               alt={currentImage.name}
-              className="w-full h-full object-cover transition-opacity duration-500"
+              className="w-full h-full object-cover transition-opacity duration-500 select-none pointer-events-none"
+              onContextMenu={handleImageContextMenu}
+              onDragStart={handleImageDragStart}
+              draggable={false}
             />
           </div>
 
@@ -125,7 +138,10 @@ const RecentCreationsGallery: React.FC<RecentCreationsGalleryProps> = ({
               <img
                 src={img.imageUrl}
                 alt={img.name}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover select-none pointer-events-none"
+                onContextMenu={handleImageContextMenu}
+                onDragStart={handleImageDragStart}
+                draggable={false}
               />
             </button>
           ))}
