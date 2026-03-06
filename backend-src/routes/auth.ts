@@ -412,9 +412,29 @@ router.get(
           isDefault: !!addr.is_default,
         }));
 
-        const emailPreferences = customer.email_preferences
-          ? JSON.parse(customer.email_preferences as string)
-          : { marketing: false, orderUpdates: true, announcements: false };
+        const defaultEmailPreferences = {
+          marketing: false,
+          orderUpdates: true,
+          announcements: false,
+        };
+
+        let emailPreferences = defaultEmailPreferences;
+        if (customer.email_preferences) {
+          try {
+            if (typeof customer.email_preferences === "string") {
+              emailPreferences = JSON.parse(customer.email_preferences);
+            } else if (typeof customer.email_preferences === "object") {
+              emailPreferences =
+                customer.email_preferences as typeof defaultEmailPreferences;
+            }
+          } catch (prefError) {
+            console.warn(
+              "[Auth] Failed to parse customer email preferences, using defaults:",
+              prefError,
+            );
+            emailPreferences = defaultEmailPreferences;
+          }
+        }
 
         console.log("[Auth] Successfully fetched customer:", customer.id);
         return res.json({

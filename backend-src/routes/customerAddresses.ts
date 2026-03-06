@@ -15,7 +15,6 @@ interface AddressRow extends RowDataPacket {
   last_name: string;
   full_name: string;
   street_address: string;
-  street_2?: string;
   city: string;
   state: string;
   zip_code: string;
@@ -32,7 +31,7 @@ router.get("/:customerId", async (req: Request, res: Response) => {
     const { customerId } = req.params;
 
     const [addresses] = await pool.query<AddressRow[]>(
-      `SELECT id, type, first_name, last_name, full_name, street_address, street_2, city, state, zip_code, 
+      `SELECT id, type, first_name, last_name, full_name, street_address, city, state, zip_code, 
               country, phone, is_default FROM customer_addresses WHERE customer_id = ? ORDER BY created_at DESC`,
       [customerId],
     );
@@ -44,7 +43,7 @@ router.get("/:customerId", async (req: Request, res: Response) => {
       lastName: addr.last_name,
       fullName: addr.full_name,
       street1: addr.street_address,
-      street2: addr.street_2 || "",
+      street2: "",
       city: addr.city,
       state: addr.state,
       zip: addr.zip_code,
@@ -120,8 +119,8 @@ router.post(
 
       await pool.query(
         `INSERT INTO customer_addresses 
-         (id, customer_id, type, first_name, last_name, full_name, street_address, street_2, city, state, zip_code, country, phone, is_default)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         (id, customer_id, type, first_name, last_name, full_name, street_address, city, state, zip_code, country, phone, is_default)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           id,
           customerId,
@@ -130,7 +129,6 @@ router.post(
           lastName,
           fullName,
           street1,
-          street2 || null,
           city,
           state,
           zip,
@@ -227,7 +225,7 @@ router.put(
 
       const [result] = await pool.query<ResultSetHeader>(
         `UPDATE customer_addresses 
-         SET type = ?, first_name = ?, last_name = ?, full_name = ?, street_address = ?, street_2 = ?, city = ?, state = ?, zip_code = ?, country = ?, phone = ?, is_default = ?
+         SET type = ?, first_name = ?, last_name = ?, full_name = ?, street_address = ?, city = ?, state = ?, zip_code = ?, country = ?, phone = ?, is_default = ?
          WHERE id = ? AND customer_id = ?`,
         [
           type,
@@ -235,7 +233,6 @@ router.put(
           lastName,
           fullName,
           street1,
-          street2 || null,
           city,
           state,
           zip,
