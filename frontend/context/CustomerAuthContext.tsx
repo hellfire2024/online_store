@@ -92,12 +92,29 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
       try {
         const storedToken = localStorage.getItem("auth_token");
         const storedCustomer = localStorage.getItem("customer");
+        let hasHydratedStoredCustomer = false;
 
         console.log("[Auth] Stored token exists:", !!storedToken);
         console.log("[Auth] Token length:", storedToken?.length || 0);
         console.log("[Auth] Stored customer exists:", !!storedCustomer);
 
         if (storedToken) {
+          // Optimistically hydrate from localStorage first to preserve session UX on refresh
+          if (storedCustomer) {
+            try {
+              const parsedCustomer = JSON.parse(storedCustomer);
+              const mappedStoredCustomer = mapCustomer(parsedCustomer);
+              setCustomer(mappedStoredCustomer);
+              hasHydratedStoredCustomer = true;
+              console.log("[Auth] Hydrated customer from localStorage");
+            } catch (parseError) {
+              console.warn(
+                "[Auth] Failed to parse stored customer:",
+                parseError,
+              );
+            }
+          }
+
           // Set token in API client for authenticated requests
           console.log("[Auth] Setting token in API client...");
           apiClient.setToken(storedToken);
@@ -140,19 +157,26 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
               localStorage.removeItem("auth_token");
               localStorage.removeItem("customer");
               apiClient.setToken(null);
+              setCustomer(null);
             } else {
               console.log(
                 "[Auth] Keeping token - error might be temporary:",
                 validateError?.message,
               );
-              // Keep the token, but don't set customer state - user can try logging in again
+              // Keep token and any hydrated customer state for transient errors
+              if (!hasHydratedStoredCustomer) {
+                console.log(
+                  "[Auth] No stored customer to hydrate; leaving current auth state unchanged",
+                );
+              }
+              return;
             }
           }
         } else {
           console.log("[Auth] No stored token found");
         }
 
-        // No valid token found
+        // No valid session found
         console.log("[Auth] No valid session, user logged out");
         setCustomer(null);
       } finally {

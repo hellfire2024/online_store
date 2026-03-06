@@ -66,7 +66,8 @@ const WatermarkedOrderImage: React.FC<{ src: string }> = ({ src }) => {
 };
 
 const CustomerOrdersPage: React.FC = () => {
-  const { customer, isAuthenticated, fetchOrders } = useCustomerAuth();
+  const { customer, isAuthenticated, isLoading, fetchOrders } =
+    useCustomerAuth();
   const navigate = useNavigate();
   const { addToast } = useToast();
   const { siteSettings } = useSiteSettings();
@@ -83,12 +84,16 @@ const CustomerOrdersPage: React.FC = () => {
   const [sortBy, setSortBy] = useState<string>("date-desc");
 
   useEffect(() => {
+    if (isLoading) {
+      return;
+    }
+
     if (!isAuthenticated) {
       navigate("/login");
       return;
     }
     fetchOrders();
-  }, [isAuthenticated, navigate, fetchOrders]);
+  }, [isAuthenticated, isLoading, navigate, fetchOrders]);
 
   if (!customer) {
     return (
