@@ -148,12 +148,12 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
               "[Auth] Token validation failed:",
               validateError?.message || validateError,
             );
-            // Only clear token on 401 (unauthorized) - keep token for other errors (network issues, etc.)
-            if (
-              validateError?.status === 401 ||
-              validateError?.response?.status === 401
-            ) {
-              console.log("[Auth] Token is invalid (401), clearing session");
+            // Clear token on 401 (unauthorized) or 403 (forbidden - invalid/malformed token)
+            const status = validateError?.status || validateError?.response?.status;
+            if (status === 401 || status === 403) {
+              console.log(
+                `[Auth] Token is invalid (${status}), clearing session`,
+              );
               localStorage.removeItem("auth_token");
               localStorage.removeItem("customer");
               apiClient.setToken(null);

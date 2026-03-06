@@ -24,14 +24,18 @@ export function getAuthUser(req: Request): AuthUser | null {
 
   try {
     const decoded = jwt.verify(token, secret) as any;
-    if (!decoded?.id || !decoded?.type) {
+    if (!decoded?.id) {
       return null;
     }
+
+    // Backward compatibility: tokens without type field default to "customer"
+    // This allows older tokens to still work
+    const type = decoded.type || "customer";
 
     return {
       id: decoded.id,
       email: decoded.email,
-      type: decoded.type,
+      type: type as "admin" | "customer",
       role: decoded.role,
       permissions: decoded.permissions,
     };
@@ -59,7 +63,13 @@ export function requireCustomer(
     return res.status(401).json({ error: "Unauthorized" });
   }
   if (user.type !== "customer") {
-    return res.status(403).json({ error: "Forbidden" });
+    console.log(
+      `[Auth] Customer endpoint accessed with ${user.type} token (user: ${user.id})`,
+    );
+    return res.status(403).json({
+      error: "Forbidden",
+      message: "This endpoint requires a customer token, but an admin token was provided",
+    });
   }
   (req as AuthenticatedRequest).authUser = user;
   return next();
@@ -71,7 +81,13 @@ export function requireAdmin(req: Request, res: Response, next: NextFunction) {
     return res.status(401).json({ error: "Unauthorized" });
   }
   if (user.type !== "admin") {
-    return res.status(403).json({ error: "Forbidden" });
+    console.log(
+      `[Auth] Admin endpoint accessed with ${user.type} token (user: ${user.id})`,
+    );
+    return res.status(403).json({
+      error: "Forbidden",
+      message: "This endpoint requires an admin token, but a customer token was provided",
+    });
   }
   (req as AuthenticatedRequest).authUser = user;
   return next();
