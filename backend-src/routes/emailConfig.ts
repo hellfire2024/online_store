@@ -253,6 +253,9 @@ router.post("/test", async (req: Request, res: Response) => {
           });
         }
 
+        console.log("[Email Test] Password successfully retrieved/decrypted");
+        console.log(`[Email Test] Using auth - username: ${smtpUsername}, password length: ${password.length}`);
+        
         // Check if running on Render or similar PaaS that blocks SMTP
         const isRender =
           process.env.RENDER === "true" ||
@@ -308,11 +311,25 @@ router.post("/test", async (req: Request, res: Response) => {
           socketTimeout: 30000,
           logger: true, // Enable debug logging
           debug: true, // Show SMTP traffic in logs
+          tls: {
+            // Don't fail on self-signed certs in development
+            rejectUnauthorized: process.env.NODE_ENV === 'production',
+            minVersion: 'TLSv1.2',
+          },
         });
 
-        console.log("[Email Test] Verifying SMTP connection...");
-        await transporter.verify();
-        console.log("[Email Test] SMTP connection verified - sending test email");
+        console.log("[Email Test] Transporter created, verifying SMTP connection...");
+        
+        try {
+          await transporter.verify();
+          console.log("[Email Test] ✓ SMTP connection verified successfully");
+        } catch (verifyError: any) {
+          console.error("[Email Test] ✗ Verification failed:", verifyError.message);
+          throw verifyError; // Re-throw so it's caught by outer catch
+        }
+        
+        console.log("[Email Test] Sending test email...");
+
 
         const fromEmail = config.fromEmail || config.from_email;
         const fromName = config.fromName || config.from_name;
@@ -403,6 +420,12 @@ router.post("/test", async (req: Request, res: Response) => {
       } else if (errorMessage.includes("self signed certificate")) {
         errorMessage = "SSL certificate error - server certificate cannot be verified.";
         helpfulTips = "This usually happens with self-hosted mail servers. Consider using a service like SendGrid or Mailgun for production.";
+      } else if (errorMessage.includes("Connection closed") || emailError.code === "ECONNRESET") {
+        errorMessage = "Connection closed by server - likely SSL/TLS mismatch.";
+        helpfulTips = "For Zoho: Port 465 requires 'Use TLS/SSL' checkbox CHECKED. Port 587 requires it UNCHECKED. Double-check your port and SSL settings match.";
+      } else if (errorMessage.includes("certificate") || errorMessage.includes("TLS") || errorMessage.includes("SSL")) {
+        errorMessage = "SSL/TLS negotiation failed.";
+        helpfulTips = "Check that 'Use TLS/SSL' checkbox matches your port: Port 465 = checked (SSL), Port 587 = unchecked (STARTTLS).";
       }
 
       return res.status(500).json({
@@ -413,11 +436,15 @@ router.post("/test", async (req: Request, res: Response) => {
         help: helpfulTips,
       });
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error("[Email Test] Unexpected error:", error);
-    return res
-      .status(500)
-      .json({ error: "Failed to test email configuration" });
+    console.error("[Email Test] Error stack:", error.stack);
+    return res.status(500).json({ 
+      success: false,
+      error: "Failed to test email configuration",
+      details: error?.message || String(error),
+      help: "Check server logs for more details. Ensure email configuration is saved before testing."
+    });
   }
 });
 
