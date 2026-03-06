@@ -68,7 +68,8 @@ export function requireCustomer(
     );
     return res.status(403).json({
       error: "Forbidden",
-      message: "This endpoint requires a customer token, but an admin token was provided",
+      message:
+        "This endpoint requires a customer token, but an admin token was provided",
     });
   }
   (req as AuthenticatedRequest).authUser = user;
@@ -86,7 +87,8 @@ export function requireAdmin(req: Request, res: Response, next: NextFunction) {
     );
     return res.status(403).json({
       error: "Forbidden",
-      message: "This endpoint requires an admin token, but a customer token was provided",
+      message:
+        "This endpoint requires an admin token, but a customer token was provided",
     });
   }
   (req as AuthenticatedRequest).authUser = user;

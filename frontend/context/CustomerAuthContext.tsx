@@ -149,7 +149,8 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
               validateError?.message || validateError,
             );
             // Clear token on 401 (unauthorized) or 403 (forbidden - invalid/malformed token)
-            const status = validateError?.status || validateError?.response?.status;
+            const status =
+              validateError?.status || validateError?.response?.status;
             if (status === 401 || status === 403) {
               console.log(
                 `[Auth] Token is invalid (${status}), clearing session`,
