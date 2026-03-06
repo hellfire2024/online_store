@@ -603,11 +603,25 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
     }
   };
 
-  const resetPassword = async (_token: string, _newPassword: string) => {
-    return {
-      success: false,
-      error: "Password reset by token is not implemented yet",
-    };
+  const resetPassword = async (token: string, newPassword: string) => {
+    try {
+      const result = await apiClient.auth.customerResetPassword(
+        token,
+        newPassword,
+      );
+      if (result?.success) {
+        return { success: true };
+      }
+      return {
+        success: false,
+        error: result?.message || "Failed to reset password",
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error?.message || "Failed to reset password",
+      };
+    }
   };
 
   const changePassword = async (
