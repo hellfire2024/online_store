@@ -5,7 +5,11 @@ import { body, validationResult } from "express-validator";
 import { pool } from "../db/connection.js";
 import { RowDataPacket } from "mysql2";
 import crypto from "crypto";
-import { requireCustomer, requireAdmin, AuthenticatedRequest } from "../middleware/auth.js";
+import {
+  requireCustomer,
+  requireAdmin,
+  AuthenticatedRequest,
+} from "../middleware/auth.js";
 import { sendPasswordResetEmail } from "../services/emailService.js";
 
 const router = Router();
@@ -360,7 +364,7 @@ router.post(
 
       // Build reset URL
       const resetUrl = `${process.env.FRONTEND_URL || "http://localhost:5173"}/#/reset-password?token=${resetToken}`;
-      
+
       // Send password reset email
       const emailResult = await sendPasswordResetEmail(
         customer.email,
@@ -504,10 +508,10 @@ router.post(
       const passwordHash = await bcrypt.hash(newPassword, 10);
 
       // Update customer password
-      await pool.query(
-        "UPDATE customers SET password_hash = ? WHERE id = ?",
-        [passwordHash, resetToken.customer_id],
-      );
+      await pool.query("UPDATE customers SET password_hash = ? WHERE id = ?", [
+        passwordHash,
+        resetToken.customer_id,
+      ]);
 
       // Mark token as used
       await pool.query(

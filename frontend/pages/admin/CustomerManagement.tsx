@@ -421,7 +421,7 @@ const CustomerManagement: React.FC = () => {
     try {
       let successCount = 0;
       let failCount = 0;
-      
+
       // Send password reset emails for all selected customers
       const promises = Array.from(selectedIds).map(async (customerId) => {
         try {
@@ -435,23 +435,20 @@ const CustomerManagement: React.FC = () => {
           failCount++;
         }
       });
-      
+
       await Promise.all(promises);
-      
+
       if (successCount > 0 && failCount === 0) {
         addToast(
           `Password reset emails sent to ${successCount} customer${successCount > 1 ? "s" : ""}`,
           "success",
         );
       } else if (successCount > 0 && failCount > 0) {
-        addToast(
-          `Sent ${successCount} emails, ${failCount} failed`,
-          "warning",
-        );
+        addToast(`Sent ${successCount} emails, ${failCount} failed`, "warning");
       } else {
         addToast("Failed to send password reset emails", "error");
       }
-      
+
       clearSelection();
     } catch (error) {
       addToast(

@@ -588,7 +588,9 @@ export async function sendPasswordResetEmail(
     `;
 
     const result = await transport.sendMail({
-      from: cachedConfig ? `${cachedConfig.from_name} <${cachedConfig.from_email}>` : 'noreply@onlinestore.com',
+      from: cachedConfig
+        ? `${cachedConfig.from_name} <${cachedConfig.from_email}>`
+        : "noreply@onlinestore.com",
       to: customerEmail,
       subject: "Password Reset Request",
       html,
@@ -598,6 +600,10 @@ export async function sendPasswordResetEmail(
     return { success: true, message: "Password reset email sent successfully" };
   } catch (error) {
     console.error("Error sending password reset email:", error);
-    return { success: false, message: "Failed to send password reset email", error };
+    return {
+      success: false,
+      message: "Failed to send password reset email",
+      error,
+    };
   }
 }

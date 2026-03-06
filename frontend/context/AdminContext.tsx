@@ -243,9 +243,9 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({
       const result = await apiClient.auth.adminSendPasswordReset(customerId);
       return { success: true, message: result.message };
     } catch (error: any) {
-      return { 
-        success: false, 
-        error: error.message || "Failed to send password reset email" 
+      return {
+        success: false,
+        error: error.message || "Failed to send password reset email",
       };
     }
   };
@@ -267,9 +267,9 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({
       await fetchCustomers();
       return { success: true };
     } catch (error: any) {
-      return { 
-        success: false, 
-        error: error.message || "Failed to update address" 
+      return {
+        success: false,
+        error: error.message || "Failed to update address",
       };
     }
   };
@@ -286,9 +286,9 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({
       await fetchCustomers();
       return { success: true };
     } catch (error: any) {
-      return { 
-        success: false, 
-        error: error.message || "Failed to update email preferences" 
+      return {
+        success: false,
+        error: error.message || "Failed to update email preferences",
       };
     }
   };
@@ -300,9 +300,9 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({
       await fetchCustomers();
       return { success: true };
     } catch (error: any) {
-      return { 
-        success: false, 
-        error: error.message || "Failed to deactivate customer" 
+      return {
+        success: false,
+        error: error.message || "Failed to deactivate customer",
       };
     }
   };
@@ -314,9 +314,9 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({
       await fetchCustomers();
       return { success: true };
     } catch (error: any) {
-      return { 
-        success: false, 
-        error: error.message || "Failed to reactivate customer" 
+      return {
+        success: false,
+        error: error.message || "Failed to reactivate customer",
       };
     }
   };

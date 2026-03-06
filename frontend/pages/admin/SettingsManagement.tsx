@@ -2639,6 +2639,20 @@ const SettingsManagement: React.FC = () => {
                   SMTP Configuration
                 </h3>
 
+                <div className="bg-blue-900 bg-opacity-30 border border-blue-700 rounded-lg p-3 mb-4">
+                  <p className="text-blue-200 text-sm mb-2">
+                    <strong>📧 Common SMTP Providers:</strong>
+                  </p>
+                  <ul className="text-blue-200 text-sm space-y-1 ml-4">
+                    <li><strong>Zoho:</strong> smtp.zoho.com | Port 465 (SSL ✓) or 587 (SSL ✗)</li>
+                    <li><strong>Gmail:</strong> smtp.gmail.com | Port 465 (SSL ✓) or 587 (SSL ✗)</li>
+                    <li><strong>Outlook:</strong> smtp-mail.outlook.com | Port 587 (SSL ✗)</li>
+                  </ul>
+                  <p className="text-blue-200 text-xs mt-2">
+                    <strong>Note:</strong> Many cloud platforms block SMTP. If testing fails with timeout, use SendGrid or Mailgun instead.
+                  </p>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-gray-300 text-sm font-bold mb-2">
@@ -2652,9 +2666,12 @@ const SettingsManagement: React.FC = () => {
                         newSettings.emailConfig!.smtpHost = e.target.value;
                         setSettings(newSettings);
                       }}
-                      placeholder="smtp.gmail.com"
+                      placeholder="smtp.zoho.com"
                       className={inputClasses}
                     />
+                    <p className="text-xs text-gray-400 mt-1">
+                      E.g., smtp.zoho.com, smtp.gmail.com
+                    </p>
                   </div>
 
                   <div>
@@ -2674,6 +2691,9 @@ const SettingsManagement: React.FC = () => {
                       placeholder="587"
                       className={inputClasses}
                     />
+                    <p className="text-xs text-gray-400 mt-1">
+                      465 (SSL) or 587 (TLS)
+                    </p>
                   </div>
                 </div>
 
@@ -2707,9 +2727,12 @@ const SettingsManagement: React.FC = () => {
                         newSettings.emailConfig!.smtpUsername = e.target.value;
                         setSettings(newSettings);
                       }}
-                      placeholder="your-email@gmail.com"
+                      placeholder="your-email@zoho.com"
                       className={inputClasses}
                     />
+                    <p className="text-xs text-gray-400 mt-1">
+                      Usually your full email address
+                    </p>
                   </div>
 
                   <div>
@@ -2740,6 +2763,22 @@ const SettingsManagement: React.FC = () => {
                   SendGrid Configuration
                 </h3>
 
+                <div className="bg-green-900 bg-opacity-30 border border-green-700 rounded-lg p-3 mb-4">
+                  <p className="text-green-200 text-sm">
+                    <strong>✓ Cloud-Friendly:</strong> SendGrid works on all
+                    platforms. Get a free API key at{" "}
+                    <a
+                      href="https://sendgrid.com"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline hover:text-green-100"
+                    >
+                      sendgrid.com
+                    </a>{" "}
+                    (100 free emails/day)
+                  </p>
+                </div>
+
                 <div>
                   <label className="block text-gray-300 text-sm font-bold mb-2">
                     SendGrid API Key *
@@ -2766,6 +2805,22 @@ const SettingsManagement: React.FC = () => {
                 <h3 className="text-lg font-semibold text-white">
                   Mailgun Configuration
                 </h3>
+
+                <div className="bg-green-900 bg-opacity-30 border border-green-700 rounded-lg p-3 mb-4">
+                  <p className="text-green-200 text-sm">
+                    <strong>✓ Cloud-Friendly:</strong> Mailgun works on all
+                    platforms. Get your domain and API key at{" "}
+                    <a
+                      href="https://mailgun.com"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline hover:text-green-100"
+                    >
+                      mailgun.com
+                    </a>{" "}
+                    (5,000 free emails/month)
+                  </p>
+                </div>
 
                 <div>
                   <label className="block text-gray-300 text-sm font-bold mb-2">
@@ -2894,15 +2949,29 @@ const SettingsManagement: React.FC = () => {
                         setTestEmailAddress("");
                       } else {
                         const errorDetail =
-                          result?.details ||
                           result?.error ||
+                          result?.details ||
                           result?.message ||
                           "Unknown error";
                         console.error("Test failed with details:", errorDetail);
+                        console.error("Full error response:", result);
+                        
+                        // Show the main error
                         addToast(
-                          `Failed to test email: ${errorDetail}`,
+                          errorDetail,
                           "error",
                         );
+                        
+                        // If there's a helpful tip, show it in a second toast
+                        if (result?.help) {
+                          setTimeout(() => {
+                            addToast(
+                              `💡 ${result.help}`,
+                              "info",
+                              10000, // Show for 10 seconds
+                            );
+                          }, 500);
+                        }
                       }
                     } catch (error) {
                       console.error("Test email error:", error);

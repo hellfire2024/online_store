@@ -284,16 +284,30 @@ router.post("/test", async (req: Request, res: Response) => {
         console.log(
           `[Email Test] Creating SMTP transporter for ${smtpHost}:${smtpPort}`,
         );
+        console.log(`[Email Test] Secure connection: ${config.smtpSecure || config.smtp_secure || false}`);
+        console.log(`[Email Test] Username: ${smtpUsername}`);
+        
+        // Validate port and secure flag match common SMTP configurations
+        const smtpSecure = config.smtpSecure || config.smtp_secure || false;
+        if (smtpPort === 465 && !smtpSecure) {
+          console.warn("[Email Test] WARNING: Port 465 usually requires secure=true (SSL)");
+        } else if (smtpPort === 587 && smtpSecure) {
+          console.warn("[Email Test] WARNING: Port 587 usually requires secure=false (STARTTLS)");
+        }
+        
         const transporter = nodemailer.default.createTransport({
           host: smtpHost,
           port: smtpPort,
-          secure: config.smtpSecure || config.smtp_secure || false,
+          secure: smtpSecure,
           auth: {
             user: smtpUsername,
             pass: password,
           },
-          connectionTimeout: 10000,
-          socketTimeout: 10000,
+          connectionTimeout: 30000, // 30 seconds for slow networks
+          greetingTimeout: 30000,
+          socketTimeout: 30000,
+          logger: true, // Enable debug logging
+          debug: true, // Show SMTP traffic in logs
         });
 
         console.log("[Email Test] Verifying SMTP connection...");
@@ -360,24 +374,35 @@ router.post("/test", async (req: Request, res: Response) => {
       });
     } catch (emailError: any) {
       console.error("[Email Test] Error:", emailError);
+      console.error("[Email Test] Error code:", emailError.code);
+      console.error("[Email Test] Error message:", emailError.message);
 
       let errorMessage = emailError.message || "Unknown error";
+      let helpfulTips = "";
 
       if (emailError.code === "ECONNREFUSED") {
         errorMessage =
           "Connection refused - SMTP server is not reachable. Check host and port.";
+        helpfulTips = "Common ports: 465 (SSL), 587 (TLS), 25 (unencrypted). For Zoho: use smtp.zoho.com with port 465 (SSL) or 587 (TLS).";
       } else if (emailError.code === "ETIMEDOUT") {
         errorMessage =
-          "Connection timeout - SMTP server is not responding. If on Render/Heroku/similar PaaS, they block SMTP. Use SendGrid or Mailgun instead.";
+          "Connection timeout - SMTP server is not responding.";
+        helpfulTips = "For Zoho: use smtp.zoho.com (or smtp.zoho.eu for EU). Port 465 needs 'Use TLS/SSL' checked, port 587 needs it unchecked. Check firewall settings and ensure IMAP/POP is enabled in Zoho settings.";
       } else if (emailError.code === "ENOTFOUND") {
         errorMessage =
           "SMTP host not found. Check your SMTP host configuration.";
+        helpfulTips = "For Zoho: smtp.zoho.com (US) or smtp.zoho.eu (Europe). For Gmail: smtp.gmail.com. For Outlook: smtp-mail.outlook.com";
       } else if (
         errorMessage.includes("Invalid login") ||
-        errorMessage.includes("Authentication failed")
+        errorMessage.includes("Authentication failed") ||
+        emailError.code === "EAUTH"
       ) {
         errorMessage =
           "Authentication failed - check your SMTP username and password.";
+        helpfulTips = "For Zoho: Use your full email address as username. You may need to enable IMAP in Zoho Mail settings or create an app-specific password.";
+      } else if (errorMessage.includes("self signed certificate")) {
+        errorMessage = "SSL certificate error - server certificate cannot be verified.";
+        helpfulTips = "This usually happens with self-hosted mail servers. Consider using a service like SendGrid or Mailgun for production.";
       }
 
       return res.status(500).json({
@@ -385,6 +410,7 @@ router.post("/test", async (req: Request, res: Response) => {
         error: `Failed to test email configuration: ${errorMessage}`,
         details: emailError.message,
         code: emailError.code,
+        help: helpfulTips,
       });
     }
   } catch (error) {
