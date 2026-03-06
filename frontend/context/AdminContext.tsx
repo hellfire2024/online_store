@@ -77,7 +77,7 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({
           console.log("[Admin] Admin token found, clearing customer session");
           localStorage.removeItem("auth_token");
           localStorage.removeItem("customer");
-          
+
           setAdminUser(JSON.parse(storedAdmin));
           if (storedToken) {
             apiClient.setToken(storedToken);
@@ -139,12 +139,12 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({
           lastLogin: new Date().toISOString(),
           isActive: response.admin.isActive,
         };
-        
+
         // Clear customer session when admin logs in
         console.log("[Admin] Clearing customer session for admin login");
         localStorage.removeItem("auth_token");
         localStorage.removeItem("customer");
-        
+
         setAdminUser(updatedUser);
         localStorage.setItem("adminToken", response.token);
         localStorage.setItem("adminUser", JSON.stringify(updatedUser));
@@ -162,12 +162,12 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({
               ...mockUser,
               lastLogin: new Date().toISOString(),
             };
-            
+
             // Clear customer session when admin logs in (mock login too)
             console.log("[Admin] Clearing customer session for admin login");
             localStorage.removeItem("auth_token");
             localStorage.removeItem("customer");
-            
+
             setAdminUser(updatedUser);
             localStorage.setItem("adminUser", JSON.stringify(updatedUser));
             localStorage.setItem("adminToken", "mock-token");
