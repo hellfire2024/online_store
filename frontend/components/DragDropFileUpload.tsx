@@ -27,6 +27,12 @@ const DragDropFileUpload: React.FC<DragDropFileUploadProps> = ({
 	const [isDragging, setIsDragging] = useState(false);
 	const [fileName, setFileName] = useState<string>("");
 	const [fileError, setFileError] = useState<string>("");
+	const [imageLoadError, setImageLoadError] = useState(false);
+
+	// Reset image load error when preview URL changes
+	React.useEffect(() => {
+		setImageLoadError(false);
+	}, [previewUrl]);
 
 	const validateFile = (file: File): boolean => {
 		setFileError("");
@@ -92,14 +98,20 @@ const DragDropFileUpload: React.FC<DragDropFileUploadProps> = ({
 			</button>
 			{fileName && <div className="text-sm text-gray-600">Selected: {fileName}</div>}
 			{(fileError || error) && <div className="text-red-500 text-xs mt-2">{fileError || error}</div>}
-			{showPreview && previewUrl && (
+			{showPreview && previewUrl && !imageLoadError && (
 				<div className="mt-4">
 					<img
 						src={previewUrl}
 						alt={previewAlt}
 						className="max-w-full max-h-48 rounded border border-slate-600"
 						style={{ maxWidth: "100%" }}
+						onError={() => setImageLoadError(true)}
 					/>
+				</div>
+			)}
+			{showPreview && previewUrl && imageLoadError && (
+				<div className="mt-4 text-gray-500 text-sm italic">
+					No image available (upload one to see preview)
 				</div>
 			)}
 		</div>
