@@ -315,14 +315,6 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-screen w-screen bg-slate-900">
-        <Spinner />
-      </div>
-    );
-  }
-
   const isAdminAuthenticated = !!adminUser;
 
   return (
