@@ -506,3 +506,98 @@ export async function sendContactFormEmail(
     return { success: false, message: "Failed to send email", error };
   }
 }
+
+export async function sendPasswordResetEmail(
+  customerEmail: string,
+  customerName: string,
+  resetUrl: string,
+): Promise<{ success: boolean; message: string; error?: any }> {
+  try {
+    const transport = await initializeTransporter();
+    if (!transport) {
+      return {
+        success: false,
+        message: "Email service is not configured",
+      };
+    }
+
+    const escapeHtml = (value: string) =>
+      value
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+
+    const html = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Password Reset Request</title>
+      </head>
+      <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+          <h1 style="color: white; margin: 0; font-size: 28px;">Password Reset Request</h1>
+        </div>
+        
+        <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
+          <p style="font-size: 16px; margin-bottom: 20px;">Hi ${escapeHtml(customerName)},</p>
+          
+          <p style="font-size: 16px; margin-bottom: 20px;">
+            We received a request to reset your password. Click the button below to create a new password:
+          </p>
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${escapeHtml(resetUrl)}" 
+               style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                      color: white; 
+                      padding: 15px 30px; 
+                      text-decoration: none; 
+                      border-radius: 5px; 
+                      font-size: 16px; 
+                      font-weight: bold;
+                      display: inline-block;">
+              Reset My Password
+            </a>
+          </div>
+          
+          <p style="font-size: 14px; color: #666; margin-bottom: 15px;">
+            Or copy and paste this link into your browser:
+          </p>
+          <p style="font-size: 12px; color: #667eea; word-break: break-all; background: white; padding: 10px; border-radius: 5px;">
+            ${escapeHtml(resetUrl)}
+          </p>
+          
+          <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; border-radius: 5px;">
+            <p style="margin: 0; font-size: 14px; color: #856404;">
+              <strong>⚠️ Security Notice:</strong><br>
+              This link will expire in 1 hour. If you didn't request this password reset, please ignore this email or contact support if you have concerns.
+            </p>
+          </div>
+          
+          <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
+          
+          <p style="font-size: 12px; color: #666; text-align: center;">
+            This is an automated message. Please do not reply to this email.
+          </p>
+        </div>
+      </body>
+    </html>
+    `;
+
+    const result = await transport.sendMail({
+      from: cachedConfig ? `${cachedConfig.from_name} <${cachedConfig.from_email}>` : 'noreply@onlinestore.com',
+      to: customerEmail,
+      subject: "Password Reset Request",
+      html,
+    });
+
+    console.log("Password reset email sent:", result);
+    return { success: true, message: "Password reset email sent successfully" };
+  } catch (error) {
+    console.error("Error sending password reset email:", error);
+    return { success: false, message: "Failed to send password reset email", error };
+  }
+}

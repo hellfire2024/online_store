@@ -5,7 +5,8 @@ import { body, validationResult } from "express-validator";
 import { pool } from "../db/connection.js";
 import { RowDataPacket } from "mysql2";
 import crypto from "crypto";
-import { requireCustomer, AuthenticatedRequest } from "../middleware/auth.js";
+import { requireCustomer, requireAdmin, AuthenticatedRequest } from "../middleware/auth.js";
+import { sendPasswordResetEmail } from "../services/emailService.js";
 
 const router = Router();
 
@@ -332,7 +333,7 @@ router.post(
 
       // Check if customer exists
       const [rows] = await pool.query<RowDataPacket[]>(
-        "SELECT id FROM customers WHERE email = ? AND is_active = TRUE",
+        "SELECT id, first_name, last_name, name, email FROM customers WHERE email = ? AND is_active = TRUE",
         [email],
       );
 
@@ -345,20 +346,182 @@ router.post(
         });
       }
 
-      // Password reset tokens/email delivery flow is not implemented yet.
-      // We return a controlled error instead of a misleading success.
-      console.warn(
-        "Password reset requested but token email delivery is not implemented",
-        { email },
+      const customer = rows[0];
+      const tokenId = crypto.randomUUID();
+      const resetToken = crypto.randomBytes(32).toString("hex");
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour from now
+
+      // Store the reset token
+      await pool.query(
+        `INSERT INTO password_reset_tokens (id, customer_id, token, expires_at, used) 
+         VALUES (?, ?, ?, ?, FALSE)`,
+        [tokenId, customer.id, resetToken, expiresAt],
       );
-      return res.status(501).json({
-        error: "Password reset delivery is not implemented yet",
+
+      // Build reset URL
+      const resetUrl = `${process.env.FRONTEND_URL || "http://localhost:5173"}/#/reset-password?token=${resetToken}`;
+      
+      // Send password reset email
+      const emailResult = await sendPasswordResetEmail(
+        customer.email,
+        customer.first_name || customer.name || "Customer",
+        resetUrl,
+      );
+
+      if (!emailResult.success) {
+        console.error("Failed to send password reset email:", emailResult);
+        return res.status(500).json({
+          error: "Failed to send password reset email",
+        });
+      }
+
+      return res.json({
+        success: true,
+        message:
+          "If an account with that email exists, a password reset link has been sent",
       });
     } catch (error) {
       console.error("Password reset request error:", error);
       return res
         .status(500)
         .json({ error: "Failed to process password reset request" });
+    }
+  },
+);
+
+// Admin: Send password reset email to a customer
+router.post(
+  "/admin/send-password-reset/:customerId",
+  requireAdmin,
+  async (req: Request, res: Response) => {
+    try {
+      const { customerId } = req.params;
+
+      // Check email config
+      const [emailConfigRows] = await pool.query<RowDataPacket[]>(
+        "SELECT provider FROM email_config WHERE id = 1",
+      );
+      const provider = emailConfigRows[0]?.provider;
+      if (!provider || provider === "none") {
+        return res.status(503).json({
+          error:
+            "Password reset email service is not configured. Please configure an email provider in Settings.",
+        });
+      }
+
+      // Get customer details
+      const [rows] = await pool.query<RowDataPacket[]>(
+        "SELECT id, first_name, last_name, name, email, is_active FROM customers WHERE id = ?",
+        [customerId],
+      );
+
+      if (rows.length === 0) {
+        return res.status(404).json({ error: "Customer not found" });
+      }
+
+      const customer = rows[0];
+
+      if (!customer.is_active) {
+        return res.status(400).json({ error: "Customer account is inactive" });
+      }
+
+      const tokenId = crypto.randomUUID();
+      const resetToken = crypto.randomBytes(32).toString("hex");
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+      // Store the reset token
+      await pool.query(
+        `INSERT INTO password_reset_tokens (id, customer_id, token, expires_at, used) 
+         VALUES (?, ?, ?, ?, FALSE)`,
+        [tokenId, customer.id, resetToken, expiresAt],
+      );
+
+      // Build reset URL
+      const resetUrl = `${process.env.FRONTEND_URL || "http://localhost:5173"}/#/reset-password?token=${resetToken}`;
+
+      // Send password reset email
+      const emailResult = await sendPasswordResetEmail(
+        customer.email,
+        customer.first_name || customer.name || "Customer",
+        resetUrl,
+      );
+
+      if (!emailResult.success) {
+        console.error("Failed to send password reset email:", emailResult);
+        return res.status(500).json({
+          error: "Failed to send password reset email",
+        });
+      }
+
+      return res.json({
+        success: true,
+        message: `Password reset email sent to ${customer.email}`,
+      });
+    } catch (error) {
+      console.error("Admin password reset error:", error);
+      return res
+        .status(500)
+        .json({ error: "Failed to send password reset email" });
+    }
+  },
+);
+
+// Reset password with token
+router.post(
+  "/customer/reset-password",
+  [
+    body("token").notEmpty().withMessage("Reset token is required"),
+    body("newPassword")
+      .isLength({ min: 8 })
+      .withMessage("Password must be at least 8 characters"),
+  ],
+  async (req: Request, res: Response) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    try {
+      const { token, newPassword } = req.body;
+
+      // Find valid token
+      const [tokenRows] = await pool.query<RowDataPacket[]>(
+        `SELECT id, customer_id, expires_at, used 
+         FROM password_reset_tokens 
+         WHERE token = ? AND used = FALSE AND expires_at > NOW()`,
+        [token],
+      );
+
+      if (tokenRows.length === 0) {
+        return res.status(400).json({
+          error: "Invalid or expired reset token",
+        });
+      }
+
+      const resetToken = tokenRows[0];
+
+      // Hash new password
+      const passwordHash = await bcrypt.hash(newPassword, 10);
+
+      // Update customer password
+      await pool.query(
+        "UPDATE customers SET password_hash = ? WHERE id = ?",
+        [passwordHash, resetToken.customer_id],
+      );
+
+      // Mark token as used
+      await pool.query(
+        "UPDATE password_reset_tokens SET used = TRUE WHERE id = ?",
+        [resetToken.id],
+      );
+
+      return res.json({
+        success: true,
+        message: "Password reset successfully",
+      });
+    } catch (error) {
+      console.error("Password reset error:", error);
+      return res.status(500).json({ error: "Failed to reset password" });
     }
   },
 );

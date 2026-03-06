@@ -488,6 +488,21 @@ class ApiClient {
           body: JSON.stringify({ currentPassword, newPassword }),
         },
       ),
+    adminSendPasswordReset: (customerId: string) =>
+      this.request<{ success: boolean; message?: string }>(
+        `/auth/admin/send-password-reset/${customerId}`,
+        {
+          method: "POST",
+        },
+      ),
+    customerResetPassword: (token: string, newPassword: string) =>
+      this.request<{ success: boolean; message?: string }>(
+        "/auth/customer/reset-password",
+        {
+          method: "POST",
+          body: JSON.stringify({ token, newPassword }),
+        },
+      ),
   };
 
   // Generic CRUD helpers for other entities

@@ -278,7 +278,12 @@ const CustomerManagement: React.FC = () => {
 
   const handleSendPasswordReset = async (customer: Customer) => {
     try {
-      addToast(`Password reset email sent to ${customer.email}`, "success");
+      const result = await sendPasswordResetEmail(customer.id);
+      if (result.success) {
+        addToast(`Password reset email sent to ${customer.email}`, "success");
+      } else {
+        addToast(result.error || "Failed to send password reset", "error");
+      }
     } catch (error) {
       addToast(
         `Failed to send password reset: ${error instanceof Error ? error.message : "Unknown error"}`,
@@ -414,10 +419,40 @@ const CustomerManagement: React.FC = () => {
     const count = selectedIds.size;
     if (count === 0) return;
     try {
-      addToast(
-        `Password reset emails queued for ${count} customers`,
-        "success",
-      );
+      let successCount = 0;
+      let failCount = 0;
+      
+      // Send password reset emails for all selected customers
+      const promises = Array.from(selectedIds).map(async (customerId) => {
+        try {
+          const result = await sendPasswordResetEmail(customerId);
+          if (result.success) {
+            successCount++;
+          } else {
+            failCount++;
+          }
+        } catch {
+          failCount++;
+        }
+      });
+      
+      await Promise.all(promises);
+      
+      if (successCount > 0 && failCount === 0) {
+        addToast(
+          `Password reset emails sent to ${successCount} customer${successCount > 1 ? "s" : ""}`,
+          "success",
+        );
+      } else if (successCount > 0 && failCount > 0) {
+        addToast(
+          `Sent ${successCount} emails, ${failCount} failed`,
+          "warning",
+        );
+      } else {
+        addToast("Failed to send password reset emails", "error");
+      }
+      
+      clearSelection();
     } catch (error) {
       addToast(
         `Bulk reset failed: ${error instanceof Error ? error.message : "Unknown error"}`,

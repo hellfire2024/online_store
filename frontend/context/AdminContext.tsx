@@ -221,12 +221,16 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({
 
   const fetchCustomers = async () => {
     try {
+      const fetchedCustomers = await apiClient.customers.getAll();
+      setCustomers(fetchedCustomers);
+      localStorage.setItem("customers", JSON.stringify(fetchedCustomers));
+    } catch (error) {
+      console.error("Failed to fetch customers", error);
+      // Try to use cached data on API failure
       const stored = localStorage.getItem("customers");
       if (stored) {
         setCustomers(JSON.parse(stored));
       }
-    } catch (error) {
-      console.error("Failed to fetch customers", error);
     }
   };
 
@@ -236,12 +240,13 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({
 
   const sendPasswordResetEmail = async (customerId: string) => {
     try {
-      const customer = getCustomer(customerId);
-      if (!customer) return { success: false, error: "Customer not found" };
-      console.log(`Password reset email sent to ${customer.email}`);
-      return { success: true };
-    } catch (error) {
-      return { success: false, error: "Failed to send password reset email" };
+      const result = await apiClient.auth.adminSendPasswordReset(customerId);
+      return { success: true, message: result.message };
+    } catch (error: any) {
+      return { 
+        success: false, 
+        error: error.message || "Failed to send password reset email" 
+      };
     }
   };
 
@@ -251,22 +256,21 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({
     updates: any,
   ) => {
     try {
-      const updated = customers.map((c) => {
-        if (c.id === customerId) {
-          return {
-            ...c,
-            addresses: c.addresses.map((a) =>
-              a.id === addressId ? { ...a, ...updates } : a,
-            ),
-          };
-        }
-        return c;
-      });
-      setCustomers(updated);
-      localStorage.setItem("customers", JSON.stringify(updated));
+      await apiClient.request<any>(
+        `/customer-addresses/${customerId}/${addressId}`,
+        {
+          method: "PUT",
+          body: JSON.stringify(updates),
+        },
+      );
+      // Refresh customer data after update
+      await fetchCustomers();
       return { success: true };
-    } catch (error) {
-      return { success: false, error: "Failed to update address" };
+    } catch (error: any) {
+      return { 
+        success: false, 
+        error: error.message || "Failed to update address" 
+      };
     }
   };
 
@@ -275,43 +279,45 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({
     preferences: any,
   ) => {
     try {
-      const updated = customers.map((c) => {
-        if (c.id === customerId) {
-          return { ...c, emailPreferences: preferences };
-        }
-        return c;
+      await apiClient.customers.update(customerId, {
+        emailPreferences: preferences,
       });
-      setCustomers(updated);
-      localStorage.setItem("customers", JSON.stringify(updated));
+      // Refresh customer data after update
+      await fetchCustomers();
       return { success: true };
-    } catch (error) {
-      return { success: false, error: "Failed to update email preferences" };
+    } catch (error: any) {
+      return { 
+        success: false, 
+        error: error.message || "Failed to update email preferences" 
+      };
     }
   };
 
   const deactivateCustomer = async (customerId: string) => {
     try {
-      const updated = customers.map((c) =>
-        c.id === customerId ? { ...c, isActive: false } : c,
-      );
-      setCustomers(updated);
-      localStorage.setItem("customers", JSON.stringify(updated));
+      await apiClient.customers.toggleActive(customerId);
+      // Refresh customer data after update
+      await fetchCustomers();
       return { success: true };
-    } catch (error) {
-      return { success: false, error: "Failed to deactivate customer" };
+    } catch (error: any) {
+      return { 
+        success: false, 
+        error: error.message || "Failed to deactivate customer" 
+      };
     }
   };
 
   const reactivateCustomer = async (customerId: string) => {
     try {
-      const updated = customers.map((c) =>
-        c.id === customerId ? { ...c, isActive: true } : c,
-      );
-      setCustomers(updated);
-      localStorage.setItem("customers", JSON.stringify(updated));
+      await apiClient.customers.toggleActive(customerId);
+      // Refresh customer data after update
+      await fetchCustomers();
       return { success: true };
-    } catch (error) {
-      return { success: false, error: "Failed to reactivate customer" };
+    } catch (error: any) {
+      return { 
+        success: false, 
+        error: error.message || "Failed to reactivate customer" 
+      };
     }
   };
 
