@@ -193,14 +193,7 @@ app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 // Add headers to prevent image downloads and right-click saves
 app.use((req, res, next) => {
   // Check if requesting an image
-  const imageExtensions = [
-    ".jpg",
-    ".jpeg",
-    ".png",
-    ".gif",
-    ".webp",
-    ".svg",
-  ];
+  const imageExtensions = [".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg"];
   const isImageRequest = imageExtensions.some((ext) =>
     req.path.toLowerCase().endsWith(ext),
   );
