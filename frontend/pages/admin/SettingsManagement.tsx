@@ -2644,12 +2644,22 @@ const SettingsManagement: React.FC = () => {
                     <strong>📧 Common SMTP Providers:</strong>
                   </p>
                   <ul className="text-blue-200 text-sm space-y-1 ml-4">
-                    <li><strong>Zoho:</strong> smtp.zoho.com | Port 465 (SSL ✓) or 587 (SSL ✗)</li>
-                    <li><strong>Gmail:</strong> smtp.gmail.com | Port 465 (SSL ✓) or 587 (SSL ✗)</li>
-                    <li><strong>Outlook:</strong> smtp-mail.outlook.com | Port 587 (SSL ✗)</li>
+                    <li>
+                      <strong>Zoho:</strong> smtp.zoho.com | Port 465 (SSL ✓) or
+                      587 (SSL ✗)
+                    </li>
+                    <li>
+                      <strong>Gmail:</strong> smtp.gmail.com | Port 465 (SSL ✓)
+                      or 587 (SSL ✗)
+                    </li>
+                    <li>
+                      <strong>Outlook:</strong> smtp-mail.outlook.com | Port 587
+                      (SSL ✗)
+                    </li>
                   </ul>
                   <p className="text-blue-200 text-xs mt-2">
-                    <strong>Note:</strong> Many cloud platforms block SMTP. If testing fails with timeout, use SendGrid or Mailgun instead.
+                    <strong>Note:</strong> Many cloud platforms block SMTP. If
+                    testing fails with timeout, use SendGrid or Mailgun instead.
                   </p>
                 </div>
 
@@ -2955,13 +2965,10 @@ const SettingsManagement: React.FC = () => {
                           "Unknown error";
                         console.error("Test failed with details:", errorDetail);
                         console.error("Full error response:", result);
-                        
+
                         // Show the main error
-                        addToast(
-                          errorDetail,
-                          "error",
-                        );
-                        
+                        addToast(errorDetail, "error");
+
                         // If there's a helpful tip, show it in a second toast
                         if (result?.help) {
                           setTimeout(() => {

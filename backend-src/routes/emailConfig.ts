@@ -61,7 +61,9 @@ router.get("/", async (_req: Request, res: Response) => {
       hasSendgridApiKey: !!config.sendgrid_api_key,
       hasMailgunApiKey: !!config.mailgun_api_key,
       // Return decrypted values for editing (admin only)
-      smtpPassword: config.smtp_password ? decryptData(config.smtp_password) : "",
+      smtpPassword: config.smtp_password
+        ? decryptData(config.smtp_password)
+        : "",
       sendgridApiKey: config.sendgrid_api_key
         ? decryptData(config.sendgrid_api_key)
         : "",
@@ -254,8 +256,10 @@ router.post("/test", async (req: Request, res: Response) => {
         }
 
         console.log("[Email Test] Password successfully retrieved/decrypted");
-        console.log(`[Email Test] Using auth - username: ${smtpUsername}, password length: ${password.length}`);
-        
+        console.log(
+          `[Email Test] Using auth - username: ${smtpUsername}, password length: ${password.length}`,
+        );
+
         // Check if running on Render or similar PaaS that blocks SMTP
         const isRender =
           process.env.RENDER === "true" ||
@@ -287,17 +291,23 @@ router.post("/test", async (req: Request, res: Response) => {
         console.log(
           `[Email Test] Creating SMTP transporter for ${smtpHost}:${smtpPort}`,
         );
-        console.log(`[Email Test] Secure connection: ${config.smtpSecure || config.smtp_secure || false}`);
+        console.log(
+          `[Email Test] Secure connection: ${config.smtpSecure || config.smtp_secure || false}`,
+        );
         console.log(`[Email Test] Username: ${smtpUsername}`);
-        
+
         // Validate port and secure flag match common SMTP configurations
         const smtpSecure = config.smtpSecure || config.smtp_secure || false;
         if (smtpPort === 465 && !smtpSecure) {
-          console.warn("[Email Test] WARNING: Port 465 usually requires secure=true (SSL)");
+          console.warn(
+            "[Email Test] WARNING: Port 465 usually requires secure=true (SSL)",
+          );
         } else if (smtpPort === 587 && smtpSecure) {
-          console.warn("[Email Test] WARNING: Port 587 usually requires secure=false (STARTTLS)");
+          console.warn(
+            "[Email Test] WARNING: Port 587 usually requires secure=false (STARTTLS)",
+          );
         }
-        
+
         const transporter = nodemailer.default.createTransport({
           host: smtpHost,
           port: smtpPort,
@@ -313,23 +323,27 @@ router.post("/test", async (req: Request, res: Response) => {
           debug: true, // Show SMTP traffic in logs
           tls: {
             // Don't fail on self-signed certs in development
-            rejectUnauthorized: process.env.NODE_ENV === 'production',
-            minVersion: 'TLSv1.2',
+            rejectUnauthorized: process.env.NODE_ENV === "production",
+            minVersion: "TLSv1.2",
           },
         });
 
-        console.log("[Email Test] Transporter created, verifying SMTP connection...");
-        
+        console.log(
+          "[Email Test] Transporter created, verifying SMTP connection...",
+        );
+
         try {
           await transporter.verify();
           console.log("[Email Test] ✓ SMTP connection verified successfully");
         } catch (verifyError: any) {
-          console.error("[Email Test] ✗ Verification failed:", verifyError.message);
+          console.error(
+            "[Email Test] ✗ Verification failed:",
+            verifyError.message,
+          );
           throw verifyError; // Re-throw so it's caught by outer catch
         }
-        
-        console.log("[Email Test] Sending test email...");
 
+        console.log("[Email Test] Sending test email...");
 
         const fromEmail = config.fromEmail || config.from_email;
         const fromName = config.fromName || config.from_name;
@@ -400,15 +414,17 @@ router.post("/test", async (req: Request, res: Response) => {
       if (emailError.code === "ECONNREFUSED") {
         errorMessage =
           "Connection refused - SMTP server is not reachable. Check host and port.";
-        helpfulTips = "Common ports: 465 (SSL), 587 (TLS), 25 (unencrypted). For Zoho: use smtp.zoho.com with port 465 (SSL) or 587 (TLS).";
+        helpfulTips =
+          "Common ports: 465 (SSL), 587 (TLS), 25 (unencrypted). For Zoho: use smtp.zoho.com with port 465 (SSL) or 587 (TLS).";
       } else if (emailError.code === "ETIMEDOUT") {
-        errorMessage =
-          "Connection timeout - SMTP server is not responding.";
-        helpfulTips = "For Zoho: use smtp.zoho.com (or smtp.zoho.eu for EU). Port 465 needs 'Use TLS/SSL' checked, port 587 needs it unchecked. Check firewall settings and ensure IMAP/POP is enabled in Zoho settings.";
+        errorMessage = "Connection timeout - SMTP server is not responding.";
+        helpfulTips =
+          "For Zoho: use smtp.zoho.com (or smtp.zoho.eu for EU). Port 465 needs 'Use TLS/SSL' checked, port 587 needs it unchecked. Check firewall settings and ensure IMAP/POP is enabled in Zoho settings.";
       } else if (emailError.code === "ENOTFOUND") {
         errorMessage =
           "SMTP host not found. Check your SMTP host configuration.";
-        helpfulTips = "For Zoho: smtp.zoho.com (US) or smtp.zoho.eu (Europe). For Gmail: smtp.gmail.com. For Outlook: smtp-mail.outlook.com";
+        helpfulTips =
+          "For Zoho: smtp.zoho.com (US) or smtp.zoho.eu (Europe). For Gmail: smtp.gmail.com. For Outlook: smtp-mail.outlook.com";
       } else if (
         errorMessage.includes("Invalid login") ||
         errorMessage.includes("Authentication failed") ||
@@ -416,16 +432,28 @@ router.post("/test", async (req: Request, res: Response) => {
       ) {
         errorMessage =
           "Authentication failed - check your SMTP username and password.";
-        helpfulTips = "For Zoho: Use your full email address as username. You may need to enable IMAP in Zoho Mail settings or create an app-specific password.";
+        helpfulTips =
+          "For Zoho: Use your full email address as username. You may need to enable IMAP in Zoho Mail settings or create an app-specific password.";
       } else if (errorMessage.includes("self signed certificate")) {
-        errorMessage = "SSL certificate error - server certificate cannot be verified.";
-        helpfulTips = "This usually happens with self-hosted mail servers. Consider using a service like SendGrid or Mailgun for production.";
-      } else if (errorMessage.includes("Connection closed") || emailError.code === "ECONNRESET") {
+        errorMessage =
+          "SSL certificate error - server certificate cannot be verified.";
+        helpfulTips =
+          "This usually happens with self-hosted mail servers. Consider using a service like SendGrid or Mailgun for production.";
+      } else if (
+        errorMessage.includes("Connection closed") ||
+        emailError.code === "ECONNRESET"
+      ) {
         errorMessage = "Connection closed by server - likely SSL/TLS mismatch.";
-        helpfulTips = "For Zoho: Port 465 requires 'Use TLS/SSL' checkbox CHECKED. Port 587 requires it UNCHECKED. Double-check your port and SSL settings match.";
-      } else if (errorMessage.includes("certificate") || errorMessage.includes("TLS") || errorMessage.includes("SSL")) {
+        helpfulTips =
+          "For Zoho: Port 465 requires 'Use TLS/SSL' checkbox CHECKED. Port 587 requires it UNCHECKED. Double-check your port and SSL settings match.";
+      } else if (
+        errorMessage.includes("certificate") ||
+        errorMessage.includes("TLS") ||
+        errorMessage.includes("SSL")
+      ) {
         errorMessage = "SSL/TLS negotiation failed.";
-        helpfulTips = "Check that 'Use TLS/SSL' checkbox matches your port: Port 465 = checked (SSL), Port 587 = unchecked (STARTTLS).";
+        helpfulTips =
+          "Check that 'Use TLS/SSL' checkbox matches your port: Port 465 = checked (SSL), Port 587 = unchecked (STARTTLS).";
       }
 
       return res.status(500).json({
@@ -439,11 +467,11 @@ router.post("/test", async (req: Request, res: Response) => {
   } catch (error: any) {
     console.error("[Email Test] Unexpected error:", error);
     console.error("[Email Test] Error stack:", error.stack);
-    return res.status(500).json({ 
+    return res.status(500).json({
       success: false,
       error: "Failed to test email configuration",
       details: error?.message || String(error),
-      help: "Check server logs for more details. Ensure email configuration is saved before testing."
+      help: "Check server logs for more details. Ensure email configuration is saved before testing.",
     });
   }
 });
