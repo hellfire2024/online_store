@@ -87,6 +87,9 @@ router.get("/", async (_req: Request, res: Response) => {
  */
 router.put("/", async (req: Request, res: Response) => {
   try {
+    console.log("=== EMAIL CONFIG PUT REQUEST ===");
+    console.log("Body received:", JSON.stringify(req.body, null, 2));
+    
     const {
       provider,
       fromEmail,
@@ -101,8 +104,20 @@ router.put("/", async (req: Request, res: Response) => {
       mailgunApiKey,
     } = req.body;
 
+    console.log("Extracted fields:", {
+      provider,
+      fromEmail,
+      fromName,
+      smtpHost,
+      smtpPort,
+      smtpSecure,
+      smtpUsername,
+      hasPassword: !!smtpPassword,
+    });
+
     // Validate required fields
     if (!provider || !fromEmail || !fromName) {
+      console.log("Validation failed: missing required fields");
       return res.status(400).json({
         error: "provider, fromEmail, and fromName are required",
       });

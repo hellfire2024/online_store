@@ -282,6 +282,27 @@ const SettingsManagement: React.FC = () => {
     }
   }, [siteSettings]);
 
+  // Load email config from dedicated table on mount
+  useEffect(() => {
+    const loadEmailConfig = async () => {
+      try {
+        const emailConfig = await apiClient.request<any>("/email-config");
+        if (emailConfig && Object.keys(emailConfig).length > 0) {
+          setSettings((prev) => ({
+            ...prev,
+            emailConfig: {
+              ...prev.emailConfig,
+              ...emailConfig,
+            },
+          }));
+        }
+      } catch (error) {
+        console.log("No email config found, using defaults");
+      }
+    };
+    loadEmailConfig();
+  }, []);
+
   // --- Effects for Menu Editor ---
   useEffect(() => {
     if (activeTab === "menus" && menus.length > 0 && !selectedMenuId) {
@@ -2762,6 +2783,7 @@ const SettingsManagement: React.FC = () => {
                     </label>
                     <input
                       type="password"
+                      value={settings.emailConfig?.smtpPassword || ""}
                       onChange={(e) => {
                         const newSettings = { ...settings };
                         newSettings.emailConfig!.smtpPassword = e.target.value;
