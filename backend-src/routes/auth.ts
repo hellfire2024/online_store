@@ -341,7 +341,13 @@ router.post(
 
       const customer = rows[0];
       const tokenId = crypto.randomUUID();
-      const resetToken = crypto.randomBytes(32).toString("hex");
+      // Generate URL-safe base64 token (shorter than hex)
+      const resetToken = crypto
+        .randomBytes(24)
+        .toString("base64")
+        .replace(/\+/g, "-")
+        .replace(/\//g, "_")
+        .replace(/=/g, "");
       const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour from now
 
       // Store the reset token
@@ -427,7 +433,13 @@ router.post(
       }
 
       const tokenId = crypto.randomUUID();
-      const resetToken = crypto.randomBytes(32).toString("hex");
+      // Generate URL-safe base64 token (shorter than hex)
+      const resetToken = crypto
+        .randomBytes(24)
+        .toString("base64")
+        .replace(/\+/g, "-")
+        .replace(/\//g, "_")
+        .replace(/=/g, "");
       const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
       // Store the reset token

@@ -40,6 +40,7 @@ import ChangePasswordPage from "../pages/ChangePasswordPage";
 import TermsAndConditionsPage from "../pages/TermsAndConditionsPage";
 import SupportTicketsPage from "../pages/SupportTicketsPage";
 import ForgotPasswordPage from "../pages/ForgotPasswordPage";
+import ResetPasswordPage from "../pages/ResetPasswordPage";
 import AdminLoginModal from "../components/admin/AdminLoginModal";
 import SiteEffectHandler from "../components/SiteEffectHandler";
 import TestHeroRenderingPage from "../pages/TestHeroRenderingPage";
@@ -169,6 +170,7 @@ const AppContent: React.FC = () => {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route
             path="/admin/*"
             element={
