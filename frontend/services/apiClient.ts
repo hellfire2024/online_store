@@ -307,6 +307,11 @@ class ApiClient {
   };
 
   emailConfig = {
+    save: (payload: any) =>
+      this.request<any>("/email-config", {
+        method: "PUT",
+        body: JSON.stringify(payload),
+      }),
     test: (payload: { emailConfig?: any; testEmail: string }) =>
       this.request<any>("/email-config/test", {
         method: "POST",

@@ -452,6 +452,17 @@ const SettingsManagement: React.FC = () => {
       }
 
       console.log("Attempting to save settings:", finalSettings);
+
+      const emailConfig = finalSettings.emailConfig;
+      if (
+        emailConfig?.provider &&
+        emailConfig.provider !== "none" &&
+        emailConfig.fromEmail &&
+        emailConfig.fromName
+      ) {
+        await apiClient.emailConfig.save(emailConfig);
+      }
+
       await updateSiteSettings(finalSettings);
       addToast("Settings updated successfully!", "success");
       setSelectedFaviconFile(null);
@@ -3046,7 +3057,18 @@ const SettingsManagement: React.FC = () => {
 
                     setTestEmailLoading(true);
                     try {
-                      // Save the current email config first
+                      // Persist current email config for runtime flows (password reset, order emails)
+                      const emailConfig = settings.emailConfig;
+                      if (
+                        emailConfig?.provider &&
+                        emailConfig.provider !== "none" &&
+                        emailConfig.fromEmail &&
+                        emailConfig.fromName
+                      ) {
+                        await apiClient.emailConfig.save(emailConfig);
+                      }
+
+                      // Keep site settings in sync as well
                       await updateSiteSettings(settings);
 
                       console.log(
