@@ -242,8 +242,7 @@ export async function sendOrderConfirmationEmail(
       </body>
     </html>
     `;
-    // Generate plain text version as fallback
-    const text = `Hi ${customerName},\n\nWe received a request to reset your password.\n\nClick this link to reset your password:\n${resetUrl}\n\nThis link will expire in 1 hour.\n\nIf you didn't request this password reset, please ignore this email.\n\nThank you`;
+
     const result = await transport.sendMail({
       from: `${cachedConfig.from_name} <${cachedConfig.from_email}>`,
       to: customerEmail,
