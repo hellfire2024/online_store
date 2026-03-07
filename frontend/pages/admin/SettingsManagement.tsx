@@ -2593,9 +2593,9 @@ const SettingsManagement: React.FC = () => {
                 Email Provider
               </label>
               <select
-                value={siteSettings.emailConfig?.provider || "none"}
+                value={settings.emailConfig?.provider || "none"}
                 onChange={(e) => {
-                  const newSettings = { ...siteSettings };
+                  const newSettings = { ...settings };
                   if (!newSettings.emailConfig) {
                     newSettings.emailConfig = {
                       provider: "none",
