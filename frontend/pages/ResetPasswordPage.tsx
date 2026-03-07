@@ -26,7 +26,10 @@ const validatePassword = (password: string) => {
   if (PASSWORD_RULES.requireNumbers && !/\d/.test(password)) {
     errors.push("One number");
   }
-  if (PASSWORD_RULES.requireSymbols && !/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+  if (
+    PASSWORD_RULES.requireSymbols &&
+    !/[!@#$%^&*(),.?":{}|<>]/.test(password)
+  ) {
     errors.push("One special character (!@#$%^&*)");
   }
 
@@ -83,10 +86,7 @@ const ResetPasswordPage: React.FC = () => {
     }
 
     if (passwordErrors.length > 0) {
-      addToast(
-        "Password does not meet complexity requirements",
-        "error",
-      );
+      addToast("Password does not meet complexity requirements", "error");
       return;
     }
 
@@ -105,7 +105,7 @@ const ResetPasswordPage: React.FC = () => {
 
       setIsResetComplete(true);
       addToast("Password reset successfully!", "success");
-      
+
       // Redirect to login after 3 seconds
       setTimeout(() => {
         navigate("/login");

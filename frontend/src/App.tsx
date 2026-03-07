@@ -68,7 +68,11 @@ const AdminProtectedRoute: React.FC<{ children: React.ReactNode }> = ({
 const useAdminKeyListener = (callback: () => void) => {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key && e.key.toLowerCase() === "a" && ((e.altKey && e.shiftKey) || (e.ctrlKey && e.altKey))) {
+      if (
+        e.key &&
+        e.key.toLowerCase() === "a" &&
+        ((e.altKey && e.shiftKey) || (e.ctrlKey && e.altKey))
+      ) {
         e.preventDefault();
         e.stopPropagation();
         callback();
@@ -210,4 +214,3 @@ const AppContent: React.FC = () => {
 };
 
 export default App;
-
