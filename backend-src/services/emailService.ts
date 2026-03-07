@@ -2,6 +2,7 @@ import nodemailer from "nodemailer";
 import SMTPTransport from "nodemailer/lib/smtp-transport";
 import { pool } from "../db/connection.js";
 import { RowDataPacket } from "mysql2";
+import { decryptData } from "../utils/encryption.js";
 
 // Note: For production watermarking of images, you would need:
 // - Sharp library: npm install sharp
@@ -64,32 +65,48 @@ async function initializeTransporter() {
         return null;
       }
 
+      // Decrypt the password before using it
+      const decryptedPassword = decryptData(config.smtp_password);
+      
+      console.log("[Email] Initializing SMTP transport:", {
+        host: config.smtp_host,
+        port: config.smtp_port,
+        secure: config.smtp_secure ?? false,
+        username: config.smtp_username,
+        hasPassword: !!decryptedPassword,
+        passwordLength: decryptedPassword?.length || 0
+      });
+
       const transportOptions: SMTPTransport.Options = {
         host: config.smtp_host,
         port: config.smtp_port,
         secure: config.smtp_secure ?? false,
         auth: {
           user: config.smtp_username,
-          pass: config.smtp_password,
+          pass: decryptedPassword,
         },
       };
 
       transporter = nodemailer.createTransport(transportOptions);
     } else if (config.provider === "sendgrid") {
+      const decryptedApiKey = config.sendgrid_api_key ? decryptData(config.sendgrid_api_key) : null;
+      
       const sgTransport = require("nodemailer-sendgrid-transport");
       transporter = nodemailer.createTransport(
         sgTransport({
           auth: {
-            api_key: config.sendgrid_api_key,
+            api_key: decryptedApiKey,
           },
         }),
       );
     } else if (config.provider === "mailgun") {
+      const decryptedApiKey = config.mailgun_api_key ? decryptData(config.mailgun_api_key) : null;
+      
       const mgTransport = require("nodemailer-mailgun-transport");
       transporter = nodemailer.createTransport(
         mgTransport({
           auth: {
-            api_key: config.mailgun_api_key,
+            api_key: decryptedApiKey,
             domain: config.mailgun_domain,
           },
         }),
