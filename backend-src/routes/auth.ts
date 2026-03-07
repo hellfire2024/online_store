@@ -376,11 +376,10 @@ router.post(
           );
         }
 
-        // Always return generic success response for security and UX consistency
-        return res.json({
-          success: true,
+        return res.status(503).json({
+          success: false,
           message:
-            "If an account with that email exists, a password reset link has been sent",
+            "We couldn't send a password reset email right now. Please contact customer service for help.",
         });
       }
 
