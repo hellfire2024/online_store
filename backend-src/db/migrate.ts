@@ -209,6 +209,23 @@ export async function runMigrations(): Promise<void> {
       INDEX idx_token (token),
       INDEX idx_expires (expires_at)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
+    `CREATE TABLE IF NOT EXISTS email_config (
+      id INT PRIMARY KEY DEFAULT 1,
+      provider VARCHAR(50) NOT NULL DEFAULT 'none',
+      from_email VARCHAR(255) NOT NULL,
+      from_name VARCHAR(255) NOT NULL,
+      smtp_host VARCHAR(255),
+      smtp_port INT,
+      smtp_secure BOOLEAN DEFAULT FALSE,
+      smtp_username VARCHAR(255),
+      smtp_password TEXT,
+      sendgrid_api_key TEXT,
+      mailgun_domain VARCHAR(255),
+      mailgun_api_key TEXT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      CHECK (id = 1)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
   ];
 
   // --- ALTER TABLES: Add columns only if not exist ---
