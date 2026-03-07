@@ -363,8 +363,24 @@ router.post(
 
       if (!emailResult.success) {
         console.error("Failed to send password reset email:", emailResult);
-        return res.status(500).json({
-          error: "Failed to send password reset email",
+
+        // Best-effort cleanup so failed sends don't accumulate unused valid tokens
+        try {
+          await pool.query("DELETE FROM password_reset_tokens WHERE id = ?", [
+            tokenId,
+          ]);
+        } catch (cleanupError) {
+          console.error(
+            "Failed to clean up password reset token after send failure:",
+            cleanupError,
+          );
+        }
+
+        // Always return generic success response for security and UX consistency
+        return res.json({
+          success: true,
+          message:
+            "If an account with that email exists, a password reset link has been sent",
         });
       }
 
