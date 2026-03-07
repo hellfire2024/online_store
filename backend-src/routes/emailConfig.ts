@@ -2,6 +2,7 @@ import { Router, Request, Response } from "express";
 import { pool } from "../db/connection.js";
 import { RowDataPacket } from "mysql2";
 import { encryptData, decryptData } from "../utils/encryption.js";
+import { Socket } from "net";
 
 const router = Router();
 
@@ -186,6 +187,100 @@ router.put("/", async (req: Request, res: Response) => {
     return res
       .status(500)
       .json({ error: "Failed to update email configuration" });
+  }
+});
+
+/**
+ * Network connectivity test
+ * Tests raw TCP connectivity to SMTP server before attempting full SMTP
+ */
+router.post("/test-connectivity", async (req: Request, res: Response) => {
+  try {
+    const { host, port } = req.body;
+
+    if (!host || !port) {
+      return res.status(400).json({ error: "host and port are required" });
+    }
+
+    console.log(
+      `\n[Network Test] Testing TCP connection to ${host}:${port}...`,
+    );
+
+    return new Promise<void>((resolve) => {
+      const socket = new Socket();
+      const timeout = 10000; // 10 seconds
+      let resolved = false;
+
+      const cleanup = () => {
+        if (!resolved) {
+          resolved = true;
+          socket.destroy();
+        }
+      };
+
+      socket.setTimeout(timeout);
+
+      socket.on("connect", () => {
+        cleanup();
+        console.log(
+          `[Network Test] ✓ Successfully connected to ${host}:${port}`,
+        );
+        res.json({
+          success: true,
+          message: `TCP connection successful to ${host}:${port}`,
+          host,
+          port,
+          reachable: true,
+        });
+        resolve();
+      });
+
+      socket.on("timeout", () => {
+        cleanup();
+        console.error(`[Network Test] ✗ Connection timeout to ${host}:${port}`);
+        res.status(500).json({
+          success: false,
+          error: `Connection timeout to ${host}:${port}`,
+          help: "Your server cannot reach this SMTP server. This usually means: (1) Firewall blocking outbound connections, (2) Cloud provider blocking SMTP ports, (3) SMTP server is down. Try using SendGrid or Mailgun API instead.",
+          host,
+          port,
+          reachable: false,
+        });
+        resolve();
+      });
+
+      socket.on("error", (err: any) => {
+        cleanup();
+        console.error(
+          `[Network Test] ✗ Connection error to ${host}:${port}:`,
+          err.message,
+        );
+        res.status(500).json({
+          success: false,
+          error: `Cannot connect to ${host}:${port} - ${err.message}`,
+          code: err.code,
+          help:
+            err.code === "ENOTFOUND"
+              ? `DNS lookup failed for ${host}. Check the hostname.`
+              : err.code === "ECONNREFUSED"
+                ? `Connection refused by ${host}:${port}. The server is not accepting connections on this port.`
+                : `Network error: ${err.message}. Your server may have firewall restrictions.`,
+          host,
+          port,
+          reachable: false,
+        });
+        resolve();
+      });
+
+      socket.connect(port, host);
+    });
+  } catch (error: any) {
+    console.error("[Network Test] Unexpected error:", error);
+    return res.status(500).json({
+      success: false,
+      error: "Failed to test network connectivity",
+      details: error?.message,
+    });
   }
 });
 

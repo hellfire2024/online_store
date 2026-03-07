@@ -2977,6 +2977,66 @@ const SettingsManagement: React.FC = () => {
                 >
                   Cancel
                 </button>
+
+                {settings.emailConfig?.provider === "smtp" && (
+                  <button
+                    onClick={async () => {
+                      const host = settings.emailConfig?.smtpHost;
+                      const port = settings.emailConfig?.smtpPort || 587;
+
+                      if (!host) {
+                        addToast("SMTP host not configured", "error");
+                        return;
+                      }
+
+                      setTestEmailLoading(true);
+                      try {
+                        console.log(
+                          `Testing network connectivity to ${host}:${port}...`,
+                        );
+                        const result = await apiClient.request<{
+                          success: boolean;
+                          error?: string;
+                          help?: string;
+                          reachable?: boolean;
+                        }>("/email-config/test-connectivity", {
+                          method: "POST",
+                          body: JSON.stringify({ host, port }),
+                        });
+
+                        if (result?.success) {
+                          addToast(
+                            `✓ Network connection successful to ${host}:${port}`,
+                            "success",
+                          );
+                        } else {
+                          addToast(
+                            result?.error || "Network connection failed",
+                            "error",
+                          );
+                          if (result?.help) {
+                            setTimeout(() => {
+                              addToast(`💡 ${result.help}`, "info", 15000);
+                            }, 500);
+                          }
+                        }
+                      } catch (error: any) {
+                        console.error("Network test error:", error);
+                        addToast(
+                          error?.message || "Network test failed",
+                          "error",
+                        );
+                      } finally {
+                        setTestEmailLoading(false);
+                      }
+                    }}
+                    disabled={testEmailLoading}
+                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    {testEmailLoading ? "Testing..." : "Test Network"}
+                  </button>
+                )}
+
                 <button
                   onClick={async () => {
                     if (!testEmailAddress.trim()) {
