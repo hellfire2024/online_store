@@ -324,17 +324,6 @@ router.post(
     try {
       const { email } = req.body;
 
-      const [emailConfigRows] = await pool.query<RowDataPacket[]>(
-        "SELECT provider FROM email_config WHERE id = 1",
-      );
-      const provider = emailConfigRows[0]?.provider;
-      if (!provider || provider === "none") {
-        return res.status(503).json({
-          error:
-            "Password reset email service is not configured. Please contact support.",
-        });
-      }
-
       // Check if customer exists
       const [rows] = await pool.query<RowDataPacket[]>(
         "SELECT id, first_name, last_name, name, email FROM customers WHERE email = ? AND is_active = TRUE",
@@ -400,18 +389,6 @@ router.post(
   async (req: Request, res: Response) => {
     try {
       const { customerId } = req.params;
-
-      // Check email config
-      const [emailConfigRows] = await pool.query<RowDataPacket[]>(
-        "SELECT provider FROM email_config WHERE id = 1",
-      );
-      const provider = emailConfigRows[0]?.provider;
-      if (!provider || provider === "none") {
-        return res.status(503).json({
-          error:
-            "Password reset email service is not configured. Please configure an email provider in Settings.",
-        });
-      }
 
       // Get customer details
       const [rows] = await pool.query<RowDataPacket[]>(
