@@ -229,6 +229,17 @@ router.post("/test", async (req: Request, res: Response) => {
         const smtpHost = config.smtpHost || config.smtp_host;
         const smtpPort = config.smtpPort || config.smtp_port || 587;
         const smtpUsername = config.smtpUsername || config.smtp_username;
+        const smtpSecure = config.smtpSecure || config.smtp_secure || false;
+
+        console.log("\n" + "=".repeat(60));
+        console.log("📧 EMAIL TEST CONFIGURATION:");
+        console.log("=".repeat(60));
+        console.log(`Host:     ${smtpHost}`);
+        console.log(`Port:     ${smtpPort}`);
+        console.log(`SSL/TLS:  ${smtpSecure ? '✓ ENABLED (SSL)' : '✗ DISABLED (STARTTLS)'}`);
+        console.log(`Username: ${smtpUsername}`);
+        console.log(`Test To:  ${testEmail}`);
+        console.log("=".repeat(60) + "\n");
 
         if (!smtpHost) {
           return res.status(400).json({
@@ -286,27 +297,26 @@ router.post("/test", async (req: Request, res: Response) => {
           });
         }
 
+        // Validate port and secure flag match common SMTP configurations
+        if (smtpPort === 465 && !smtpSecure) {
+          return res.status(400).json({
+            success: false,
+            error: "Configuration error: Port 465 requires SSL/TLS to be ENABLED",
+            help: "Please check the 'Use TLS/SSL (Secure Connection)' checkbox for port 465.",
+            currentConfig: { port: smtpPort, secure: smtpSecure },
+          });
+        } else if (smtpPort === 587 && smtpSecure) {
+          return res.status(400).json({
+            success: false,
+            error: "Configuration error: Port 587 requires SSL/TLS to be DISABLED",
+            help: "Please UNCHECK the 'Use TLS/SSL (Secure Connection)' checkbox for port 587 (it uses STARTTLS instead).",
+            currentConfig: { port: smtpPort, secure: smtpSecure },
+          });
+        }
+
         // If not on Render, try to actually verify connection
         const nodemailer = await import("nodemailer");
-        console.log(
-          `[Email Test] Creating SMTP transporter for ${smtpHost}:${smtpPort}`,
-        );
-        console.log(
-          `[Email Test] Secure connection: ${config.smtpSecure || config.smtp_secure || false}`,
-        );
-        console.log(`[Email Test] Username: ${smtpUsername}`);
-
-        // Validate port and secure flag match common SMTP configurations
-        const smtpSecure = config.smtpSecure || config.smtp_secure || false;
-        if (smtpPort === 465 && !smtpSecure) {
-          console.warn(
-            "[Email Test] WARNING: Port 465 usually requires secure=true (SSL)",
-          );
-        } else if (smtpPort === 587 && smtpSecure) {
-          console.warn(
-            "[Email Test] WARNING: Port 587 usually requires secure=false (STARTTLS)",
-          );
-        }
+        console.log("[Email Test] Creating SMTP transporter...");
 
         const transporter = nodemailer.default.createTransport({
           host: smtpHost,
