@@ -89,7 +89,7 @@ router.put("/", async (req: Request, res: Response) => {
   try {
     console.log("=== EMAIL CONFIG PUT REQUEST ===");
     console.log("Body received:", JSON.stringify(req.body, null, 2));
-    
+
     const {
       provider,
       fromEmail,
