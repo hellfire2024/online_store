@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { EditIcon, TrashIcon } from "../../components/Icons";
 import { useToast } from "../../hooks/useToast";
 import { useSiteSettings } from "../../context/SiteSettingsContext";
+import { useAdmin } from "../../context/AdminContext";
 import { generateInvoiceHTML } from "../../services/pdfInvoiceGenerator";
 import Pagination from "../../components/Pagination";
 import { apiClient } from "../../services/apiClient";
@@ -86,6 +87,7 @@ const CustomerManagement: React.FC = () => {
   const [orderItemsPerPage, setOrderItemsPerPage] = useState(10);
   const { addToast } = useToast();
   const { siteSettings } = useSiteSettings();
+  const { sendPasswordResetEmail } = useAdmin();
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
 
   const toNumber = (value: unknown, fallback = 0) => {
