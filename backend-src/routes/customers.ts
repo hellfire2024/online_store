@@ -44,7 +44,12 @@ router.get("/:id", async (req: Request, res: Response) => {
     }
 
     const customer = customerRows[0];
-    customer.emailPreferences = JSON.parse(customer.emailPreferences || "{}");
+    // Handle emailPreferences - may already be parsed object or JSON string
+    if (typeof customer.emailPreferences === "string") {
+      customer.emailPreferences = JSON.parse(customer.emailPreferences || "{}");
+    } else {
+      customer.emailPreferences = customer.emailPreferences || {};
+    }
 
     // Get customer's addresses
     const [addresses] = await pool.query<RowDataPacket[]>(
