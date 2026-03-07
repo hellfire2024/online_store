@@ -2903,39 +2903,58 @@ const SettingsManagement: React.FC = () => {
               <h3 className="text-lg font-semibold text-white mb-4">
                 Send Test Email
               </h3>
-              
-              {settings.emailConfig?.provider === 'smtp' && (
+
+              {settings.emailConfig?.provider === "smtp" && (
                 <div className="bg-slate-700 p-4 rounded mb-4 text-sm">
-                  <h4 className="text-white font-semibold mb-2">Current Configuration:</h4>
+                  <h4 className="text-white font-semibold mb-2">
+                    Current Configuration:
+                  </h4>
                   <div className="text-gray-300 space-y-1">
                     <div className="flex justify-between">
                       <span>Host:</span>
-                      <span className="font-mono">{settings.emailConfig.smtpHost || 'Not set'}</span>
+                      <span className="font-mono">
+                        {settings.emailConfig.smtpHost || "Not set"}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span>Port:</span>
-                      <span className="font-mono">{settings.emailConfig.smtpPort || 587}</span>
+                      <span className="font-mono">
+                        {settings.emailConfig.smtpPort || 587}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span>SSL/TLS:</span>
-                      <span className={settings.emailConfig.smtpSecure ? 'text-green-400' : 'text-yellow-400'}>
-                        {settings.emailConfig.smtpSecure ? '✓ Enabled (SSL)' : '✗ Disabled (STARTTLS)'}
+                      <span
+                        className={
+                          settings.emailConfig.smtpSecure
+                            ? "text-green-400"
+                            : "text-yellow-400"
+                        }
+                      >
+                        {settings.emailConfig.smtpSecure
+                          ? "✓ Enabled (SSL)"
+                          : "✗ Disabled (STARTTLS)"}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span>Username:</span>
-                      <span className="font-mono truncate ml-2">{settings.emailConfig.smtpUsername || 'Not set'}</span>
+                      <span className="font-mono truncate ml-2">
+                        {settings.emailConfig.smtpUsername || "Not set"}
+                      </span>
                     </div>
                   </div>
-                  {((settings.emailConfig.smtpPort === 465 && !settings.emailConfig.smtpSecure) ||
-                    (settings.emailConfig.smtpPort === 587 && settings.emailConfig.smtpSecure)) && (
+                  {((settings.emailConfig.smtpPort === 465 &&
+                    !settings.emailConfig.smtpSecure) ||
+                    (settings.emailConfig.smtpPort === 587 &&
+                      settings.emailConfig.smtpSecure)) && (
                     <div className="mt-3 p-2 bg-red-900 bg-opacity-40 border border-red-700 rounded text-xs text-red-200">
-                      ⚠️ Port and SSL/TLS mismatch detected! Port 465 needs SSL enabled, port 587 needs SSL disabled.
+                      ⚠️ Port and SSL/TLS mismatch detected! Port 465 needs SSL
+                      enabled, port 587 needs SSL disabled.
                     </div>
                   )}
                 </div>
               )}
-              
+
               <p className="text-gray-300 text-sm mb-4">
                 Enter the email address where you would like to receive the test
                 email.

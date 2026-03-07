@@ -236,7 +236,9 @@ router.post("/test", async (req: Request, res: Response) => {
         console.log("=".repeat(60));
         console.log(`Host:     ${smtpHost}`);
         console.log(`Port:     ${smtpPort}`);
-        console.log(`SSL/TLS:  ${smtpSecure ? '✓ ENABLED (SSL)' : '✗ DISABLED (STARTTLS)'}`);
+        console.log(
+          `SSL/TLS:  ${smtpSecure ? "✓ ENABLED (SSL)" : "✗ DISABLED (STARTTLS)"}`,
+        );
         console.log(`Username: ${smtpUsername}`);
         console.log(`Test To:  ${testEmail}`);
         console.log("=".repeat(60) + "\n");
@@ -301,14 +303,16 @@ router.post("/test", async (req: Request, res: Response) => {
         if (smtpPort === 465 && !smtpSecure) {
           return res.status(400).json({
             success: false,
-            error: "Configuration error: Port 465 requires SSL/TLS to be ENABLED",
+            error:
+              "Configuration error: Port 465 requires SSL/TLS to be ENABLED",
             help: "Please check the 'Use TLS/SSL (Secure Connection)' checkbox for port 465.",
             currentConfig: { port: smtpPort, secure: smtpSecure },
           });
         } else if (smtpPort === 587 && smtpSecure) {
           return res.status(400).json({
             success: false,
-            error: "Configuration error: Port 587 requires SSL/TLS to be DISABLED",
+            error:
+              "Configuration error: Port 587 requires SSL/TLS to be DISABLED",
             help: "Please UNCHECK the 'Use TLS/SSL (Secure Connection)' checkbox for port 587 (it uses STARTTLS instead).",
             currentConfig: { port: smtpPort, secure: smtpSecure },
           });
