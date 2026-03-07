@@ -351,8 +351,13 @@ router.post(
         [tokenId, customer.id, resetToken, expiresAt],
       );
 
-      // Build reset URL
-      const resetUrl = `${process.env.FRONTEND_URL || "http://localhost:5173"}/#/reset-password?token=${resetToken}`;
+      // Build reset URL - use production domain from request if FRONTEND_URL not set
+      const baseUrl =
+        process.env.FRONTEND_URL ||
+        req.get("origin") ||
+        req.get("referer")?.split("/#")[0] ||
+        "https://dev.adaptivegis.com";
+      const resetUrl = `${baseUrl}/#/reset-password?token=${resetToken}`;
 
       // Send password reset email
       const emailResult = await sendPasswordResetEmail(
@@ -432,8 +437,13 @@ router.post(
         [tokenId, customer.id, resetToken, expiresAt],
       );
 
-      // Build reset URL
-      const resetUrl = `${process.env.FRONTEND_URL || "http://localhost:5173"}/#/reset-password?token=${resetToken}`;
+      // Build reset URL - use production domain from request if FRONTEND_URL not set
+      const baseUrl =
+        process.env.FRONTEND_URL ||
+        req.get("origin") ||
+        req.get("referer")?.split("/#")[0] ||
+        "https://dev.adaptivegis.com";
+      const resetUrl = `${baseUrl}/#/reset-password?token=${resetToken}`;
 
       // Send password reset email
       const emailResult = await sendPasswordResetEmail(

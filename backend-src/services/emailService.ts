@@ -242,7 +242,8 @@ export async function sendOrderConfirmationEmail(
       </body>
     </html>
     `;
-
+    // Generate plain text version as fallback
+    const text = `Hi ${customerName},\n\nWe received a request to reset your password.\n\nClick this link to reset your password:\n${resetUrl}\n\nThis link will expire in 1 hour.\n\nIf you didn't request this password reset, please ignore this email.\n\nThank you`;
     const result = await transport.sendMail({
       from: `${cachedConfig.from_name} <${cachedConfig.from_email}>`,
       to: customerEmail,
@@ -559,7 +560,7 @@ export async function sendPasswordResetEmail(
         <title>Password Reset Request</title>
       </head>
       <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+        <div style="background-color: #667eea; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
           <h1 style="color: white; margin: 0; font-size: 28px;">Password Reset Request</h1>
         </div>
         
@@ -571,17 +572,24 @@ export async function sendPasswordResetEmail(
           </p>
           
           <div style="text-align: center; margin: 30px 0;">
-            <a href="${escapeHtml(resetUrl)}" 
-               style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                      color: white; 
-                      padding: 15px 30px; 
-                      text-decoration: none; 
-                      border-radius: 5px; 
-                      font-size: 16px; 
-                      font-weight: bold;
-                      display: inline-block;">
-              Reset My Password
-            </a>
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center">
+              <tr>
+                <td style="border-radius: 5px; background-color: #667eea;">
+                  <a href="${escapeHtml(resetUrl)}" 
+                     style="background-color: #667eea; 
+                            color: #ffffff !important; 
+                            padding: 15px 40px; 
+                            text-decoration: none; 
+                            border-radius: 5px; 
+                            font-size: 18px; 
+                            font-weight: bold;
+                            display: inline-block;
+                            text-align: center;">
+                    Reset My Password
+                  </a>
+                </td>
+              </tr>
+            </table>
           </div>
           
           <p style="font-size: 14px; color: #666; margin-bottom: 15px;">
@@ -608,6 +616,9 @@ export async function sendPasswordResetEmail(
     </html>
     `;
 
+    // Generate plain text version as fallback
+    const text = `Hi ${customerName},\n\nWe received a request to reset your password.\n\nClick this link to reset your password:\n${resetUrl}\n\nThis link will expire in 1 hour.\n\nIf you didn't request this password reset, please ignore this email.\n\nThank you`;
+
     const result = await transport.sendMail({
       from: cachedConfig
         ? `${cachedConfig.from_name} <${cachedConfig.from_email}>`
@@ -615,6 +626,7 @@ export async function sendPasswordResetEmail(
       to: customerEmail,
       subject: "Password Reset Request",
       html,
+      text,
     });
 
     console.log("Password reset email sent:", result);
