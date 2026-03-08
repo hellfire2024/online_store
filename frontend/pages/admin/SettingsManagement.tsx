@@ -532,6 +532,12 @@ const SettingsManagement: React.FC = () => {
     return [...defaultItems, ...menuItems];
   }, [menus]);
 
+  // Sensors for drag-and-drop (form fields)
+  const formFieldSensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor)
+  );
+
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
     const item =
@@ -827,7 +833,7 @@ const SettingsManagement: React.FC = () => {
   }) => (
     <button
       onClick={() => setActiveTab(tab)}
-      className={`px-4 py-2 text-sm font-medium rounded-t-md transition-colors ${activeTab === tab ? "bg-slate-800 text-white" : "bg-slate-900 text-gray-400 hover:text-white"}`}
+      className={`px-3 py-2 text-sm font-medium rounded-t-md transition-colors whitespace-nowrap ${activeTab === tab ? "bg-slate-800 text-white" : "bg-slate-900 text-gray-400 hover:text-white"}`}
     >
       {label}
     </button>
@@ -839,7 +845,7 @@ const SettingsManagement: React.FC = () => {
     <div>
       <h1 className="text-3xl font-bold text-white mb-8">Site Settings</h1>
 
-      <div className="flex border-b border-slate-700">
+      <div className="flex flex-wrap gap-1 border-b border-slate-700 overflow-x-auto">
         <TabButton tab="general" label="General" />
         <TabButton tab="footer" label="Footer" />
         <TabButton tab="menus" label="Menus" />
@@ -3744,10 +3750,7 @@ const SettingsManagement: React.FC = () => {
             </div>
 
             <DndContext
-              sensors={useSensors(
-                useSensor(PointerSensor),
-                useSensor(KeyboardSensor),
-              )}
+              sensors={formFieldSensors}
               collisionDetection={closestCenter}
               onDragEnd={(event) => {
                 const { active, over } = event;
