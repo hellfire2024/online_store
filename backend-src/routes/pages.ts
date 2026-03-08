@@ -217,7 +217,13 @@ router.put("/:id", async (req: Request, res: Response) => {
       : await pool.query(
           `UPDATE pages SET title = ?, page_type = ?, content = ?, content_data = ?, updated_at = NOW()
            WHERE id = ?`,
-          [title || "", pageType, content || "", contentDataJson, req.params.id],
+          [
+            title || "",
+            pageType,
+            content || "",
+            contentDataJson,
+            req.params.id,
+          ],
         );
 
     let updatedId = req.params.id;
@@ -251,7 +257,13 @@ router.put("/:id", async (req: Request, res: Response) => {
           : await pool.query(
               `UPDATE pages SET title = ?, page_type = ?, content = ?, content_data = ?, updated_at = NOW()
                WHERE ${whereClause}`,
-              [title || "", pageType, content || "", contentDataJson, whereValue],
+              [
+                title || "",
+                pageType,
+                content || "",
+                contentDataJson,
+                whereValue,
+              ],
             );
 
         if ((fallbackResult as any).affectedRows === 0) {
