@@ -27,8 +27,43 @@ function parseContentDataSafely(contentData: any, pageId?: string): any {
   }
 }
 
-// Cache for available columns in pages table
+// Cache for available columns in pages table with their constraints
 let availableColumnsCache: Set<string> | null = null;
+let columnConstraintsCache: Map<string, { nullable: boolean; hasDefault: boolean }> | null = null;
+
+async function getColumnConstraints(): Promise<Map<string, { nullable: boolean; hasDefault: boolean }>> {
+  if (columnConstraintsCache !== null) {
+    return columnConstraintsCache;
+  }
+
+  columnConstraintsCache = new Map();
+
+  try {
+    const [rows] = await pool.query<RowDataPacket[]>(
+      `SELECT COLUMN_NAME, IS_NULLABLE, COLUMN_DEFAULT 
+       FROM INFORMATION_SCHEMA.COLUMNS 
+       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'pages'`,
+    );
+
+    for (const row of rows || []) {
+      const colName = (row.COLUMN_NAME || "").toLowerCase();
+      const isNullable = (row.IS_NULLABLE || "").toUpperCase() === "YES";
+      const hasDefault = row.COLUMN_DEFAULT !== null;
+
+      columnConstraintsCache.set(colName, { nullable: isNullable, hasDefault });
+      console.log(
+        `Column ${colName}: nullable=${isNullable}, hasDefault=${hasDefault}`,
+      );
+    }
+  } catch (error) {
+    console.warn(
+      "Failed to detect column constraints; assuming all optional",
+      error,
+    );
+  }
+
+  return columnConstraintsCache;
+}
 
 async function getAvailableColumns(): Promise<Set<string>> {
   if (availableColumnsCache !== null) {
@@ -70,6 +105,17 @@ function inferPath(pageType?: string, pageId?: string): string {
 // Convert JavaScript Date to MySQL DATETIME format (YYYY-MM-DD HH:MM:SS)
 function toMySQLDateTime(date: Date): string {
   return date.toISOString().slice(0, 19).replace("T", " ");
+}
+
+// Generate a slug from title or id
+function generateSlug(title?: string, id?: string): string {
+  const text = title || id || "page";
+  return text
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .slice(0, 255);
 }
 
 // Get all pages
@@ -173,6 +219,7 @@ router.post("/", async (req: Request, res: Response) => {
     }
 
     const cols = await getAvailableColumns();
+    const constraints = await getColumnConstraints();
 
     // Sanitize content data
     const sanitizedContentData = sanitizeContentData(contentData);
@@ -181,10 +228,17 @@ router.post("/", async (req: Request, res: Response) => {
         ? sanitizedContentData
         : JSON.stringify(sanitizedContentData || {});
 
-    // Build INSERT statement dynamically based on available columns
+    // Build INSERT statement dynamically based on available columns and constraints
     const columns: string[] = ["id"];
     const values: any[] = [id];
     const placeholders: string[] = ["?"];
+
+    if (cols.has("slug")) {
+      // slug is required with no default
+      columns.push("slug");
+      values.push(generateSlug(title, id));
+      placeholders.push("?");
+    }
 
     if (cols.has("title")) {
       columns.push("title");
@@ -228,8 +282,31 @@ router.post("/", async (req: Request, res: Response) => {
       placeholders.push("?");
     }
 
+    // Check for any remaining required columns without defaults
+    for (const [colName, constraint] of constraints.entries()) {
+      if (
+        !columns.includes(colName) &&
+        !constraint.nullable &&
+        !constraint.hasDefault
+      ) {
+        // Column is required but missing - provide a default
+        if (colName === "slug") {
+          columns.push(colName);
+          values.push(generateSlug(title, id));
+          placeholders.push("?");
+        } else {
+          console.warn(
+            `Required column ${colName} has no default; using empty string`,
+          );
+          columns.push(colName);
+          values.push("");
+          placeholders.push("?");
+        }
+      }
+    }
+
     const insertSQL = `INSERT INTO pages (${columns.join(", ")}) VALUES (${placeholders.join(", ")})`;
-    console.log("Executing INSERT with columns:", columns);
+    console.log("Executing INSERT with columns:", columns, "values:", values);
     await pool.query(insertSQL, values);
 
     return res.status(201).json({
@@ -309,6 +386,13 @@ router.put("/:id", async (req: Request, res: Response) => {
       const insertColumns: string[] = ["id"];
       const insertValues: any[] = [req.params.id];
       const insertPlaceholders: string[] = ["?"];
+      const constraints = await getColumnConstraints();
+
+      if (cols.has("slug")) {
+        insertColumns.push("slug");
+        insertValues.push(generateSlug(title, req.params.id));
+        insertPlaceholders.push("?");
+      }
 
       if (cols.has("title")) {
         insertColumns.push("title");
@@ -350,6 +434,29 @@ router.put("/:id", async (req: Request, res: Response) => {
         insertColumns.push("updated_at");
         insertValues.push(toMySQLDateTime(new Date()));
         insertPlaceholders.push("?");
+      }
+
+      // Check for any remaining required columns without defaults
+      for (const [colName, constraint] of constraints.entries()) {
+        if (
+          !insertColumns.includes(colName) &&
+          !constraint.nullable &&
+          !constraint.hasDefault
+        ) {
+          // Column is required but missing - provide a default
+          if (colName === "slug") {
+            insertColumns.push(colName);
+            insertValues.push(generateSlug(title, req.params.id));
+            insertPlaceholders.push("?");
+          } else {
+            console.warn(
+              `Required column ${colName} has no default; using empty string`,
+            );
+            insertColumns.push(colName);
+            insertValues.push("");
+            insertPlaceholders.push("?");
+          }
+        }
       }
 
       const insertSQL = `INSERT INTO pages (${insertColumns.join(", ")}) VALUES (${insertPlaceholders.join(", ")})`;
