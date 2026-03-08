@@ -36,16 +36,24 @@ async function getAvailableColumns(): Promise<Set<string>> {
   }
 
   try {
-    const [rows] = await pool.query<RowDataPacket[]>(
-      "SHOW COLUMNS FROM pages",
-    );
+    const [rows] = await pool.query<RowDataPacket[]>("SHOW COLUMNS FROM pages");
     availableColumnsCache = new Set(
       (rows || []).map((row: any) => row.Field.toLowerCase()),
     );
     console.log("Available pages columns:", Array.from(availableColumnsCache));
   } catch (error) {
-    console.warn("Failed to detect pages table columns; assuming minimal schema", error);
-    availableColumnsCache = new Set(["id", "title", "content", "content_data", "created_at", "updated_at"]);
+    console.warn(
+      "Failed to detect pages table columns; assuming minimal schema",
+      error,
+    );
+    availableColumnsCache = new Set([
+      "id",
+      "title",
+      "content",
+      "content_data",
+      "created_at",
+      "updated_at",
+    ]);
   }
 
   return availableColumnsCache;
@@ -71,7 +79,9 @@ router.get("/", async (_req: Request, res: Response) => {
     const transformedRows = (rows || []).map((row: any) => ({
       id: row.id,
       title: row.title || "",
-      path: cols.has("path") ? row.path : inferPath(cols.has("page_type") ? row.page_type : undefined, row.id),
+      path: cols.has("path")
+        ? row.path
+        : inferPath(cols.has("page_type") ? row.page_type : undefined, row.id),
       pageType: cols.has("page_type") ? row.page_type : "page",
       content: row.content || "",
       contentData: parseContentDataSafely(row.content_data, row.id),
@@ -104,7 +114,9 @@ router.get("/:id", async (req: Request, res: Response) => {
     const page = {
       id: row.id,
       title: row.title || "",
-      path: cols.has("path") ? row.path : inferPath(cols.has("page_type") ? row.page_type : undefined, row.id),
+      path: cols.has("path")
+        ? row.path
+        : inferPath(cols.has("page_type") ? row.page_type : undefined, row.id),
       pageType: cols.has("page_type") ? row.page_type : "page",
       content: row.content || "",
       contentData: parseContentDataSafely(row.content_data, row.id),
@@ -141,7 +153,12 @@ router.post("/", async (req: Request, res: Response) => {
       return res.status(200).json({
         id: row.id,
         title: row.title || "",
-        path: cols.has("path") ? row.path : inferPath(cols.has("page_type") ? row.page_type : undefined, row.id),
+        path: cols.has("path")
+          ? row.path
+          : inferPath(
+              cols.has("page_type") ? row.page_type : undefined,
+              row.id,
+            ),
         pageType: cols.has("page_type") ? row.page_type : "page",
         content: row.content || "",
         contentData: parseContentDataSafely(row.content_data, row.id),
