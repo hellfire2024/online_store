@@ -67,6 +67,11 @@ function inferPath(pageType?: string, pageId?: string): string {
   return "/";
 }
 
+// Convert JavaScript Date to MySQL DATETIME format (YYYY-MM-DD HH:MM:SS)
+function toMySQLDateTime(date: Date): string {
+  return date.toISOString().slice(0, 19).replace("T", " ");
+}
+
 // Get all pages
 router.get("/", async (_req: Request, res: Response) => {
   try {
@@ -213,13 +218,13 @@ router.post("/", async (req: Request, res: Response) => {
 
     if (cols.has("created_at")) {
       columns.push("created_at");
-      values.push(new Date().toISOString());
+      values.push(toMySQLDateTime(new Date()));
       placeholders.push("?");
     }
 
     if (cols.has("updated_at")) {
       columns.push("updated_at");
-      values.push(new Date().toISOString());
+      values.push(toMySQLDateTime(new Date()));
       placeholders.push("?");
     }
 
@@ -285,7 +290,7 @@ router.put("/:id", async (req: Request, res: Response) => {
 
     if (cols.has("updated_at")) {
       setClauses.push("updated_at = ?");
-      values.push(new Date().toISOString());
+      values.push(toMySQLDateTime(new Date()));
     }
 
     if (setClauses.length === 0) {
@@ -337,13 +342,13 @@ router.put("/:id", async (req: Request, res: Response) => {
 
       if (cols.has("created_at")) {
         insertColumns.push("created_at");
-        insertValues.push(new Date().toISOString());
+        insertValues.push(toMySQLDateTime(new Date()));
         insertPlaceholders.push("?");
       }
 
       if (cols.has("updated_at")) {
         insertColumns.push("updated_at");
-        insertValues.push(new Date().toISOString());
+        insertValues.push(toMySQLDateTime(new Date()));
         insertPlaceholders.push("?");
       }
 
