@@ -1798,8 +1798,13 @@ const PageEditor: React.FC = () => {
 
         {/* Form Fields Builder */}
         <div className="bg-slate-800 p-4 rounded-lg border border-slate-700">
-          <div className="flex justify-between items-center mb-2">
-            <h3 className="text-lg font-semibold text-white">Form Fields</h3>
+          <div className="flex justify-between items-center mb-4">
+            <div>
+              <h3 className="text-lg font-semibold text-white">Form Fields</h3>
+              <p className="text-sm text-gray-400 mt-1">
+                Drag to reorder. Required fields (marked with *) are automatically included.
+              </p>
+            </div>
             <button
               type="button"
               onClick={addCustomField}
@@ -1808,101 +1813,50 @@ const PageEditor: React.FC = () => {
               + Add Custom Field
             </button>
           </div>
-          <p className="text-sm text-gray-400 mb-4">
-            📌 <strong>Default fields</strong> from Settings can be enabled/disabled
-            here. Required fields are automatically added. Drag fields below to reorder.
-            Phone numbers are automatically formatted as (###) ###-####.
-          </p>
 
-          <div className="mb-4 p-3 bg-slate-900 border border-slate-600 rounded-md">
-            <h4 className="text-sm font-semibold text-white mb-2">
-              Default Fields Configuration
+          {/* Section: Available Default Fields */}
+          <div className="mb-6 p-3 bg-slate-900 border border-slate-600 rounded-md">
+            <h4 className="text-sm font-semibold text-white mb-3">
+              Available Default Fields (from Settings)
             </h4>
             <div className="space-y-2">
               {(siteSettings?.defaultFormFields || []).map((defaultField) => {
-                const field = content.formFields?.find(
+                const isAdded = content.formFields?.some(
                   (f) => f.id === defaultField.id,
                 );
-
-                if (!field) {
-                  return (
-                    <div
-                      key={defaultField.id}
-                      className="flex items-center justify-between p-2 bg-slate-800 rounded"
-                    >
-                      <span className="text-sm text-gray-300">
-                        {defaultField.label}
-                        {defaultField.required && <span className="text-red-400 ml-1">*</span>}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => addMissingDefaultField(defaultField.id)}
-                        className="text-xs px-2 py-1 bg-sky-600 hover:bg-sky-500 text-white rounded"
-                      >
-                        Add Field
-                      </button>
-                    </div>
-                  );
-                }
+                const isRequired = defaultField.required && defaultField.enabled;
 
                 return (
                   <div
                     key={defaultField.id}
                     className="flex items-center justify-between p-2 bg-slate-800 rounded"
                   >
-                    <span className="text-sm text-gray-200">
-                      {defaultField.label}
-                    </span>
-                    <div className="flex items-center gap-3">
-                      <label className="text-xs text-gray-300 flex items-center gap-1">
-                        <input
-                          type="checkbox"
-                          checked={field.enabled}
-                          onChange={(e) =>
-                            handleFieldUpdate(defaultField.id, {
-                              enabled: e.target.checked,
-                            })
-                          }
-                          className="w-3 h-3"
-                        />
-                        Enabled
-                      </label>
-                      <label className="text-xs text-gray-300 flex items-center gap-1">
-                        <input
-                          type="checkbox"
-                          checked={field.required}
-                          onChange={(e) =>
-                            handleFieldUpdate(defaultField.id, {
-                              required: e.target.checked,
-                            })
-                          }
-                          className="w-3 h-3"
-                        />
-                        Required
-                      </label>
-                      <button
-                        type="button"
-                        onClick={() => moveField(defaultField.id, "up")}
-                        className="text-xs px-2 py-1 bg-slate-700 hover:bg-slate-600 text-gray-200 rounded"
-                        title="Move up"
-                      >
-                        ↑
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => moveField(defaultField.id, "down")}
-                        className="text-xs px-2 py-1 bg-slate-700 hover:bg-slate-600 text-gray-200 rounded"
-                        title="Move down"
-                      >
-                        ↓
-                      </button>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-gray-200">
+                        {defaultField.label}
+                      </span>
+                      {isRequired && (
+                        <span className="text-xs px-2 py-0.5 bg-red-600/30 text-red-200 rounded">
+                          Required (Auto-Added)
+                        </span>
+                      )}
                     </div>
+                    {!isAdded && !isRequired && (
+                      <button
+                        type="button"
+                        onClick={() => addMissingDefaultField(defaultField.id)}
+                        className="text-xs px-2 py-1 bg-sky-600 hover:bg-sky-500 text-white rounded"
+                      >
+                        + Add to Form
+                      </button>
+                    )}
                   </div>
                 );
               })}
             </div>
           </div>
 
+          {/* Section: Form Fields Drag & Drop */}
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
