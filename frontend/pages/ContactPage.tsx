@@ -20,14 +20,71 @@ const ContactPage: React.FC = () => {
   const [formData, setFormData] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const contactPage = pages.find((page) => page.pageType === "contact");
-  const content = (contactPage?.contentData as ContactPageContent) || {
+  const defaultFormFields: ContactFormField[] = [
+    {
+      id: "f1",
+      type: "fullName",
+      label: "Full Name",
+      placeholder: "John Doe",
+      required: true,
+      enabled: true,
+    },
+    {
+      id: "f2",
+      type: "email",
+      label: "Email Address",
+      placeholder: "john@example.com",
+      required: true,
+      enabled: true,
+      validation: { pattern: "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$" },
+    },
+    {
+      id: "f3",
+      type: "phone",
+      label: "Phone Number",
+      placeholder: "(555) 123-4567",
+      required: false,
+      enabled: true,
+      validation: { pattern: "^[\\d\\s()+-]+$" },
+    },
+    {
+      id: "f4",
+      type: "subject",
+      label: "Subject",
+      placeholder: "How can we help?",
+      required: true,
+      enabled: true,
+    },
+    {
+      id: "f5",
+      type: "message",
+      label: "Message",
+      placeholder: "Your message here...",
+      required: true,
+      enabled: true,
+      validation: { minLength: 10 },
+    },
+  ];
+
+  const defaultContactContent: ContactPageContent = {
     pageTitle: "Get In Touch",
     pageSubtitle: "Have a question or a comment? Drop us a line!",
-    formFields: [],
+    formFields: defaultFormFields,
     targetEmail: "contact@example.com",
     successMessage: "Thank you for your message! We will get back to you soon.",
     subjectTemplate: "Contact Form: {subject}",
+  };
+
+  const contactPage = pages.find((page) => page.pageType === "contact");
+  const rawContent =
+    (contactPage?.contentData as Partial<ContactPageContent> | undefined) || {};
+  const content: ContactPageContent = {
+    ...defaultContactContent,
+    ...rawContent,
+    formFields:
+      Array.isArray(rawContent.formFields) && rawContent.formFields.length > 0
+        ? rawContent.formFields
+        : defaultFormFields,
   };
 
   const handleChange = (fieldId: string, value: string) => {
