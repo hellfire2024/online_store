@@ -62,11 +62,18 @@ export const ReviewsProvider: React.FC<{ children: ReactNode }> = ({
         textLength: review.text?.length || 0,
       });
       const newReview = await apiClient.reviews.create(review);
-      console.log("[ReviewsContext] Review created successfully:", newReview.id);
+      console.log(
+        "[ReviewsContext] Review created successfully:",
+        newReview.id,
+      );
       setReviews((prev) => [...prev, newReview]);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      console.error("[ReviewsContext] Failed to add review via API:", errorMessage);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      console.error(
+        "[ReviewsContext] Failed to add review via API:",
+        errorMessage,
+      );
       throw new Error(`Failed to submit review: ${errorMessage}`);
     }
   };
@@ -80,8 +87,12 @@ export const ReviewsProvider: React.FC<{ children: ReactNode }> = ({
         prev.map((r) => (r.id === updatedReview.id ? updatedReview : r)),
       );
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      console.error("[ReviewsContext] Failed to update review via API:", errorMessage);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      console.error(
+        "[ReviewsContext] Failed to update review via API:",
+        errorMessage,
+      );
       throw new Error(`Failed to update review: ${errorMessage}`);
     }
   };
@@ -93,8 +104,12 @@ export const ReviewsProvider: React.FC<{ children: ReactNode }> = ({
       console.log("[ReviewsContext] Review deleted successfully:", reviewId);
       setReviews((prev) => prev.filter((r) => r.id !== reviewId));
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      console.error("[ReviewsContext] Failed to delete review via API:", errorMessage);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      console.error(
+        "[ReviewsContext] Failed to delete review via API:",
+        errorMessage,
+      );
       throw new Error(`Failed to delete review: ${errorMessage}`);
     }
   };

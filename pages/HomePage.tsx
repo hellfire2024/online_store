@@ -124,9 +124,13 @@ const HomePage: React.FC = () => {
       setReviewImages([]);
       setShowReviewForm(false);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       console.error("[HomePage] Review submission failed:", errorMessage);
-      addToast(errorMessage || "Failed to submit review. Please try again.", "error");
+      addToast(
+        errorMessage || "Failed to submit review. Please try again.",
+        "error",
+      );
     }
   };
 
