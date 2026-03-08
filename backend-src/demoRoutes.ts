@@ -86,30 +86,32 @@ const galleryImages: Record<
 
 const pages = [
   {
-    id: "home",
+    id: "home-page",
     title: "Home",
     path: "/",
-    page_type: "home",
-    content_data: {},
+    pageType: "home",
+    contentData: {},
     content: "<h1>Welcome to Custom Threads</h1>",
   },
   {
-    id: "about",
+    id: "about-us-page",
     title: "About",
     path: "/about",
-    page_type: "about",
-    content_data: {},
+    pageType: "about",
+    contentData: {},
     content: "<p>About our shop</p>",
   },
   {
-    id: "contact",
+    id: "contact-page",
     title: "Contact",
     path: "/contact",
-    page_type: "contact",
-    content_data: {},
+    pageType: "contact",
+    contentData: {},
     content: "<p>Contact us at hello@example.com</p>",
   },
 ];
+
+const reviews: any[] = [];
 
 // Demo orders storage for checkout flow
 const orders: any[] = [];
@@ -797,7 +799,21 @@ router.get("/galleries/:id/images", (req, res) =>
   res.json(galleryImages[req.params.id] || []),
 );
 router.get("/pages", (_req, res) => res.json(pages));
-router.get("/reviews", (_req, res) => res.json([]));
+router.get("/pages/:id", (req, res) => {
+  const page = pages.find((p) => p.id === req.params.id);
+  if (!page) {
+    return res.status(404).json({ error: "Page not found" });
+  }
+  return res.json(page);
+});
+router.get("/reviews", (_req, res) => res.json(reviews));
+router.get("/reviews/:id", (req, res) => {
+  const review = reviews.find((r) => r.id === req.params.id);
+  if (!review) {
+    return res.status(404).json({ error: "Review not found" });
+  }
+  return res.json(review);
+});
 router.get("/staff", (_req, res) => res.json([]));
 router.get("/services", (_req, res) => res.json(services));
 router.get("/settings", (_req, res) => res.json(siteSettings));
@@ -1105,9 +1121,13 @@ router.delete("/products/:id", (req, res) => {
 });
 
 router.post("/pages", (req, res) => {
-  const newPage = { ...req.body, id: "page-" + Date.now() };
+  const requestedId = req.body?.id;
+  const newPage = {
+    ...req.body,
+    id: requestedId || "page-" + Date.now(),
+  };
   pages.push(newPage);
-  res.json(newPage);
+  res.status(201).json(newPage);
 });
 
 router.put("/pages/:id", (req, res) => {
@@ -1127,6 +1147,37 @@ router.delete("/pages/:id", (req, res) => {
     res.json({ success: true });
   } else {
     res.status(404).json({ error: "Page not found" });
+  }
+});
+
+router.post("/reviews", (req, res) => {
+  const newReview = {
+    ...req.body,
+    id: req.body?.id || "rev-" + Date.now(),
+    createdAt: req.body?.createdAt || new Date().toISOString(),
+    status: req.body?.status || "pending",
+  };
+  reviews.push(newReview);
+  res.status(201).json(newReview);
+});
+
+router.put("/reviews/:id", (req, res) => {
+  const index = reviews.findIndex((r) => r.id === req.params.id);
+  if (index !== -1) {
+    reviews[index] = { ...reviews[index], ...req.body };
+    res.json(reviews[index]);
+  } else {
+    res.status(404).json({ error: "Review not found" });
+  }
+});
+
+router.delete("/reviews/:id", (req, res) => {
+  const index = reviews.findIndex((r) => r.id === req.params.id);
+  if (index !== -1) {
+    reviews.splice(index, 1);
+    res.json({ success: true });
+  } else {
+    res.status(404).json({ error: "Review not found" });
   }
 });
 
