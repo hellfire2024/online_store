@@ -173,9 +173,7 @@ router.get("/:id", async (req: Request, res: Response) => {
     const page = {
       id: row.id,
       title: row.title || "",
-      path: cols.has("path")
-        ? row.path
-        : inferPath(inferredPageType, row.id),
+      path: cols.has("path") ? row.path : inferPath(inferredPageType, row.id),
       pageType: inferredPageType,
       content: row.content || "",
       contentData: parseContentDataSafely(row.content_data, row.id),
@@ -213,9 +211,7 @@ router.post("/", async (req: Request, res: Response) => {
       return res.status(200).json({
         id: row.id,
         title: row.title || "",
-        path: cols.has("path")
-          ? row.path
-          : inferPath(inferredPageType, row.id),
+        path: cols.has("path") ? row.path : inferPath(inferredPageType, row.id),
         pageType: inferredPageType,
         content: row.content || "",
         contentData: parseContentDataSafely(row.content_data, row.id),
