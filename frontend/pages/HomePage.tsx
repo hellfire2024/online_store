@@ -137,6 +137,7 @@ const HomePage: React.FC = () => {
     const authorName = `${customer.firstName} ${customer.lastName}`;
 
     try {
+      console.log("[HomePage] Submitting review for:", authorName);
       await addReview({
         author: authorName,
         email: customer.email,
@@ -155,7 +156,9 @@ const HomePage: React.FC = () => {
       setReviewImages([]);
       setShowReviewForm(false);
     } catch (error) {
-      addToast("Failed to submit review", "error");
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error("[HomePage] Review submission failed:", errorMessage);
+      addToast(errorMessage || "Failed to submit review. Please try again.", "error");
     }
   };
 

@@ -55,38 +55,47 @@ export const ReviewsProvider: React.FC<{ children: ReactNode }> = ({
 
   const addReview = async (review: Omit<Review, "id">) => {
     try {
+      console.log("[ReviewsContext] Adding review:", {
+        author: review.author,
+        email: review.email,
+        rating: review.rating,
+        textLength: review.text?.length || 0,
+      });
       const newReview = await apiClient.reviews.create(review);
+      console.log("[ReviewsContext] Review created successfully:", newReview.id);
       setReviews((prev) => [...prev, newReview]);
     } catch (error) {
-      console.error("Failed to add review via API, using mock", error);
-      const newReview = await addMockReview(review);
-      setReviews((prev) => [...prev, newReview]);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error("[ReviewsContext] Failed to add review via API:", errorMessage);
+      throw new Error(`Failed to submit review: ${errorMessage}`);
     }
   };
 
   const updateReview = async (review: Review) => {
     try {
+      console.log("[ReviewsContext] Updating review:", review.id);
       const updatedReview = await apiClient.reviews.update(review.id, review);
+      console.log("[ReviewsContext] Review updated successfully:", review.id);
       setReviews((prev) =>
         prev.map((r) => (r.id === updatedReview.id ? updatedReview : r)),
       );
     } catch (error) {
-      console.error("Failed to update review via API, using mock", error);
-      const updatedReview = await updateMockReview(review);
-      setReviews((prev) =>
-        prev.map((r) => (r.id === updatedReview.id ? updatedReview : r)),
-      );
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error("[ReviewsContext] Failed to update review via API:", errorMessage);
+      throw new Error(`Failed to update review: ${errorMessage}`);
     }
   };
 
   const deleteReview = async (reviewId: string) => {
     try {
+      console.log("[ReviewsContext] Deleting review:", reviewId);
       await apiClient.reviews.delete(reviewId);
+      console.log("[ReviewsContext] Review deleted successfully:", reviewId);
       setReviews((prev) => prev.filter((r) => r.id !== reviewId));
     } catch (error) {
-      console.error("Failed to delete review via API, using mock", error);
-      await deleteMockReview(reviewId);
-      setReviews((prev) => prev.filter((r) => r.id !== reviewId));
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error("[ReviewsContext] Failed to delete review via API:", errorMessage);
+      throw new Error(`Failed to delete review: ${errorMessage}`);
     }
   };
 
