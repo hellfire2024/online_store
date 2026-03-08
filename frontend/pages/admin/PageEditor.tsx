@@ -615,14 +615,14 @@ const PageEditor: React.FC = () => {
       siteSettings?.defaultFormFields &&
       siteSettings.defaultFormFields.length > 0
     ) {
-      const currentFields = (page.contentData as ContactPageContent)
-        ?.formFields || [];
+      const currentFields =
+        (page.contentData as ContactPageContent)?.formFields || [];
       const requiredFields = siteSettings.defaultFormFields.filter(
-        (field) => field.required && field.enabled
+        (field) => field.required && field.enabled,
       );
 
       const missingRequiredFields = requiredFields.filter(
-        (reqField) => !currentFields.some((f) => f.id === reqField.id)
+        (reqField) => !currentFields.some((f) => f.id === reqField.id),
       );
 
       if (missingRequiredFields.length > 0) {
@@ -1163,9 +1163,9 @@ const PageEditor: React.FC = () => {
     };
 
     const isDefaultField = (fieldId: string) => {
-      return siteSettings?.defaultFormFields?.some(
-        (f) => f.id === fieldId
-      ) ?? false;
+      return (
+        siteSettings?.defaultFormFields?.some((f) => f.id === fieldId) ?? false
+      );
     };
 
     const addMissingDefaultField = (fieldId: string) => {
@@ -1174,7 +1174,7 @@ const PageEditor: React.FC = () => {
 
       // Find the field from siteSettings.defaultFormFields
       const template = siteSettings?.defaultFormFields?.find(
-        (f) => f.id === fieldId
+        (f) => f.id === fieldId,
       );
       if (!template) return;
 
@@ -1802,7 +1802,8 @@ const PageEditor: React.FC = () => {
             <div>
               <h3 className="text-lg font-semibold text-white">Form Fields</h3>
               <p className="text-sm text-gray-400 mt-1">
-                Drag to reorder. Required fields (marked with *) are automatically included.
+                Drag to reorder. Required fields (marked with *) are
+                automatically included.
               </p>
             </div>
             <button
@@ -1824,7 +1825,8 @@ const PageEditor: React.FC = () => {
                 const isAdded = content.formFields?.some(
                   (f) => f.id === defaultField.id,
                 );
-                const isRequired = defaultField.required && defaultField.enabled;
+                const isRequired =
+                  defaultField.required && defaultField.enabled;
 
                 return (
                   <div
