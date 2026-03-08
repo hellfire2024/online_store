@@ -69,14 +69,12 @@ export const PagesProvider: React.FC<{ children: ReactNode }> = ({
             contentData: initialHeroData,
           };
           try {
-            await apiClient.pages.create(homePage);
+            const createdHome = await apiClient.pages.create(homePage);
+            pagesData.push(createdHome);
           } catch (apiError) {
             await mockApi.addPage(homePage);
+            pagesData.push(homePage);
           }
-          const createdHome = await apiClient.pages
-            .getById("home-page")
-            .catch(() => homePage);
-          pagesData.push(createdHome);
         }
         let aboutUsPage = pagesData.find((p) => p.pageType === "about");
         if (!aboutUsPage) {
@@ -91,14 +89,12 @@ export const PagesProvider: React.FC<{ children: ReactNode }> = ({
             contentData: aboutData,
           };
           try {
-            await apiClient.pages.create(aboutUsPage);
+            const createdAbout = await apiClient.pages.create(aboutUsPage);
+            pagesData.push(createdAbout);
           } catch (apiError) {
             await mockApi.addPage(aboutUsPage);
+            pagesData.push(aboutUsPage);
           }
-          const createdAbout = await apiClient.pages
-            .getById("about-us-page")
-            .catch(() => aboutUsPage);
-          pagesData.push(createdAbout);
         }
         let contactPage = pagesData.find((p) => p.pageType === "contact");
         if (!contactPage) {
@@ -163,14 +159,12 @@ export const PagesProvider: React.FC<{ children: ReactNode }> = ({
             },
           };
           try {
-            await apiClient.pages.create(contactPage);
+            const createdContact = await apiClient.pages.create(contactPage);
+            pagesData.push(createdContact);
           } catch (apiError) {
             await mockApi.addPage(contactPage);
+            pagesData.push(contactPage);
           }
-          const createdContact = await apiClient.pages
-            .getById("contact-page")
-            .catch(() => contactPage);
-          pagesData.push(createdContact);
         }
         setPages(pagesData);
         setMenus(menusData);
