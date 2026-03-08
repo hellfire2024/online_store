@@ -535,7 +535,7 @@ const SettingsManagement: React.FC = () => {
   // Sensors for drag-and-drop (form fields)
   const formFieldSensors = useSensors(
     useSensor(PointerSensor),
-    useSensor(KeyboardSensor)
+    useSensor(KeyboardSensor),
   );
 
   const handleDragStart = (event: DragStartEvent) => {
