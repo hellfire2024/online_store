@@ -20,6 +20,7 @@ COPY frontend/context ./context
 COPY frontend/hooks ./hooks
 COPY frontend/pages ./pages
 COPY frontend/services ./services
+COPY frontend/utils ./utils
 COPY frontend/types.ts ./types.ts
 COPY frontend/verify-frontend-build.js ./verify-frontend-build.js
 
