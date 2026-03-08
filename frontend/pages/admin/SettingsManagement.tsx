@@ -10,6 +10,7 @@ import {
   FooterItem,
   FooterColumn,
   TaxRule,
+  ContactFormField,
 } from "../../types";
 import InvoiceTemplateEditor from "../../components/admin/InvoiceTemplateEditor";
 import { useUnsavedChanges } from "../../context/UnsavedChangesContext";
@@ -48,6 +49,7 @@ type SettingsTab =
   | "email"
   | "support"
   | "segmentation"
+  | "forms"
   | "terms";
 
 // --- Draggable Item Component ---
@@ -209,6 +211,142 @@ const TermsEditor: React.FC<{
   );
 };
 
+// --- Form Field Editor Component ---
+const FormFieldEditor: React.FC<{
+  field: ContactFormField;
+  index: number;
+  onUpdate: (updates: Partial<ContactFormField>) => void;
+  onDelete: () => void;
+}> = ({ field, onUpdate, onDelete }) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: field.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="bg-slate-700 p-4 rounded-md border border-slate-600"
+    >
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-3 flex-1">
+          <button
+            type="button"
+            {...attributes}
+            {...listeners}
+            className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-white"
+            title="Drag to reorder"
+          >
+            ⋮⋮
+          </button>
+          <input
+            type="checkbox"
+            checked={field.enabled}
+            onChange={(e) => onUpdate({ enabled: e.target.checked })}
+            className="w-4 h-4"
+            title="Enable/disable this field"
+          />
+          <select
+            value={field.type}
+            onChange={(e) =>
+              onUpdate({ type: e.target.value as ContactFormField["type"] })
+            }
+            className="bg-slate-600 text-white px-2 py-1 rounded text-sm border border-slate-500"
+          >
+            <option value="text">Text</option>
+            <option value="textarea">Textarea</option>
+            <option value="email">Email</option>
+            <option value="phone">Phone</option>
+            <option value="fullName">Full Name</option>
+            <option value="firstName">First Name</option>
+            <option value="lastName">Last Name</option>
+            <option value="address">Address</option>
+            <option value="subject">Subject</option>
+            <option value="message">Message</option>
+            <option value="select">Select/Dropdown</option>
+            <option value="checkbox">Checkbox</option>
+          </select>
+        </div>
+        <div className="flex items-center gap-2">
+          <label className="flex items-center gap-2 text-sm text-gray-300">
+            <input
+              type="checkbox"
+              checked={field.required}
+              onChange={(e) => onUpdate({ required: e.target.checked })}
+              className="w-4 h-4"
+            />
+            Required
+          </label>
+          <button
+            type="button"
+            onClick={onDelete}
+            className="text-gray-400 hover:text-red-500 transition-colors"
+            title="Delete field"
+          >
+            <TrashIcon className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+      {field.enabled && (
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs text-gray-400 mb-1">Label</label>
+              <input
+                type="text"
+                value={field.label}
+                onChange={(e) => onUpdate({ label: e.target.value })}
+                className="w-full p-2 bg-slate-600 border border-slate-500 rounded text-white text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-400 mb-1">
+                Placeholder
+              </label>
+              <input
+                type="text"
+                value={field.placeholder}
+                onChange={(e) => onUpdate({ placeholder: e.target.value })}
+                className="w-full p-2 bg-slate-600 border border-slate-500 rounded text-white text-sm"
+              />
+            </div>
+          </div>
+
+          {field.type === "select" && (
+            <div>
+              <label className="block text-xs text-gray-400 mb-1">
+                Options (comma-separated)
+              </label>
+              <input
+                type="text"
+                value={field.options?.join(", ") || ""}
+                onChange={(e) =>
+                  onUpdate({
+                    options: e.target.value.split(",").map((o) => o.trim()),
+                  })
+                }
+                placeholder="Option 1, Option 2, Option 3"
+                className="w-full p-2 bg-slate-600 border border-slate-500 rounded text-white text-sm"
+              />
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
 // Format phone number as ###-###-####
 const formatPhoneNumber = (value: string): string => {
   const cleaned = value.replace(/\D/g, "");
@@ -281,6 +419,61 @@ const SettingsManagement: React.FC = () => {
       setSettings(siteSettings);
     }
   }, [siteSettings]);
+
+  // Initialize default form fields if they don't exist
+  useEffect(() => {
+    if (
+      !settings.defaultFormFields ||
+      settings.defaultFormFields.length === 0
+    ) {
+      const defaultFields: ContactFormField[] = [
+        {
+          id: "f1",
+          type: "fullName",
+          label: "Full Name",
+          placeholder: "John Doe",
+          required: true,
+          enabled: true,
+        },
+        {
+          id: "f2",
+          type: "email",
+          label: "Email Address",
+          placeholder: "john@example.com",
+          required: true,
+          enabled: true,
+          validation: { pattern: "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$" },
+        },
+        {
+          id: "f3",
+          type: "phone",
+          label: "Phone Number",
+          placeholder: "(555) 123-4567",
+          required: false,
+          enabled: true,
+          validation: { pattern: "^[\\d\\s()+-]+$" },
+        },
+        {
+          id: "f4",
+          type: "subject",
+          label: "Subject",
+          placeholder: "How can we help?",
+          required: true,
+          enabled: true,
+        },
+        {
+          id: "f5",
+          type: "message",
+          label: "Message",
+          placeholder: "Your message here...",
+          required: true,
+          enabled: true,
+          validation: { minLength: 10 },
+        },
+      ];
+      setSettings((prev) => ({ ...prev, defaultFormFields: defaultFields }));
+    }
+  }, [settings.defaultFormFields]);
 
   // Load email config from dedicated table on mount
   useEffect(() => {
@@ -656,6 +849,7 @@ const SettingsManagement: React.FC = () => {
         <TabButton tab="email" label="Email Configuration" />
         <TabButton tab="support" label="Support" />
         <TabButton tab="segmentation" label="Segmentation" />
+        <TabButton tab="forms" label="Form Fields" />
         <TabButton tab="terms" label="Terms & Conditions" />
       </div>
 
@@ -3521,6 +3715,143 @@ const SettingsManagement: React.FC = () => {
                 disabled={!hasSettingsUnsavedChanges}
               >
                 Save Segmentation Settings
+              </button>
+            </div>
+          </div>
+        )}
+
+        {activeTab === "forms" && (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-2xl font-semibold text-white mb-2">
+                Default Contact Form Fields
+              </h2>
+              <p className="text-sm text-gray-400 mb-4">
+                Configure the default fields that appear on all contact forms.
+                These fields will be used automatically when creating new
+                contact pages.
+              </p>
+            </div>
+
+            <div className="bg-blue-500 bg-opacity-10 border border-blue-500 border-opacity-30 rounded-md p-4 mb-6">
+              <p className="text-blue-200 text-sm">
+                💡 <strong>Professional Setup:</strong> Define your core form
+                fields here (name, email, phone, subject, message). Each contact
+                page will start with these defaults. You can then customize
+                individual forms in the page editor.
+              </p>
+            </div>
+
+            <DndContext
+              sensors={useSensors(
+                useSensor(PointerSensor),
+                useSensor(KeyboardSensor),
+              )}
+              collisionDetection={closestCenter}
+              onDragEnd={(event) => {
+                const { active, over } = event;
+                if (over && active.id !== over.id) {
+                  const fields = [...(settings.defaultFormFields || [])];
+                  const oldIndex = fields.findIndex((f) => f.id === active.id);
+                  const newIndex = fields.findIndex((f) => f.id === over.id);
+                  const reordered = arrayMove(fields, oldIndex, newIndex);
+                  setSettings({
+                    ...settings,
+                    defaultFormFields: reordered,
+                  });
+                }
+              }}
+            >
+              <SortableContext
+                items={(settings.defaultFormFields || []).map((f) => f.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                <div className="space-y-3">
+                  {(settings.defaultFormFields || []).map((field, index) => (
+                    <FormFieldEditor
+                      key={field.id}
+                      field={field}
+                      index={index}
+                      onUpdate={(updates) => {
+                        const fields = [...(settings.defaultFormFields || [])];
+                        const idx = fields.findIndex((f) => f.id === field.id);
+                        if (idx >= 0) {
+                          fields[idx] = { ...fields[idx], ...updates };
+                          setSettings({
+                            ...settings,
+                            defaultFormFields: fields,
+                          });
+                        }
+                      }}
+                      onDelete={() => {
+                        const fields = (
+                          settings.defaultFormFields || []
+                        ).filter((f) => f.id !== field.id);
+                        setSettings({ ...settings, defaultFormFields: fields });
+                      }}
+                    />
+                  ))}
+                </div>
+              </SortableContext>
+            </DndContext>
+
+            <button
+              onClick={() => {
+                const newField: ContactFormField = {
+                  id: `field_${Date.now()}`,
+                  type: "text",
+                  label: "Custom Field",
+                  placeholder: "Enter value",
+                  required: false,
+                  enabled: true,
+                };
+                setSettings({
+                  ...settings,
+                  defaultFormFields: [
+                    ...(settings.defaultFormFields || []),
+                    newField,
+                  ],
+                });
+              }}
+              className="px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-500 text-sm font-medium"
+            >
+              + Add Custom Field
+            </button>
+
+            <div className="bg-slate-700 p-4 rounded-lg border border-slate-600">
+              <h3 className="text-sm font-semibold text-white mb-3">
+                Recommended Default Fields
+              </h3>
+              <div className="grid grid-cols-2 gap-4 text-sm text-gray-400">
+                <div>
+                  <strong className="text-white">Core Fields:</strong>
+                  <ul className="mt-2 space-y-1 list-disc list-inside">
+                    <li>Full Name (required)</li>
+                    <li>Email Address (required)</li>
+                    <li>Phone Number (optional)</li>
+                  </ul>
+                </div>
+                <div>
+                  <strong className="text-white">Message Fields:</strong>
+                  <ul className="mt-2 space-y-1 list-disc list-inside">
+                    <li>Subject (helps categorize inquiries)</li>
+                    <li>Message/Description (multiline text)</li>
+                  </ul>
+                </div>
+              </div>
+              <p className="mt-3 text-xs text-gray-500">
+                Phone numbers are automatically formatted as (###) ###-#### on
+                the frontend.
+              </p>
+            </div>
+
+            <div className="flex justify-end">
+              <button
+                onClick={handleSaveSettings}
+                className={buttonClasses}
+                disabled={!hasSettingsUnsavedChanges}
+              >
+                Save Form Field Settings
               </button>
             </div>
           </div>

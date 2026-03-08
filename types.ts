@@ -488,6 +488,9 @@ export interface SiteSettings {
   // Customer Segmentation
   segmentRules: CustomerSegmentRule[];
 
+  // Contact Form Default Fields
+  defaultFormFields?: ContactFormField[];
+
   // Shipping Integration
   shippingCarriers: {
     easypost: {

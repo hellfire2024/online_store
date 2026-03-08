@@ -1084,7 +1084,9 @@ const PageEditor: React.FC = () => {
       }, 0);
     };
 
-    const handleTemplateKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    const handleTemplateKeyDown = (
+      e: React.KeyboardEvent<HTMLInputElement>,
+    ) => {
       if (showTemplateAutocomplete && e.key === "Escape") {
         e.preventDefault();
         setShowTemplateAutocomplete(false);
@@ -1146,7 +1148,9 @@ const PageEditor: React.FC = () => {
       return {
         ...template,
         options: template.options ? [...template.options] : undefined,
-        validation: template.validation ? { ...template.validation } : undefined,
+        validation: template.validation
+          ? { ...template.validation }
+          : undefined,
         conditionalRules: template.conditionalRules
           ? [...template.conditionalRules]
           : undefined,
@@ -1174,7 +1178,10 @@ const PageEditor: React.FC = () => {
       const targetIndex = direction === "up" ? index - 1 : index + 1;
       if (targetIndex < 0 || targetIndex >= fields.length) return;
 
-      handleContactContentChange("formFields", arrayMove(fields, index, targetIndex));
+      handleContactContentChange(
+        "formFields",
+        arrayMove(fields, index, targetIndex),
+      );
     };
 
     const deleteField = (fieldId: string) => {
@@ -1814,7 +1821,9 @@ const PageEditor: React.FC = () => {
                       key={defaultField.id}
                       className="flex items-center justify-between p-2 bg-slate-800 rounded"
                     >
-                      <span className="text-sm text-gray-300">{defaultField.label}</span>
+                      <span className="text-sm text-gray-300">
+                        {defaultField.label}
+                      </span>
                       <button
                         type="button"
                         onClick={() => addMissingDefaultField(defaultField.id)}
@@ -1831,7 +1840,9 @@ const PageEditor: React.FC = () => {
                     key={defaultField.id}
                     className="flex items-center justify-between p-2 bg-slate-800 rounded"
                   >
-                    <span className="text-sm text-gray-200">{defaultField.label}</span>
+                    <span className="text-sm text-gray-200">
+                      {defaultField.label}
+                    </span>
                     <div className="flex items-center gap-3">
                       <label className="text-xs text-gray-300 flex items-center gap-1">
                         <input

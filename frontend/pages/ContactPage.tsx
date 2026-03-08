@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useToast } from "../hooks/useToast";
 import { usePages } from "../context/PagesContext";
+import { useSiteSettings } from "../context/SiteSettingsContext";
 import { ContactPageContent, ContactFormField } from "../types";
 import Spinner from "../components/Spinner";
 import { apiClient } from "../services/apiClient";
@@ -16,55 +17,58 @@ const formatPhoneNumber = (value: string): string => {
 
 const ContactPage: React.FC = () => {
   const { pages, isLoading } = usePages();
+  const { siteSettings } = useSiteSettings();
   const { addToast } = useToast();
   const [formData, setFormData] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const defaultFormFields: ContactFormField[] = [
-    {
-      id: "f1",
-      type: "fullName",
-      label: "Full Name",
-      placeholder: "John Doe",
-      required: true,
-      enabled: true,
-    },
-    {
-      id: "f2",
-      type: "email",
-      label: "Email Address",
-      placeholder: "john@example.com",
-      required: true,
-      enabled: true,
-      validation: { pattern: "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$" },
-    },
-    {
-      id: "f3",
-      type: "phone",
-      label: "Phone Number",
-      placeholder: "(555) 123-4567",
-      required: false,
-      enabled: true,
-      validation: { pattern: "^[\\d\\s()+-]+$" },
-    },
-    {
-      id: "f4",
-      type: "subject",
-      label: "Subject",
-      placeholder: "How can we help?",
-      required: true,
-      enabled: true,
-    },
-    {
-      id: "f5",
-      type: "message",
-      label: "Message",
-      placeholder: "Your message here...",
-      required: true,
-      enabled: true,
-      validation: { minLength: 10 },
-    },
-  ];
+  // Get default form fields from site settings, with fallback
+  const defaultFormFields: ContactFormField[] =
+    siteSettings.defaultFormFields || [
+      {
+        id: "f1",
+        type: "fullName",
+        label: "Full Name",
+        placeholder: "John Doe",
+        required: true,
+        enabled: true,
+      },
+      {
+        id: "f2",
+        type: "email",
+        label: "Email Address",
+        placeholder: "john@example.com",
+        required: true,
+        enabled: true,
+        validation: { pattern: "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$" },
+      },
+      {
+        id: "f3",
+        type: "phone",
+        label: "Phone Number",
+        placeholder: "(555) 123-4567",
+        required: false,
+        enabled: true,
+        validation: { pattern: "^[\\d\\s()+-]+$" },
+      },
+      {
+        id: "f4",
+        type: "subject",
+        label: "Subject",
+        placeholder: "How can we help?",
+        required: true,
+        enabled: true,
+      },
+      {
+        id: "f5",
+        type: "message",
+        label: "Message",
+        placeholder: "Your message here...",
+        required: true,
+        enabled: true,
+        validation: { minLength: 10 },
+      },
+    ];
 
   const defaultContactContent: ContactPageContent = {
     pageTitle: "Get In Touch",
