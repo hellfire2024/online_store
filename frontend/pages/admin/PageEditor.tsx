@@ -445,9 +445,10 @@ const PageEditor: React.FC = () => {
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
   const [showPageTypeSelector, setShowPageTypeSelector] = useState(false);
-  
+
   // Template autocomplete state
-  const [showTemplateAutocomplete, setShowTemplateAutocomplete] = useState(false);
+  const [showTemplateAutocomplete, setShowTemplateAutocomplete] =
+    useState(false);
   const [autocompleteFilter, setAutocompleteFilter] = useState("");
   const templateInputRef = useRef<HTMLInputElement>(null);
 
@@ -1010,28 +1011,29 @@ const PageEditor: React.FC = () => {
   const getFilteredTemplateVariables = () => {
     const variables = getTemplateVariables();
     if (!autocompleteFilter) return variables;
-    
+
     const filter = autocompleteFilter.toLowerCase();
-    return variables.filter(v => 
-      v.variable.toLowerCase().includes(filter) ||
-      v.description.toLowerCase().includes(filter)
+    return variables.filter(
+      (v) =>
+        v.variable.toLowerCase().includes(filter) ||
+        v.description.toLowerCase().includes(filter),
     );
   };
 
   const handleTemplateInputChange = (value: string) => {
     handleContactContentChange("subjectTemplate", value);
-    
+
     // Check if we should show autocomplete
     const input = templateInputRef.current;
     if (!input) return;
-    
+
     const cursorPos = input.selectionStart || 0;
     const textBeforeCursor = value.substring(0, cursorPos);
-    
+
     // Look for {{ pattern before cursor
     const lastOpenBrace = textBeforeCursor.lastIndexOf("{{");
     const lastCloseBrace = textBeforeCursor.lastIndexOf("}}");
-    
+
     // Show autocomplete if {{ is more recent than }} and cursor is after {{
     if (lastOpenBrace > lastCloseBrace && lastOpenBrace !== -1) {
       const filterText = textBeforeCursor.substring(lastOpenBrace + 2);
@@ -1046,25 +1048,23 @@ const PageEditor: React.FC = () => {
     const input = templateInputRef.current;
     const content = page?.contentData as ContactPageContent;
     if (!input || !content) return;
-    
+
     const currentValue = content.subjectTemplate || "";
     const cursorPos = input.selectionStart || 0;
     const textBeforeCursor = currentValue.substring(0, cursorPos);
     const textAfterCursor = currentValue.substring(cursorPos);
-    
+
     // Find the {{ before cursor
     const lastOpenBrace = textBeforeCursor.lastIndexOf("{{");
-    
+
     if (lastOpenBrace !== -1) {
       // Replace from {{ to cursor with the full variable
-      const newValue = 
-        currentValue.substring(0, lastOpenBrace) + 
-        variable + 
-        textAfterCursor;
-      
+      const newValue =
+        currentValue.substring(0, lastOpenBrace) + variable + textAfterCursor;
+
       handleContactContentChange("subjectTemplate", newValue);
       setShowTemplateAutocomplete(false);
-      
+
       // Set cursor after inserted variable
       setTimeout(() => {
         if (input) {
@@ -1077,7 +1077,7 @@ const PageEditor: React.FC = () => {
   };
 
   const handleTemplateKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (showTemplateAutocomplete && (e.key === "Escape")) {
+    if (showTemplateAutocomplete && e.key === "Escape") {
       e.preventDefault();
       setShowTemplateAutocomplete(false);
     }
@@ -1143,12 +1143,12 @@ const PageEditor: React.FC = () => {
 
     const isDefaultField = (fieldId: string) => {
       // f1-f5 are the core default fields that can't be deleted
-      return ['f1', 'f2', 'f3', 'f4', 'f5'].includes(fieldId);
+      return ["f1", "f2", "f3", "f4", "f5"].includes(fieldId);
     };
 
     const deleteField = (fieldId: string) => {
       if (isDefaultField(fieldId)) {
-        alert('Cannot delete default fields. You can disable them instead.');
+        alert("Cannot delete default fields. You can disable them instead.");
         return;
       }
       const fields = content.formFields.filter((f) => f.id !== fieldId);
@@ -1172,8 +1172,8 @@ const PageEditor: React.FC = () => {
           style={style}
           className={`p-4 rounded-md border ${
             isDefaultField(field.id)
-              ? 'bg-slate-700/80 border-sky-500/30'
-              : 'bg-slate-700 border-slate-600'
+              ? "bg-slate-700/80 border-sky-500/30"
+              : "bg-slate-700 border-slate-600"
           }`}
         >
           <div className="flex items-center justify-between mb-3">
@@ -1618,7 +1618,7 @@ const PageEditor: React.FC = () => {
                   {"{} Template Help"}
                 </button>
               </div>
-              
+
               {/* Template Input with Autocomplete */}
               <div className="relative">
                 <input
@@ -1630,7 +1630,7 @@ const PageEditor: React.FC = () => {
                   placeholder="Type {{ to see available variables"
                   className="w-full p-2 bg-slate-700 border border-slate-600 rounded-md text-white font-mono text-sm"
                 />
-                
+
                 {/* Autocomplete Dropdown */}
                 {showTemplateAutocomplete && (
                   <div className="absolute z-50 mt-1 w-full max-h-60 overflow-y-auto bg-slate-800 border border-sky-500 rounded-md shadow-lg">
@@ -1757,8 +1757,9 @@ const PageEditor: React.FC = () => {
             </button>
           </div>
           <p className="text-sm text-gray-400 mb-4">
-            📌 <strong>Default fields</strong> (name, email, phone, subject, message) can be disabled but not deleted. 
-            Drag any field to reorder. Phone numbers are automatically formatted as (###) ###-####.
+            📌 <strong>Default fields</strong> (name, email, phone, subject,
+            message) can be disabled but not deleted. Drag any field to reorder.
+            Phone numbers are automatically formatted as (###) ###-####.
           </p>
           <DndContext
             sensors={sensors}
