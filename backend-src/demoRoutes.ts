@@ -1122,12 +1122,19 @@ router.delete("/products/:id", (req, res) => {
 
 router.post("/pages", (req, res) => {
   const requestedId = req.body?.id;
+  const existingIndex = pages.findIndex((p) => p.id === requestedId);
+
+  if (existingIndex !== -1) {
+    // Page already exists, return it instead of creating duplicate
+    return res.status(200).json(pages[existingIndex]);
+  }
+
   const newPage = {
     ...req.body,
     id: requestedId || "page-" + Date.now(),
   };
   pages.push(newPage);
-  res.status(201).json(newPage);
+  return res.status(201).json(newPage);
 });
 
 router.put("/pages/:id", (req, res) => {

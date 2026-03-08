@@ -72,7 +72,10 @@ export const PagesProvider: React.FC<{ children: ReactNode }> = ({
             const createdHome = await apiClient.pages.create(homePage);
             pagesData.push(createdHome);
           } catch (apiError) {
-            await mockApi.addPage(homePage);
+            console.warn(
+              "[PagesContext] Home page create failed, using fallback:",
+              apiError,
+            );
             pagesData.push(homePage);
           }
         }
@@ -92,7 +95,10 @@ export const PagesProvider: React.FC<{ children: ReactNode }> = ({
             const createdAbout = await apiClient.pages.create(aboutUsPage);
             pagesData.push(createdAbout);
           } catch (apiError) {
-            await mockApi.addPage(aboutUsPage);
+            console.warn(
+              "[PagesContext] About page create failed, using fallback:",
+              apiError,
+            );
             pagesData.push(aboutUsPage);
           }
         }
@@ -162,7 +168,10 @@ export const PagesProvider: React.FC<{ children: ReactNode }> = ({
             const createdContact = await apiClient.pages.create(contactPage);
             pagesData.push(createdContact);
           } catch (apiError) {
-            await mockApi.addPage(contactPage);
+            console.warn(
+              "[PagesContext] Contact page create failed, using fallback:",
+              apiError,
+            );
             pagesData.push(contactPage);
           }
         }
