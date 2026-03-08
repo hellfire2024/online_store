@@ -667,13 +667,19 @@ const PageEditor: React.FC = () => {
       if (pageToSave.pageType === "contact" && pageToSave.contentData) {
         const contactData = pageToSave.contentData as ContactPageContent;
         // Make sure all required fields are present before sending to API
+        console.log("=== Contact Page Save Debug ===");
+        console.log("contactData before serialization:", contactData);
+        
         pageToSave.contentData = {
           pageTitle:
             contactData.pageTitle || PAGE_TEMPLATES.contact.defaults.pageTitle,
           pageSubtitle:
             contactData.pageSubtitle ||
             PAGE_TEMPLATES.contact.defaults.pageSubtitle,
-          targetEmail: contactData.targetEmail || "",
+          targetEmail:
+            contactData.targetEmail !== undefined
+              ? contactData.targetEmail
+              : "",
           subjectTemplate:
             contactData.subjectTemplate ||
             PAGE_TEMPLATES.contact.defaults.subjectTemplate,
@@ -687,9 +693,12 @@ const PageEditor: React.FC = () => {
           pageTitleFont: contactData.pageTitleFont,
           pageTitleColor: contactData.pageTitleColor,
         };
+        
+        console.log("contactData after serialization:", pageToSave.contentData);
       }
 
       if ("id" in pageToSave) {
+        console.log("Saving page with ID, full pageToSave:", pageToSave);
         await updatePage(pageToSave);
         addToast("Page updated!", "success");
         setOriginalPage(JSON.parse(JSON.stringify(pageToSave)));
@@ -1065,13 +1074,20 @@ const PageEditor: React.FC = () => {
   const renderContactPageEditor = () => {
     // Merge loaded contentData with defaults to ensure all fields are present
     const baseContent = (page.contentData as ContactPageContent) || {};
+    
+    // DEBUG: Log what we're loading
+    console.log("=== Contact Page Load Debug ===");
+    console.log("Full page object:", page);
+    console.log("baseContent:", baseContent);
+    console.log("baseContent.targetEmail:", baseContent.targetEmail);
+    
     const content: ContactPageContent = {
       pageTitle:
         baseContent.pageTitle || PAGE_TEMPLATES.contact.defaults.pageTitle,
       pageSubtitle:
         baseContent.pageSubtitle ||
         PAGE_TEMPLATES.contact.defaults.pageSubtitle,
-      targetEmail: baseContent.targetEmail || "",
+      targetEmail: baseContent.targetEmail !== undefined ? baseContent.targetEmail : "",
       subjectTemplate:
         baseContent.subjectTemplate ||
         PAGE_TEMPLATES.contact.defaults.subjectTemplate,
@@ -1084,6 +1100,8 @@ const PageEditor: React.FC = () => {
       pageTitleFont: baseContent.pageTitleFont,
       pageTitleColor: baseContent.pageTitleColor,
     };
+    
+    console.log("Final content object:", content);
 
     const handleContactContentChange = (
       field: keyof ContactPageContent,
