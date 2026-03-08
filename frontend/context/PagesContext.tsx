@@ -58,7 +58,7 @@ export const PagesProvider: React.FC<{ children: ReactNode }> = ({
           heroSubtitle: "Design Your Imagination",
           heroBackgroundImageUrl:
             currentSiteSettings?.siteBackgroundImageUrl ||
-            "/hero_background.png",
+            "https://picsum.photos/seed/hero/1200/800",
         };
         if (!homePage) {
           homePage = {

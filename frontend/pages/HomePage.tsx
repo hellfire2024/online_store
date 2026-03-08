@@ -120,6 +120,10 @@ const HomePage: React.FC = () => {
   const maxReviews = siteSettings?.maxReviewsDisplayed || 5;
   const featuredReviews = approvedReviews.slice(0, maxReviews);
   const pageFont = homeContent?.pageFont;
+  const heroImageUrl =
+    homeContent.heroBackgroundImageUrl ||
+    siteSettings?.siteBackgroundImageUrl ||
+    "https://picsum.photos/seed/hero/1200/800";
 
   const handleSubmitReview = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -206,9 +210,14 @@ const HomePage: React.FC = () => {
       {homePage.pageType === "home" && homePage.contentData && (
         <div className="relative text-center text-white bg-slate-900 rounded-lg overflow-hidden h-96">
           <img
-            src={homeContent.heroBackgroundImageUrl}
+            src={heroImageUrl}
             alt="Hero background"
             className="absolute inset-0 w-full h-full object-cover opacity-30"
+            onError={(event) => {
+              const target = event.currentTarget;
+              target.onerror = null;
+              target.src = "https://picsum.photos/seed/hero/1200/800";
+            }}
           />
           <div className="relative isolate px-6 pt-14 lg:px-8 h-full flex items-center justify-center">
             <div className="mx-auto max-w-2xl py-32 sm:py-48 lg:py-56">
