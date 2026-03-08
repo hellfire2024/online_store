@@ -445,6 +445,11 @@ const PageEditor: React.FC = () => {
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
   const [showPageTypeSelector, setShowPageTypeSelector] = useState(false);
+  
+  // Template autocomplete state
+  const [showTemplateAutocomplete, setShowTemplateAutocomplete] = useState(false);
+  const [autocompleteFilter, setAutocompleteFilter] = useState("");
+  const templateInputRef = useRef<HTMLInputElement>(null);
 
   // DnD sensors must be created unconditionally at the top level to satisfy hook ordering
   const sensors = useSensors(
@@ -1001,6 +1006,83 @@ const PageEditor: React.FC = () => {
     );
   };
 
+  // Template autocomplete handlers
+  const getFilteredTemplateVariables = () => {
+    const variables = getTemplateVariables();
+    if (!autocompleteFilter) return variables;
+    
+    const filter = autocompleteFilter.toLowerCase();
+    return variables.filter(v => 
+      v.variable.toLowerCase().includes(filter) ||
+      v.description.toLowerCase().includes(filter)
+    );
+  };
+
+  const handleTemplateInputChange = (value: string) => {
+    handleContactContentChange("subjectTemplate", value);
+    
+    // Check if we should show autocomplete
+    const input = templateInputRef.current;
+    if (!input) return;
+    
+    const cursorPos = input.selectionStart || 0;
+    const textBeforeCursor = value.substring(0, cursorPos);
+    
+    // Look for {{ pattern before cursor
+    const lastOpenBrace = textBeforeCursor.lastIndexOf("{{");
+    const lastCloseBrace = textBeforeCursor.lastIndexOf("}}");
+    
+    // Show autocomplete if {{ is more recent than }} and cursor is after {{
+    if (lastOpenBrace > lastCloseBrace && lastOpenBrace !== -1) {
+      const filterText = textBeforeCursor.substring(lastOpenBrace + 2);
+      setAutocompleteFilter(filterText);
+      setShowTemplateAutocomplete(true);
+    } else {
+      setShowTemplateAutocomplete(false);
+    }
+  };
+
+  const insertTemplateVariable = (variable: string) => {
+    const input = templateInputRef.current;
+    const content = page?.contentData as ContactPageContent;
+    if (!input || !content) return;
+    
+    const currentValue = content.subjectTemplate || "";
+    const cursorPos = input.selectionStart || 0;
+    const textBeforeCursor = currentValue.substring(0, cursorPos);
+    const textAfterCursor = currentValue.substring(cursorPos);
+    
+    // Find the {{ before cursor
+    const lastOpenBrace = textBeforeCursor.lastIndexOf("{{");
+    
+    if (lastOpenBrace !== -1) {
+      // Replace from {{ to cursor with the full variable
+      const newValue = 
+        currentValue.substring(0, lastOpenBrace) + 
+        variable + 
+        textAfterCursor;
+      
+      handleContactContentChange("subjectTemplate", newValue);
+      setShowTemplateAutocomplete(false);
+      
+      // Set cursor after inserted variable
+      setTimeout(() => {
+        if (input) {
+          const newCursorPos = lastOpenBrace + variable.length;
+          input.setSelectionRange(newCursorPos, newCursorPos);
+          input.focus();
+        }
+      }, 0);
+    }
+  };
+
+  const handleTemplateKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (showTemplateAutocomplete && (e.key === "Escape")) {
+      e.preventDefault();
+      setShowTemplateAutocomplete(false);
+    }
+  };
+
   const renderContactPageEditor = () => {
     const content =
       (page.contentData as ContactPageContent) ||
@@ -1514,15 +1596,55 @@ const PageEditor: React.FC = () => {
                   {"{} Template Help"}
                 </button>
               </div>
-              <input
-                type="text"
-                value={content.subjectTemplate || ""}
-                onChange={(e) =>
-                  handleContactContentChange("subjectTemplate", e.target.value)
-                }
-                placeholder="{{date}} - {{formName}}: {{field:subject}}"
-                className="w-full p-2 bg-slate-700 border border-slate-600 rounded-md text-white font-mono text-sm"
-              />
+              
+              {/* Template Input with Autocomplete */}
+              <div className="relative">
+                <input
+                  ref={templateInputRef}
+                  type="text"
+                  value={content.subjectTemplate || ""}
+                  onChange={(e) => handleTemplateInputChange(e.target.value)}
+                  onKeyDown={handleTemplateKeyDown}
+                  placeholder="Type {{ to see available variables"
+                  className="w-full p-2 bg-slate-700 border border-slate-600 rounded-md text-white font-mono text-sm"
+                />
+                
+                {/* Autocomplete Dropdown */}
+                {showTemplateAutocomplete && (
+                  <div className="absolute z-50 mt-1 w-full max-h-60 overflow-y-auto bg-slate-800 border border-sky-500 rounded-md shadow-lg">
+                    <div className="p-2 bg-slate-700 border-b border-slate-600 text-xs text-gray-400">
+                      💡 Click to insert variable
+                    </div>
+                    {getFilteredTemplateVariables().map((v, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => insertTemplateVariable(v.variable)}
+                        className="w-full text-left px-3 py-2 hover:bg-slate-700 border-b border-slate-700 last:border-b-0 transition-colors"
+                      >
+                        <div className="flex items-start gap-2">
+                          <code className="text-sky-400 font-mono text-sm font-semibold whitespace-nowrap">
+                            {v.variable}
+                          </code>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-gray-300 text-xs">
+                              {v.description}
+                            </div>
+                            <div className="text-gray-500 text-xs mt-0.5">
+                              Example: {v.example}
+                            </div>
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                    {getFilteredTemplateVariables().length === 0 && (
+                      <div className="px-3 py-4 text-center text-gray-500 text-sm">
+                        No matching variables found
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
 
               {/* Live Preview */}
               {content.subjectTemplate && (
