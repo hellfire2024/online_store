@@ -1141,7 +1141,16 @@ const PageEditor: React.FC = () => {
       ]);
     };
 
+    const isDefaultField = (fieldId: string) => {
+      // f1-f5 are the core default fields that can't be deleted
+      return ['f1', 'f2', 'f3', 'f4', 'f5'].includes(fieldId);
+    };
+
     const deleteField = (fieldId: string) => {
+      if (isDefaultField(fieldId)) {
+        alert('Cannot delete default fields. You can disable them instead.');
+        return;
+      }
       const fields = content.formFields.filter((f) => f.id !== fieldId);
       handleContactContentChange("formFields", fields);
     };
@@ -1161,15 +1170,20 @@ const PageEditor: React.FC = () => {
         <div
           ref={setNodeRef}
           style={style}
-          className="bg-slate-700 p-4 rounded-md border border-slate-600"
+          className={`p-4 rounded-md border ${
+            isDefaultField(field.id)
+              ? 'bg-slate-700/80 border-sky-500/30'
+              : 'bg-slate-700 border-slate-600'
+          }`}
         >
           <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-1">
               <button
                 type="button"
                 {...attributes}
                 {...listeners}
                 className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-white"
+                title="Drag to reorder"
               >
                 ⋮⋮
               </button>
@@ -1180,6 +1194,7 @@ const PageEditor: React.FC = () => {
                   handleFieldUpdate(field.id, { enabled: e.target.checked })
                 }
                 className="w-4 h-4"
+                title="Enable/disable this field"
               />
               <select
                 value={field.type}
@@ -1203,6 +1218,11 @@ const PageEditor: React.FC = () => {
                 <option value="select">Select/Dropdown</option>
                 <option value="checkbox">Checkbox</option>
               </select>
+              {isDefaultField(field.id) && (
+                <span className="px-2 py-0.5 bg-sky-900/50 border border-sky-500/50 rounded text-xs text-sky-300 whitespace-nowrap">
+                  📌 Default Field
+                </span>
+              )}
             </div>
             <div className="flex items-center gap-2">
               <label className="flex items-center gap-2 text-sm text-gray-300">
@@ -1216,14 +1236,16 @@ const PageEditor: React.FC = () => {
                 />
                 Required
               </label>
-              <button
-                type="button"
-                onClick={() => deleteField(field.id)}
-                className="text-gray-400 hover:text-red-500 transition-colors"
-                title="Delete field"
-              >
-                <TrashIcon className="w-4 h-4" />
-              </button>
+              {!isDefaultField(field.id) && (
+                <button
+                  type="button"
+                  onClick={() => deleteField(field.id)}
+                  className="text-gray-400 hover:text-red-500 transition-colors"
+                  title="Delete field"
+                >
+                  <TrashIcon className="w-4 h-4" />
+                </button>
+              )}
             </div>
           </div>
           {field.enabled && (
@@ -1724,7 +1746,7 @@ const PageEditor: React.FC = () => {
 
         {/* Form Fields Builder */}
         <div className="bg-slate-800 p-4 rounded-lg border border-slate-700">
-          <div className="flex justify-between items-center mb-4">
+          <div className="flex justify-between items-center mb-2">
             <h3 className="text-lg font-semibold text-white">Form Fields</h3>
             <button
               type="button"
@@ -1734,6 +1756,10 @@ const PageEditor: React.FC = () => {
               + Add Custom Field
             </button>
           </div>
+          <p className="text-sm text-gray-400 mb-4">
+            📌 <strong>Default fields</strong> (name, email, phone, subject, message) can be disabled but not deleted. 
+            Drag any field to reorder. Phone numbers are automatically formatted as (###) ###-####.
+          </p>
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
