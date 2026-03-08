@@ -429,11 +429,32 @@ export async function sendContactFormEmail(
   }>,
 ) {
   try {
+    console.log("[EmailService] sendContactFormEmail called:", {
+      toEmail,
+      fromEmail,
+      senderName,
+      subject,
+    });
+
     const transport = transporter || (await initializeTransporter());
     if (!transport || !cachedConfig) {
-      console.log("Email service not available - skipping contact form email");
+      console.error(
+        "[EmailService] Email service not available - transport:",
+        !!transport,
+        "config:",
+        !!cachedConfig,
+      );
       return { success: false, message: "Email service not configured" };
     }
+
+    console.log("[EmailService] Using email config:", {
+      provider: cachedConfig.provider,
+      fromEmail: cachedConfig.from_email,
+      fromName: cachedConfig.from_name,
+      smtpHost: cachedConfig.smtp_host,
+      smtpPort: cachedConfig.smtp_port,
+      smtpUsername: cachedConfig.smtp_username,
+    });
 
     const escapeHtml = (value: string) =>
       value
@@ -512,19 +533,38 @@ export async function sendContactFormEmail(
     </html>
     `;
 
-    const result = await transport.sendMail({
+    const mailOptions = {
       from: `${cachedConfig.from_name} <${cachedConfig.from_email}>`,
       to: toEmail,
       subject: `Website Contact: ${subject}`,
       html,
       replyTo: fromEmail,
+    };
+
+    console.log("[EmailService] Sending email with options:", {
+      from: mailOptions.from,
+      to: mailOptions.to,
+      subject: mailOptions.subject,
+      replyTo: mailOptions.replyTo,
     });
 
-    console.log("Contact form email sent:", result);
-    return { success: true, message: "Email sent successfully" };
+    const result = await transport.sendMail(mailOptions);
+
+    console.log("[EmailService] Email sent successfully:", {
+      messageId: result.messageId,
+      accepted: result.accepted,
+      rejected: result.rejected,
+      response: result.response,
+    });
+
+    return { success: true, message: "Email sent successfully", result };
   } catch (error) {
-    console.error("Error sending contact form email:", error);
-    return { success: false, message: "Failed to send email", error };
+    console.error("[EmailService] Error sending contact form email:", error);
+    return {
+      success: false,
+      message: "Failed to send email",
+      error: error instanceof Error ? error.message : String(error),
+    };
   }
 }
 

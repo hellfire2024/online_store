@@ -119,7 +119,17 @@ router.post("/", async (req: Request, res: Response) => {
 
     const senderName = buildSenderName(normalizedFields);
     const contactEmail =
-      targetEmail || process.env.CONTACT_EMAIL || "noreply@adaptivegis.com";
+      targetEmail || process.env.CONTACT_EMAIL || "tgaunt@adaptivegis.com";
+
+    console.log("[Contact Form] Processing submission:", {
+      toEmail: contactEmail,
+      fromEmail: senderEmail,
+      fromName: senderName,
+      subject: subject,
+      targetEmailParam: targetEmail,
+      envContactEmail: process.env.CONTACT_EMAIL,
+      fieldCount: normalizedFields.length,
+    });
 
     const emailResult = await sendContactFormEmail(
       contactEmail,
@@ -129,10 +139,18 @@ router.post("/", async (req: Request, res: Response) => {
       normalizedFields,
     );
 
+    console.log("[Contact Form] Email send result:", {
+      success: emailResult.success,
+      message: emailResult.message,
+      error: emailResult.error,
+    });
+
     if (!emailResult.success) {
+      console.error("[Contact Form] Failed to send email:", emailResult);
       res.status(500).json({
         error: "Failed to send contact form",
         message: emailResult.message,
+        details: emailResult.error?.toString() || "No additional details",
       });
       return;
     }
