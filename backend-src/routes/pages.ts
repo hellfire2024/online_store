@@ -27,24 +27,28 @@ function parseContentDataSafely(contentData: any, pageId?: string): any {
   }
 }
 
-let hasPathColumnCache: boolean | null = null;
+// Cache for available columns in pages table
+let availableColumnsCache: Set<string> | null = null;
 
-async function pagesHasPathColumn(): Promise<boolean> {
-  if (hasPathColumnCache !== null) {
-    return hasPathColumnCache;
+async function getAvailableColumns(): Promise<Set<string>> {
+  if (availableColumnsCache !== null) {
+    return availableColumnsCache;
   }
 
   try {
     const [rows] = await pool.query<RowDataPacket[]>(
-      "SHOW COLUMNS FROM pages LIKE 'path'",
+      "SHOW COLUMNS FROM pages",
     );
-    hasPathColumnCache = Array.isArray(rows) && rows.length > 0;
+    availableColumnsCache = new Set(
+      (rows || []).map((row: any) => row.Field.toLowerCase()),
+    );
+    console.log("Available pages columns:", Array.from(availableColumnsCache));
   } catch (error) {
-    console.warn("Failed to detect pages.path column; assuming missing", error);
-    hasPathColumnCache = false;
+    console.warn("Failed to detect pages table columns; assuming minimal schema", error);
+    availableColumnsCache = new Set(["id", "title", "content", "content_data", "created_at", "updated_at"]);
   }
 
-  return hasPathColumnCache;
+  return availableColumnsCache;
 }
 
 function inferPath(pageType?: string, pageId?: string): string {
@@ -58,6 +62,7 @@ function inferPath(pageType?: string, pageId?: string): string {
 // Get all pages
 router.get("/", async (_req: Request, res: Response) => {
   try {
+    const cols = await getAvailableColumns();
     const [rows] = await pool.query<RowDataPacket[]>(
       "SELECT * FROM pages ORDER BY created_at DESC",
     );
@@ -65,10 +70,10 @@ router.get("/", async (_req: Request, res: Response) => {
     // Transform snake_case to camelCase for API response
     const transformedRows = (rows || []).map((row: any) => ({
       id: row.id,
-      title: row.title,
-      path: row.path || inferPath(row.page_type, row.id),
-      pageType: row.page_type,
-      content: row.content,
+      title: row.title || "",
+      path: cols.has("path") ? row.path : inferPath(cols.has("page_type") ? row.page_type : undefined, row.id),
+      pageType: cols.has("page_type") ? row.page_type : "page",
+      content: row.content || "",
       contentData: parseContentDataSafely(row.content_data, row.id),
       createdAt: row.created_at,
       updatedAt: row.updated_at,
@@ -84,6 +89,7 @@ router.get("/", async (_req: Request, res: Response) => {
 // Get single page
 router.get("/:id", async (req: Request, res: Response) => {
   try {
+    const cols = await getAvailableColumns();
     const [rows] = await pool.query<RowDataPacket[]>(
       "SELECT * FROM pages WHERE id = ?",
       [req.params.id],
@@ -97,10 +103,10 @@ router.get("/:id", async (req: Request, res: Response) => {
     // Transform snake_case to camelCase for API response
     const page = {
       id: row.id,
-      title: row.title,
-      path: row.path || inferPath(row.page_type, row.id),
-      pageType: row.page_type,
-      content: row.content,
+      title: row.title || "",
+      path: cols.has("path") ? row.path : inferPath(cols.has("page_type") ? row.page_type : undefined, row.id),
+      pageType: cols.has("page_type") ? row.page_type : "page",
+      content: row.content || "",
       contentData: parseContentDataSafely(row.content_data, row.id),
       createdAt: row.created_at,
       updatedAt: row.updated_at,
@@ -118,8 +124,8 @@ router.post("/", async (req: Request, res: Response) => {
   try {
     const { id, pageType, title, path, content, contentData } = req.body;
 
-    if (!id || !pageType) {
-      return res.status(400).json({ error: "id and pageType are required" });
+    if (!id) {
+      return res.status(400).json({ error: "id is required" });
     }
 
     // Check if page already exists
@@ -131,54 +137,85 @@ router.post("/", async (req: Request, res: Response) => {
     if (existingRows && existingRows.length > 0) {
       // Page already exists, return it
       const row = existingRows[0];
+      const cols = await getAvailableColumns();
       return res.status(200).json({
         id: row.id,
-        title: row.title,
-        path: row.path || inferPath(row.page_type, row.id),
-        pageType: row.page_type,
-        content: row.content,
+        title: row.title || "",
+        path: cols.has("path") ? row.path : inferPath(cols.has("page_type") ? row.page_type : undefined, row.id),
+        pageType: cols.has("page_type") ? row.page_type : "page",
+        content: row.content || "",
         contentData: parseContentDataSafely(row.content_data, row.id),
         createdAt: row.created_at,
         updatedAt: row.updated_at,
       });
     }
 
-    // Sanitize content data to remove base64 images
+    const cols = await getAvailableColumns();
+
+    // Sanitize content data
     const sanitizedContentData = sanitizeContentData(contentData);
     const contentDataJson =
       typeof sanitizedContentData === "string"
         ? sanitizedContentData
         : JSON.stringify(sanitizedContentData || {});
 
-    const usePathColumn = await pagesHasPathColumn();
+    // Build INSERT statement dynamically based on available columns
+    const columns: string[] = ["id"];
+    const values: any[] = [id];
+    const placeholders: string[] = ["?"];
 
-    if (usePathColumn) {
-      await pool.query(
-        `INSERT INTO pages (id, title, path, page_type, content, content_data, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())`,
-        [
-          id,
-          title || "",
-          path || inferPath(pageType, id),
-          pageType,
-          content || "",
-          contentDataJson,
-        ],
-      );
-    } else {
-      await pool.query(
-        `INSERT INTO pages (id, title, page_type, content, content_data, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, NOW(), NOW())`,
-        [id, title || "", pageType, content || "", contentDataJson],
-      );
+    if (cols.has("title")) {
+      columns.push("title");
+      values.push(title || "");
+      placeholders.push("?");
     }
+
+    if (cols.has("path")) {
+      columns.push("path");
+      values.push(path || inferPath(pageType, id));
+      placeholders.push("?");
+    }
+
+    if (cols.has("page_type")) {
+      columns.push("page_type");
+      values.push(pageType || "page");
+      placeholders.push("?");
+    }
+
+    if (cols.has("content")) {
+      columns.push("content");
+      values.push(content || "");
+      placeholders.push("?");
+    }
+
+    if (cols.has("content_data")) {
+      columns.push("content_data");
+      values.push(contentDataJson);
+      placeholders.push("?");
+    }
+
+    if (cols.has("created_at")) {
+      columns.push("created_at");
+      values.push(new Date().toISOString());
+      placeholders.push("?");
+    }
+
+    if (cols.has("updated_at")) {
+      columns.push("updated_at");
+      values.push(new Date().toISOString());
+      placeholders.push("?");
+    }
+
+    const insertSQL = `INSERT INTO pages (${columns.join(", ")}) VALUES (${placeholders.join(", ")})`;
+    console.log("Executing INSERT with columns:", columns);
+    await pool.query(insertSQL, values);
 
     return res.status(201).json({
       id,
-      pageType,
-      title,
+      pageType: pageType || "page",
+      title: title || "",
       path: path || inferPath(pageType, id),
-      content,
+      content: content || "",
       contentData: sanitizedContentData,
     });
   } catch (error) {
@@ -191,155 +228,119 @@ router.post("/", async (req: Request, res: Response) => {
 router.put("/:id", async (req: Request, res: Response) => {
   try {
     const { pageType, title, path, content, contentData } = req.body;
+    const cols = await getAvailableColumns();
 
-    // Sanitize content data to remove base64 images
+    // Sanitize content data
     const sanitizedContentData = sanitizeContentData(contentData);
     const contentDataJson =
       typeof sanitizedContentData === "string"
         ? sanitizedContentData
         : JSON.stringify(sanitizedContentData || {});
 
-    const usePathColumn = await pagesHasPathColumn();
+    // Build UPDATE statement dynamically
+    const setClauses: string[] = [];
+    const values: any[] = [];
 
-    const [result] = usePathColumn
-      ? await pool.query(
-          `UPDATE pages SET title = ?, path = ?, page_type = ?, content = ?, content_data = ?, updated_at = NOW()
-           WHERE id = ?`,
-          [
-            title || "",
-            path || inferPath(pageType, req.params.id),
-            pageType,
-            content || "",
-            contentDataJson,
-            req.params.id,
-          ],
-        )
-      : await pool.query(
-          `UPDATE pages SET title = ?, page_type = ?, content = ?, content_data = ?, updated_at = NOW()
-           WHERE id = ?`,
-          [
-            title || "",
-            pageType,
-            content || "",
-            contentDataJson,
-            req.params.id,
-          ],
-        );
+    if (cols.has("title")) {
+      setClauses.push("title = ?");
+      values.push(title || "");
+    }
 
-    let updatedId = req.params.id;
+    if (cols.has("path")) {
+      setClauses.push("path = ?");
+      values.push(path || inferPath(pageType, req.params.id));
+    }
 
+    if (cols.has("page_type")) {
+      setClauses.push("page_type = ?");
+      values.push(pageType || "page");
+    }
+
+    if (cols.has("content")) {
+      setClauses.push("content = ?");
+      values.push(content || "");
+    }
+
+    if (cols.has("content_data")) {
+      setClauses.push("content_data = ?");
+      values.push(contentDataJson);
+    }
+
+    if (cols.has("updated_at")) {
+      setClauses.push("updated_at = ?");
+      values.push(new Date().toISOString());
+    }
+
+    if (setClauses.length === 0) {
+      return res.status(400).json({ error: "No updatable columns available" });
+    }
+
+    values.push(req.params.id);
+
+    const updateSQL = `UPDATE pages SET ${setClauses.join(", ")} WHERE id = ?`;
+    console.log("Executing UPDATE with columns:", setClauses);
+    const [result] = await pool.query(updateSQL, values);
+
+    // If no rows updated, try to create the page instead
     if ((result as any).affectedRows === 0) {
-      let whereClause = "";
-      let whereValue: string | undefined;
+      // Build INSERT statement dynamically
+      const insertColumns: string[] = ["id"];
+      const insertValues: any[] = [req.params.id];
+      const insertPlaceholders: string[] = ["?"];
 
-      if (pageType) {
-        whereClause = "page_type = ?";
-        whereValue = pageType;
-      } else if (usePathColumn && path) {
-        whereClause = "path = ?";
-        whereValue = path;
+      if (cols.has("title")) {
+        insertColumns.push("title");
+        insertValues.push(title || "");
+        insertPlaceholders.push("?");
       }
 
-      if (whereClause && whereValue) {
-        const [fallbackResult] = usePathColumn
-          ? await pool.query(
-              `UPDATE pages SET title = ?, path = ?, page_type = ?, content = ?, content_data = ?, updated_at = NOW()
-               WHERE ${whereClause}`,
-              [
-                title || "",
-                path || inferPath(pageType, req.params.id),
-                pageType,
-                content || "",
-                contentDataJson,
-                whereValue,
-              ],
-            )
-          : await pool.query(
-              `UPDATE pages SET title = ?, page_type = ?, content = ?, content_data = ?, updated_at = NOW()
-               WHERE ${whereClause}`,
-              [
-                title || "",
-                pageType,
-                content || "",
-                contentDataJson,
-                whereValue,
-              ],
-            );
-
-        if ((fallbackResult as any).affectedRows === 0) {
-          if (usePathColumn) {
-            await pool.query(
-              `INSERT INTO pages (id, title, path, page_type, content, content_data, created_at, updated_at)
-               VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())`,
-              [
-                req.params.id,
-                title || "",
-                path || inferPath(pageType, req.params.id),
-                pageType,
-                content || "",
-                contentDataJson,
-              ],
-            );
-          } else {
-            await pool.query(
-              `INSERT INTO pages (id, title, page_type, content, content_data, created_at, updated_at)
-               VALUES (?, ?, ?, ?, ?, NOW(), NOW())`,
-              [
-                req.params.id,
-                title || "",
-                pageType,
-                content || "",
-                contentDataJson,
-              ],
-            );
-          }
-          updatedId = req.params.id;
-        } else {
-          const [rows] = await pool.query<RowDataPacket[]>(
-            `SELECT id FROM pages WHERE ${whereClause} LIMIT 1`,
-            [whereValue],
-          );
-          if (rows && rows.length > 0) {
-            updatedId = rows[0].id;
-          }
-        }
-      } else {
-        if (usePathColumn) {
-          await pool.query(
-            `INSERT INTO pages (id, title, path, page_type, content, content_data, created_at, updated_at)
-             VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())`,
-            [
-              req.params.id,
-              title || "",
-              path || inferPath(pageType, req.params.id),
-              pageType,
-              content || "",
-              contentDataJson,
-            ],
-          );
-        } else {
-          await pool.query(
-            `INSERT INTO pages (id, title, page_type, content, content_data, created_at, updated_at)
-             VALUES (?, ?, ?, ?, ?, NOW(), NOW())`,
-            [
-              req.params.id,
-              title || "",
-              pageType,
-              content || "",
-              contentDataJson,
-            ],
-          );
-        }
-        updatedId = req.params.id;
+      if (cols.has("path")) {
+        insertColumns.push("path");
+        insertValues.push(path || inferPath(pageType, req.params.id));
+        insertPlaceholders.push("?");
       }
+
+      if (cols.has("page_type")) {
+        insertColumns.push("page_type");
+        insertValues.push(pageType || "page");
+        insertPlaceholders.push("?");
+      }
+
+      if (cols.has("content")) {
+        insertColumns.push("content");
+        insertValues.push(content || "");
+        insertPlaceholders.push("?");
+      }
+
+      if (cols.has("content_data")) {
+        insertColumns.push("content_data");
+        insertValues.push(contentDataJson);
+        insertPlaceholders.push("?");
+      }
+
+      if (cols.has("created_at")) {
+        insertColumns.push("created_at");
+        insertValues.push(new Date().toISOString());
+        insertPlaceholders.push("?");
+      }
+
+      if (cols.has("updated_at")) {
+        insertColumns.push("updated_at");
+        insertValues.push(new Date().toISOString());
+        insertPlaceholders.push("?");
+      }
+
+      const insertSQL = `INSERT INTO pages (${insertColumns.join(", ")}) VALUES (${insertPlaceholders.join(", ")})`;
+      console.log("Page not found, inserting with columns:", insertColumns);
+      await pool.query(insertSQL, insertValues);
     }
 
     return res.json({
-      id: updatedId,
-      pageType,
-      title,
-      path: path || inferPath(pageType, updatedId),
-      content,
+      id: req.params.id,
+      pageType: pageType || "page",
+      title: title || "",
+      path: path || inferPath(pageType, req.params.id),
+      content: content || "",
       contentData: sanitizedContentData,
     });
   } catch (error) {
