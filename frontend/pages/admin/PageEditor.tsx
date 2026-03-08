@@ -608,6 +608,35 @@ const PageEditor: React.FC = () => {
     }
   }, [pageId, pages, siteSettings?.siteBackgroundImageUrl]);
 
+  // Auto-add required default form fields for contact pages
+  useEffect(() => {
+    if (
+      page?.pageType === "contact" &&
+      siteSettings?.defaultFormFields &&
+      siteSettings.defaultFormFields.length > 0
+    ) {
+      const currentFields = (page.contentData as ContactPageContent)
+        ?.formFields || [];
+      const requiredFields = siteSettings.defaultFormFields.filter(
+        (field) => field.required && field.enabled
+      );
+
+      const missingRequiredFields = requiredFields.filter(
+        (reqField) => !currentFields.some((f) => f.id === reqField.id)
+      );
+
+      if (missingRequiredFields.length > 0) {
+        setPage({
+          ...page,
+          contentData: {
+            ...(page.contentData as ContactPageContent),
+            formFields: [...currentFields, ...missingRequiredFields],
+          },
+        });
+      }
+    }
+  }, [page?.pageType, siteSettings?.defaultFormFields]);
+
   const handleSave = async () => {
     if (page) {
       let pageToSave = { ...page };
@@ -1134,34 +1163,19 @@ const PageEditor: React.FC = () => {
     };
 
     const isDefaultField = (fieldId: string) => {
-      return ["f1", "f2", "f3", "f4", "f5"].includes(fieldId);
-    };
-
-    const getDefaultFieldTemplate = (
-      fieldId: string,
-    ): ContactFormField | undefined => {
-      const template = PAGE_TEMPLATES.contact.defaults.formFields.find(
-        (f) => f.id === fieldId,
-      );
-      if (!template) return undefined;
-
-      return {
-        ...template,
-        options: template.options ? [...template.options] : undefined,
-        validation: template.validation
-          ? { ...template.validation }
-          : undefined,
-        conditionalRules: template.conditionalRules
-          ? [...template.conditionalRules]
-          : undefined,
-      };
+      return siteSettings?.defaultFormFields?.some(
+        (f) => f.id === fieldId
+      ) ?? false;
     };
 
     const addMissingDefaultField = (fieldId: string) => {
       const existing = content.formFields?.find((f) => f.id === fieldId);
       if (existing) return;
 
-      const template = getDefaultFieldTemplate(fieldId);
+      // Find the field from siteSettings.defaultFormFields
+      const template = siteSettings?.defaultFormFields?.find(
+        (f) => f.id === fieldId
+      );
       if (!template) return;
 
       handleContactContentChange("formFields", [
@@ -1795,8 +1809,8 @@ const PageEditor: React.FC = () => {
             </button>
           </div>
           <p className="text-sm text-gray-400 mb-4">
-            📌 <strong>Default fields</strong> (name, email, phone, subject,
-            message) can be disabled but not deleted. Drag any field to reorder.
+            📌 <strong>Default fields</strong> from Settings can be enabled/disabled
+            here. Required fields are automatically added. Drag fields below to reorder.
             Phone numbers are automatically formatted as (###) ###-####.
           </p>
 
@@ -1805,12 +1819,7 @@ const PageEditor: React.FC = () => {
               Default Fields Configuration
             </h4>
             <div className="space-y-2">
-              {[
-                { id: "f1", label: "Name" },
-                { id: "f2", label: "Email" },
-                { id: "f3", label: "Phone Number" },
-                { id: "f5", label: "Description" },
-              ].map((defaultField) => {
+              {(siteSettings?.defaultFormFields || []).map((defaultField) => {
                 const field = content.formFields?.find(
                   (f) => f.id === defaultField.id,
                 );
@@ -1823,6 +1832,7 @@ const PageEditor: React.FC = () => {
                     >
                       <span className="text-sm text-gray-300">
                         {defaultField.label}
+                        {defaultField.required && <span className="text-red-400 ml-1">*</span>}
                       </span>
                       <button
                         type="button"
