@@ -67,6 +67,46 @@ function inferPath(pageType?: string, pageId?: string): string {
   return "/";
 }
 
+function inferPageTypeFromRow(row: any, cols: Set<string>): string {
+  if (cols.has("page_type") && row.page_type) {
+    return row.page_type;
+  }
+
+  const id = String(row.id || "").toLowerCase();
+  const path = String(row.path || "").toLowerCase();
+  const slug = String(row.slug || "").toLowerCase();
+  const title = String(row.title || "").toLowerCase();
+
+  const identity = [id, path, slug, title].join("|");
+
+  if (
+    identity.includes("home-page") ||
+    identity.includes("/home") ||
+    path === "/" ||
+    title === "home"
+  ) {
+    return "home";
+  }
+
+  if (
+    identity.includes("about-us-page") ||
+    identity.includes("about") ||
+    path === "/about"
+  ) {
+    return "about";
+  }
+
+  if (
+    identity.includes("contact-page") ||
+    identity.includes("contact") ||
+    path === "/contact"
+  ) {
+    return "contact";
+  }
+
+  return "page";
+}
+
 // Convert JavaScript Date to MySQL DATETIME format (YYYY-MM-DD HH:MM:SS)
 function toMySQLDateTime(date: Date): string {
   return date.toISOString().slice(0, 19).replace("T", " ");
@@ -92,18 +132,20 @@ router.get("/", async (_req: Request, res: Response) => {
     );
 
     // Transform snake_case to camelCase for API response
-    const transformedRows = (rows || []).map((row: any) => ({
-      id: row.id,
-      title: row.title || "",
-      path: cols.has("path")
-        ? row.path
-        : inferPath(cols.has("page_type") ? row.page_type : undefined, row.id),
-      pageType: cols.has("page_type") ? row.page_type : "page",
-      content: row.content || "",
-      contentData: parseContentDataSafely(row.content_data, row.id),
-      createdAt: row.created_at,
-      updatedAt: row.updated_at,
-    }));
+    const transformedRows = (rows || []).map((row: any) => {
+      const inferredPageType = inferPageTypeFromRow(row, cols);
+
+      return {
+        id: row.id,
+        title: row.title || "",
+        path: cols.has("path") ? row.path : inferPath(inferredPageType, row.id),
+        pageType: inferredPageType,
+        content: row.content || "",
+        contentData: parseContentDataSafely(row.content_data, row.id),
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+      };
+    });
 
     return res.json(transformedRows);
   } catch (error) {
@@ -127,13 +169,14 @@ router.get("/:id", async (req: Request, res: Response) => {
 
     const row = rows[0];
     // Transform snake_case to camelCase for API response
+    const inferredPageType = inferPageTypeFromRow(row, cols);
     const page = {
       id: row.id,
       title: row.title || "",
       path: cols.has("path")
         ? row.path
-        : inferPath(cols.has("page_type") ? row.page_type : undefined, row.id),
-      pageType: cols.has("page_type") ? row.page_type : "page",
+        : inferPath(inferredPageType, row.id),
+      pageType: inferredPageType,
       content: row.content || "",
       contentData: parseContentDataSafely(row.content_data, row.id),
       createdAt: row.created_at,
@@ -166,16 +209,14 @@ router.post("/", async (req: Request, res: Response) => {
       // Page already exists, return it
       const row = existingRows[0];
       const cols = await getAvailableColumns();
+      const inferredPageType = inferPageTypeFromRow(row, cols);
       return res.status(200).json({
         id: row.id,
         title: row.title || "",
         path: cols.has("path")
           ? row.path
-          : inferPath(
-              cols.has("page_type") ? row.page_type : undefined,
-              row.id,
-            ),
-        pageType: cols.has("page_type") ? row.page_type : "page",
+          : inferPath(inferredPageType, row.id),
+        pageType: inferredPageType,
         content: row.content || "",
         contentData: parseContentDataSafely(row.content_data, row.id),
         createdAt: row.created_at,
