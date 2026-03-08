@@ -1007,82 +1007,6 @@ const PageEditor: React.FC = () => {
     );
   };
 
-  // Template autocomplete handlers
-  const getFilteredTemplateVariables = () => {
-    const variables = getTemplateVariables();
-    if (!autocompleteFilter) return variables;
-
-    const filter = autocompleteFilter.toLowerCase();
-    return variables.filter(
-      (v) =>
-        v.variable.toLowerCase().includes(filter) ||
-        v.description.toLowerCase().includes(filter),
-    );
-  };
-
-  const handleTemplateInputChange = (value: string) => {
-    handleContactContentChange("subjectTemplate", value);
-
-    // Check if we should show autocomplete
-    const input = templateInputRef.current;
-    if (!input) return;
-
-    const cursorPos = input.selectionStart || 0;
-    const textBeforeCursor = value.substring(0, cursorPos);
-
-    // Look for {{ pattern before cursor
-    const lastOpenBrace = textBeforeCursor.lastIndexOf("{{");
-    const lastCloseBrace = textBeforeCursor.lastIndexOf("}}");
-
-    // Show autocomplete if {{ is more recent than }} and cursor is after {{
-    if (lastOpenBrace > lastCloseBrace && lastOpenBrace !== -1) {
-      const filterText = textBeforeCursor.substring(lastOpenBrace + 2);
-      setAutocompleteFilter(filterText);
-      setShowTemplateAutocomplete(true);
-    } else {
-      setShowTemplateAutocomplete(false);
-    }
-  };
-
-  const insertTemplateVariable = (variable: string) => {
-    const input = templateInputRef.current;
-    const content = page?.contentData as ContactPageContent;
-    if (!input || !content) return;
-
-    const currentValue = content.subjectTemplate || "";
-    const cursorPos = input.selectionStart || 0;
-    const textBeforeCursor = currentValue.substring(0, cursorPos);
-    const textAfterCursor = currentValue.substring(cursorPos);
-
-    // Find the {{ before cursor
-    const lastOpenBrace = textBeforeCursor.lastIndexOf("{{");
-
-    if (lastOpenBrace !== -1) {
-      // Replace from {{ to cursor with the full variable
-      const newValue =
-        currentValue.substring(0, lastOpenBrace) + variable + textAfterCursor;
-
-      handleContactContentChange("subjectTemplate", newValue);
-      setShowTemplateAutocomplete(false);
-
-      // Set cursor after inserted variable
-      setTimeout(() => {
-        if (input) {
-          const newCursorPos = lastOpenBrace + variable.length;
-          input.setSelectionRange(newCursorPos, newCursorPos);
-          input.focus();
-        }
-      }, 0);
-    }
-  };
-
-  const handleTemplateKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (showTemplateAutocomplete && e.key === "Escape") {
-      e.preventDefault();
-      setShowTemplateAutocomplete(false);
-    }
-  };
-
   const renderContactPageEditor = () => {
     const content =
       (page.contentData as ContactPageContent) ||
@@ -1099,6 +1023,72 @@ const PageEditor: React.FC = () => {
           [field]: value,
         },
       });
+    };
+
+    const getFilteredTemplateVariables = () => {
+      const variables = getTemplateVariables();
+      if (!autocompleteFilter) return variables;
+
+      const filter = autocompleteFilter.toLowerCase();
+      return variables.filter(
+        (v) =>
+          v.variable.toLowerCase().includes(filter) ||
+          v.description.toLowerCase().includes(filter),
+      );
+    };
+
+    const handleTemplateInputChange = (value: string) => {
+      handleContactContentChange("subjectTemplate", value);
+
+      const input = templateInputRef.current;
+      if (!input) return;
+
+      const cursorPos = input.selectionStart || 0;
+      const textBeforeCursor = value.substring(0, cursorPos);
+      const lastOpenBrace = textBeforeCursor.lastIndexOf("{{");
+      const lastCloseBrace = textBeforeCursor.lastIndexOf("}}");
+
+      if (lastOpenBrace > lastCloseBrace && lastOpenBrace !== -1) {
+        const filterText = textBeforeCursor.substring(lastOpenBrace + 2);
+        setAutocompleteFilter(filterText);
+        setShowTemplateAutocomplete(true);
+      } else {
+        setShowTemplateAutocomplete(false);
+      }
+    };
+
+    const insertTemplateVariable = (variable: string) => {
+      const input = templateInputRef.current;
+      if (!input) return;
+
+      const currentValue = content.subjectTemplate || "";
+      const cursorPos = input.selectionStart || 0;
+      const textBeforeCursor = currentValue.substring(0, cursorPos);
+      const textAfterCursor = currentValue.substring(cursorPos);
+      const lastOpenBrace = textBeforeCursor.lastIndexOf("{{");
+
+      if (lastOpenBrace === -1) return;
+
+      const newValue =
+        currentValue.substring(0, lastOpenBrace) + variable + textAfterCursor;
+
+      handleContactContentChange("subjectTemplate", newValue);
+      setShowTemplateAutocomplete(false);
+
+      setTimeout(() => {
+        const activeInput = templateInputRef.current;
+        if (!activeInput) return;
+        const newCursorPos = lastOpenBrace + variable.length;
+        activeInput.setSelectionRange(newCursorPos, newCursorPos);
+        activeInput.focus();
+      }, 0);
+    };
+
+    const handleTemplateKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (showTemplateAutocomplete && e.key === "Escape") {
+        e.preventDefault();
+        setShowTemplateAutocomplete(false);
+      }
     };
 
     const handleFieldUpdate = (
@@ -1142,8 +1132,49 @@ const PageEditor: React.FC = () => {
     };
 
     const isDefaultField = (fieldId: string) => {
-      // f1-f5 are the core default fields that can't be deleted
       return ["f1", "f2", "f3", "f4", "f5"].includes(fieldId);
+    };
+
+    const getDefaultFieldTemplate = (
+      fieldId: string,
+    ): ContactFormField | undefined => {
+      const template = PAGE_TEMPLATES.contact.defaults.formFields.find(
+        (f) => f.id === fieldId,
+      );
+      if (!template) return undefined;
+
+      return {
+        ...template,
+        options: template.options ? [...template.options] : undefined,
+        validation: template.validation ? { ...template.validation } : undefined,
+        conditionalRules: template.conditionalRules
+          ? [...template.conditionalRules]
+          : undefined,
+      };
+    };
+
+    const addMissingDefaultField = (fieldId: string) => {
+      const existing = content.formFields?.find((f) => f.id === fieldId);
+      if (existing) return;
+
+      const template = getDefaultFieldTemplate(fieldId);
+      if (!template) return;
+
+      handleContactContentChange("formFields", [
+        ...(content.formFields || []),
+        template,
+      ]);
+    };
+
+    const moveField = (fieldId: string, direction: "up" | "down") => {
+      const fields = [...(content.formFields || [])];
+      const index = fields.findIndex((f) => f.id === fieldId);
+      if (index < 0) return;
+
+      const targetIndex = direction === "up" ? index - 1 : index + 1;
+      if (targetIndex < 0 || targetIndex >= fields.length) return;
+
+      handleContactContentChange("formFields", arrayMove(fields, index, targetIndex));
     };
 
     const deleteField = (fieldId: string) => {
@@ -1761,6 +1792,96 @@ const PageEditor: React.FC = () => {
             message) can be disabled but not deleted. Drag any field to reorder.
             Phone numbers are automatically formatted as (###) ###-####.
           </p>
+
+          <div className="mb-4 p-3 bg-slate-900 border border-slate-600 rounded-md">
+            <h4 className="text-sm font-semibold text-white mb-2">
+              Default Fields Configuration
+            </h4>
+            <div className="space-y-2">
+              {[
+                { id: "f1", label: "Name" },
+                { id: "f2", label: "Email" },
+                { id: "f3", label: "Phone Number" },
+                { id: "f5", label: "Description" },
+              ].map((defaultField) => {
+                const field = content.formFields?.find(
+                  (f) => f.id === defaultField.id,
+                );
+
+                if (!field) {
+                  return (
+                    <div
+                      key={defaultField.id}
+                      className="flex items-center justify-between p-2 bg-slate-800 rounded"
+                    >
+                      <span className="text-sm text-gray-300">{defaultField.label}</span>
+                      <button
+                        type="button"
+                        onClick={() => addMissingDefaultField(defaultField.id)}
+                        className="text-xs px-2 py-1 bg-sky-600 hover:bg-sky-500 text-white rounded"
+                      >
+                        Add Field
+                      </button>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div
+                    key={defaultField.id}
+                    className="flex items-center justify-between p-2 bg-slate-800 rounded"
+                  >
+                    <span className="text-sm text-gray-200">{defaultField.label}</span>
+                    <div className="flex items-center gap-3">
+                      <label className="text-xs text-gray-300 flex items-center gap-1">
+                        <input
+                          type="checkbox"
+                          checked={field.enabled}
+                          onChange={(e) =>
+                            handleFieldUpdate(defaultField.id, {
+                              enabled: e.target.checked,
+                            })
+                          }
+                          className="w-3 h-3"
+                        />
+                        Enabled
+                      </label>
+                      <label className="text-xs text-gray-300 flex items-center gap-1">
+                        <input
+                          type="checkbox"
+                          checked={field.required}
+                          onChange={(e) =>
+                            handleFieldUpdate(defaultField.id, {
+                              required: e.target.checked,
+                            })
+                          }
+                          className="w-3 h-3"
+                        />
+                        Required
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => moveField(defaultField.id, "up")}
+                        className="text-xs px-2 py-1 bg-slate-700 hover:bg-slate-600 text-gray-200 rounded"
+                        title="Move up"
+                      >
+                        ↑
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => moveField(defaultField.id, "down")}
+                        className="text-xs px-2 py-1 bg-slate-700 hover:bg-slate-600 text-gray-200 rounded"
+                        title="Move down"
+                      >
+                        ↓
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
