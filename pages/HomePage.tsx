@@ -25,11 +25,9 @@ const HomePage: React.FC = () => {
   } = useGalleries();
   const { siteSettings } = useSiteSettings();
   const { addToast } = useToast();
-  const { isAuthenticated } = useCustomerAuth();
+  const { isAuthenticated, customer } = useCustomerAuth();
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [reviewForm, setReviewForm] = useState({
-    author: "",
-    email: "",
     text: "",
     rating: 5,
   });
@@ -94,24 +92,22 @@ const HomePage: React.FC = () => {
   const handleSubmitReview = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (
-      !reviewForm.author.trim() ||
-      !reviewForm.email.trim() ||
-      !reviewForm.text.trim()
-    ) {
-      addToast("Please fill in all fields", "error");
+    if (!customer) {
+      addToast("Please log in to submit a review", "error");
       return;
     }
 
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(reviewForm.email)) {
-      addToast("Please enter a valid email", "error");
+    if (!reviewForm.text.trim()) {
+      addToast("Please write a review", "error");
       return;
     }
+
+    const authorName = `${customer.firstName} ${customer.lastName}`;
 
     try {
       await addReview({
-        author: reviewForm.author,
-        email: reviewForm.email,
+        author: authorName,
+        email: customer.email,
         text: reviewForm.text,
         rating: reviewForm.rating,
         status: "pending",
@@ -123,7 +119,7 @@ const HomePage: React.FC = () => {
         "Thank you! Your review has been submitted for approval.",
         "success",
       );
-      setReviewForm({ author: "", email: "", text: "", rating: 5 });
+      setReviewForm({ text: "", rating: 5 });
       setReviewImages([]);
       setShowReviewForm(false);
     } catch (error) {
@@ -301,7 +297,7 @@ const HomePage: React.FC = () => {
           </button>
         </div>
 
-        {showReviewForm && isAuthenticated && (
+        {showReviewForm && isAuthenticated && customer && (
           <div className="bg-slate-800 p-6 rounded-lg border border-slate-700 mb-8">
             <form onSubmit={handleSubmitReview} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -311,12 +307,9 @@ const HomePage: React.FC = () => {
                   </label>
                   <input
                     type="text"
-                    value={reviewForm.author}
-                    onChange={(e) =>
-                      setReviewForm({ ...reviewForm, author: e.target.value })
-                    }
-                    placeholder="Your name"
-                    className="w-full p-2 bg-slate-700 border border-slate-600 rounded text-white"
+                    value={`${customer.firstName} ${customer.lastName}`}
+                    readOnly
+                    className="w-full p-2 bg-slate-600 border border-slate-500 rounded text-gray-300 cursor-not-allowed"
                   />
                 </div>
                 <div>
@@ -325,12 +318,9 @@ const HomePage: React.FC = () => {
                   </label>
                   <input
                     type="email"
-                    value={reviewForm.email}
-                    onChange={(e) =>
-                      setReviewForm({ ...reviewForm, email: e.target.value })
-                    }
-                    placeholder="your@email.com"
-                    className="w-full p-2 bg-slate-700 border border-slate-600 rounded text-white"
+                    value={customer.email}
+                    readOnly
+                    className="w-full p-2 bg-slate-600 border border-slate-500 rounded text-gray-300 cursor-not-allowed"
                   />
                 </div>
               </div>
