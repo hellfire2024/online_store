@@ -6,6 +6,21 @@ const router = Router();
 function sanitizeContentData(contentData) {
     return contentData;
 }
+function parseContentDataSafely(contentData, pageId) {
+    if (contentData == null) {
+        return {};
+    }
+    if (typeof contentData !== "string") {
+        return contentData;
+    }
+    try {
+        return JSON.parse(contentData);
+    }
+    catch (error) {
+        console.warn("Invalid content_data JSON for page:", pageId, error);
+        return {};
+    }
+}
 // Get all pages
 router.get("/", async (_req, res) => {
     try {
@@ -17,9 +32,7 @@ router.get("/", async (_req, res) => {
             path: row.path,
             pageType: row.page_type,
             content: row.content,
-            contentData: typeof row.content_data === "string"
-                ? JSON.parse(row.content_data)
-                : row.content_data,
+            contentData: parseContentDataSafely(row.content_data, row.id),
             createdAt: row.created_at,
             updatedAt: row.updated_at,
         }));
@@ -45,9 +58,7 @@ router.get("/:id", async (req, res) => {
             path: row.path,
             pageType: row.page_type,
             content: row.content,
-            contentData: typeof row.content_data === "string"
-                ? JSON.parse(row.content_data)
-                : row.content_data,
+            contentData: parseContentDataSafely(row.content_data, row.id),
             createdAt: row.created_at,
             updatedAt: row.updated_at,
         };

@@ -10,6 +10,23 @@ function sanitizeContentData(contentData: any): any {
   return contentData;
 }
 
+function parseContentDataSafely(contentData: any, pageId?: string): any {
+  if (contentData == null) {
+    return {};
+  }
+
+  if (typeof contentData !== "string") {
+    return contentData;
+  }
+
+  try {
+    return JSON.parse(contentData);
+  } catch (error) {
+    console.warn("Invalid content_data JSON for page:", pageId, error);
+    return {};
+  }
+}
+
 // Get all pages
 router.get("/", async (_req: Request, res: Response) => {
   try {
@@ -24,10 +41,7 @@ router.get("/", async (_req: Request, res: Response) => {
       path: row.path,
       pageType: row.page_type,
       content: row.content,
-      contentData:
-        typeof row.content_data === "string"
-          ? JSON.parse(row.content_data)
-          : row.content_data,
+      contentData: parseContentDataSafely(row.content_data, row.id),
       createdAt: row.created_at,
       updatedAt: row.updated_at,
     }));
@@ -59,10 +73,7 @@ router.get("/:id", async (req: Request, res: Response) => {
       path: row.path,
       pageType: row.page_type,
       content: row.content,
-      contentData:
-        typeof row.content_data === "string"
-          ? JSON.parse(row.content_data)
-          : row.content_data,
+      contentData: parseContentDataSafely(row.content_data, row.id),
       createdAt: row.created_at,
       updatedAt: row.updated_at,
     };
@@ -98,10 +109,7 @@ router.post("/", async (req: Request, res: Response) => {
         path: row.path,
         pageType: row.page_type,
         content: row.content,
-        contentData:
-          typeof row.content_data === "string"
-            ? JSON.parse(row.content_data)
-            : row.content_data,
+        contentData: parseContentDataSafely(row.content_data, row.id),
         createdAt: row.created_at,
         updatedAt: row.updated_at,
       });
