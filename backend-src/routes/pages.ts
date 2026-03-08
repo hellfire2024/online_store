@@ -83,6 +83,30 @@ router.post("/", async (req: Request, res: Response) => {
       return res.status(400).json({ error: "id and pageType are required" });
     }
 
+    // Check if page already exists
+    const [existingRows] = await pool.query<RowDataPacket[]>(
+      "SELECT * FROM pages WHERE id = ?",
+      [id],
+    );
+
+    if (existingRows && existingRows.length > 0) {
+      // Page already exists, return it
+      const row = existingRows[0];
+      return res.status(200).json({
+        id: row.id,
+        title: row.title,
+        path: row.path,
+        pageType: row.page_type,
+        content: row.content,
+        contentData:
+          typeof row.content_data === "string"
+            ? JSON.parse(row.content_data)
+            : row.content_data,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+      });
+    }
+
     // Sanitize content data to remove base64 images
     const sanitizedContentData = sanitizeContentData(contentData);
     const contentDataJson =
