@@ -29,9 +29,14 @@ function parseContentDataSafely(contentData: any, pageId?: string): any {
 
 // Cache for available columns in pages table with their constraints
 let availableColumnsCache: Set<string> | null = null;
-let columnConstraintsCache: Map<string, { nullable: boolean; hasDefault: boolean }> | null = null;
+let columnConstraintsCache: Map<
+  string,
+  { nullable: boolean; hasDefault: boolean }
+> | null = null;
 
-async function getColumnConstraints(): Promise<Map<string, { nullable: boolean; hasDefault: boolean }>> {
+async function getColumnConstraints(): Promise<
+  Map<string, { nullable: boolean; hasDefault: boolean }>
+> {
   if (columnConstraintsCache !== null) {
     return columnConstraintsCache;
   }
