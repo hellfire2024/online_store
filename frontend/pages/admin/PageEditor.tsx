@@ -663,6 +663,23 @@ const PageEditor: React.FC = () => {
         };
       }
 
+      // Ensure contact page has all required fields
+      if (pageToSave.pageType === "contact" && pageToSave.contentData) {
+        const contactData = pageToSave.contentData as ContactPageContent;
+        // Make sure all required fields are present before sending to API
+        pageToSave.contentData = {
+          pageTitle: contactData.pageTitle || PAGE_TEMPLATES.contact.defaults.pageTitle,
+          pageSubtitle: contactData.pageSubtitle || PAGE_TEMPLATES.contact.defaults.pageSubtitle,
+          targetEmail: contactData.targetEmail || "",
+          subjectTemplate: contactData.subjectTemplate || PAGE_TEMPLATES.contact.defaults.subjectTemplate,
+          successMessage: contactData.successMessage || PAGE_TEMPLATES.contact.defaults.successMessage,
+          formFields: contactData.formFields || PAGE_TEMPLATES.contact.defaults.formFields,
+          pageFont: contactData.pageFont,
+          pageTitleFont: contactData.pageTitleFont,
+          pageTitleColor: contactData.pageTitleColor,
+        };
+      }
+
       if ("id" in pageToSave) {
         await updatePage(pageToSave);
         addToast("Page updated!", "success");
@@ -1037,9 +1054,19 @@ const PageEditor: React.FC = () => {
   };
 
   const renderContactPageEditor = () => {
-    const content =
-      (page.contentData as ContactPageContent) ||
-      PAGE_TEMPLATES.contact.defaults;
+    // Merge loaded contentData with defaults to ensure all fields are present
+    const baseContent = (page.contentData as ContactPageContent) || {};
+    const content: ContactPageContent = {
+      pageTitle: baseContent.pageTitle || PAGE_TEMPLATES.contact.defaults.pageTitle,
+      pageSubtitle: baseContent.pageSubtitle || PAGE_TEMPLATES.contact.defaults.pageSubtitle,
+      targetEmail: baseContent.targetEmail || "",
+      subjectTemplate: baseContent.subjectTemplate || PAGE_TEMPLATES.contact.defaults.subjectTemplate,
+      successMessage: baseContent.successMessage || PAGE_TEMPLATES.contact.defaults.successMessage,
+      formFields: baseContent.formFields || PAGE_TEMPLATES.contact.defaults.formFields,
+      pageFont: baseContent.pageFont,
+      pageTitleFont: baseContent.pageTitleFont,
+      pageTitleColor: baseContent.pageTitleColor,
+    };
 
     const handleContactContentChange = (
       field: keyof ContactPageContent,
