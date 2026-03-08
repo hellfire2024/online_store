@@ -10,7 +10,7 @@ interface TemplateField {
 /**
  * Preview template with sample data
  * Shows what the email subject will look like with actual values filled in
- * 
+ *
  * @param template Template string with {{variables}}
  * @param fields Form fields configuration (for field:id lookups)
  * @param formName Optional form name
@@ -49,10 +49,13 @@ export function previewEmailTemplate(
   };
 
   // Helper to get sample field value
-  const getSampleFieldValue = (fieldId: string, property: "value" | "label" = "value"): string => {
+  const getSampleFieldValue = (
+    fieldId: string,
+    property: "value" | "label" = "value",
+  ): string => {
     const field = fields.find((f) => f.id === fieldId);
     if (!field) return `[Unknown field: ${fieldId}]`;
-    
+
     if (property === "label") {
       return field.label;
     }
@@ -99,12 +102,20 @@ export function previewEmailTemplate(
   });
 
   // Replace {{field:fieldId}} and {{field:fieldId:label}}
-  result = result.replace(/\{\{field:([^:}]+)(?::([^}]+))?\}\}/g, (_, fieldId, property) => {
-    return getSampleFieldValue(fieldId, property === "label" ? "label" : "value");
-  });
+  result = result.replace(
+    /\{\{field:([^:}]+)(?::([^}]+))?\}\}/g,
+    (_, fieldId, property) => {
+      return getSampleFieldValue(
+        fieldId,
+        property === "label" ? "label" : "value",
+      );
+    },
+  );
 
   // Fallback: replace old {subject} format for backward compatibility
-  const subjectField = fields.find((f) => f.type === "subject" || f.id === "subject");
+  const subjectField = fields.find(
+    (f) => f.type === "subject" || f.id === "subject",
+  );
   if (subjectField) {
     result = result.replace(/\{subject\}/g, "Sample inquiry about services");
   }
@@ -165,11 +176,11 @@ export function getTemplateVariables(): Array<{
  */
 export function validateTemplate(template: string): string[] {
   const errors: string[] = [];
-  
+
   // Check for unclosed braces
   const openBraces = (template.match(/\{\{/g) || []).length;
   const closeBraces = (template.match(/\}\}/g) || []).length;
-  
+
   if (openBraces !== closeBraces) {
     errors.push("Unclosed template variable - check your {{ }} braces");
   }
@@ -178,11 +189,13 @@ export function validateTemplate(template: string): string[] {
   const knownPrefixes = ["date", "time", "datetime", "formName", "field"];
   const variablePattern = /\{\{([^:}]+)/g;
   let match;
-  
+
   while ((match = variablePattern.exec(template)) !== null) {
     const varName = match[1];
     if (!knownPrefixes.includes(varName)) {
-      errors.push(`Unknown variable: {{${varName}}} - use {{date}}, {{time}}, {{datetime}}, {{formName}}, or {{field:fieldId}}`);
+      errors.push(
+        `Unknown variable: {{${varName}}} - use {{date}}, {{time}}, {{datetime}}, {{formName}}, or {{field:fieldId}}`,
+      );
     }
   }
 

@@ -1489,7 +1489,8 @@ const PageEditor: React.FC = () => {
                 required
               />
               <p className="text-xs text-gray-500 mt-1">
-                <strong>Required:</strong> Form submissions will be sent to this email address
+                <strong>Required:</strong> Form submissions will be sent to this
+                email address
               </p>
             </div>
             <div>
@@ -1500,8 +1501,12 @@ const PageEditor: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => {
-                    const showing = document.getElementById("template-help-panel")?.style.display !== "none";
-                    const panel = document.getElementById("template-help-panel");
+                    const showing =
+                      document.getElementById("template-help-panel")?.style
+                        .display !== "none";
+                    const panel = document.getElementById(
+                      "template-help-panel",
+                    );
                     if (panel) panel.style.display = showing ? "none" : "block";
                   }}
                   className="text-xs text-sky-400 hover:text-sky-300"
@@ -1518,7 +1523,7 @@ const PageEditor: React.FC = () => {
                 placeholder="{{date}} - {{formName}}: {{field:subject}}"
                 className="w-full p-2 bg-slate-700 border border-slate-600 rounded-md text-white font-mono text-sm"
               />
-              
+
               {/* Live Preview */}
               {content.subjectTemplate && (
                 <div className="mt-2 p-3 bg-slate-900 border border-slate-600 rounded-md">
@@ -1527,29 +1532,40 @@ const PageEditor: React.FC = () => {
                     {previewEmailTemplate(
                       content.subjectTemplate,
                       content.formFields || [],
-                      content.pageTitle || "Contact Form"
+                      content.pageTitle || "Contact Form",
                     )}
                   </div>
                 </div>
               )}
 
               {/* Validation Errors */}
-              {content.subjectTemplate && validateTemplate(content.subjectTemplate).length > 0 && (
-                <div className="mt-2 p-2 bg-red-900/20 border border-red-500/50 rounded text-xs text-red-400">
-                  {validateTemplate(content.subjectTemplate).map((error, i) => (
-                    <div key={i}>⚠️ {error}</div>
-                  ))}
-                </div>
-              )}
+              {content.subjectTemplate &&
+                validateTemplate(content.subjectTemplate).length > 0 && (
+                  <div className="mt-2 p-2 bg-red-900/20 border border-red-500/50 rounded text-xs text-red-400">
+                    {validateTemplate(content.subjectTemplate).map(
+                      (error, i) => (
+                        <div key={i}>⚠️ {error}</div>
+                      ),
+                    )}
+                  </div>
+                )}
 
               {/* Template Help Panel (collapsible) */}
-              <div id="template-help-panel" style={{ display: "none" }} className="mt-3 p-3 bg-slate-900 border border-slate-600 rounded-md text-xs">
-                <div className="font-semibold text-white mb-2">Available Variables:</div>
+              <div
+                id="template-help-panel"
+                style={{ display: "none" }}
+                className="mt-3 p-3 bg-slate-900 border border-slate-600 rounded-md text-xs"
+              >
+                <div className="font-semibold text-white mb-2">
+                  Available Variables:
+                </div>
                 <div className="space-y-1">
                   {getTemplateVariables().map((v, i) => (
                     <div key={i} className="grid grid-cols-3 gap-2">
                       <code className="text-sky-400">{v.variable}</code>
-                      <span className="text-gray-400 col-span-2">{v.description}</span>
+                      <span className="text-gray-400 col-span-2">
+                        {v.description}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -1562,9 +1578,10 @@ const PageEditor: React.FC = () => {
                   </div>
                 </div>
               </div>
-              
+
               <p className="text-xs text-gray-500 mt-1">
-                Use template variables to dynamically insert values. Click "Template Help" above for details.
+                Use template variables to dynamically insert values. Click
+                "Template Help" above for details.
               </p>
             </div>
             <div>

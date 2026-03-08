@@ -16,7 +16,7 @@ interface TemplateContext {
 
 /**
  * Parse template string and replace variables with actual values
- * 
+ *
  * Supported variables:
  * - {{date}} - Current date in local format (e.g., 3/8/2026)
  * - {{date:YYYY-MM-DD}} - Date in specific format
@@ -25,7 +25,7 @@ interface TemplateContext {
  * - {{formName}} - Name of the form
  * - {{field:fieldId}} - Value of specific form field
  * - {{field:fieldId:label}} - Label of specific form field
- * 
+ *
  * @param template Template string with {{variables}}
  * @param context Context containing form data and custom variables
  * @returns Parsed string with variables replaced
@@ -62,7 +62,10 @@ export function parseTemplate(
   };
 
   // Helper to get field value or label
-  const getFieldValue = (fieldId: string, property: "value" | "label" = "value"): string => {
+  const getFieldValue = (
+    fieldId: string,
+    property: "value" | "label" = "value",
+  ): string => {
     const field = context.fields.find((f) => f.id === fieldId);
     if (!field) return "";
     return property === "value" ? field.value : field.label;
@@ -92,9 +95,12 @@ export function parseTemplate(
   });
 
   // Replace {{field:fieldId}} and {{field:fieldId:label}}
-  result = result.replace(/\{\{field:([^:}]+)(?::([^}]+))?\}\}/g, (_, fieldId, property) => {
-    return getFieldValue(fieldId, property === "label" ? "label" : "value");
-  });
+  result = result.replace(
+    /\{\{field:([^:}]+)(?::([^}]+))?\}\}/g,
+    (_, fieldId, property) => {
+      return getFieldValue(fieldId, property === "label" ? "label" : "value");
+    },
+  );
 
   // Replace custom variables
   if (context.customVars) {
@@ -118,7 +124,7 @@ export function parseTemplate(
 /**
  * Get preview of template with sample data
  * Useful for admin UI to show what the template will look like
- * 
+ *
  * @param template Template string
  * @param sampleFields Sample field data for preview
  * @returns Preview string
@@ -130,19 +136,30 @@ export function previewTemplate(
   const defaultFields: TemplateField[] = [
     { id: "name", type: "text", label: "Name", value: "John Doe" },
     { id: "email", type: "email", label: "Email", value: "john@example.com" },
-    { id: "subject", type: "subject", label: "Subject", value: "Question about products" },
-    { id: "message", type: "textarea", label: "Message", value: "Sample message text..." },
+    {
+      id: "subject",
+      type: "subject",
+      label: "Subject",
+      value: "Question about products",
+    },
+    {
+      id: "message",
+      type: "textarea",
+      label: "Message",
+      value: "Sample message text...",
+    },
   ];
 
   // Merge with provided sample fields
   const fields: TemplateField[] = sampleFields
     ? sampleFields.map((f) => ({
         ...f,
-        value: f.type === "email" 
-          ? "user@example.com" 
-          : f.type === "subject"
-          ? "Sample Subject"
-          : `Sample ${f.label}`,
+        value:
+          f.type === "email"
+            ? "user@example.com"
+            : f.type === "subject"
+              ? "Sample Subject"
+              : `Sample ${f.label}`,
       }))
     : defaultFields;
 

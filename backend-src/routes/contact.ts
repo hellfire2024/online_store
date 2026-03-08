@@ -79,7 +79,13 @@ const buildSenderName = (fields: NormalizedContactField[]): string => {
 
 router.post("/", async (req: Request, res: Response) => {
   try {
-    const { subject, subjectTemplate, formName, fields, targetEmail }: ContactFormData = req.body;
+    const {
+      subject,
+      subjectTemplate,
+      formName,
+      fields,
+      targetEmail,
+    }: ContactFormData = req.body;
 
     if (!subject || !String(subject).trim()) {
       res.status(400).json({
@@ -121,14 +127,15 @@ router.post("/", async (req: Request, res: Response) => {
     }
 
     const senderName = buildSenderName(normalizedFields);
-    
+
     // Require explicit email configuration
     const contactEmail = targetEmail || process.env.CONTACT_EMAIL;
     if (!contactEmail) {
       console.error("[Contact Form] No recipient email configured");
       res.status(500).json({
         error: "Email configuration required",
-        message: "Contact form recipient email is not configured. Please set targetEmail in page settings or CONTACT_EMAIL environment variable.",
+        message:
+          "Contact form recipient email is not configured. Please set targetEmail in page settings or CONTACT_EMAIL environment variable.",
       });
       return;
     }

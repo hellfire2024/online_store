@@ -1,6 +1,7 @@
 # Email Setup Guide for Contact Forms
 
 ## Overview
+
 This guide explains how to configure email delivery for contact form submissions. The system uses Nodemailer with support for multiple email providers including Zoho Mail, Gmail, SendGrid, and custom SMTP servers.
 
 ## Contact Form Email Flow
@@ -17,23 +18,28 @@ This guide explains how to configure email delivery for contact form submissions
 ## Recipient Email Configuration
 
 ### Option 1: Set via Environment Variable (Recommended)
+
 Add to your `.env` file:
+
 ```env
 CONTACT_EMAIL=tgaunt@adaptivegis.com
 ```
 
 ### Option 2: Set via Admin Panel
+
 1. Login to Admin Panel
 2. Navigate to Pages > Contact Page
 3. Edit the contact page
 4. Set "Target Email" field to your desired recipient address
 
 ### Option 3: Default Fallback
+
 If neither option above is configured, emails go to: `tgaunt@adaptivegis.com`
 
 ## SMTP Provider Configuration
 
 ### Configure via Admin Panel
+
 1. Login to Admin Panel
 2. Navigate to **Settings** > **Email Configuration**
 3. Choose your email provider and enter credentials
@@ -43,18 +49,20 @@ If neither option above is configured, emails go to: `tgaunt@adaptivegis.com`
 ## Zoho Mail SMTP Setup (Recommended for @adaptivegis.com)
 
 ### Prerequisites
+
 - Active Zoho Mail account (e.g., tgaunt@adaptivegis.com)
 - IMAP/POP access enabled in Zoho account settings
 
 ### Configuration Settings
 
 **Admin Panel Values:**
+
 - **Provider:** SMTP
 - **From Email:** tgaunt@adaptivegis.com (or your Zoho email)
 - **From Name:** AdaptiveGIS Contact Form
 - **SMTP Host:** smtp.zoho.com
 - **SMTP Port:** 465 (SSL) or 587 (TLS/STARTTLS)
-- **Secure Connection:** 
+- **Secure Connection:**
   - ✅ True (checked) for port 465
   - ❌ False (unchecked) for port 587
 - **SMTP Username:** tgaunt@adaptivegis.com (full email address)
@@ -63,11 +71,13 @@ If neither option above is configured, emails go to: `tgaunt@adaptivegis.com`
 ### Zoho Security Settings
 
 #### Option A: Using Regular Password
+
 1. Go to Zoho Mail Settings > Security
 2. Enable "Allow less secure apps" (not recommended)
 3. Use your regular Zoho password in SMTP config
 
 #### Option B: Using App-Specific Password (Recommended)
+
 1. Go to Zoho Accounts: https://accounts.zoho.com
 2. Navigate to Security > App-Specific Passwords
 3. Generate new password for "Custom Threads App"
@@ -78,6 +88,7 @@ If neither option above is configured, emails go to: `tgaunt@adaptivegis.com`
 ### Testing Zoho Configuration
 
 After configuring in Admin Panel:
+
 1. Navigate to Settings > Email Configuration
 2. Click "Test Email Configuration"
 3. Enter a test recipient email
@@ -87,18 +98,21 @@ After configuring in Admin Panel:
 ### Common Zoho Issues
 
 **Authentication Failed:**
+
 - ✅ Ensure IMAP/POP access is enabled in Zoho
 - ✅ Use full email address as username (not just "tgaunt")
 - ✅ Use app-specific password if 2FA is enabled
 - ✅ Check "Less secure apps" setting
 
 **Connection Timeout:**
+
 - ✅ Verify SMTP port (465 or 587)
 - ✅ Match "Secure" setting to port (true for 465, false for 587)
 - ✅ Check server firewall allows outbound SMTP connections
 - ✅ Verify smtp.zoho.com is not blocked
 
 **Emails Not Received:**
+
 - ✅ Check spam/junk folder in recipient inbox
 - ✅ Verify sender email (From Email) matches authenticated Zoho account
 - ✅ Check Zoho Mail logs/sent folder to confirm email was sent
@@ -110,6 +124,7 @@ After configuring in Admin Panel:
 ## Gmail SMTP Setup (Alternative)
 
 **Settings:**
+
 - **SMTP Host:** smtp.gmail.com
 - **SMTP Port:** 587 (TLS) or 465 (SSL)
 - **Secure:** false for 587, true for 465
@@ -117,6 +132,7 @@ After configuring in Admin Panel:
 - **Password:** App-specific password (required with 2FA)
 
 **Gmail Prerequisites:**
+
 1. Enable 2-Factor Authentication
 2. Generate App-Specific Password:
    - Go to Google Account > Security > 2-Step Verification > App passwords
@@ -128,11 +144,13 @@ After configuring in Admin Panel:
 ## SendGrid Setup (High Volume)
 
 **Settings:**
+
 - **Provider:** SendGrid
 - **From Email:** verified sender email
 - **API Key:** Your SendGrid API key
 
 **Prerequisites:**
+
 1. Create SendGrid account
 2. Verify sender identity (single sender or domain)
 3. Generate API key with "Mail Send" permission
@@ -171,6 +189,7 @@ Contact form submissions now log detailed information. Check server logs for:
 ### Check Backend Logs
 
 **Production (via SSH):**
+
 ```bash
 # View live logs
 pm2 logs backend --lines 100
@@ -183,6 +202,7 @@ pm2 logs backend --lines 500 | grep "EmailService"
 ```
 
 **Local Development:**
+
 ```bash
 npm run start:backend
 # Submit contact form and watch console output
@@ -191,22 +211,27 @@ npm run start:backend
 ### Common Log Messages
 
 **"Email service not configured"**
+
 - Cause: No email configuration in database
 - Solution: Configure email settings in Admin Panel
 
 **"SMTP configuration incomplete"**
+
 - Cause: Missing SMTP host, port, username, or password
 - Solution: Verify all SMTP fields are filled in Admin Panel
 
 **"Authentication failed"**
+
 - Cause: Invalid credentials
 - Solution: Verify username and password, use app-specific password if needed
 
 **"Connection timeout"**
+
 - Cause: Cannot connect to SMTP server
 - Solution: Check host, port, firewall, and network connectivity
 
 **"Email sent successfully" but not received**
+
 - Check spam folder
 - Verify recipient email address
 - Check provider's sent mail logs
@@ -254,4 +279,3 @@ If emails are still not working after following this guide:
    ```
 4. Contact your email provider's support
 5. Check server firewall and network configuration
-
