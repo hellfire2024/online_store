@@ -68,8 +68,15 @@ export const PagesProvider: React.FC<{ children: ReactNode }> = ({
             pageType: "home",
             contentData: initialHeroData,
           };
-          await mockApi.addPage(homePage);
-          pagesData.push(homePage);
+          try {
+            await apiClient.pages.create(homePage);
+          } catch (apiError) {
+            await mockApi.addPage(homePage);
+          }
+          const createdHome = await apiClient.pages
+            .getById("home-page")
+            .catch(() => homePage);
+          pagesData.push(createdHome);
         }
         let aboutUsPage = pagesData.find((p) => p.pageType === "about");
         if (!aboutUsPage) {
@@ -83,8 +90,15 @@ export const PagesProvider: React.FC<{ children: ReactNode }> = ({
             pageType: "about",
             contentData: aboutData,
           };
-          await mockApi.addPage(aboutUsPage);
-          pagesData.push(aboutUsPage);
+          try {
+            await apiClient.pages.create(aboutUsPage);
+          } catch (apiError) {
+            await mockApi.addPage(aboutUsPage);
+          }
+          const createdAbout = await apiClient.pages
+            .getById("about-us-page")
+            .catch(() => aboutUsPage);
+          pagesData.push(createdAbout);
         }
         let contactPage = pagesData.find((p) => p.pageType === "contact");
         if (!contactPage) {
@@ -148,8 +162,15 @@ export const PagesProvider: React.FC<{ children: ReactNode }> = ({
               ],
             },
           };
-          await mockApi.addPage(contactPage);
-          pagesData.push(contactPage);
+          try {
+            await apiClient.pages.create(contactPage);
+          } catch (apiError) {
+            await mockApi.addPage(contactPage);
+          }
+          const createdContact = await apiClient.pages
+            .getById("contact-page")
+            .catch(() => contactPage);
+          pagesData.push(createdContact);
         }
         setPages(pagesData);
         setMenus(menusData);

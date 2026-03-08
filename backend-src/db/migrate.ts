@@ -131,11 +131,14 @@ export async function runMigrations(): Promise<void> {
     `CREATE TABLE IF NOT EXISTS pages (
       id VARCHAR(36) PRIMARY KEY,
       title VARCHAR(255) NOT NULL,
-      slug VARCHAR(255) UNIQUE NOT NULL,
+      path VARCHAR(255) UNIQUE NOT NULL,
+      page_type ENUM('home', 'about', 'contact', 'custom'),
+      content_data JSON,
       content LONGTEXT,
-      meta JSON,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX idx_path (path),
+      INDEX idx_type (page_type)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
     `CREATE TABLE IF NOT EXISTS product_option_lists (
       id VARCHAR(36) PRIMARY KEY,
