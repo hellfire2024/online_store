@@ -14,6 +14,11 @@ import {
 import { useToast } from "../../hooks/useToast";
 import { useUnsavedChanges } from "../../context/UnsavedChangesContext";
 import {
+  previewEmailTemplate,
+  getTemplateVariables,
+  validateTemplate,
+} from "../../utils/templateParser";
+import {
   DndContext,
   closestCenter,
   KeyboardSensor,
@@ -76,8 +81,8 @@ const PAGE_TEMPLATES = {
       pageTitle: "Get In Touch",
       pageSubtitle:
         "Have questions? We'd love to hear from you. Send us a message and we'll respond as soon as possible.",
-      targetEmail: "contact@customthreads.com",
-      subjectTemplate: "Contact Form Submission: {subject}",
+      targetEmail: "", // REQUIRED: Must be configured by admin
+      subjectTemplate: "{{date:YYYY-MM-DD}} - {{formName}}: {{field:subject}}",
       successMessage: "Thank you for your message! We'll get back to you soon.",
       formFields: [
         {
@@ -1471,7 +1476,7 @@ const PageEditor: React.FC = () => {
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">
-                Target Email Address
+                Target Email Address <span className="text-red-500">*</span>
               </label>
               <input
                 type="email"
@@ -1481,26 +1486,85 @@ const PageEditor: React.FC = () => {
                 }
                 placeholder="contact@example.com"
                 className="w-full p-2 bg-slate-700 border border-slate-600 rounded-md text-white"
+                required
               />
               <p className="text-xs text-gray-500 mt-1">
-                Form submissions will be sent to this email
+                <strong>Required:</strong> Form submissions will be sent to this email address
               </p>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">
-                Email Subject Template
-              </label>
+              <div className="flex justify-between items-center mb-1">
+                <label className="block text-sm font-medium text-gray-300">
+                  Email Subject Template
+                </label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const showing = document.getElementById("template-help-panel")?.style.display !== "none";
+                    const panel = document.getElementById("template-help-panel");
+                    if (panel) panel.style.display = showing ? "none" : "block";
+                  }}
+                  className="text-xs text-sky-400 hover:text-sky-300"
+                >
+                  {"{} Template Help"}
+                </button>
+              </div>
               <input
                 type="text"
                 value={content.subjectTemplate || ""}
                 onChange={(e) =>
                   handleContactContentChange("subjectTemplate", e.target.value)
                 }
-                placeholder="Contact Form: {subject}"
-                className="w-full p-2 bg-slate-700 border border-slate-600 rounded-md text-white"
+                placeholder="{{date}} - {{formName}}: {{field:subject}}"
+                className="w-full p-2 bg-slate-700 border border-slate-600 rounded-md text-white font-mono text-sm"
               />
+              
+              {/* Live Preview */}
+              {content.subjectTemplate && (
+                <div className="mt-2 p-3 bg-slate-900 border border-slate-600 rounded-md">
+                  <div className="text-xs text-gray-400 mb-1">Preview:</div>
+                  <div className="text-white font-medium">
+                    {previewEmailTemplate(
+                      content.subjectTemplate,
+                      content.formFields || [],
+                      content.pageTitle || "Contact Form"
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Validation Errors */}
+              {content.subjectTemplate && validateTemplate(content.subjectTemplate).length > 0 && (
+                <div className="mt-2 p-2 bg-red-900/20 border border-red-500/50 rounded text-xs text-red-400">
+                  {validateTemplate(content.subjectTemplate).map((error, i) => (
+                    <div key={i}>⚠️ {error}</div>
+                  ))}
+                </div>
+              )}
+
+              {/* Template Help Panel (collapsible) */}
+              <div id="template-help-panel" style={{ display: "none" }} className="mt-3 p-3 bg-slate-900 border border-slate-600 rounded-md text-xs">
+                <div className="font-semibold text-white mb-2">Available Variables:</div>
+                <div className="space-y-1">
+                  {getTemplateVariables().map((v, i) => (
+                    <div key={i} className="grid grid-cols-3 gap-2">
+                      <code className="text-sky-400">{v.variable}</code>
+                      <span className="text-gray-400 col-span-2">{v.description}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-3 text-gray-400">
+                  <strong>Examples:</strong>
+                  <div className="mt-1 space-y-1 font-mono bg-slate-950 p-2 rounded">
+                    <div>{"{{date}} - New Contact"}</div>
+                    <div>{"[{{date:YYYY-MM-DD}}] {{field:subject}}"}</div>
+                    <div>{"{{formName}}: {{field:name}} inquiry"}</div>
+                  </div>
+                </div>
+              </div>
+              
               <p className="text-xs text-gray-500 mt-1">
-                Use {`{subject}`} to insert the subject field value
+                Use template variables to dynamically insert values. Click "Template Help" above for details.
               </p>
             </div>
             <div>

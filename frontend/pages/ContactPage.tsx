@@ -185,13 +185,12 @@ const ContactPage: React.FC = () => {
         (field) => field.type === "subject",
       );
       const subjectValue = subjectField?.value?.trim() || "No Subject";
-      const resolvedSubject = content.subjectTemplate
-        ? content.subjectTemplate.replace("{subject}", subjectValue)
-        : `Contact Form: ${subjectValue}`;
 
       const contactData = {
         targetEmail: content.targetEmail,
-        subject: resolvedSubject,
+        subject: subjectValue,
+        subjectTemplate: content.subjectTemplate,
+        formName: content.pageTitle || "Contact Form",
         fields: submissionFields,
       };
 

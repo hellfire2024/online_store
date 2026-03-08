@@ -596,6 +596,8 @@ class ApiClient {
     submit: (data: {
       targetEmail?: string;
       subject: string;
+      subjectTemplate?: string;
+      formName?: string;
       fields: Array<{
         id: string;
         type: string;

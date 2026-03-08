@@ -1,10 +1,13 @@
 import express, { Request, Response } from "express";
 import { sendContactFormEmail } from "../services/emailService.js";
+import { parseTemplate } from "../utils/templateParser.js";
 
 const router = express.Router();
 
 interface ContactFormData {
   subject: string;
+  subjectTemplate?: string; // Template for email subject (e.g., "{{date}} - {{formName}}: {{field:subject}}")
+  formName?: string; // Optional form name for template
   fields: Array<{
     id: string;
     type: string;
@@ -76,7 +79,7 @@ const buildSenderName = (fields: NormalizedContactField[]): string => {
 
 router.post("/", async (req: Request, res: Response) => {
   try {
-    const { subject, fields, targetEmail }: ContactFormData = req.body;
+    const { subject, subjectTemplate, formName, fields, targetEmail }: ContactFormData = req.body;
 
     if (!subject || !String(subject).trim()) {
       res.status(400).json({
@@ -118,14 +121,33 @@ router.post("/", async (req: Request, res: Response) => {
     }
 
     const senderName = buildSenderName(normalizedFields);
-    const contactEmail =
-      targetEmail || process.env.CONTACT_EMAIL || "tgaunt@adaptivegis.com";
+    
+    // Require explicit email configuration
+    const contactEmail = targetEmail || process.env.CONTACT_EMAIL;
+    if (!contactEmail) {
+      console.error("[Contact Form] No recipient email configured");
+      res.status(500).json({
+        error: "Email configuration required",
+        message: "Contact form recipient email is not configured. Please set targetEmail in page settings or CONTACT_EMAIL environment variable.",
+      });
+      return;
+    }
+
+    // Parse subject template if provided, otherwise use raw subject
+    const finalSubject = subjectTemplate
+      ? parseTemplate(subjectTemplate, {
+          formName: formName || "Contact Form",
+          fields: normalizedFields,
+        })
+      : subject;
 
     console.log("[Contact Form] Processing submission:", {
       toEmail: contactEmail,
       fromEmail: senderEmail,
       fromName: senderName,
-      subject: subject,
+      rawSubject: subject,
+      subjectTemplate: subjectTemplate,
+      finalSubject: finalSubject,
       targetEmailParam: targetEmail,
       envContactEmail: process.env.CONTACT_EMAIL,
       fieldCount: normalizedFields.length,
@@ -135,7 +157,7 @@ router.post("/", async (req: Request, res: Response) => {
       contactEmail,
       senderEmail,
       senderName,
-      subject,
+      finalSubject,
       normalizedFields,
     );
 
