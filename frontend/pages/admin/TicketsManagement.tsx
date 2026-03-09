@@ -409,7 +409,10 @@ const TicketsManagement: React.FC = () => {
                   </div>
 
                   {selectedTicket?.id === ticket.id && (
-                    <div className="mt-4 pt-4 border-t border-slate-600 space-y-4">
+                    <div 
+                      className="mt-4 pt-4 border-t border-slate-600 space-y-4"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       {/* Status and Priority Controls */}
                       <div className="grid grid-cols-2 gap-4 bg-slate-700/50 p-3 rounded">
                         <div>
