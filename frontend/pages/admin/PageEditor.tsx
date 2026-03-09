@@ -645,38 +645,8 @@ const PageEditor: React.FC = () => {
       if (!confirmCancel) return;
     }
 
-    if (isNewPage) {
-      // For new pages, navigate back to pages list
-      navigate("/admin/pages");
-    } else {
-      // For existing pages, reset to original state
-      if (originalPage) {
-        setPage(JSON.parse(JSON.stringify(originalPage)));
-        setSelectedImageFile(null);
-        setPreviewImageUrl(
-          originalPage.pageType === "home" && originalPage.contentData
-            ? (originalPage.contentData as HomePageContent)
-                .heroBackgroundImageUrl
-            : null,
-        );
-
-        // Reset editor content if applicable
-        if (editor) {
-          let contentToLoad = "";
-          if (originalPage.pageType === "about" && originalPage.contentData) {
-            contentToLoad = (originalPage.contentData as AboutPageContent)
-              .aboutPageContent;
-          } else if (originalPage.content) {
-            contentToLoad = originalPage.content;
-          }
-          if (contentToLoad) {
-            editor.commands.setContent(contentToLoad);
-          }
-        }
-
-        addToast("Changes discarded", "info");
-      }
-    }
+    // Navigate back to pages list
+    navigate("/admin/pages");
   };
 
   const handleSave = async () => {
