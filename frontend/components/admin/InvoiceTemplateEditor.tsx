@@ -61,7 +61,7 @@ export const InvoiceTemplateEditor: React.FC<InvoiceTemplateEditorProps> = ({
         quantity: 1,
         price: 50,
         total: 50,
-        selectedOptions: "Finish: Matte, Size: 3.5\" x 2\"",
+        selectedOptions: 'Finish: Matte, Size: 3.5" x 2"',
       },
       {
         id: "2",
@@ -94,13 +94,15 @@ export const InvoiceTemplateEditor: React.FC<InvoiceTemplateEditorProps> = ({
           <div className="space-y-4">
             {/* Logo Section */}
             <div className="border-b border-slate-600 pb-4 mb-4">
-              <h4 className="text-sm font-semibold text-white mb-3">Logo Configuration</h4>
+              <h4 className="text-sm font-semibold text-white mb-3">
+                Logo Configuration
+              </h4>
               <div className="space-y-3">
                 {currentTemplate.logoUrl && (
                   <div className="p-3 bg-slate-800 rounded-lg">
-                    <img 
-                      src={currentTemplate.logoUrl} 
-                      alt="Logo" 
+                    <img
+                      src={currentTemplate.logoUrl}
+                      alt="Logo"
                       className="h-20 object-contain"
                     />
                   </div>
@@ -139,7 +141,12 @@ export const InvoiceTemplateEditor: React.FC<InvoiceTemplateEditorProps> = ({
                   </label>
                   <select
                     value={currentTemplate.logoPosition || "left"}
-                    onChange={(e) => handleChange("logoPosition", e.target.value as "left" | "center" | "right")}
+                    onChange={(e) =>
+                      handleChange(
+                        "logoPosition",
+                        e.target.value as "left" | "center" | "right",
+                      )
+                    }
                     className="w-full p-2 bg-slate-900 border border-slate-600 rounded text-white"
                   >
                     <option value="left">Left</option>
@@ -157,7 +164,9 @@ export const InvoiceTemplateEditor: React.FC<InvoiceTemplateEditorProps> = ({
                     min="60"
                     max="200"
                     value={currentTemplate.logoSize || 120}
-                    onChange={(e) => handleChange("logoSize", parseInt(e.target.value))}
+                    onChange={(e) =>
+                      handleChange("logoSize", parseInt(e.target.value))
+                    }
                     className="w-full"
                   />
                 </div>
@@ -170,7 +179,9 @@ export const InvoiceTemplateEditor: React.FC<InvoiceTemplateEditorProps> = ({
                 <input
                   type="checkbox"
                   checked={currentTemplate.showCompanyInfo !== false}
-                  onChange={(e) => handleChange("showCompanyInfo", e.target.checked)}
+                  onChange={(e) =>
+                    handleChange("showCompanyInfo", e.target.checked)
+                  }
                   className="w-4 h-4"
                 />
                 <span className="font-semibold">Show Company Info</span>
@@ -212,7 +223,12 @@ export const InvoiceTemplateEditor: React.FC<InvoiceTemplateEditorProps> = ({
               <input
                 type="tel"
                 value={currentTemplate.companyPhone || ""}
-                onChange={(e) => handleChange("companyPhone", formatPhoneNumber(e.target.value))}
+                onChange={(e) =>
+                  handleChange(
+                    "companyPhone",
+                    formatPhoneNumber(e.target.value),
+                  )
+                }
                 className="w-full p-2 bg-slate-900 border border-slate-600 rounded text-white"
                 placeholder="(555) 123-4567"
                 inputMode="numeric"
@@ -379,7 +395,9 @@ export const InvoiceTemplateEditor: React.FC<InvoiceTemplateEditorProps> = ({
 
             {/* Section Visibility */}
             <div className="space-y-2 border-t border-slate-600 pt-4">
-              <p className="text-gray-400 text-sm font-semibold mb-2">Optional Sections</p>
+              <p className="text-gray-400 text-sm font-semibold mb-2">
+                Optional Sections
+              </p>
               <label className="flex items-center gap-2 text-gray-300">
                 <input
                   type="checkbox"
@@ -406,9 +424,7 @@ export const InvoiceTemplateEditor: React.FC<InvoiceTemplateEditorProps> = ({
                 <input
                   type="checkbox"
                   checked={currentTemplate.showNotes !== false}
-                  onChange={(e) =>
-                    handleChange("showNotes", e.target.checked)
-                  }
+                  onChange={(e) => handleChange("showNotes", e.target.checked)}
                   className="w-4 h-4"
                 />
                 <span>Order Notes</span>
@@ -422,7 +438,12 @@ export const InvoiceTemplateEditor: React.FC<InvoiceTemplateEditorProps> = ({
               </label>
               <select
                 value={currentTemplate.footerAlignment || "center"}
-                onChange={(e) => handleChange("footerAlignment", e.target.value as "left" | "center" | "right")}
+                onChange={(e) =>
+                  handleChange(
+                    "footerAlignment",
+                    e.target.value as "left" | "center" | "right",
+                  )
+                }
                 className="w-full p-2 bg-slate-900 border border-slate-600 rounded text-white"
               >
                 <option value="left">Left</option>
@@ -433,7 +454,9 @@ export const InvoiceTemplateEditor: React.FC<InvoiceTemplateEditorProps> = ({
 
             {/* Header Styling */}
             <div className="border-t border-slate-600 pt-4">
-              <p className="text-gray-400 text-sm font-semibold mb-3">Header Styling (Optional)</p>
+              <p className="text-gray-400 text-sm font-semibold mb-3">
+                Header Styling (Optional)
+              </p>
               <div>
                 <label className="block text-gray-300 text-sm font-bold mb-1">
                   Header Background Color
@@ -441,14 +464,21 @@ export const InvoiceTemplateEditor: React.FC<InvoiceTemplateEditorProps> = ({
                 <div className="flex gap-2">
                   <input
                     type="color"
-                    value={currentTemplate.headerBackgroundColor || currentTemplate.backgroundColor}
-                    onChange={(e) => handleChange("headerBackgroundColor", e.target.value)}
+                    value={
+                      currentTemplate.headerBackgroundColor ||
+                      currentTemplate.backgroundColor
+                    }
+                    onChange={(e) =>
+                      handleChange("headerBackgroundColor", e.target.value)
+                    }
                     className="h-10 w-20 rounded cursor-pointer"
                   />
                   <input
                     type="text"
                     value={currentTemplate.headerBackgroundColor || ""}
-                    onChange={(e) => handleChange("headerBackgroundColor", e.target.value)}
+                    onChange={(e) =>
+                      handleChange("headerBackgroundColor", e.target.value)
+                    }
                     className="flex-1 p-2 bg-slate-900 border border-slate-600 rounded text-white font-mono text-sm"
                     placeholder="Leave blank to use background color"
                   />
@@ -461,14 +491,21 @@ export const InvoiceTemplateEditor: React.FC<InvoiceTemplateEditorProps> = ({
                 <div className="flex gap-2">
                   <input
                     type="color"
-                    value={currentTemplate.headerTextColor || currentTemplate.textColor}
-                    onChange={(e) => handleChange("headerTextColor", e.target.value)}
+                    value={
+                      currentTemplate.headerTextColor ||
+                      currentTemplate.textColor
+                    }
+                    onChange={(e) =>
+                      handleChange("headerTextColor", e.target.value)
+                    }
                     className="h-10 w-20 rounded cursor-pointer"
                   />
                   <input
                     type="text"
                     value={currentTemplate.headerTextColor || ""}
-                    onChange={(e) => handleChange("headerTextColor", e.target.value)}
+                    onChange={(e) =>
+                      handleChange("headerTextColor", e.target.value)
+                    }
                     className="flex-1 p-2 bg-slate-900 border border-slate-600 rounded text-white font-mono text-sm"
                     placeholder="Leave blank to use text color"
                   />

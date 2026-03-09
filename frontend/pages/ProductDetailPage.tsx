@@ -121,11 +121,20 @@ const ProductDetailPage: React.FC = () => {
   };
 
   const handleOptionChange = useCallback(
-    (listId: string, optionId: string, isChecked: boolean, maxSelections?: number) => {
+    (
+      listId: string,
+      optionId: string,
+      isChecked: boolean,
+      maxSelections?: number,
+    ) => {
       setSelectedOptions((prev) => {
         const listSelectedOptions = prev[listId] || [];
         // If checking and maxSelections is set, enforce the limit
-        if (isChecked && maxSelections && listSelectedOptions.length >= maxSelections) {
+        if (
+          isChecked &&
+          maxSelections &&
+          listSelectedOptions.length >= maxSelections
+        ) {
           return prev; // Don't allow adding more than maxSelections
         }
         const newSelected = isChecked
@@ -394,7 +403,8 @@ const ProductDetailPage: React.FC = () => {
                             (Max {list.maxSelections}
                             {listSelectedOptions.length > 0
                               ? ` - ${listSelectedOptions.length} selected`
-                              : ""})
+                              : ""}
+                            )
                           </span>
                         )}
                       </label>
@@ -404,8 +414,7 @@ const ProductDetailPage: React.FC = () => {
                             const isSelected = listSelectedOptions.includes(
                               opt.id,
                             );
-                            const isDisabled =
-                              isMaxReached && !isSelected;
+                            const isDisabled = isMaxReached && !isSelected;
                             return (
                               <label
                                 key={opt.id}
