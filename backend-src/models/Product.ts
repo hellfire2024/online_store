@@ -25,6 +25,7 @@ interface ProductOptionList {
   id: string;
   name: string;
   required: boolean;
+  maxSelections?: number;
   order: number;
   options: ProductOption[];
 }
@@ -114,7 +115,7 @@ async function findOptionLists(
   productId: string,
 ): Promise<ProductOptionList[]> {
   const [lists] = await pool.query<RowDataPacket[]>(
-    `SELECT id, name, required, list_order as 'order'
+    `SELECT id, name, required, max_selections as maxSelections, list_order as 'order'
      FROM product_option_lists WHERE product_id = ? ORDER BY list_order`,
     [productId],
   );
@@ -132,6 +133,8 @@ async function findOptionLists(
       id: list.id,
       name: list.name,
       required: Boolean(list.required),
+      maxSelections:
+        list.maxSelections === null ? undefined : Number(list.maxSelections),
       order: list.order,
       options: options as ProductOption[],
     });
@@ -257,9 +260,16 @@ async function saveOptionList(
   list: ProductOptionList,
 ): Promise<void> {
   await connection.query(
-    `INSERT INTO product_option_lists (id, product_id, name, required, list_order)
-     VALUES (?, ?, ?, ?, ?)`,
-    [list.id, productId, list.name, list.required, list.order],
+    `INSERT INTO product_option_lists (id, product_id, name, required, max_selections, list_order)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+    [
+      list.id,
+      productId,
+      list.name,
+      list.required,
+      list.maxSelections ?? null,
+      list.order,
+    ],
   );
 
   for (const option of list.options) {

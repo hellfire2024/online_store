@@ -117,6 +117,7 @@ CREATE TABLE IF NOT EXISTS product_option_lists (
   product_id VARCHAR(36) NOT NULL,
   name VARCHAR(100) NOT NULL,
   required BOOLEAN DEFAULT FALSE,
+  max_selections INT NULL,
   list_order INT NOT NULL DEFAULT 0,
   FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
   INDEX idx_product (product_id)

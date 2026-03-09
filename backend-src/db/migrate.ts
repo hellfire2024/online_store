@@ -145,6 +145,7 @@ export async function runMigrations(): Promise<void> {
       product_id VARCHAR(36) NOT NULL,
       name VARCHAR(255) NOT NULL,
       required BOOLEAN DEFAULT FALSE,
+      max_selections INT NULL,
       list_order INT DEFAULT 0,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
@@ -467,6 +468,11 @@ export async function runMigrations(): Promise<void> {
       "products",
       "enable_ai_ideas",
       "BOOLEAN DEFAULT FALSE",
+    );
+    await alterTableAddColumn(
+      "product_option_lists",
+      "max_selections",
+      "INT NULL",
     );
     await alterTableAddColumn(
       "products",

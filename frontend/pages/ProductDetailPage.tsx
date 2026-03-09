@@ -126,6 +126,7 @@ const ProductDetailPage: React.FC = () => {
       optionId: string,
       isChecked: boolean,
       maxSelections?: number,
+      listName?: string,
     ) => {
       setSelectedOptions((prev) => {
         const listSelectedOptions = prev[listId] || [];
@@ -135,6 +136,9 @@ const ProductDetailPage: React.FC = () => {
           maxSelections &&
           listSelectedOptions.length >= maxSelections
         ) {
+          alert(
+            `You can only select up to ${maxSelections} option${maxSelections === 1 ? "" : "s"} for ${listName || "this group"}.`,
+          );
           return prev; // Don't allow adding more than maxSelections
         }
         const newSelected = isChecked
@@ -433,9 +437,9 @@ const ProductDetailPage: React.FC = () => {
                                       opt.id,
                                       e.target.checked,
                                       list.maxSelections,
+                                      list.name,
                                     );
                                   }}
-                                  disabled={isDisabled}
                                   className={`mr-3 w-4 h-4 bg-slate-600 border border-slate-500 rounded checked:bg-sky-500 checked:border-sky-500 ${
                                     isDisabled
                                       ? "cursor-not-allowed opacity-50"

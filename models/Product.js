@@ -44,7 +44,7 @@ export async function findById(id) {
     return product;
 }
 async function findOptionLists(productId) {
-    const [lists] = await pool.query(`SELECT id, name, required, list_order as 'order'
+    const [lists] = await pool.query(`SELECT id, name, required, max_selections as maxSelections, list_order as 'order'
      FROM product_option_lists WHERE product_id = ? ORDER BY list_order`, [productId]);
     const optionLists = [];
     for (const list of lists) {
@@ -54,6 +54,7 @@ async function findOptionLists(productId) {
             id: list.id,
             name: list.name,
             required: Boolean(list.required),
+            maxSelections: list.maxSelections === null ? undefined : Number(list.maxSelections),
             order: list.order,
             options: options,
         });
@@ -139,8 +140,8 @@ export async function update(id, data) {
     });
 }
 async function saveOptionList(connection, productId, list) {
-    await connection.query(`INSERT INTO product_option_lists (id, product_id, name, required, list_order)
-     VALUES (?, ?, ?, ?, ?)`, [list.id, productId, list.name, list.required, list.order]);
+    await connection.query(`INSERT INTO product_option_lists (id, product_id, name, required, max_selections, list_order)
+     VALUES (?, ?, ?, ?, ?, ?)`, [list.id, productId, list.name, list.required, list.maxSelections ?? null, list.order]);
     for (const option of list.options) {
         await connection.query(`INSERT INTO product_options (id, list_id, name, price_delta, option_order)
        VALUES (?, ?, ?, ?, ?)`, [option.id, list.id, option.name, option.priceDelta, option.order]);
