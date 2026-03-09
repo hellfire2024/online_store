@@ -637,6 +637,51 @@ const PageEditor: React.FC = () => {
     }
   }, [page?.pageType, siteSettings?.defaultFormFields]);
 
+  const handleCancel = () => {
+    if (hasUnsavedChanges) {
+      const confirmCancel = window.confirm(
+        "You have unsaved changes. Are you sure you want to cancel?",
+      );
+      if (!confirmCancel) return;
+    }
+
+    if (isNewPage) {
+      // For new pages, navigate back to pages list
+      navigate("/admin/pages");
+    } else {
+      // For existing pages, reset to original state
+      if (originalPage) {
+        setPage(JSON.parse(JSON.stringify(originalPage)));
+        setSelectedImageFile(null);
+        setPreviewImageUrl(
+          originalPage.pageType === "home" && originalPage.contentData
+            ? (originalPage.contentData as HomePageContent)
+                .heroBackgroundImageUrl
+            : null,
+        );
+
+        // Reset editor content if applicable
+        if (editor) {
+          let contentToLoad = "";
+          if (
+            originalPage.pageType === "about" &&
+            originalPage.contentData
+          ) {
+            contentToLoad = (originalPage.contentData as AboutPageContent)
+              .aboutPageContent;
+          } else if (originalPage.content) {
+            contentToLoad = originalPage.content;
+          }
+          if (contentToLoad) {
+            editor.commands.setContent(contentToLoad);
+          }
+        }
+
+        addToast("Changes discarded", "info");
+      }
+    }
+  };
+
   const handleSave = async () => {
     if (page) {
       let pageToSave = { ...page };
@@ -2109,6 +2154,12 @@ const PageEditor: React.FC = () => {
           className="bg-slate-600 text-white font-bold py-2 px-8 rounded-lg hover:bg-slate-700"
         >
           Preview
+        </button>
+        <button
+          onClick={handleCancel}
+          className="bg-gray-600 text-white font-bold py-2 px-8 rounded-lg hover:bg-gray-700"
+        >
+          Cancel
         </button>
         <button
           onClick={handleSave}
