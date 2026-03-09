@@ -612,49 +612,64 @@ const CustomerAddressesPage: React.FC = () => {
                   key={address.id}
                   className="bg-slate-800 p-6 rounded-lg border border-slate-700"
                 >
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h3 className="text-lg font-bold text-white">
-                        {address.fullName}
-                      </h3>
-                      <p className="text-gray-400 text-sm capitalize">
-                        {address.type} Address{" "}
-                        {address.isDefault && "(Default)"}
-                      </p>
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleEditAddress(address)}
-                        className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDeleteAddress(address.id)}
-                        className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-sm"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </div>
+                  {(() => {
+                    const streetLine1 =
+                      address.street1 || (address as any).streetAddress || "";
+                    const streetLine2 =
+                      address.street2 || (address as any).street_2 || "";
+                    const zip = address.zip || (address as any).zipCode || "";
 
-                  <div className="text-gray-300">
-                    <p>{address.streetAddress}</p>
-                    <p>
-                      {address.city}, {address.state} {address.zipCode}
-                    </p>
-                    <p>{address.country}</p>
-                    <p className="text-sm mt-2">{address.phone}</p>
-                  </div>
+                    return (
+                      <>
+                        <div className="flex justify-between items-start mb-4">
+                          <div>
+                            <h3 className="text-lg font-bold text-white">
+                              {address.fullName}
+                            </h3>
+                            <p className="text-gray-400 text-sm capitalize">
+                              {address.type} Address{" "}
+                              {address.isDefault && "(Default)"}
+                            </p>
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleEditAddress(address)}
+                              className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDeleteAddress(address.id)}
+                              className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-sm"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </div>
 
-                  {!address.isDefault && (
-                    <button
-                      onClick={() => handleSetDefault(address.id, address.type)}
-                      className="mt-4 px-3 py-1 bg-sky-500 hover:bg-sky-600 text-white rounded text-sm"
-                    >
-                      Set as Default
-                    </button>
-                  )}
+                        <div className="text-gray-300">
+                          <p>{streetLine1}</p>
+                          {streetLine2 && <p>{streetLine2}</p>}
+                          <p>
+                            {address.city}, {address.state} {zip}
+                          </p>
+                          <p>{address.country}</p>
+                          <p className="text-sm mt-2">{address.phone}</p>
+                        </div>
+
+                        {!address.isDefault && (
+                          <button
+                            onClick={() =>
+                              handleSetDefault(address.id, address.type)
+                            }
+                            className="mt-4 px-3 py-1 bg-sky-500 hover:bg-sky-600 text-white rounded text-sm"
+                          >
+                            Set as Default
+                          </button>
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
               ));
             })()}
