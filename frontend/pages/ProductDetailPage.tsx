@@ -121,9 +121,13 @@ const ProductDetailPage: React.FC = () => {
   };
 
   const handleOptionChange = useCallback(
-    (listId: string, optionId: string, isChecked: boolean) => {
+    (listId: string, optionId: string, isChecked: boolean, maxSelections?: number) => {
       setSelectedOptions((prev) => {
         const listSelectedOptions = prev[listId] || [];
+        // If checking and maxSelections is set, enforce the limit
+        if (isChecked && maxSelections && listSelectedOptions.length >= maxSelections) {
+          return prev; // Don't allow adding more than maxSelections
+        }
         const newSelected = isChecked
           ? [...listSelectedOptions, optionId]
           : listSelectedOptions.filter((id) => id !== optionId);
@@ -375,6 +379,9 @@ const ProductDetailPage: React.FC = () => {
                     (a, b) => a.order - b.order,
                   );
                   const listSelectedOptions = selectedOptions[list.id] || [];
+                  const isMaxReached =
+                    list.maxSelections &&
+                    listSelectedOptions.length >= list.maxSelections;
                   return (
                     <div key={list.id}>
                       <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -382,34 +389,59 @@ const ProductDetailPage: React.FC = () => {
                         {list.required && (
                           <span className="text-red-400">*</span>
                         )}
+                        {list.maxSelections && (
+                          <span className="text-xs text-gray-400 ml-2">
+                            (Max {list.maxSelections}
+                            {listSelectedOptions.length > 0
+                              ? ` - ${listSelectedOptions.length} selected`
+                              : ""})
+                          </span>
+                        )}
                       </label>
                       <div className="space-y-2 p-3 bg-slate-700 border border-slate-600 rounded-md">
                         {sortedOptions.length > 0 ? (
-                          sortedOptions.map((opt) => (
-                            <label
-                              key={opt.id}
-                              className="flex items-center text-gray-200 cursor-pointer hover:text-white"
-                            >
-                              <input
-                                type="checkbox"
-                                checked={listSelectedOptions.includes(opt.id)}
-                                onChange={(e) => {
-                                  handleOptionChange(
-                                    list.id,
-                                    opt.id,
-                                    e.target.checked,
-                                  );
-                                }}
-                                className="mr-3 w-4 h-4 bg-slate-600 border border-slate-500 rounded checked:bg-sky-500 checked:border-sky-500"
-                              />
-                              <span>{opt.name}</span>
-                              {Number(opt.priceDelta) !== 0 && (
-                                <span className="ml-2 text-sky-400">
-                                  (+${Number(opt.priceDelta).toFixed(2)})
-                                </span>
-                              )}
-                            </label>
-                          ))
+                          sortedOptions.map((opt) => {
+                            const isSelected = listSelectedOptions.includes(
+                              opt.id,
+                            );
+                            const isDisabled =
+                              isMaxReached && !isSelected;
+                            return (
+                              <label
+                                key={opt.id}
+                                className={`flex items-center ${
+                                  isDisabled
+                                    ? "text-gray-500 cursor-not-allowed"
+                                    : "text-gray-200 cursor-pointer hover:text-white"
+                                }`}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  onChange={(e) => {
+                                    handleOptionChange(
+                                      list.id,
+                                      opt.id,
+                                      e.target.checked,
+                                      list.maxSelections,
+                                    );
+                                  }}
+                                  disabled={isDisabled}
+                                  className={`mr-3 w-4 h-4 bg-slate-600 border border-slate-500 rounded checked:bg-sky-500 checked:border-sky-500 ${
+                                    isDisabled
+                                      ? "cursor-not-allowed opacity-50"
+                                      : ""
+                                  }`}
+                                />
+                                <span>{opt.name}</span>
+                                {Number(opt.priceDelta) !== 0 && (
+                                  <span className="ml-2 text-sky-400">
+                                    (+${Number(opt.priceDelta).toFixed(2)})
+                                  </span>
+                                )}
+                              </label>
+                            );
+                          })
                         ) : (
                           <p className="text-gray-400 text-sm">
                             No options available

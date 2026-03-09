@@ -21,6 +21,7 @@ export interface ProductOptionList {
   id: string;
   name: string; // e.g., "Size", "Color", "Material"
   required: boolean; // Whether customer must select an option from this list
+  maxSelections?: number; // Maximum number of options that can be selected from this list (unlimited if not set)
   order: number; // Sort order for UI
   options: ProductOption[]; // The actual options in this list
 }

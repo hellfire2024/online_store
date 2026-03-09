@@ -30,6 +30,7 @@ interface SortableOptionListProps {
   optionList: ProductOptionList;
   onChangeName: (value: string) => void;
   onToggleRequired: () => void;
+  onChangeMaxSelections: (value: number | undefined) => void;
   onDelete: () => void;
   onAddOption: () => void;
   onOptionChange: (
@@ -45,6 +46,7 @@ const SortableOptionList: React.FC<SortableOptionListProps> = ({
   optionList,
   onChangeName,
   onToggleRequired,
+  onChangeMaxSelections,
   onDelete,
   onAddOption,
   onOptionChange,
@@ -108,6 +110,24 @@ const SortableOptionList: React.FC<SortableOptionListProps> = ({
           />
           Required
         </label>
+        <div className="flex items-center gap-2">
+          <label className="text-sm text-gray-300 whitespace-nowrap">
+            Max Selections:
+          </label>
+          <input
+            type="number"
+            min="1"
+            max={optionList.options.length}
+            value={optionList.maxSelections || ""}
+            onChange={(e) => {
+              const val = e.target.value ? parseInt(e.target.value) : undefined;
+              onChangeMaxSelections(val);
+            }}
+            className="w-14 p-1 bg-slate-800 border border-slate-600 rounded text-white text-sm"
+            placeholder="∞"
+            title="Leave empty for unlimited selections"
+          />
+        </div>
         <button
           type="button"
           onClick={onDelete}
@@ -472,8 +492,8 @@ const ProductManagement: React.FC = () => {
 
   const handleOptionListChange = (
     listId: string,
-    field: "name" | "required",
-    value: string | boolean,
+    field: "name" | "required" | "maxSelections",
+    value: string | boolean | number | undefined,
   ) => {
     setProductState((prev) => {
       const optionLists = (prev.optionLists || []).map((list) =>
@@ -1201,6 +1221,13 @@ const ProductManagement: React.FC = () => {
                                   list.id,
                                   "required",
                                   !list.required,
+                                )
+                              }
+                              onChangeMaxSelections={(value) =>
+                                handleOptionListChange(
+                                  list.id,
+                                  "maxSelections",
+                                  value,
                                 )
                               }
                               onDelete={() => handleDeleteOptionList(list.id)}
