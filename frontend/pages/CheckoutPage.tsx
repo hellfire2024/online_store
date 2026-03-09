@@ -101,11 +101,11 @@ const CheckoutPage: React.FC = () => {
           lastName,
           email: customer.email || "",
           phone: defaultShippingAddress.phone || customer.phone || "",
-          address: defaultShippingAddress.streetAddress || "",
+          address: defaultShippingAddress.street1 || "",
           city: defaultShippingAddress.city || "",
         });
         setShippingState(defaultShippingAddress.state || "");
-        setShippingZip(defaultShippingAddress.zipCode || "");
+        setShippingZip(defaultShippingAddress.zip || "");
       }
     }
   }, [customer]);
@@ -141,11 +141,11 @@ const CheckoutPage: React.FC = () => {
           lastName,
           email: customer?.email || "",
           phone: address.phone || customer?.phone || "",
-          address: address.streetAddress || "",
+          address: address.street1 || "",
           city: address.city || "",
         });
         setShippingState(address.state || "");
-        setShippingZip(address.zipCode || "");
+        setShippingZip(address.zip || "");
       }
     }
   };
@@ -171,11 +171,12 @@ const CheckoutPage: React.FC = () => {
         firstName: newAddressForm.firstName,
         lastName: newAddressForm.lastName,
         fullName: `${newAddressForm.firstName} ${newAddressForm.lastName}`,
-        streetAddress: newAddressForm.streetAddress,
+        street1: newAddressForm.streetAddress,
+        street2: "",
         city: newAddressForm.city,
         state: newAddressForm.state,
-        zipCode: newAddressForm.zipCode,
-        country: "USA",
+        zip: newAddressForm.zipCode,
+        country: "US",
         phone: newAddressForm.phone,
         isDefault: false,
       });
