@@ -5,6 +5,7 @@ import {
   generateInvoiceHTML,
 } from "../../services/pdfInvoiceGenerator";
 import DragDropFileUpload from "../DragDropFileUpload";
+import { formatPhoneNumber } from "../../utils/phoneNumber";
 
 interface InvoiceTemplateEditorProps {
   template: InvoiceTemplate | undefined;
@@ -211,9 +212,11 @@ export const InvoiceTemplateEditor: React.FC<InvoiceTemplateEditorProps> = ({
               <input
                 type="tel"
                 value={currentTemplate.companyPhone || ""}
-                onChange={(e) => handleChange("companyPhone", e.target.value)}
+                onChange={(e) => handleChange("companyPhone", formatPhoneNumber(e.target.value))}
                 className="w-full p-2 bg-slate-900 border border-slate-600 rounded text-white"
                 placeholder="(555) 123-4567"
+                inputMode="numeric"
+                maxLength={14}
               />
             </div>
 
