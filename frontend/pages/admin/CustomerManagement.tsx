@@ -7,20 +7,7 @@ import { generateInvoiceHTML } from "../../services/pdfInvoiceGenerator";
 import Pagination from "../../components/Pagination";
 import { apiClient } from "../../services/apiClient";
 import ContactCustomerModal from "../../components/admin/ContactCustomerModal";
-
-// Format phone number as ###-###-####
-const formatPhoneNumber = (value: string): string => {
-  const cleaned = value.replace(/\D/g, "");
-  const limited = cleaned.slice(0, 10);
-
-  if (limited.length <= 3) {
-    return limited;
-  } else if (limited.length <= 6) {
-    return `${limited.slice(0, 3)}-${limited.slice(3)}`;
-  } else {
-    return `${limited.slice(0, 3)}-${limited.slice(3, 6)}-${limited.slice(6)}`;
-  }
-};
+import { formatPhoneNumber, isValidPhoneNumber } from "../../utils/phoneNumber";
 
 interface Customer {
   id: string;
@@ -211,9 +198,8 @@ const CustomerManagement: React.FC = () => {
       addToast("First name, last name, and email are required", "error");
       return;
     }
-    const phonePattern = /^\d{3}-\d{3}-\d{4}$/;
-    if (formData.phone && !phonePattern.test(formData.phone)) {
-      addToast("Phone must be in format: 555-123-4567", "error");
+    if (formData.phone && !isValidPhoneNumber(formData.phone)) {
+      addToast("Phone must be in format: (555) 123-4567", "error");
       return;
     }
     try {
@@ -837,11 +823,13 @@ const CustomerManagement: React.FC = () => {
                       phone: formatPhoneNumber(e.target.value),
                     })
                   }
-                  placeholder="555-123-4567"
+                  placeholder="(555) 123-4567"
+                  inputMode="numeric"
+                  maxLength={14}
                   className="w-full px-4 py-2 rounded bg-slate-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
                 />
                 <p className="text-xs text-gray-400 mt-1">
-                  Format: XXX-XXX-XXXX
+                  Format: (XXX) XXX-XXXX
                 </p>
               </div>
             </div>

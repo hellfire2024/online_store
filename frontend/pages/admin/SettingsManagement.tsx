@@ -17,6 +17,7 @@ import { useUnsavedChanges } from "../../context/UnsavedChangesContext";
 import MenuEditor from "../../components/admin/MenuEditor"; // Correctly import the isolated component
 import ImageUploadInput from "../../components/admin/ImageUploadInput";
 import { US_STATES } from "../../services/taxService";
+import { formatPhoneNumber, isValidPhoneNumber } from "../../utils/phoneNumber";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import {
@@ -348,20 +349,6 @@ const FormFieldEditor: React.FC<{
   );
 };
 
-// Format phone number as ###-###-####
-const formatPhoneNumber = (value: string): string => {
-  const cleaned = value.replace(/\D/g, "");
-  const limited = cleaned.slice(0, 10);
-
-  if (limited.length <= 3) {
-    return limited;
-  } else if (limited.length <= 6) {
-    return `${limited.slice(0, 3)}-${limited.slice(3)}`;
-  } else {
-    return `${limited.slice(0, 3)}-${limited.slice(3, 6)}-${limited.slice(6)}`;
-  }
-};
-
 const SettingsManagement: React.FC = () => {
   const { siteSettings, updateSiteSettings, uploadFavicon } = useSiteSettings();
   const { pages, menus, updateMenu } = usePages();
@@ -648,6 +635,25 @@ const SettingsManagement: React.FC = () => {
   const handleSaveSettings = async () => {
     try {
       let finalSettings = { ...settings };
+
+      const footerPhone = finalSettings.footerConfig?.contactPhone?.trim();
+      const fromAddressPhone = finalSettings.fromAddress?.phone?.trim();
+
+      if (footerPhone && !isValidPhoneNumber(footerPhone)) {
+        addToast(
+          "Footer contact phone must be in format: (555) 123-4567",
+          "error",
+        );
+        return;
+      }
+
+      if (fromAddressPhone && !isValidPhoneNumber(fromAddressPhone)) {
+        addToast(
+          "Shipping from-address phone must be in format: (555) 123-4567",
+          "error",
+        );
+        return;
+      }
 
       if (selectedFaviconFile) {
         try {
@@ -1073,7 +1079,9 @@ const SettingsManagement: React.FC = () => {
                         },
                       });
                     }}
-                    placeholder="###-###-####"
+                    placeholder="(555) 123-4567"
+                    inputMode="numeric"
+                    maxLength={14}
                     className={inputClasses}
                   />
                 </div>
@@ -1642,10 +1650,12 @@ const SettingsManagement: React.FC = () => {
                         country: "US",
                         email: "",
                         ...prev!.fromAddress,
-                        phone: e.target.value,
+                        phone: formatPhoneNumber(e.target.value),
                       },
                     }))
                   }
+                  inputMode="numeric"
+                  maxLength={14}
                   className={inputClasses}
                 />
               </div>
