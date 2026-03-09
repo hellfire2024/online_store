@@ -663,10 +663,7 @@ const PageEditor: React.FC = () => {
         // Reset editor content if applicable
         if (editor) {
           let contentToLoad = "";
-          if (
-            originalPage.pageType === "about" &&
-            originalPage.contentData
-          ) {
+          if (originalPage.pageType === "about" && originalPage.contentData) {
             contentToLoad = (originalPage.contentData as AboutPageContent)
               .aboutPageContent;
           } else if (originalPage.content) {
