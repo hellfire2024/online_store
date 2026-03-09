@@ -44,6 +44,23 @@ const SupportTicketsPage: React.FC = () => {
   const [replyMessage, setReplyMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
+  const ensureCustomerToken = (): boolean => {
+    try {
+      const storedToken = localStorage.getItem("auth_token");
+      if (!storedToken) {
+        return false;
+      }
+
+      if (apiClient.getToken() !== storedToken) {
+        apiClient.setToken(storedToken);
+      }
+
+      return true;
+    } catch (_error) {
+      return false;
+    }
+  };
+
   useEffect(() => {
     const state = location.state as
       | {
@@ -83,6 +100,11 @@ const SupportTicketsPage: React.FC = () => {
     // Only runs if both isAuthenticated AND customer.id exist
     const loadTickets = async () => {
       try {
+        if (!ensureCustomerToken()) {
+          setTickets([]);
+          return;
+        }
+
         setIsLoading(true);
         const apiTickets = await apiClient.tickets.getForCustomer(customer.id);
         setTickets(Array.isArray(apiTickets) ? apiTickets : []);
@@ -110,6 +132,11 @@ const SupportTicketsPage: React.FC = () => {
       return;
     }
 
+    if (!ensureCustomerToken()) {
+      addToast("Session expired. Please sign in again", "error");
+      return;
+    }
+
     const ticketNumber = `TKT-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`;
     let createdTicket: SupportTicket | null = null;
 
@@ -126,7 +153,14 @@ const SupportTicketsPage: React.FC = () => {
       });
     } catch (error) {
       console.error("Error creating ticket:", error);
-      addToast("Failed to create support ticket", "error");
+      if (
+        (error as any)?.status === 401 ||
+        (error as any)?.response?.status === 401
+      ) {
+        addToast("Session expired. Please sign in again", "error");
+      } else {
+        addToast("Failed to create support ticket", "error");
+      }
       return;
     }
 

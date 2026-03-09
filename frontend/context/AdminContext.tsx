@@ -214,9 +214,8 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({
     setAdminUser(null);
     localStorage.removeItem("adminUser");
     localStorage.removeItem("adminToken");
-    if (localStorage.getItem("adminToken") !== "mock-token") {
-      apiClient.setToken(null);
-    }
+    const customerToken = localStorage.getItem("auth_token");
+    apiClient.setToken(customerToken || null);
   };
 
   const fetchCustomers = async () => {
