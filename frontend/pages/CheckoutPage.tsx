@@ -46,6 +46,83 @@ const CheckoutPage: React.FC = () => {
     taxAmount: 0,
     total: 0,
   });
+  const [paymentData, setPaymentData] = useState({
+    cardNumber: "",
+    expiry: "",
+    cvc: "",
+  });
+
+  const formatPhoneNumber = (value: string): string => {
+    const digits = value.replace(/\D/g, "").slice(0, 10);
+    if (digits.length <= 3) return digits;
+    if (digits.length <= 6) {
+      return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+    }
+    return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`;
+  };
+
+  const isValidPhoneNumber = (value: string): boolean => {
+    const digits = value.replace(/\D/g, "");
+    return digits.length === 10;
+  };
+
+  const formatZipCode = (value: string): string => {
+    const digits = value.replace(/\D/g, "").slice(0, 9);
+    if (digits.length <= 5) return digits;
+    return `${digits.slice(0, 5)}-${digits.slice(5)}`;
+  };
+
+  const isValidZipCode = (value: string): boolean =>
+    /^\d{5}(-\d{4})?$/.test(value.trim());
+
+  const formatCardNumber = (value: string): string => {
+    const digits = value.replace(/\D/g, "").slice(0, 19);
+    return digits.replace(/(.{4})/g, "$1 ").trim();
+  };
+
+  const isValidCardNumber = (value: string): boolean => {
+    const digits = value.replace(/\D/g, "");
+    if (digits.length < 13 || digits.length > 19) return false;
+
+    let sum = 0;
+    let shouldDouble = false;
+    for (let i = digits.length - 1; i >= 0; i--) {
+      let n = Number(digits[i]);
+      if (shouldDouble) {
+        n *= 2;
+        if (n > 9) n -= 9;
+      }
+      sum += n;
+      shouldDouble = !shouldDouble;
+    }
+
+    return sum % 10 === 0;
+  };
+
+  const formatExpiry = (value: string): string => {
+    const digits = value.replace(/\D/g, "").slice(0, 4);
+    if (digits.length <= 2) return digits;
+    return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+  };
+
+  const isValidExpiry = (value: string): boolean => {
+    if (!/^\d{2}\/\d{2}$/.test(value)) return false;
+    const [mm, yy] = value.split("/").map((part) => Number(part));
+    if (!mm || mm < 1 || mm > 12) return false;
+
+    const now = new Date();
+    const currentYear = now.getFullYear() % 100;
+    const currentMonth = now.getMonth() + 1;
+
+    if (yy < currentYear) return false;
+    if (yy === currentYear && mm < currentMonth) return false;
+    return true;
+  };
+
+  const formatCvc = (value: string): string =>
+    value.replace(/\D/g, "").slice(0, 4);
+
+  const isValidCvc = (value: string): boolean => /^\d{3,4}$/.test(value);
 
   const toNumber = (value: unknown, fallback = 0) => {
     const num = Number(value);
@@ -161,6 +238,16 @@ const CheckoutPage: React.FC = () => {
       !newAddressForm.zipCode
     ) {
       addToast("Please fill in all required fields", "error");
+      return;
+    }
+
+    if (!isValidZipCode(newAddressForm.zipCode)) {
+      addToast("Please enter a valid ZIP code", "error");
+      return;
+    }
+
+    if (newAddressForm.phone && !isValidPhoneNumber(newAddressForm.phone)) {
+      addToast("Phone number must be 10 digits", "error");
       return;
     }
 
@@ -396,6 +483,31 @@ const CheckoutPage: React.FC = () => {
 
     if (!shippingZip) {
       addToast("Please enter a ZIP code", "error");
+      return;
+    }
+
+    if (!isValidZipCode(shippingZip)) {
+      addToast("Please enter a valid ZIP code", "error");
+      return;
+    }
+
+    if (!formData.phone || !isValidPhoneNumber(formData.phone)) {
+      addToast("Please enter a valid 10-digit phone number", "error");
+      return;
+    }
+
+    if (!isValidCardNumber(paymentData.cardNumber)) {
+      addToast("Please enter a valid card number", "error");
+      return;
+    }
+
+    if (!isValidExpiry(paymentData.expiry)) {
+      addToast("Please enter a valid expiration date (MM/YY)", "error");
+      return;
+    }
+
+    if (!isValidCvc(paymentData.cvc)) {
+      addToast("Please enter a valid CVC", "error");
       return;
     }
 
@@ -752,8 +864,10 @@ const CheckoutPage: React.FC = () => {
                         .filter((addr) => addr.type === "shipping")
                         .map((addr) => (
                           <option key={addr.id} value={addr.id}>
-                            {addr.fullName} - {addr.streetAddress}, {addr.city},{" "}
-                            {addr.state} {addr.zipCode}
+                            {addr.fullName} -{" "}
+                            {addr.street1 || (addr as any).streetAddress},{" "}
+                            {addr.city}, {addr.state}{" "}
+                            {addr.zip || (addr as any).zipCode}
                             {addr.isDefault ? " (Default)" : ""}
                           </option>
                         ))}
@@ -800,9 +914,13 @@ const CheckoutPage: React.FC = () => {
                   placeholder="Phone Number"
                   value={formData.phone}
                   onChange={(e) =>
-                    setFormData({ ...formData, phone: e.target.value })
+                    setFormData({
+                      ...formData,
+                      phone: formatPhoneNumber(e.target.value),
+                    })
                   }
                   className={inputClasses}
+                  required
                 />
                 <input
                   type="text"
@@ -842,7 +960,9 @@ const CheckoutPage: React.FC = () => {
                     type="text"
                     placeholder="ZIP Code"
                     value={shippingZip}
-                    onChange={(e) => setShippingZip(e.target.value)}
+                    onChange={(e) =>
+                      setShippingZip(formatZipCode(e.target.value))
+                    }
                     className={inputClasses}
                     required
                   />
@@ -856,18 +976,48 @@ const CheckoutPage: React.FC = () => {
                 <input
                   type="text"
                   placeholder="Card Number"
+                  value={paymentData.cardNumber}
+                  onChange={(e) =>
+                    setPaymentData({
+                      ...paymentData,
+                      cardNumber: formatCardNumber(e.target.value),
+                    })
+                  }
+                  inputMode="numeric"
+                  autoComplete="cc-number"
                   className={inputClasses}
+                  required
                 />
                 <div className="flex space-x-4">
                   <input
                     type="text"
                     placeholder="MM / YY"
+                    value={paymentData.expiry}
+                    onChange={(e) =>
+                      setPaymentData({
+                        ...paymentData,
+                        expiry: formatExpiry(e.target.value),
+                      })
+                    }
+                    inputMode="numeric"
+                    autoComplete="cc-exp"
                     className={inputClasses}
+                    required
                   />
                   <input
                     type="text"
                     placeholder="CVC"
+                    value={paymentData.cvc}
+                    onChange={(e) =>
+                      setPaymentData({
+                        ...paymentData,
+                        cvc: formatCvc(e.target.value),
+                      })
+                    }
+                    inputMode="numeric"
+                    autoComplete="cc-csc"
                     className={inputClasses}
+                    required
                   />
                 </div>
               </div>
@@ -1041,7 +1191,7 @@ const CheckoutPage: React.FC = () => {
                 onChange={(e) =>
                   setNewAddressForm({
                     ...newAddressForm,
-                    zipCode: e.target.value,
+                    zipCode: formatZipCode(e.target.value),
                   })
                 }
                 className={inputClasses}
@@ -1054,7 +1204,7 @@ const CheckoutPage: React.FC = () => {
                 onChange={(e) =>
                   setNewAddressForm({
                     ...newAddressForm,
-                    phone: e.target.value,
+                    phone: formatPhoneNumber(e.target.value),
                   })
                 }
                 className={inputClasses}

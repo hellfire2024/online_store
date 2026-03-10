@@ -24,6 +24,15 @@ const TrashIcon: React.FC = () => (
 
 const CartItemRow: React.FC<{ item: CartItem }> = ({ item }) => {
   const { updateQuantity, removeFromCart } = useCart();
+  const handleImageContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    return false;
+  };
+
+  const handleImageDragStart = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
   const toNumber = (value: unknown, fallback = 0) => {
     const num = Number(value);
     return Number.isFinite(num) ? num : fallback;
@@ -136,11 +145,19 @@ const CartItemRow: React.FC<{ item: CartItem }> = ({ item }) => {
         {item.customization && (
           <div className="mt-2 bg-slate-700 p-2 rounded-lg">
             <div className="flex items-center gap-2 flex-wrap">
-              <img
-                src={item.customization.value}
-                alt="Customization"
-                className="w-16 h-16 object-cover rounded border-2 border-slate-600 shrink-0"
-              />
+              <div className="relative shrink-0">
+                <img
+                  src={item.customization.value}
+                  alt="Customization"
+                  className="w-16 h-16 object-cover rounded border-2 border-slate-600"
+                  onContextMenu={handleImageContextMenu}
+                  onDragStart={handleImageDragStart}
+                  draggable={false}
+                />
+                <div className="absolute bottom-1 left-1 pointer-events-none select-none opacity-40 text-[9px] font-bold text-white bg-black/40 px-1 py-0.5 rounded">
+                  WATERMARKED
+                </div>
+              </div>
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-semibold text-sky-400 wrap-break-word">
                   {item.customization.type === "gallery"

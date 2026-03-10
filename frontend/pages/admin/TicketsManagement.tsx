@@ -30,7 +30,9 @@ const TicketsManagement: React.FC = () => {
   const { addToast } = useToast();
 
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
-  const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
+  const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(
+    null,
+  );
   const [replyMessage, setReplyMessage] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
@@ -47,7 +49,7 @@ const TicketsManagement: React.FC = () => {
       try {
         // Try to load tickets from API
         const apiTickets = await apiClient.tickets.getAll();
-        
+
         // Transform API tickets to match UI format if needed
         const transformedTickets = apiTickets.map((ticket: any) => ({
           id: ticket.id,
@@ -63,107 +65,114 @@ const TicketsManagement: React.FC = () => {
           updatedAt: ticket.updatedAt,
           replies: ticket.replies || [],
         }));
-        
+
         setTickets(transformedTickets);
-        
+
         if (transformedTickets.length === 0) {
-          addToast('No tickets found in database', 'info');
+          addToast("No tickets found in database", "info");
         }
       } catch (error) {
-        console.error('Failed to load tickets from API, using mock data:', error);
-        
+        console.error(
+          "Failed to load tickets from API, using mock data:",
+          error,
+        );
+
         // Fallback to mock tickets when API fails or DB is empty
         const mockTickets: SupportTicket[] = [
-      {
-        id: "1",
-        ticketNumber: "TKT-2026-001",
-        customerName: "John Doe",
-        customerEmail: "john.doe@email.com",
-        subject: "Question about product customization",
-        message: "Can I add metallic ink to my design?",
-        orderId: "ORD-2026-001",
-        status: "in_progress",
-        priority: "medium",
-        createdAt: "2026-01-24T10:30:00Z",
-        updatedAt: "2026-01-26T14:00:00Z",
-        replies: [
           {
             id: "1",
-            author: "customer",
+            ticketNumber: "TKT-2026-001",
+            customerName: "John Doe",
+            customerEmail: "john.doe@email.com",
+            subject: "Question about product customization",
             message: "Can I add metallic ink to my design?",
-            timestamp: "2026-01-24T10:30:00Z",
+            orderId: "ORD-2026-001",
+            status: "in_progress",
+            priority: "medium",
+            createdAt: "2026-01-24T10:30:00Z",
+            updatedAt: "2026-01-26T14:00:00Z",
+            replies: [
+              {
+                id: "1",
+                author: "customer",
+                message: "Can I add metallic ink to my design?",
+                timestamp: "2026-01-24T10:30:00Z",
+              },
+              {
+                id: "2",
+                author: "support",
+                message:
+                  "Yes, we offer metallic ink options. The cost is $5.00 per color.",
+                timestamp: "2026-01-25T09:15:00Z",
+              },
+            ],
           },
           {
             id: "2",
-            author: "support",
-            message: "Yes, we offer metallic ink options. The cost is $5.00 per color.",
-            timestamp: "2026-01-25T09:15:00Z",
-          },
-        ],
-      },
-      {
-        id: "2",
-        ticketNumber: "TKT-2026-002",
-        customerName: "Jane Smith",
-        customerEmail: "jane.smith@email.com",
-        subject: "Shipping delay inquiry",
-        message: "My order hasn't arrived yet. When should I expect it?",
-        orderId: "ORD-2026-002",
-        status: "open",
-        priority: "high",
-        createdAt: "2026-01-27T15:45:00Z",
-        updatedAt: "2026-01-27T15:45:00Z",
-        replies: [
-          {
-            id: "1",
-            author: "customer",
+            ticketNumber: "TKT-2026-002",
+            customerName: "Jane Smith",
+            customerEmail: "jane.smith@email.com",
+            subject: "Shipping delay inquiry",
             message: "My order hasn't arrived yet. When should I expect it?",
-            timestamp: "2026-01-27T15:45:00Z",
-          },
-        ],
-      },
-      {
-        id: "3",
-        ticketNumber: "TKT-2026-003",
-        customerName: "Bob Wilson",
-        customerEmail: "bob.wilson@email.com",
-        subject: "Product quality issue",
-        message: "The print quality on my mug is poor.",
-        orderId: "ORD-2026-003",
-        status: "resolved",
-        priority: "high",
-        createdAt: "2026-01-20T08:20:00Z",
-        updatedAt: "2026-01-26T10:00:00Z",
-        replies: [
-          {
-            id: "1",
-            author: "customer",
-            message: "The print quality on my mug is poor.",
-            timestamp: "2026-01-20T08:20:00Z",
-          },
-          {
-            id: "2",
-            author: "support",
-            message: "We apologize for the issue. We're sending a replacement right away.",
-            timestamp: "2026-01-20T14:30:00Z",
+            orderId: "ORD-2026-002",
+            status: "open",
+            priority: "high",
+            createdAt: "2026-01-27T15:45:00Z",
+            updatedAt: "2026-01-27T15:45:00Z",
+            replies: [
+              {
+                id: "1",
+                author: "customer",
+                message:
+                  "My order hasn't arrived yet. When should I expect it?",
+                timestamp: "2026-01-27T15:45:00Z",
+              },
+            ],
           },
           {
             id: "3",
-            author: "customer",
-            message: "Thank you! I received the replacement and it looks great.",
-            timestamp: "2026-01-26T09:50:00Z",
+            ticketNumber: "TKT-2026-003",
+            customerName: "Bob Wilson",
+            customerEmail: "bob.wilson@email.com",
+            subject: "Product quality issue",
+            message: "The print quality on my mug is poor.",
+            orderId: "ORD-2026-003",
+            status: "resolved",
+            priority: "high",
+            createdAt: "2026-01-20T08:20:00Z",
+            updatedAt: "2026-01-26T10:00:00Z",
+            replies: [
+              {
+                id: "1",
+                author: "customer",
+                message: "The print quality on my mug is poor.",
+                timestamp: "2026-01-20T08:20:00Z",
+              },
+              {
+                id: "2",
+                author: "support",
+                message:
+                  "We apologize for the issue. We're sending a replacement right away.",
+                timestamp: "2026-01-20T14:30:00Z",
+              },
+              {
+                id: "3",
+                author: "customer",
+                message:
+                  "Thank you! I received the replacement and it looks great.",
+                timestamp: "2026-01-26T09:50:00Z",
+              },
+            ],
           },
-        ],
-      },
-    ];
+        ];
 
-    setTickets(mockTickets);
-    addToast('Using demo tickets - backend not connected', 'info');
+        setTickets(mockTickets);
+        addToast("Using demo tickets - backend not connected", "info");
       } finally {
         setIsLoading(false);
       }
     };
-    
+
     loadTickets();
   }, [isAdminAuthenticated, navigate, addToast]);
 
@@ -175,10 +184,10 @@ const TicketsManagement: React.FC = () => {
       // Try to add reply via API
       const reply = await apiClient.tickets.addReply(
         selectedTicket.id,
-        'support',
-        replyMessage
+        "support",
+        replyMessage,
       );
-      
+
       // Update local state
       const updated = tickets.map((t) => {
         if (t.id === selectedTicket.id) {
@@ -197,14 +206,16 @@ const TicketsManagement: React.FC = () => {
         }
         return t;
       });
-      
+
       setTickets(updated);
-      setSelectedTicket(updated.find(t => t.id === selectedTicket.id) || null);
+      setSelectedTicket(
+        updated.find((t) => t.id === selectedTicket.id) || null,
+      );
       setReplyMessage("");
       addToast("Reply sent successfully", "success");
     } catch (error) {
-      console.error('Failed to send reply via API, updating locally:', error);
-      
+      console.error("Failed to send reply via API, updating locally:", error);
+
       // Fallback to local update if API fails
       const updated = tickets.map((t) => {
         if (t.id === selectedTicket.id) {
@@ -219,16 +230,18 @@ const TicketsManagement: React.FC = () => {
                 timestamp: new Date().toISOString(),
               },
             ],
-          updatedAt: new Date().toISOString(),
-        };
-      }
-      return t;
-    });
-    
-    setTickets(updated);
-    setSelectedTicket(updated.find((t) => t.id === selectedTicket.id) || null);
-    setReplyMessage("");
-    addToast("Reply sent to customer (local only)", "success");
+            updatedAt: new Date().toISOString(),
+          };
+        }
+        return t;
+      });
+
+      setTickets(updated);
+      setSelectedTicket(
+        updated.find((t) => t.id === selectedTicket.id) || null,
+      );
+      setReplyMessage("");
+      addToast("Reply sent to customer (local only)", "success");
     }
   };
 
@@ -236,10 +249,16 @@ const TicketsManagement: React.FC = () => {
     try {
       // Try to update via API
       await apiClient.tickets.update(ticketId, { status: newStatus });
-      
+
       // Update local state
       const updated = tickets.map((t) =>
-        t.id === ticketId ? { ...t, status: newStatus as any, updatedAt: new Date().toISOString() } : t
+        t.id === ticketId
+          ? {
+              ...t,
+              status: newStatus as any,
+              updatedAt: new Date().toISOString(),
+            }
+          : t,
       );
       setTickets(updated);
       if (selectedTicket?.id === ticketId) {
@@ -247,11 +266,20 @@ const TicketsManagement: React.FC = () => {
       }
       addToast(`Ticket status updated to ${newStatus}`, "success");
     } catch (error) {
-      console.error('Failed to update ticket via API, updating locally:', error);
-      
+      console.error(
+        "Failed to update ticket via API, updating locally:",
+        error,
+      );
+
       // Fallback to local update if API fails
       const updated = tickets.map((t) =>
-        t.id === ticketId ? { ...t, status: newStatus as any, updatedAt: new Date().toISOString() } : t
+        t.id === ticketId
+          ? {
+              ...t,
+              status: newStatus as any,
+              updatedAt: new Date().toISOString(),
+            }
+          : t,
       );
       setTickets(updated);
       if (selectedTicket?.id === ticketId) {
@@ -261,14 +289,17 @@ const TicketsManagement: React.FC = () => {
     }
   };
 
-  const handlePriorityChange = async (ticketId: string, newPriority: string) => {
+  const handlePriorityChange = async (
+    ticketId: string,
+    newPriority: string,
+  ) => {
     try {
       // Try to update via API
       await apiClient.tickets.update(ticketId, { priority: newPriority });
-      
+
       // Update local state
       const updated = tickets.map((t) =>
-        t.id === ticketId ? { ...t, priority: newPriority as any } : t
+        t.id === ticketId ? { ...t, priority: newPriority as any } : t,
       );
       setTickets(updated);
       if (selectedTicket?.id === ticketId) {
@@ -276,17 +307,23 @@ const TicketsManagement: React.FC = () => {
       }
       addToast(`Ticket priority updated to ${newPriority}`, "success");
     } catch (error) {
-      console.error('Failed to update priority via API, updating locally:', error);
-      
+      console.error(
+        "Failed to update priority via API, updating locally:",
+        error,
+      );
+
       // Fallback to local update if API fails
       const updated = tickets.map((t) =>
-        t.id === ticketId ? { ...t, priority: newPriority as any } : t
+        t.id === ticketId ? { ...t, priority: newPriority as any } : t,
       );
       setTickets(updated);
       if (selectedTicket?.id === ticketId) {
         setSelectedTicket(updated.find((t) => t.id === ticketId) || null);
       }
-      addToast(`Ticket priority updated to ${newPriority} (local only)`, "info");
+      addToast(
+        `Ticket priority updated to ${newPriority} (local only)`,
+        "info",
+      );
     }
   };
 
@@ -320,7 +357,8 @@ const TicketsManagement: React.FC = () => {
 
   const filteredTickets = tickets.filter((ticket) => {
     if (statusFilter !== "all" && ticket.status !== statusFilter) return false;
-    if (priorityFilter !== "all" && ticket.priority !== priorityFilter) return false;
+    if (priorityFilter !== "all" && ticket.priority !== priorityFilter)
+      return false;
     return true;
   });
 
@@ -334,13 +372,17 @@ const TicketsManagement: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold text-white">Support Tickets Management</h1>
+      <h1 className="text-3xl font-bold text-white">
+        Support Tickets Management
+      </h1>
 
       {/* Filters */}
       <div className="bg-slate-800 p-4 rounded-lg space-y-3 border border-slate-700">
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Filter by Status</label>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Filter by Status
+            </label>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
@@ -354,7 +396,9 @@ const TicketsManagement: React.FC = () => {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Filter by Priority</label>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Filter by Priority
+            </label>
             <select
               value={priorityFilter}
               onChange={(e) => setPriorityFilter(e.target.value)}
@@ -373,7 +417,9 @@ const TicketsManagement: React.FC = () => {
       <div className="space-y-4">
         {filteredTickets.length === 0 ? (
           <div className="text-center py-12 bg-slate-800 rounded-lg border border-slate-700">
-            <p className="text-gray-400">No support tickets match the selected filters</p>
+            <p className="text-gray-400">
+              No support tickets match the selected filters
+            </p>
           </div>
         ) : (
           <>
@@ -385,41 +431,60 @@ const TicketsManagement: React.FC = () => {
                 <div
                   key={ticket.id}
                   className="bg-slate-800 p-4 rounded-lg cursor-pointer hover:bg-slate-700/50 transition border border-slate-700"
-                  onClick={() => setSelectedTicket(selectedTicket?.id === ticket.id ? null : ticket)}
+                  onClick={() =>
+                    setSelectedTicket(
+                      selectedTicket?.id === ticket.id ? null : ticket,
+                    )
+                  }
                 >
                   <div className="flex justify-between items-start mb-2">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        <h3 className="text-lg font-semibold text-white">{ticket.ticketNumber}</h3>
+                        <h3 className="text-lg font-semibold text-white">
+                          {ticket.ticketNumber}
+                        </h3>
                       </div>
-                      <p className="text-gray-300 font-medium">{ticket.subject}</p>
-                      <p className="text-gray-400 text-sm">
-                        from <strong>{ticket.customerName}</strong> ({ticket.customerEmail})
+                      <p className="text-gray-300 font-medium">
+                        {ticket.subject}
                       </p>
-                      <p className="text-gray-400 text-sm mt-1">{new Date(ticket.createdAt).toLocaleDateString()}</p>
+                      <p className="text-gray-400 text-sm">
+                        from <strong>{ticket.customerName}</strong> (
+                        {ticket.customerEmail})
+                      </p>
+                      <p className="text-gray-400 text-sm mt-1">
+                        {new Date(ticket.createdAt).toLocaleDateString()}
+                      </p>
                     </div>
                     <div className="flex gap-2">
-                      <span className={`px-3 py-1 rounded text-xs font-semibold ${getStatusColor(ticket.status)}`}>
+                      <span
+                        className={`px-3 py-1 rounded text-xs font-semibold ${getStatusColor(ticket.status)}`}
+                      >
                         {ticket.status.replace("_", " ")}
                       </span>
-                      <span className={`px-3 py-1 rounded text-xs font-semibold ${getPriorityColor(ticket.priority)}`}>
+                      <span
+                        className={`px-3 py-1 rounded text-xs font-semibold ${getPriorityColor(ticket.priority)}`}
+                      >
                         {ticket.priority}
                       </span>
                     </div>
                   </div>
 
                   {selectedTicket?.id === ticket.id && (
-                    <div 
+                    <div
                       className="mt-4 pt-4 border-t border-slate-600 space-y-4"
                       onClick={(e) => e.stopPropagation()}
                     >
                       {/* Status and Priority Controls */}
                       <div className="grid grid-cols-2 gap-4 bg-slate-700/50 p-3 rounded">
                         <div>
-                          <label className="block text-xs font-medium text-gray-400 mb-1">Change Status</label>
+                          <label className="block text-xs font-medium text-gray-400 mb-1">
+                            Change Status
+                          </label>
                           <select
                             value={ticket.status}
-                            onChange={(e) => handleStatusChange(ticket.id, e.target.value)}
+                            onChange={(e) =>
+                              handleStatusChange(ticket.id, e.target.value)
+                            }
                             className="w-full px-2 py-1 bg-slate-600 border border-slate-500 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
                           >
                             <option value="open">Open</option>
@@ -429,10 +494,14 @@ const TicketsManagement: React.FC = () => {
                           </select>
                         </div>
                         <div>
-                          <label className="block text-xs font-medium text-gray-400 mb-1">Change Priority</label>
+                          <label className="block text-xs font-medium text-gray-400 mb-1">
+                            Change Priority
+                          </label>
                           <select
                             value={ticket.priority}
-                            onChange={(e) => handlePriorityChange(ticket.id, e.target.value)}
+                            onChange={(e) =>
+                              handlePriorityChange(ticket.id, e.target.value)
+                            }
                             className="w-full px-2 py-1 bg-slate-600 border border-slate-500 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
                           >
                             <option value="low">Low</option>
@@ -450,16 +519,24 @@ const TicketsManagement: React.FC = () => {
                             className={`p-3 rounded ${reply.author === "support" ? "bg-sky-900/30" : "bg-slate-600/50"}`}
                           >
                             <p className="text-xs text-gray-400 mb-1">
-                              {reply.author === "support" ? "Support Team" : "Customer"} • {new Date(reply.timestamp).toLocaleString()}
+                              {reply.author === "support"
+                                ? "Support Team"
+                                : "Customer"}{" "}
+                              • {new Date(reply.timestamp).toLocaleString()}
                             </p>
-                            <p className="text-white text-sm">{reply.message}</p>
+                            <p className="text-white text-sm">
+                              {reply.message}
+                            </p>
                           </div>
                         ))}
                       </div>
 
                       {/* Reply Form */}
                       {ticket.status !== "closed" && (
-                        <form onSubmit={handleReply} className="space-y-2 border-t border-slate-600 pt-4">
+                        <form
+                          onSubmit={handleReply}
+                          className="space-y-2 border-t border-slate-600 pt-4"
+                        >
                           <textarea
                             value={replyMessage}
                             onChange={(e) => setReplyMessage(e.target.value)}
