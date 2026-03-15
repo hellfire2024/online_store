@@ -1,13 +1,15 @@
 import React, { useState } from "react";
 import { useReviews } from "../../context/ReviewsContext";
 import { useSiteSettings } from "../../context/SiteSettingsContext";
-import { StarIcon } from "../../components/Icons";
+import { StarIcon, TrashIcon } from "../../components/Icons";
 import Pagination from "../../components/Pagination";
 import { Review } from "../../types";
+import { useToast } from "../../hooks/useToast";
 
 const ReviewsManagement: React.FC = () => {
   const { reviews, updateReview, deleteReview } = useReviews();
   const { siteSettings, updateSiteSettings } = useSiteSettings();
+  const { addToast } = useToast();
   const [filterStatus, setFilterStatus] = useState<
     "pending" | "approved" | "rejected" | "archived" | "all"
   >("pending");
@@ -17,6 +19,7 @@ const ReviewsManagement: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
   const openModal = (review?: Review) => {
     setEditingReview(
@@ -40,11 +43,22 @@ const ReviewsManagement: React.FC = () => {
   };
 
   const handleApprove = async (review: Review) => {
-    await updateReview({
-      ...review,
-      status: "approved",
-      approvedAt: new Date().toISOString(),
-    });
+    try {
+      setActionLoadingId(review.id);
+      await updateReview({
+        ...review,
+        status: "approved",
+        approvedAt: new Date().toISOString(),
+      });
+      addToast("Review approved", "success");
+    } catch (error) {
+      addToast(
+        `Failed to approve review: ${error instanceof Error ? error.message : "Unknown error"}`,
+        "error",
+      );
+    } finally {
+      setActionLoadingId(null);
+    }
   };
 
   const handleReject = async (review: Review) => {
@@ -52,24 +66,58 @@ const ReviewsManagement: React.FC = () => {
       alert("Please provide a rejection reason");
       return;
     }
-    await updateReview({
-      ...review,
-      status: "rejected",
-      rejectionReason: rejectionReason,
-    });
-    setRejectionReason("");
+    try {
+      setActionLoadingId(review.id);
+      await updateReview({
+        ...review,
+        status: "rejected",
+        rejectionReason: rejectionReason,
+      });
+      addToast("Review rejected", "success");
+      setRejectionReason("");
+      closeModal();
+    } catch (error) {
+      addToast(
+        `Failed to reject review: ${error instanceof Error ? error.message : "Unknown error"}`,
+        "error",
+      );
+    } finally {
+      setActionLoadingId(null);
+    }
   };
 
   const handleArchive = async (review: Review) => {
-    await updateReview({
-      ...review,
-      status: "archived",
-    });
+    try {
+      setActionLoadingId(review.id);
+      await updateReview({
+        ...review,
+        status: "archived",
+      });
+      addToast("Review archived", "success");
+    } catch (error) {
+      addToast(
+        `Failed to archive review: ${error instanceof Error ? error.message : "Unknown error"}`,
+        "error",
+      );
+    } finally {
+      setActionLoadingId(null);
+    }
   };
 
   const handleDelete = async (reviewId: string) => {
-    await deleteReview(reviewId);
-    setDeleteConfirmId(null);
+    try {
+      setActionLoadingId(reviewId);
+      await deleteReview(reviewId);
+      addToast("Review deleted successfully", "success");
+      setDeleteConfirmId(null);
+    } catch (error) {
+      addToast(
+        `Failed to delete review: ${error instanceof Error ? error.message : "Unknown error"}`,
+        "error",
+      );
+    } finally {
+      setActionLoadingId(null);
+    }
   };
 
   const handleMaxReviewsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -213,59 +261,45 @@ const ReviewsManagement: React.FC = () => {
                   </span>
                 </td>
                 <td className="p-4">
-                  <div className="flex flex-col gap-1 whitespace-nowrap">
+                  <div className="flex items-center gap-2 whitespace-nowrap">
                     {review.status !== "approved" && (
                       <button
+                        disabled={actionLoadingId === review.id}
                         onClick={() => handleApprove(review)}
-                        className="text-green-400 hover:text-green-300 text-xs font-medium"
+                        className="px-2 py-1 rounded text-xs font-semibold bg-green-900 text-green-200 hover:bg-green-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         title="Approve"
                       >
-                        ✓ Approve
+                        Approve
                       </button>
                     )}
                     {review.status !== "rejected" && (
                       <button
                         onClick={() => openModal(review)}
-                        className="text-red-400 hover:text-red-300 text-xs font-medium"
+                        disabled={actionLoadingId === review.id}
+                        className="px-2 py-1 rounded text-xs font-semibold bg-red-900 text-red-200 hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         title="Reject"
                       >
-                        ✗ Reject
+                        Reject
                       </button>
                     )}
                     {review.status !== "archived" && (
                       <button
+                        disabled={actionLoadingId === review.id}
                         onClick={() => handleArchive(review)}
-                        className="text-gray-400 hover:text-gray-300 text-xs font-medium"
+                        className="px-2 py-1 rounded text-xs font-semibold bg-slate-700 text-gray-200 hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         title="Archive"
                       >
-                        📦 Archive
+                        Archive
                       </button>
                     )}
-                    {deleteConfirmId === review.id ? (
-                      <div className="flex gap-1 items-center">
-                        <button
-                          onClick={() => handleDelete(review.id)}
-                          className="text-red-400 hover:text-red-300 text-xs font-medium"
-                        >
-                          Confirm
-                        </button>
-                        <span className="text-gray-600">|</span>
-                        <button
-                          onClick={() => setDeleteConfirmId(null)}
-                          className="text-gray-400 hover:text-gray-300 text-xs font-medium"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => setDeleteConfirmId(review.id)}
-                        className="text-red-500 hover:text-red-400 text-xs font-medium"
-                        title="Delete permanently"
-                      >
-                        🗑 Delete
-                      </button>
-                    )}
+                    <button
+                      onClick={() => setDeleteConfirmId(review.id)}
+                      disabled={actionLoadingId === review.id}
+                      className="text-red-400 hover:text-red-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="Delete review"
+                    >
+                      <TrashIcon className="w-4 h-4" />
+                    </button>
                   </div>
                 </td>
               </tr>
@@ -314,7 +348,8 @@ const ReviewsManagement: React.FC = () => {
             <div className="flex gap-2">
               <button
                 onClick={() => handleReject(editingReview)}
-                className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2 rounded-md"
+                disabled={actionLoadingId === editingReview.id}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Reject
               </button>
@@ -323,6 +358,34 @@ const ReviewsManagement: React.FC = () => {
                 className="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 rounded-md"
               >
                 Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deleteConfirmId && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-800 p-6 rounded-lg max-w-sm w-full border border-slate-700">
+            <h2 className="text-xl font-bold text-white mb-4">Confirm Delete</h2>
+            <p className="text-gray-300 mb-6">
+              Are you sure you want to delete this review? This action cannot be
+              undone.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeleteConfirmId(null)}
+                disabled={actionLoadingId === deleteConfirmId}
+                className="flex-1 px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDelete(deleteConfirmId)}
+                disabled={actionLoadingId === deleteConfirmId}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {actionLoadingId === deleteConfirmId ? "Deleting..." : "Delete"}
               </button>
             </div>
           </div>
