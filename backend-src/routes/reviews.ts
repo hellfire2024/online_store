@@ -1,15 +1,15 @@
-import { Router, Request, Response } from 'express';
-import { pool } from '../db/connection.js';
-import { RowDataPacket } from 'mysql2';
-import { v4 as uuidv4 } from 'uuid';
+import { Router, Request, Response } from "express";
+import { pool } from "../db/connection.js";
+import { RowDataPacket } from "mysql2";
+import { v4 as uuidv4 } from "uuid";
 
 const router = Router();
 
 // Get all reviews
-router.get('/', async (_req: Request, res: Response) => {
+router.get("/", async (_req: Request, res: Response) => {
   try {
     const [rows] = await pool.query<RowDataPacket[]>(
-      'SELECT * FROM reviews ORDER BY created_at DESC'
+      "SELECT * FROM reviews ORDER BY created_at DESC",
     );
 
     const reviews = (rows || []).map((row: any) => ({
@@ -27,21 +27,21 @@ router.get('/', async (_req: Request, res: Response) => {
 
     return res.json(reviews);
   } catch (error) {
-    console.error('Error fetching reviews:', error);
-    return res.status(500).json({ error: 'Failed to fetch reviews' });
+    console.error("Error fetching reviews:", error);
+    return res.status(500).json({ error: "Failed to fetch reviews" });
   }
 });
 
 // Get single review
-router.get('/:id', async (req: Request, res: Response) => {
+router.get("/:id", async (req: Request, res: Response) => {
   try {
     const [rows] = await pool.query<RowDataPacket[]>(
-      'SELECT * FROM reviews WHERE id = ?',
-      [req.params.id]
+      "SELECT * FROM reviews WHERE id = ?",
+      [req.params.id],
     );
 
     if (!rows || rows.length === 0) {
-      return res.status(404).json({ error: 'Review not found' });
+      return res.status(404).json({ error: "Review not found" });
     }
 
     const row: any = rows[0];
@@ -58,13 +58,13 @@ router.get('/:id', async (req: Request, res: Response) => {
       images: row.images ? JSON.parse(row.images) : undefined,
     });
   } catch (error) {
-    console.error('Error fetching review:', error);
-    return res.status(500).json({ error: 'Failed to fetch review' });
+    console.error("Error fetching review:", error);
+    return res.status(500).json({ error: "Failed to fetch review" });
   }
 });
 
 // Create review
-router.post('/', async (req: Request, res: Response) => {
+router.post("/", async (req: Request, res: Response) => {
   try {
     const {
       id,
@@ -80,11 +80,11 @@ router.post('/', async (req: Request, res: Response) => {
     } = req.body;
 
     if (!author || !rating) {
-      return res.status(400).json({ error: 'author and rating are required' });
+      return res.status(400).json({ error: "author and rating are required" });
     }
 
     const reviewId = id || uuidv4();
-    const finalStatus = status || 'pending';
+    const finalStatus = status || "pending";
     const imagesJson = images ? JSON.stringify(images) : null;
 
     await pool.query(
@@ -94,21 +94,21 @@ router.post('/', async (req: Request, res: Response) => {
         reviewId,
         author,
         email || null,
-        text || '',
+        text || "",
         rating,
         finalStatus,
         rejectionReason || null,
         createdAt ? new Date(createdAt) : new Date(),
         approvedAt ? new Date(approvedAt) : null,
         imagesJson,
-      ]
+      ],
     );
 
     return res.status(201).json({
       id: reviewId,
       author,
       email: email || undefined,
-      text: text || '',
+      text: text || "",
       rating,
       status: finalStatus,
       createdAt: createdAt || new Date().toISOString(),
@@ -117,13 +117,13 @@ router.post('/', async (req: Request, res: Response) => {
       images: images || undefined,
     });
   } catch (error) {
-    console.error('Error creating review:', error);
-    return res.status(500).json({ error: 'Failed to create review' });
+    console.error("Error creating review:", error);
+    return res.status(500).json({ error: "Failed to create review" });
   }
 });
 
 // Update review
-router.put('/:id', async (req: Request, res: Response) => {
+router.put("/:id", async (req: Request, res: Response) => {
   try {
     const {
       author,
@@ -138,8 +138,10 @@ router.put('/:id', async (req: Request, res: Response) => {
 
     const imagesJson = images ? JSON.stringify(images) : null;
     const finalApprovedAt =
-      status === 'approved'
-        ? approvedAt ? new Date(approvedAt) : new Date()
+      status === "approved"
+        ? approvedAt
+          ? new Date(approvedAt)
+          : new Date()
         : null;
 
     const [result] = await pool.query(
@@ -150,53 +152,52 @@ router.put('/:id', async (req: Request, res: Response) => {
       [
         author,
         email || null,
-        text || '',
+        text || "",
         rating,
-        status || 'pending',
+        status || "pending",
         finalApprovedAt,
         rejectionReason || null,
         imagesJson,
         req.params.id,
-      ]
+      ],
     );
 
     if ((result as any).affectedRows === 0) {
-      return res.status(404).json({ error: 'Review not found' });
+      return res.status(404).json({ error: "Review not found" });
     }
 
     return res.json({
       id: req.params.id,
       author,
       email: email || undefined,
-      text: text || '',
+      text: text || "",
       rating,
-      status: status || 'pending',
+      status: status || "pending",
       approvedAt: finalApprovedAt || undefined,
       rejectionReason: rejectionReason || undefined,
       images: images || undefined,
     });
   } catch (error) {
-    console.error('Error updating review:', error);
-    return res.status(500).json({ error: 'Failed to update review' });
+    console.error("Error updating review:", error);
+    return res.status(500).json({ error: "Failed to update review" });
   }
 });
 
 // Delete review
-router.delete('/:id', async (req: Request, res: Response) => {
+router.delete("/:id", async (req: Request, res: Response) => {
   try {
-    const [result] = await pool.query(
-      'DELETE FROM reviews WHERE id = ?',
-      [req.params.id]
-    );
-    
+    const [result] = await pool.query("DELETE FROM reviews WHERE id = ?", [
+      req.params.id,
+    ]);
+
     if ((result as any).affectedRows === 0) {
-      return res.status(404).json({ error: 'Review not found' });
+      return res.status(404).json({ error: "Review not found" });
     }
-    
+
     return res.status(204).send();
   } catch (error) {
-    console.error('Error deleting review:', error);
-    return res.status(500).json({ error: 'Failed to delete review' });
+    console.error("Error deleting review:", error);
+    return res.status(500).json({ error: "Failed to delete review" });
   }
 });
 
