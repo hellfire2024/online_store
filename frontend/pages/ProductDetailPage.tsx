@@ -352,7 +352,9 @@ const ProductDetailPage: React.FC = () => {
               draggable={false}
             />
           ) : (
-            <div className="text-sm text-gray-400">No preview image available</div>
+            <div className="text-sm text-gray-400">
+              No preview image available
+            </div>
           )}
           <div className="absolute inset-0 pointer-events-none select-none overflow-hidden">
             <div
