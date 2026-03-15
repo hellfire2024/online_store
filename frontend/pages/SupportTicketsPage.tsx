@@ -180,44 +180,44 @@ const SupportTicketsPage: React.FC = () => {
     // Send email to support in the background so UI is not blocked.
     void (async () => {
       try {
-      const ticketDate = new Date().toLocaleDateString();
+        const ticketDate = new Date().toLocaleDateString();
 
-      // Build subject line with order info if available
-      let orderInfo = "";
-      if (formData.orderId) {
-        const selectedOrder = customer?.orders.find(
-          (o) => o.id === formData.orderId,
-        );
-        orderInfo = selectedOrder
-          ? ` | Order: ${selectedOrder.orderNumber}`
-          : "";
-      }
+        // Build subject line with order info if available
+        let orderInfo = "";
+        if (formData.orderId) {
+          const selectedOrder = customer?.orders.find(
+            (o) => o.id === formData.orderId,
+          );
+          orderInfo = selectedOrder
+            ? ` | Order: ${selectedOrder.orderNumber}`
+            : "";
+        }
 
-      const subjectPrefix =
-        siteSettings?.supportSubjectPrefix || "Support Request";
-      const ticketSuffix = siteSettings?.supportTicketSuffix || "SUP-001-001";
-      const emailSubject = `${subjectPrefix} | ${formData.subject}${orderInfo} | ${ticketDate} | ${ticketSuffix}`;
-      const supportEmail =
-        siteSettings?.supportEmail || "support@adaptivegis.com";
+        const subjectPrefix =
+          siteSettings?.supportSubjectPrefix || "Support Request";
+        const ticketSuffix = siteSettings?.supportTicketSuffix || "SUP-001-001";
+        const emailSubject = `${subjectPrefix} | ${formData.subject}${orderInfo} | ${ticketDate} | ${ticketSuffix}`;
+        const supportEmail =
+          siteSettings?.supportEmail || "support@adaptivegis.com";
 
-      const response = await apiClient.tickets.sendEmail({
-        to: supportEmail,
-        subject: emailSubject,
-        ticketNumber: createdTicket?.ticketNumber || ticketNumber,
-        orderId: formData.orderId,
-        priority: formData.priority,
-        message: formData.message,
-        customerInfo: {
-          subject: formData.subject,
-          date: ticketDate,
-        },
-      });
+        const response = await apiClient.tickets.sendEmail({
+          to: supportEmail,
+          subject: emailSubject,
+          ticketNumber: createdTicket?.ticketNumber || ticketNumber,
+          orderId: formData.orderId,
+          priority: formData.priority,
+          message: formData.message,
+          customerInfo: {
+            subject: formData.subject,
+            date: ticketDate,
+          },
+        });
 
-      if (response?.success) {
-        console.log("Support ticket email sent successfully");
-      } else {
-        console.warn("Failed to send support ticket email");
-      }
+        if (response?.success) {
+          console.log("Support ticket email sent successfully");
+        } else {
+          console.warn("Failed to send support ticket email");
+        }
       } catch (error) {
         console.error("Error sending support ticket email:", error);
       }
@@ -420,9 +420,10 @@ const SupportTicketsPage: React.FC = () => {
 
           <button
             type="submit"
-            className="px-6 py-2 bg-sky-600 text-white rounded hover:bg-sky-700 transition-colors"
+            disabled={isSubmitting}
+            className="px-6 py-2 bg-sky-600 text-white rounded hover:bg-sky-700 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
           >
-            Submit Ticket
+            {isSubmitting ? "Submitting..." : "Submit Ticket"}
           </button>
         </form>
       ) : (
@@ -436,108 +437,106 @@ const SupportTicketsPage: React.FC = () => {
               <p className="text-gray-400">No support tickets yet</p>
             </div>
           ) : (
-            <>
-              <div className="grid gap-4">
-                {tickets.map((ticket) => (
-                  <div
-                    key={ticket.id}
-                    className="bg-slate-800 p-4 rounded-lg cursor-pointer hover:bg-slate-700/50 transition"
-                    onClick={() =>
-                      setSelectedTicket(
-                        selectedTicket?.id === ticket.id ? null : ticket,
-                      )
-                    }
-                  >
-                    <div className="flex justify-between items-start mb-2">
-                      <div className="flex-1">
-                        <h3 className="text-lg font-semibold text-white">
-                          {ticket.ticketNumber}
-                        </h3>
-                        <p className="text-gray-300">{ticket.subject}</p>
-                        <p className="text-gray-400 text-sm mt-1">
-                          {new Date(ticket.createdAt).toLocaleDateString()}
-                        </p>
-                      </div>
-                      <div className="flex gap-2">
-                        <span
-                          className={`px-3 py-1 rounded text-xs font-semibold ${getStatusColor(ticket.status)}`}
-                        >
-                          {ticket.status.replace("_", " ")}
-                        </span>
-                        <span
-                          className={`px-3 py-1 rounded text-xs font-semibold ${getPriorityColor(ticket.priority)}`}
-                        >
-                          {ticket.priority}
-                        </span>
-                      </div>
+            <div className="grid gap-4">
+              {tickets.map((ticket) => (
+                <div
+                  key={ticket.id}
+                  className="bg-slate-800 p-4 rounded-lg cursor-pointer hover:bg-slate-700/50 transition"
+                  onClick={() =>
+                    setSelectedTicket(
+                      selectedTicket?.id === ticket.id ? null : ticket,
+                    )
+                  }
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold text-white">
+                        {ticket.ticketNumber}
+                      </h3>
+                      <p className="text-gray-300">{ticket.subject}</p>
+                      <p className="text-gray-400 text-sm mt-1">
+                        {new Date(ticket.createdAt).toLocaleDateString()}
+                      </p>
                     </div>
-
-                    {selectedTicket?.id === ticket.id && (
-                        <div
-                          className="mt-4 pt-4 border-t border-slate-600 space-y-4"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                        <div className="flex justify-between items-center mb-3">
-                          <h4 className="font-semibold text-white">
-                            Conversation
-                          </h4>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedTicket(null);
-                            }}
-                            className="text-sm px-3 py-1 text-gray-400 hover:text-white hover:bg-slate-700 rounded transition-colors"
-                          >
-                            ← Back to List
-                          </button>
-                        </div>
-                        <div className="space-y-3 max-h-96 overflow-y-auto">
-                          {ticket.replies.map((reply, idx) => (
-                            <div
-                              key={idx}
-                              className={`p-3 rounded ${reply.author === "support" ? "bg-sky-900/30" : "bg-slate-700/50"}`}
-                            >
-                              <p className="text-xs text-gray-400 mb-1">
-                                {reply.author === "support"
-                                  ? "Support Team"
-                                  : "You"}{" "}
-                                • {new Date(reply.timestamp).toLocaleString()}
-                              </p>
-                              <p className="text-white text-sm">
-                                {reply.message}
-                              </p>
-                            </div>
-                          ))}
-                        </div>
-
-                        {ticket.status !== "closed" && (
-                          <form
-                            onSubmit={handleReply}
-                            onClick={(e) => e.stopPropagation()}
-                            className="space-y-2 border-t border-slate-600 pt-4"
-                          >
-                            <textarea
-                              value={replyMessage}
-                              onChange={(e) => setReplyMessage(e.target.value)}
-                              placeholder="Add a reply..."
-                              rows={3}
-                              className="w-full px-4 py-2 rounded bg-slate-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
-                            />
-                            <button
-                              type="submit"
-                              className="px-4 py-2 bg-sky-600 text-white rounded hover:bg-sky-700 transition-colors text-sm"
-                            >
-                              Send Reply
-                            </button>
-                          </form>
-                              disabled={isSubmitting}
-                        )}
-                      </div>
-                              {isSubmitting ? "Submitting..." : "Submit Ticket"}
+                    <div className="flex gap-2">
+                      <span
+                        className={`px-3 py-1 rounded text-xs font-semibold ${getStatusColor(ticket.status)}`}
+                      >
+                        {ticket.status.replace("_", " ")}
+                      </span>
+                      <span
+                        className={`px-3 py-1 rounded text-xs font-semibold ${getPriorityColor(ticket.priority)}`}
+                      >
+                        {ticket.priority}
+                      </span>
+                    </div>
                   </div>
-                ))}
-              </div>
-            </>
+
+                  {selectedTicket?.id === ticket.id && (
+                    <div
+                      className="mt-4 pt-4 border-t border-slate-600 space-y-4"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="flex justify-between items-center mb-3">
+                        <h4 className="font-semibold text-white">
+                          Conversation
+                        </h4>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedTicket(null);
+                          }}
+                          className="text-sm px-3 py-1 text-gray-400 hover:text-white hover:bg-slate-700 rounded transition-colors"
+                        >
+                          Back to List
+                        </button>
+                      </div>
+
+                      <div className="space-y-3 max-h-96 overflow-y-auto">
+                        {ticket.replies.map((reply, idx) => (
+                          <div
+                            key={idx}
+                            className={`p-3 rounded ${reply.author === "support" ? "bg-sky-900/30" : "bg-slate-700/50"}`}
+                          >
+                            <p className="text-xs text-gray-400 mb-1">
+                              {reply.author === "support"
+                                ? "Support Team"
+                                : "You"}{" "}
+                              • {new Date(reply.timestamp).toLocaleString()}
+                            </p>
+                            <p className="text-white text-sm">
+                              {reply.message}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+
+                      {ticket.status !== "closed" && (
+                        <form
+                          onSubmit={handleReply}
+                          onClick={(e) => e.stopPropagation()}
+                          className="space-y-2 border-t border-slate-600 pt-4"
+                        >
+                          <textarea
+                            value={replyMessage}
+                            onChange={(e) => setReplyMessage(e.target.value)}
+                            placeholder="Add a reply..."
+                            rows={3}
+                            className="w-full px-4 py-2 rounded bg-slate-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                          />
+                          <button
+                            type="submit"
+                            className="px-4 py-2 bg-sky-600 text-white rounded hover:bg-sky-700 transition-colors text-sm"
+                          >
+                            Send Reply
+                          </button>
+                        </form>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           )}
         </div>
       )}
