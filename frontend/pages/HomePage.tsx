@@ -38,6 +38,7 @@ const HomePage: React.FC = () => {
   const { isAuthenticated, customer } = useCustomerAuth();
 
   const [showReviewForm, setShowReviewForm] = useState(false);
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const [reviewForm, setReviewForm] = useState({
     text: "",
     rating: 5,
@@ -128,6 +129,8 @@ const HomePage: React.FC = () => {
   const handleSubmitReview = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (isSubmittingReview) return;
+
     if (!customer) {
       addToast("Please log in to submit a review", "error");
       return;
@@ -140,6 +143,7 @@ const HomePage: React.FC = () => {
 
     const authorName = `${customer.firstName} ${customer.lastName}`;
 
+    setIsSubmittingReview(true);
     try {
       console.log("[HomePage] Submitting review for:", authorName);
       await addReview({
@@ -167,6 +171,8 @@ const HomePage: React.FC = () => {
         errorMessage || "Failed to submit review. Please try again.",
         "error",
       );
+    } finally {
+      setIsSubmittingReview(false);
     }
   };
 
@@ -444,9 +450,10 @@ const HomePage: React.FC = () => {
               </div>
               <button
                 type="submit"
-                className="w-full bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 rounded-lg"
+                disabled={isSubmittingReview}
+                className="w-full bg-sky-500 hover:bg-sky-600 disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold py-2 rounded-lg"
               >
-                Submit Review for Approval
+                {isSubmittingReview ? "Submitting…" : "Submit Review for Approval"}
               </button>
               <p className="text-xs text-gray-400 text-center">
                 Your review will be reviewed by our team before appearing on the

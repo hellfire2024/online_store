@@ -6,7 +6,7 @@ import Pagination from "../../components/Pagination";
 import { Review } from "../../types";
 
 const ReviewsManagement: React.FC = () => {
-  const { reviews, updateReview } = useReviews();
+  const { reviews, updateReview, deleteReview } = useReviews();
   const { siteSettings, updateSiteSettings } = useSiteSettings();
   const [filterStatus, setFilterStatus] = useState<"pending" | "approved" | "rejected" | "archived" | "all">("pending");
   const [editingReview, setEditingReview] = useState<Review | null>(null);
@@ -14,6 +14,7 @@ const ReviewsManagement: React.FC = () => {
   const [rejectionReason, setRejectionReason] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
 
   const openModal = (review?: Review) => {
@@ -53,6 +54,11 @@ const ReviewsManagement: React.FC = () => {
       ...review,
       status: "archived",
     });
+  };
+
+  const handleDelete = async (reviewId: string) => {
+    await deleteReview(reviewId);
+    setDeleteConfirmId(null);
   };
 
 
@@ -205,6 +211,31 @@ const ReviewsManagement: React.FC = () => {
                         title="Archive"
                       >
                         📦 Archive
+                      </button>
+                    )}
+                    {deleteConfirmId === review.id ? (
+                      <div className="flex gap-1 items-center">
+                        <button
+                          onClick={() => handleDelete(review.id)}
+                          className="text-red-400 hover:text-red-300 text-xs font-medium"
+                        >
+                          Confirm
+                        </button>
+                        <span className="text-gray-600">|</span>
+                        <button
+                          onClick={() => setDeleteConfirmId(null)}
+                          className="text-gray-400 hover:text-gray-300 text-xs font-medium"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setDeleteConfirmId(review.id)}
+                        className="text-red-500 hover:text-red-400 text-xs font-medium"
+                        title="Delete permanently"
+                      >
+                        🗑 Delete
                       </button>
                     )}
                   </div>
