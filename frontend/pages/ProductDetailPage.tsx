@@ -335,43 +335,22 @@ const ProductDetailPage: React.FC = () => {
       </button>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
         <div className="relative w-full aspect-square bg-slate-700 rounded-lg flex items-center justify-center border border-slate-600 overflow-hidden">
-            <div className="absolute inset-0 pointer-events-none select-none overflow-hidden">
-              <div
-                className="absolute -inset-4 flex flex-col gap-4"
-                style={{ transform: "rotate(-30deg)", opacity: 0.35 }}
-              >
-                {Array.from({ length: 5 }, (_, rowIdx) => (
-                  <div
-                    key={rowIdx}
-                    className="flex gap-6 whitespace-nowrap"
-                    style={{ marginLeft: rowIdx % 2 === 0 ? "0" : "-40px" }}
-                  >
-                    {Array.from({ length: 4 }, (_, colIdx) => (
-                      <span
-                        key={colIdx}
-                        className="text-white font-bold text-xs"
-                        style={{ textShadow: "0 0 3px black" }}
-                      >
-                        {watermarkText}
-                      </span>
-                    ))}
-                  </div>
-                ))}
-              </div>
-            </div>
-              style={{ transform: "rotate(-30deg)", opacity: 0.28 }}
+          <div className="absolute inset-0 pointer-events-none select-none overflow-hidden">
+            <div
+              className="absolute -inset-4 flex flex-col gap-4"
+              style={{ transform: "rotate(-30deg)", opacity: 0.35 }}
             >
-              {Array.from({ length: 8 }, (_, rowIdx) => (
+              {Array.from({ length: 5 }, (_, rowIdx) => (
                 <div
                   key={rowIdx}
-                  className="flex gap-10 whitespace-nowrap"
-                  style={{ marginLeft: rowIdx % 2 === 0 ? "0" : "-70px" }}
+                  className="flex gap-6 whitespace-nowrap"
+                  style={{ marginLeft: rowIdx % 2 === 0 ? "0" : "-40px" }}
                 >
-                  {Array.from({ length: 6 }, (_, colIdx) => (
+                  {Array.from({ length: 4 }, (_, colIdx) => (
                     <span
                       key={colIdx}
-                      className="text-white font-bold text-lg"
-                      style={{ textShadow: "1px 1px 6px black" }}
+                      className="text-white font-bold text-xs"
+                      style={{ textShadow: "0 0 3px black" }}
                     >
                       {watermarkText}
                     </span>
