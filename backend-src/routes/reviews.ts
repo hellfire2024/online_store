@@ -98,8 +98,8 @@ router.post('/', async (req: Request, res: Response) => {
         rating,
         finalStatus,
         rejectionReason || null,
-        createdAt || new Date(),
-        approvedAt || null,
+        createdAt ? new Date(createdAt) : new Date(),
+        approvedAt ? new Date(approvedAt) : null,
         imagesJson,
       ]
     );
@@ -139,7 +139,7 @@ router.put('/:id', async (req: Request, res: Response) => {
     const imagesJson = images ? JSON.stringify(images) : null;
     const finalApprovedAt =
       status === 'approved'
-        ? approvedAt || new Date().toISOString()
+        ? approvedAt ? new Date(approvedAt) : new Date()
         : null;
 
     const [result] = await pool.query(

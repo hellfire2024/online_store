@@ -70,8 +70,8 @@ router.post('/', async (req, res) => {
             rating,
             finalStatus,
             rejectionReason || null,
-            createdAt || new Date(),
-            approvedAt || null,
+            createdAt ? new Date(createdAt) : new Date(),
+            approvedAt ? new Date(approvedAt) : null,
             imagesJson,
         ]);
         return res.status(201).json({
@@ -98,8 +98,8 @@ router.put('/:id', async (req, res) => {
         const { author, email, text, rating, status, approvedAt, rejectionReason, images, } = req.body;
         const imagesJson = images ? JSON.stringify(images) : null;
         const finalApprovedAt = status === 'approved'
-            ? approvedAt || new Date().toISOString()
-            : null;
+        ? approvedAt ? new Date(approvedAt) : new Date()
+        : null;
         const [result] = await pool.query(`UPDATE reviews
        SET author = ?, email = ?, text = ?, rating = ?, status = ?,
            approved_at = ?, rejection_reason = ?, images = ?
