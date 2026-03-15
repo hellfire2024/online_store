@@ -144,21 +144,7 @@ const CheckoutPage: React.FC = () => {
 
   const isValidCardNumber = (value: string): boolean => {
     const digits = value.replace(/\D/g, "");
-    if (digits.length !== 16) return false;
-
-    let sum = 0;
-    let shouldDouble = false;
-    for (let i = digits.length - 1; i >= 0; i--) {
-      let n = Number(digits[i]);
-      if (shouldDouble) {
-        n *= 2;
-        if (n > 9) n -= 9;
-      }
-      sum += n;
-      shouldDouble = !shouldDouble;
-    }
-
-    return sum % 10 === 0;
+    return digits.length === 16;
   };
 
   const isValidExpiry = (): boolean => {
