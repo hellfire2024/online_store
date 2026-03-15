@@ -222,6 +222,13 @@ const ProductDetailPage: React.FC = () => {
     [product?.galleryId, galleryImages],
   );
 
+  const mainPreviewImage =
+    selectedGalleryImage?.imageUrl ||
+    uploadedImage ||
+    product?.imageUrl ||
+    currentGalleryImages[0]?.imageUrl ||
+    "";
+
   // Memoize the entire gallery grid to prevent re-renders
   const GalleryGrid = useMemo(() => {
     if (currentGalleryImages.length === 0) {
@@ -259,7 +266,7 @@ const ProductDetailPage: React.FC = () => {
                 className="text-white font-bold text-3xl whitespace-nowrap"
                 style={{ textShadow: "2px 2px 8px black" }}
               >
-                CustomThreads
+                {watermarkText}
               </div>
             </div>
           </div>
@@ -335,6 +342,18 @@ const ProductDetailPage: React.FC = () => {
       </button>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
         <div className="relative w-full aspect-square bg-slate-700 rounded-lg flex items-center justify-center border border-slate-600 overflow-hidden">
+          {mainPreviewImage ? (
+            <img
+              src={mainPreviewImage}
+              alt={product.name}
+              className="w-full h-full object-contain select-none pointer-events-none"
+              onContextMenu={handleImageContextMenu}
+              onDragStart={handleImageDragStart}
+              draggable={false}
+            />
+          ) : (
+            <div className="text-sm text-gray-400">No preview image available</div>
+          )}
           <div className="absolute inset-0 pointer-events-none select-none overflow-hidden">
             <div
               className="absolute -inset-4 flex flex-col gap-4"
