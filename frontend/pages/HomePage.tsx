@@ -453,7 +453,9 @@ const HomePage: React.FC = () => {
                 disabled={isSubmittingReview}
                 className="w-full bg-sky-500 hover:bg-sky-600 disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold py-2 rounded-lg"
               >
-                {isSubmittingReview ? "Submitting…" : "Submit Review for Approval"}
+                {isSubmittingReview
+                  ? "Submitting…"
+                  : "Submit Review for Approval"}
               </button>
               <p className="text-xs text-gray-400 text-center">
                 Your review will be reviewed by our team before appearing on the

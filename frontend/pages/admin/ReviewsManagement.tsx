@@ -8,7 +8,9 @@ import { Review } from "../../types";
 const ReviewsManagement: React.FC = () => {
   const { reviews, updateReview, deleteReview } = useReviews();
   const { siteSettings, updateSiteSettings } = useSiteSettings();
-  const [filterStatus, setFilterStatus] = useState<"pending" | "approved" | "rejected" | "archived" | "all">("pending");
+  const [filterStatus, setFilterStatus] = useState<
+    "pending" | "approved" | "rejected" | "archived" | "all"
+  >("pending");
   const [editingReview, setEditingReview] = useState<Review | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
@@ -16,9 +18,18 @@ const ReviewsManagement: React.FC = () => {
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
-
   const openModal = (review?: Review) => {
-    setEditingReview(review || ({ author: "", email: "", text: "", rating: 5, status: "pending", createdAt: new Date().toISOString() } as Review));
+    setEditingReview(
+      review ||
+        ({
+          author: "",
+          email: "",
+          text: "",
+          rating: 5,
+          status: "pending",
+          createdAt: new Date().toISOString(),
+        } as Review),
+    );
     setIsModalOpen(true);
   };
 
@@ -61,8 +72,6 @@ const ReviewsManagement: React.FC = () => {
     setDeleteConfirmId(null);
   };
 
-
-
   const handleMaxReviewsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const maxReviews = parseInt(e.target.value, 10);
     if (siteSettings) {
@@ -74,13 +83,17 @@ const ReviewsManagement: React.FC = () => {
   };
 
   const filteredReviews = reviews.filter(
-    (review) => filterStatus === "all" || review.status === filterStatus
+    (review) => filterStatus === "all" || review.status === filterStatus,
   );
 
   // Pagination logic
-  const paginatedReviews = itemsPerPage === -1 
-    ? filteredReviews 
-    : filteredReviews.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const paginatedReviews =
+    itemsPerPage === -1
+      ? filteredReviews
+      : filteredReviews.slice(
+          (currentPage - 1) * itemsPerPage,
+          currentPage * itemsPerPage,
+        );
 
   const inputClasses =
     "w-full p-2 bg-slate-700 border border-slate-600 rounded-md text-white";
@@ -105,7 +118,10 @@ const ReviewsManagement: React.FC = () => {
               onChange={handleMaxReviewsChange}
               className={inputClasses}
             />
-            <p className="text-xs text-gray-400 mt-1">Currently showing {siteSettings?.maxReviewsDisplayed || 5} approved reviews</p>
+            <p className="text-xs text-gray-400 mt-1">
+              Currently showing {siteSettings?.maxReviewsDisplayed || 5}{" "}
+              approved reviews
+            </p>
           </div>
           <div>
             <label className="block text-gray-300 text-sm font-bold mb-2">
@@ -143,7 +159,9 @@ const ReviewsManagement: React.FC = () => {
             {paginatedReviews.map((review) => (
               <tr key={review.id} className="border-t border-slate-700">
                 <td className="p-4 font-medium">{review.author}</td>
-                <td className="p-4 text-xs text-gray-400 break-all">{review.email || "-"}</td>
+                <td className="p-4 text-xs text-gray-400 break-all">
+                  {review.email || "-"}
+                </td>
                 <td className="p-4">
                   <div className="text-gray-300 mb-2">{review.text}</div>
                   {review.images && review.images.length > 0 && (
@@ -154,7 +172,7 @@ const ReviewsManagement: React.FC = () => {
                           src={img}
                           alt={`Review image ${idx + 1}`}
                           className="w-16 h-16 object-cover rounded border border-slate-600 cursor-pointer hover:opacity-80"
-                          onClick={() => window.open(img, '_blank')}
+                          onClick={() => window.open(img, "_blank")}
                           title="Click to view full size"
                         />
                       ))}
@@ -172,16 +190,26 @@ const ReviewsManagement: React.FC = () => {
                   </div>
                 </td>
                 <td className="p-4 text-gray-400 whitespace-nowrap">
-                  {new Date(review.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  {new Date(review.createdAt).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                  })}
                 </td>
                 <td className="p-4">
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
-                    review.status === "pending" ? "bg-yellow-900 text-yellow-300" :
-                    review.status === "approved" ? "bg-green-900 text-green-300" :
-                    review.status === "rejected" ? "bg-red-900 text-red-300" :
-                    "bg-slate-700 text-gray-400"
-                  }`}>
-                    {review.status.charAt(0).toUpperCase() + review.status.slice(1)}
+                  <span
+                    className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
+                      review.status === "pending"
+                        ? "bg-yellow-900 text-yellow-300"
+                        : review.status === "approved"
+                          ? "bg-green-900 text-green-300"
+                          : review.status === "rejected"
+                            ? "bg-red-900 text-red-300"
+                            : "bg-slate-700 text-gray-400"
+                    }`}
+                  >
+                    {review.status.charAt(0).toUpperCase() +
+                      review.status.slice(1)}
                   </span>
                 </td>
                 <td className="p-4">
@@ -245,7 +273,11 @@ const ReviewsManagement: React.FC = () => {
             {paginatedReviews.length === 0 && (
               <tr>
                 <td colSpan={7} className="p-8 text-center text-gray-400">
-                  No {filterStatus === "all" ? "reviews" : `${filterStatus} reviews`} found
+                  No{" "}
+                  {filterStatus === "all"
+                    ? "reviews"
+                    : `${filterStatus} reviews`}{" "}
+                  found
                 </td>
               </tr>
             )}
@@ -269,7 +301,9 @@ const ReviewsManagement: React.FC = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-slate-800 p-6 rounded-lg border border-slate-700 max-w-md w-full">
             <h2 className="text-xl font-bold text-white mb-4">Reject Review</h2>
-            <p className="text-gray-300 mb-4">Review by <strong>{editingReview.author}</strong></p>
+            <p className="text-gray-300 mb-4">
+              Review by <strong>{editingReview.author}</strong>
+            </p>
             <textarea
               placeholder="Provide rejection reason (visible to admin only)"
               value={rejectionReason}
