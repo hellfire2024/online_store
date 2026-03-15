@@ -84,16 +84,17 @@ export async function runMigrations(): Promise<void> {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
     `CREATE TABLE IF NOT EXISTS reviews (
       id VARCHAR(36) PRIMARY KEY,
-      customer_id VARCHAR(36),
-      product_id VARCHAR(36),
-      rating INT NOT NULL,
-      comment TEXT,
+      author VARCHAR(255) NOT NULL,
+      email VARCHAR(255),
+      text TEXT NOT NULL,
+      rating INT NOT NULL CHECK (rating >= 1 AND rating <= 5),
+      status ENUM('pending','approved','rejected','archived') DEFAULT 'pending',
+      rejection_reason TEXT,
       images JSON,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE SET NULL,
-      FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE SET NULL,
-      INDEX idx_product (product_id),
-      INDEX idx_customer (customer_id)
+      approved_at TIMESTAMP NULL,
+      INDEX idx_status (status),
+      INDEX idx_rating (rating)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
     `CREATE TABLE IF NOT EXISTS staff (
       id VARCHAR(36) PRIMARY KEY,
@@ -455,7 +456,13 @@ export async function runMigrations(): Promise<void> {
       "TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP",
     );
 
-    // Add columns for reviews
+    // Add columns for reviews (migrate old schema: customer_id/product_id/comment → author/text/status etc.)
+    await alterTableAddColumn("reviews", "author", "VARCHAR(255)");
+    await alterTableAddColumn("reviews", "email", "VARCHAR(255)");
+    await alterTableAddColumn("reviews", "text", "TEXT");
+    await alterTableAddColumn("reviews", "status", "ENUM('pending','approved','rejected','archived') DEFAULT 'pending'");
+    await alterTableAddColumn("reviews", "rejection_reason", "TEXT");
+    await alterTableAddColumn("reviews", "approved_at", "TIMESTAMP NULL");
     await alterTableAddColumn("reviews", "images", "JSON");
 
     // Add missing columns for products
