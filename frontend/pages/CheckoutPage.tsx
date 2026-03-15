@@ -53,6 +53,67 @@ const CheckoutPage: React.FC = () => {
     cvc: "",
   });
 
+  const usStateMap: Record<string, string> = {
+    alabama: "AL",
+    alaska: "AK",
+    arizona: "AZ",
+    arkansas: "AR",
+    california: "CA",
+    colorado: "CO",
+    connecticut: "CT",
+    delaware: "DE",
+    florida: "FL",
+    georgia: "GA",
+    hawaii: "HI",
+    idaho: "ID",
+    illinois: "IL",
+    indiana: "IN",
+    iowa: "IA",
+    kansas: "KS",
+    kentucky: "KY",
+    louisiana: "LA",
+    maine: "ME",
+    maryland: "MD",
+    massachusetts: "MA",
+    michigan: "MI",
+    minnesota: "MN",
+    mississippi: "MS",
+    missouri: "MO",
+    montana: "MT",
+    nebraska: "NE",
+    nevada: "NV",
+    "new hampshire": "NH",
+    "new jersey": "NJ",
+    "new mexico": "NM",
+    "new york": "NY",
+    "north carolina": "NC",
+    "north dakota": "ND",
+    ohio: "OH",
+    oklahoma: "OK",
+    oregon: "OR",
+    pennsylvania: "PA",
+    "rhode island": "RI",
+    "south carolina": "SC",
+    "south dakota": "SD",
+    tennessee: "TN",
+    texas: "TX",
+    utah: "UT",
+    vermont: "VT",
+    virginia: "VA",
+    washington: "WA",
+    "west virginia": "WV",
+    wisconsin: "WI",
+    wyoming: "WY",
+  };
+
+  const normalizeStateCode = (value: string | undefined): string => {
+    const raw = (value || "").trim();
+    if (!raw) return "";
+    const upper = raw.toUpperCase();
+    if (/^[A-Z]{2}$/.test(upper)) return upper;
+    return usStateMap[raw.toLowerCase()] || "";
+  };
+
   const formatPhoneNumber = (value: string): string => {
     const digits = value.replace(/\D/g, "").slice(0, 10);
     if (digits.length <= 3) return digits;
@@ -174,7 +235,7 @@ const CheckoutPage: React.FC = () => {
           address: defaultShippingAddress.street1 || "",
           city: defaultShippingAddress.city || "",
         });
-        setShippingState(defaultShippingAddress.state || "");
+        setShippingState(normalizeStateCode(defaultShippingAddress.state));
         setShippingZip(defaultShippingAddress.zip || "");
       }
     }
@@ -214,7 +275,7 @@ const CheckoutPage: React.FC = () => {
           address: address.street1 || "",
           city: address.city || "",
         });
-        setShippingState(address.state || "");
+        setShippingState(normalizeStateCode(address.state));
         setShippingZip(address.zip || "");
       }
     }
