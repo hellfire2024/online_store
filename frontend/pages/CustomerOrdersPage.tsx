@@ -82,6 +82,8 @@ const CustomerOrdersPage: React.FC = () => {
   const [filterStartDate, setFilterStartDate] = useState<string>("");
   const [filterEndDate, setFilterEndDate] = useState<string>("");
   const [sortBy, setSortBy] = useState<string>("date-desc");
+  const orderWatermarkText =
+    `${siteSettings?.logoText || "AdaptiveGIS"} ${siteSettings?.logoTextAccent || "Store"}`.trim();
 
   useEffect(() => {
     if (isLoading) {
@@ -751,15 +753,49 @@ const CustomerOrdersPage: React.FC = () => {
                                   <div className="flex gap-3">
                                     {productImageSrc && (
                                       <div className="shrink-0">
-                                        <img
-                                          src={productImageSrc}
-                                          alt={productName}
-                                          className="w-16 h-16 object-cover rounded border border-slate-600"
-                                          onError={(e) => {
-                                            (e.target as HTMLImageElement).src =
-                                              "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect fill='%23475569' width='100' height='100'/%3E%3Ctext x='50' y='50' font-size='12' fill='%239ca3af' text-anchor='middle' dy='.3em'%3ENo Image%3C/text%3E%3C/svg%3E";
-                                          }}
-                                        />
+                                        <div
+                                          className="relative w-16 h-16 rounded border border-slate-600 overflow-hidden select-none"
+                                          onContextMenu={(e) =>
+                                            e.preventDefault()
+                                          }
+                                          onDragStart={(e) =>
+                                            e.preventDefault()
+                                          }
+                                        >
+                                          <img
+                                            src={productImageSrc}
+                                            alt={productName}
+                                            className="w-full h-full object-cover"
+                                            draggable={false}
+                                            onContextMenu={(e) =>
+                                              e.preventDefault()
+                                            }
+                                            onDragStart={(e) =>
+                                              e.preventDefault()
+                                            }
+                                            onError={(e) => {
+                                              (
+                                                e.target as HTMLImageElement
+                                              ).src =
+                                                "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect fill='%23475569' width='100' height='100'/%3E%3Ctext x='50' y='50' font-size='12' fill='%239ca3af' text-anchor='middle' dy='.3em'%3ENo Image%3C/text%3E%3C/svg%3E";
+                                            }}
+                                          />
+                                          <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                                            <div className="absolute -left-1/2 -top-1/3 w-[200%] rotate-[-30deg] opacity-40 text-white text-[7px] font-bold leading-3 whitespace-nowrap [text-shadow:0_0_2px_rgba(0,0,0,0.9)]">
+                                              {orderWatermarkText}{" "}
+                                              {orderWatermarkText}{" "}
+                                              {orderWatermarkText}
+                                              <br />
+                                              {orderWatermarkText}{" "}
+                                              {orderWatermarkText}{" "}
+                                              {orderWatermarkText}
+                                              <br />
+                                              {orderWatermarkText}{" "}
+                                              {orderWatermarkText}{" "}
+                                              {orderWatermarkText}
+                                            </div>
+                                          </div>
+                                        </div>
                                       </div>
                                     )}
                                     <div className="flex-1 min-w-0">

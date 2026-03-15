@@ -21,12 +21,25 @@ router.get("/customer/:customerId", requireCustomer, async (req, res) => {
     try {
         const { customerId } = req.params;
         const authUser = req.authUser;
+        const normalizedCustomerId = String(customerId || "").trim();
         // Security: only allow customers to see their own orders
-        if (authUser && authUser.id !== customerId) {
+        if (authUser && String(authUser.id) !== normalizedCustomerId) {
             res.status(403).json({ error: "Forbidden" });
             return;
         }
-        const [rows] = await pool.query(`SELECT * FROM orders WHERE customer_id = ? ORDER BY created_at DESC LIMIT 100`, [customerId]);
+        let rows = [];
+        if (authUser === null || authUser === void 0 ? void 0 : authUser.email) {
+            const [emailAwareRows] = await pool.query(`SELECT * FROM orders
+           WHERE customer_id = ?
+              OR LOWER(customer_email) = LOWER(?)
+           ORDER BY created_at DESC
+           LIMIT 100`, [normalizedCustomerId, authUser.email]);
+            rows = Array.isArray(emailAwareRows) ? emailAwareRows : [];
+        }
+        else {
+            const [idOnlyRows] = await pool.query(`SELECT * FROM orders WHERE customer_id = ? ORDER BY created_at DESC LIMIT 100`, [normalizedCustomerId]);
+            rows = Array.isArray(idOnlyRows) ? idOnlyRows : [];
+        }
         res.json(Array.isArray(rows) ? rows : []);
     }
     catch (error) {
