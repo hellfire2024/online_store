@@ -367,7 +367,9 @@ const ReviewsManagement: React.FC = () => {
       {deleteConfirmId && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-slate-800 p-6 rounded-lg max-w-sm w-full border border-slate-700">
-            <h2 className="text-xl font-bold text-white mb-4">Confirm Delete</h2>
+            <h2 className="text-xl font-bold text-white mb-4">
+              Confirm Delete
+            </h2>
             <p className="text-gray-300 mb-6">
               Are you sure you want to delete this review? This action cannot be
               undone.
