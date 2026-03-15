@@ -15,28 +15,28 @@ export interface InvoiceTemplate {
   logoPosition?: "left" | "center" | "right"; // Logo alignment
   logoSize?: number; // Logo size in pixels (width)
   showCompanyInfo?: boolean; // Show company name, email, phone
-  
+
   // Company Information
   companyName: string;
   companyEmail?: string;
   companyPhone?: string;
   companyAddress?: string;
-  
+
   // Invoice Layout
   invoiceTitle: string;
   includeItems: boolean;
   includeTotals: boolean;
   includeCustomization?: boolean; // Include custom text, images, options
-  
+
   // Sections Visibility
   showTrackingNumber?: boolean;
   showPaymentMethod?: boolean;
   showNotes?: boolean;
-  
+
   // Footer
   footerText?: string;
   footerAlignment?: "left" | "center" | "right";
-  
+
   // Styling
   accentColor: string;
   backgroundColor: string;
@@ -119,6 +119,9 @@ export const generateInvoiceHTML = (
   invoice: InvoiceData,
   template: InvoiceTemplate = DEFAULT_TEMPLATE,
 ): string => {
+  const watermarkText = invoice.storeName || "AdaptiveGIS";
+  const watermarkLine = Array(6).fill(watermarkText).join("   ");
+
   // Header with logo and company info
   const headerHtml = `
     <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 3px solid ${template.accentColor}; background-color: ${template.headerBackgroundColor || template.backgroundColor};">
@@ -164,10 +167,21 @@ export const generateInvoiceHTML = (
               ${item.selectedOptions ? `<div style="font-size: 11px; color: #64748b; margin-top: 4px;">${item.selectedOptions}</div>` : ""}
               ${item.optionsBreakdown && item.optionsBreakdown.length > 0 ? `<div style="font-size: 10px; color: #64748b; margin-top: 6px;">${item.optionsBreakdown.map((opt) => `${opt.label}: +${formatCurrency(opt.priceDelta)}`).join("<br/>")}</div>` : ""}
               ${item.customText ? `<div style="background: #f0f9ff; padding: 8px; margin-top: 6px; border-left: 3px solid ${template.accentColor}; font-size: 11px;"><strong style="color: #7c3aed;">Custom Text:</strong> "${item.customText}"${item.customTextCost ? ` (+${formatCurrency(item.customTextCost)})` : ""}</div>` : ""}
-              ${item.customization ? `<div style="background: #f0f9ff; padding: 8px; margin-top: 6px; border-left: 3px solid ${template.accentColor}; font-size: 11px;">
+              ${
+                item.customization
+                  ? `<div style="background: #f0f9ff; padding: 8px; margin-top: 6px; border-left: 3px solid ${template.accentColor}; font-size: 11px;">
                 <div style="margin-bottom: 6px;"><strong style="color: #0ea5e9;">${item.customization.type === "gallery" ? "Gallery Design" : "Uploaded Design"}:</strong> ${item.customization.fileName || "Custom Image"}${item.customImageCost ? ` (+${formatCurrency(item.customImageCost)})` : ""}</div>
-                <img src="${item.customization.value}" style="max-width: 150px; max-height: 150px; border: 2px solid #cbd5e1; border-radius: 4px; display: block;" crossorigin="anonymous" />
-              </div>` : ""}
+                <div style="position: relative; width: 150px; height: 150px; border: 2px solid #cbd5e1; border-radius: 4px; overflow: hidden;">
+                  <img src="${item.customization.value}" style="width: 100%; height: 100%; object-fit: cover; display: block;" crossorigin="anonymous" />
+                  <div style="position: absolute; inset: 0; overflow: hidden; pointer-events: none;">
+                    <div style="position: absolute; left: -35%; top: -20%; width: 170%; transform: rotate(-30deg); opacity: 0.35; color: #ffffff; font-size: 10px; font-weight: 700; text-shadow: 0 0 2px rgba(0,0,0,0.8); line-height: 1.7; white-space: nowrap;">
+                      ${watermarkLine}<br/>${watermarkLine}<br/>${watermarkLine}<br/>${watermarkLine}<br/>${watermarkLine}
+                    </div>
+                  </div>
+                </div>
+              </div>`
+                  : ""
+              }
             </td>
             <td style="padding: 12px; text-align: right; border: 1px solid ${template.borderColor}; color: ${template.textColor};">${item.quantity}</td>
             <td style="padding: 12px; text-align: right; border: 1px solid ${template.borderColor}; color: ${template.textColor};">${formatCurrency(item.price)}</td>
