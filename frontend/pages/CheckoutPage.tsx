@@ -138,7 +138,8 @@ const CheckoutPage: React.FC = () => {
     /^\d{5}(-\d{4})?$/.test(value.trim());
 
   const formatCardNumber = (value: string): string => {
-    return value.replace(/\D/g, "").slice(0, 16);
+    const digits = value.replace(/\D/g, "").slice(0, 16);
+    return digits.replace(/(\d{4})(?=\d)/g, "$1 ");
   };
 
   const isValidCardNumber = (value: string): boolean => {
@@ -1038,7 +1039,7 @@ const CheckoutPage: React.FC = () => {
                   }
                   inputMode="numeric"
                   autoComplete="cc-number"
-                  maxLength={16}
+                  maxLength={19}
                   className={inputClasses}
                   required
                 />
