@@ -6,6 +6,7 @@ import { useGalleries } from "../context/GalleryContext";
 // WARNING: This page uses useGalleries and must be rendered within a GalleryProvider (see App.tsx)
 import { getDesignIdeas } from "../services/geminiService";
 import { useCart } from "../context/CartContext";
+import { useSiteSettings } from "../context/SiteSettingsContext";
 import { generateSlug } from "../services/slugService";
 import Spinner from "../components/Spinner";
 import DragDropFileUpload from "../components/DragDropFileUpload";
@@ -42,6 +43,10 @@ const ProductDetailPage: React.FC = () => {
   const { products } = useProducts();
   const { galleryImages, fetchGalleryImages } = useGalleries();
   const { addToCart } = useCart();
+  const { siteSettings } = useSiteSettings();
+  const watermarkText =
+    `${siteSettings?.logoText || ""}${siteSettings?.logoTextAccent || ""}`.trim() ||
+    "Watermark";
 
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
@@ -338,15 +343,28 @@ const ProductDetailPage: React.FC = () => {
             onDragStart={handleImageDragStart}
             draggable={false}
           />
-          <div
-            className="absolute inset-0 pointer-events-none select-none opacity-30 flex items-center justify-center"
-            style={{ transform: "rotate(-45deg)" }}
-          >
+          <div className="absolute inset-0 pointer-events-none select-none overflow-hidden">
             <div
-              className="text-white font-bold text-4xl whitespace-nowrap"
-              style={{ textShadow: "2px 2px 8px black" }}
+              className="absolute -inset-8 flex flex-col gap-6"
+              style={{ transform: "rotate(-30deg)", opacity: 0.28 }}
             >
-              CustomThreads
+              {Array.from({ length: 8 }, (_, rowIdx) => (
+                <div
+                  key={rowIdx}
+                  className="flex gap-10 whitespace-nowrap"
+                  style={{ marginLeft: rowIdx % 2 === 0 ? "0" : "-70px" }}
+                >
+                  {Array.from({ length: 6 }, (_, colIdx) => (
+                    <span
+                      key={colIdx}
+                      className="text-white font-bold text-lg"
+                      style={{ textShadow: "1px 1px 6px black" }}
+                    >
+                      {watermarkText}
+                    </span>
+                  ))}
+                </div>
+              ))}
             </div>
           </div>
           {(selectedGalleryImage || uploadedImage) && (
@@ -356,15 +374,17 @@ const ProductDetailPage: React.FC = () => {
                 backgroundImage: `url(${selectedGalleryImage?.imageUrl || uploadedImage})`,
               }}
             >
-              <div
-                className="absolute inset-0 pointer-events-none select-none opacity-30 flex items-center justify-center"
-                style={{ transform: "rotate(-45deg)" }}
-              >
+              <div className="absolute inset-0 pointer-events-none select-none overflow-hidden">
                 <div
-                  className="text-white font-bold text-2xl whitespace-nowrap"
-                  style={{ textShadow: "2px 2px 8px black" }}
+                  className="absolute -inset-2 flex items-center justify-center"
+                  style={{ transform: "rotate(-30deg)", opacity: 0.45 }}
                 >
-                  CustomThreads
+                  <span
+                    className="text-white font-bold text-lg whitespace-nowrap"
+                    style={{ textShadow: "1px 1px 4px black" }}
+                  >
+                    {watermarkText}
+                  </span>
                 </div>
               </div>
             </div>

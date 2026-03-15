@@ -2,13 +2,17 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { Product } from "../types";
 import { generateSlug } from "../services/slugService";
+import { useSiteSettings } from "../context/SiteSettingsContext";
 
 interface ProductCardProps {
   product: Product;
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
-  const watermarkText = "CustomThreads";
+  const { siteSettings } = useSiteSettings();
+  const watermarkText =
+    `${siteSettings?.logoText || ""}${siteSettings?.logoTextAccent || ""}`.trim() ||
+    "Watermark";
 
   // Prevent image download
   const handleImageContextMenu = (e: React.MouseEvent) => {
@@ -32,29 +36,28 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             onDragStart={handleImageDragStart}
             draggable={false}
           />
-          <div className="absolute inset-0 pointer-events-none select-none">
+          <div className="absolute inset-0 pointer-events-none select-none overflow-hidden">
             <div
-              className="absolute inset-0 flex flex-col items-center justify-center gap-8 opacity-15"
-              style={{ transform: "rotate(-45deg)" }}
+              className="absolute -inset-8 flex flex-col gap-4"
+              style={{ transform: "rotate(-30deg)", opacity: 0.25 }}
             >
-              <div
-                className="text-white font-bold whitespace-nowrap"
-                style={{ textShadow: "0 0 5px black", fontSize: "12px" }}
-              >
-                {watermarkText}
-              </div>
-              <div
-                className="text-white font-bold whitespace-nowrap"
-                style={{ textShadow: "0 0 5px black", fontSize: "12px" }}
-              >
-                {watermarkText}
-              </div>
-              <div
-                className="text-white font-bold whitespace-nowrap"
-                style={{ textShadow: "0 0 5px black", fontSize: "12px" }}
-              >
-                {watermarkText}
-              </div>
+              {Array.from({ length: 10 }, (_, rowIdx) => (
+                <div
+                  key={rowIdx}
+                  className="flex gap-6 whitespace-nowrap"
+                  style={{ marginLeft: rowIdx % 2 === 0 ? "0" : "-50px" }}
+                >
+                  {Array.from({ length: 8 }, (_, colIdx) => (
+                    <span
+                      key={colIdx}
+                      className="text-white font-bold"
+                      style={{ textShadow: "0 0 3px black", fontSize: "11px" }}
+                    >
+                      {watermarkText}
+                    </span>
+                  ))}
+                </div>
+              ))}
             </div>
           </div>
         </div>

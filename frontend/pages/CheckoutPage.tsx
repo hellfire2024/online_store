@@ -48,7 +48,8 @@ const CheckoutPage: React.FC = () => {
   });
   const [paymentData, setPaymentData] = useState({
     cardNumber: "",
-    expiry: "",
+    expiryMonth: "",
+    expiryYear: "",
     cvc: "",
   });
 
@@ -99,23 +100,15 @@ const CheckoutPage: React.FC = () => {
     return sum % 10 === 0;
   };
 
-  const formatExpiry = (value: string): string => {
-    const digits = value.replace(/\D/g, "").slice(0, 4);
-    if (digits.length <= 2) return digits;
-    return `${digits.slice(0, 2)}/${digits.slice(2)}`;
-  };
-
-  const isValidExpiry = (value: string): boolean => {
-    if (!/^\d{2}\/\d{2}$/.test(value)) return false;
-    const [mm, yy] = value.split("/").map((part) => Number(part));
-    if (!mm || mm < 1 || mm > 12) return false;
-
+  const isValidExpiry = (): boolean => {
+    if (!paymentData.expiryMonth || !paymentData.expiryYear) return false;
+    const mm = parseInt(paymentData.expiryMonth, 10);
+    const yyyy = parseInt(paymentData.expiryYear, 10);
     const now = new Date();
-    const currentYear = now.getFullYear() % 100;
+    const currentYear = now.getFullYear();
     const currentMonth = now.getMonth() + 1;
-
-    if (yy < currentYear) return false;
-    if (yy === currentYear && mm < currentMonth) return false;
+    if (yyyy < currentYear) return false;
+    if (yyyy === currentYear && mm < currentMonth) return false;
     return true;
   };
 
@@ -501,8 +494,8 @@ const CheckoutPage: React.FC = () => {
       return;
     }
 
-    if (!isValidExpiry(paymentData.expiry)) {
-      addToast("Please enter a valid expiration date (MM/YY)", "error");
+    if (!isValidExpiry()) {
+      addToast("Please select a valid expiration date", "error");
       return;
     }
 
@@ -988,22 +981,50 @@ const CheckoutPage: React.FC = () => {
                   className={inputClasses}
                   required
                 />
-                <div className="flex space-x-4">
-                  <input
-                    type="text"
-                    placeholder="MM / YY"
-                    value={paymentData.expiry}
+                <div className="grid grid-cols-3 gap-4">
+                  <select
+                    value={paymentData.expiryMonth}
                     onChange={(e) =>
                       setPaymentData({
                         ...paymentData,
-                        expiry: formatExpiry(e.target.value),
+                        expiryMonth: e.target.value,
                       })
                     }
-                    inputMode="numeric"
-                    autoComplete="cc-exp"
+                    autoComplete="cc-exp-month"
                     className={inputClasses}
                     required
-                  />
+                  >
+                    <option value="">Month</option>
+                    {Array.from({ length: 12 }, (_, i) =>
+                      String(i + 1).padStart(2, "0"),
+                    ).map((month) => (
+                      <option key={month} value={month}>
+                        {month}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    value={paymentData.expiryYear}
+                    onChange={(e) =>
+                      setPaymentData({
+                        ...paymentData,
+                        expiryYear: e.target.value,
+                      })
+                    }
+                    autoComplete="cc-exp-year"
+                    className={inputClasses}
+                    required
+                  >
+                    <option value="">Year</option>
+                    {Array.from(
+                      { length: 11 },
+                      (_, i) => new Date().getFullYear() + i,
+                    ).map((year) => (
+                      <option key={year} value={String(year)}>
+                        {year}
+                      </option>
+                    ))}
+                  </select>
                   <input
                     type="text"
                     placeholder="CVC"

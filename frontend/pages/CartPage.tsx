@@ -2,6 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { CartItem } from "../types";
+import { useSiteSettings } from "../context/SiteSettingsContext";
 
 const TrashIcon: React.FC = () => (
   <svg
@@ -24,6 +25,10 @@ const TrashIcon: React.FC = () => (
 
 const CartItemRow: React.FC<{ item: CartItem }> = ({ item }) => {
   const { updateQuantity, removeFromCart } = useCart();
+  const { siteSettings } = useSiteSettings();
+  const watermarkText =
+    `${siteSettings?.logoText || ""}${siteSettings?.logoTextAccent || ""}`.trim() ||
+    "Store";
   const handleImageContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
     return false;
@@ -154,8 +159,18 @@ const CartItemRow: React.FC<{ item: CartItem }> = ({ item }) => {
                   onDragStart={handleImageDragStart}
                   draggable={false}
                 />
-                <div className="absolute bottom-1 left-1 pointer-events-none select-none opacity-40 text-[9px] font-bold text-white bg-black/40 px-1 py-0.5 rounded">
-                  WATERMARKED
+                <div className="absolute inset-0 pointer-events-none select-none overflow-hidden rounded">
+                  <div
+                    className="absolute inset-0 flex items-center justify-center"
+                    style={{ transform: "rotate(-30deg)", opacity: 0.55 }}
+                  >
+                    <span
+                      className="text-white font-bold whitespace-nowrap"
+                      style={{ textShadow: "0 0 3px black", fontSize: "9px" }}
+                    >
+                      {watermarkText}
+                    </span>
+                  </div>
                 </div>
               </div>
               <div className="min-w-0 flex-1">
