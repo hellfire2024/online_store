@@ -43,6 +43,7 @@ const SupportTicketsPage: React.FC = () => {
   });
   const [replyMessage, setReplyMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const ensureCustomerToken = (): boolean => {
     try {
@@ -122,6 +123,8 @@ const SupportTicketsPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
+
     if (!formData.subject.trim() || !formData.message.trim()) {
       addToast("Subject and message are required", "error");
       return;
@@ -141,6 +144,7 @@ const SupportTicketsPage: React.FC = () => {
     let createdTicket: SupportTicket | null = null;
 
     try {
+      setIsSubmitting(true);
       createdTicket = await apiClient.tickets.create({
         ticketNumber,
         customerId: customer.id,
@@ -162,10 +166,20 @@ const SupportTicketsPage: React.FC = () => {
         addToast("Failed to create support ticket", "error");
       }
       return;
+    } finally {
+      setIsSubmitting(false);
     }
 
-    // Send email to support with ticket information
-    try {
+    if (createdTicket) {
+      setTickets((prev) => [createdTicket as SupportTicket, ...prev]);
+    }
+    setFormData({ subject: "", message: "", orderId: "", priority: "medium" });
+    addToast("Support ticket created successfully", "success");
+    setActiveTab("tickets");
+
+    // Send email to support in the background so UI is not blocked.
+    void (async () => {
+      try {
       const ticketDate = new Date().toLocaleDateString();
 
       // Build subject line with order info if available
@@ -204,16 +218,10 @@ const SupportTicketsPage: React.FC = () => {
       } else {
         console.warn("Failed to send support ticket email");
       }
-    } catch (error) {
-      console.error("Error sending support ticket email:", error);
-    }
-
-    if (createdTicket) {
-      setTickets([createdTicket, ...tickets]);
-    }
-    setFormData({ subject: "", message: "", orderId: "", priority: "medium" });
-    addToast("Support ticket created successfully", "success");
-    setActiveTab("tickets");
+      } catch (error) {
+        console.error("Error sending support ticket email:", error);
+      }
+    })();
   };
 
   const handleReply = async (e: React.FormEvent) => {
@@ -465,7 +473,10 @@ const SupportTicketsPage: React.FC = () => {
                     </div>
 
                     {selectedTicket?.id === ticket.id && (
-                      <div className="mt-4 pt-4 border-t border-slate-600 space-y-4">
+                        <div
+                          className="mt-4 pt-4 border-t border-slate-600 space-y-4"
+                          onClick={(e) => e.stopPropagation()}
+                        >
                         <div className="flex justify-between items-center mb-3">
                           <h4 className="font-semibold text-white">
                             Conversation
@@ -502,6 +513,7 @@ const SupportTicketsPage: React.FC = () => {
                         {ticket.status !== "closed" && (
                           <form
                             onSubmit={handleReply}
+                            onClick={(e) => e.stopPropagation()}
                             className="space-y-2 border-t border-slate-600 pt-4"
                           >
                             <textarea
@@ -518,9 +530,10 @@ const SupportTicketsPage: React.FC = () => {
                               Send Reply
                             </button>
                           </form>
+                              disabled={isSubmitting}
                         )}
                       </div>
-                    )}
+                              {isSubmitting ? "Submitting..." : "Submit Ticket"}
                   </div>
                 ))}
               </div>
