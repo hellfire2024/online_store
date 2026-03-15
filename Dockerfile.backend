@@ -1,7 +1,8 @@
 # Backend Dockerfile for Node/Express API (TypeScript)
 
 # Build stage
-FROM cgr.dev/chainguard/node:latest-dev AS build
+FROM alpine:3.22 AS build
+RUN apk upgrade --no-cache && apk add --no-cache nodejs npm
 ENV DB_HOST=mysql
 WORKDIR /app
 COPY package*.json ./

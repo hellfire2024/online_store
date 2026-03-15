@@ -1,7 +1,8 @@
 # Production-ready Dockerfile for React frontend (Vite build + nginx)
 
 # Build stage
-FROM cgr.dev/chainguard/node:latest-dev AS build
+FROM alpine:3.22 AS build
+RUN apk upgrade --no-cache && apk add --no-cache nodejs npm
 WORKDIR /app
 
 # Copy frontend files (building from root context, so need frontend/ prefix)
@@ -33,7 +34,7 @@ RUN node verify-frontend-build.js
 RUN rm -rf ~/.npm /tmp/*
 
 # Runtime stage (nginx)
-FROM nginxinc/nginx-unprivileged:1.29.1-alpine3.21-slim
+FROM nginxinc/nginx-unprivileged:stable-alpine-slim
 USER root
 RUN apk upgrade --no-cache && rm -rf /var/cache/apk/*
 USER 101
