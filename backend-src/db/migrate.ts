@@ -460,7 +460,11 @@ export async function runMigrations(): Promise<void> {
     await alterTableAddColumn("reviews", "author", "VARCHAR(255)");
     await alterTableAddColumn("reviews", "email", "VARCHAR(255)");
     await alterTableAddColumn("reviews", "text", "TEXT");
-    await alterTableAddColumn("reviews", "status", "ENUM('pending','approved','rejected','archived') DEFAULT 'pending'");
+    await alterTableAddColumn(
+      "reviews",
+      "status",
+      "ENUM('pending','approved','rejected','archived') DEFAULT 'pending'",
+    );
     await alterTableAddColumn("reviews", "rejection_reason", "TEXT");
     await alterTableAddColumn("reviews", "approved_at", "TIMESTAMP NULL");
     await alterTableAddColumn("reviews", "images", "JSON");
