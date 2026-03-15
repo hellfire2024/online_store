@@ -229,6 +229,11 @@ const ProductDetailPage: React.FC = () => {
     currentGalleryImages[0]?.imageUrl ||
     "";
 
+  const watermarkPattern = useMemo(() => {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="220" height="140" viewBox="0 0 220 140"><g transform="rotate(-28 110 70)"><text x="10" y="45" fill="rgba(255,255,255,0.34)" font-family="Arial, sans-serif" font-size="18" font-weight="700">${watermarkText}</text><text x="110" y="115" fill="rgba(255,255,255,0.34)" font-family="Arial, sans-serif" font-size="18" font-weight="700">${watermarkText}</text></g></svg>`;
+    return `url("data:image/svg+xml;utf8,${encodeURIComponent(svg)}")`;
+  }, [watermarkText]);
+
   // Memoize the entire gallery grid to prevent re-renders
   const GalleryGrid = useMemo(() => {
     if (currentGalleryImages.length === 0) {
@@ -361,22 +366,14 @@ const ProductDetailPage: React.FC = () => {
               No preview image available
             </div>
           )}
-          <div className="absolute inset-0 pointer-events-none select-none overflow-hidden">
-            <div
-              className="absolute -inset-12 grid grid-cols-8 content-center gap-x-8 gap-y-6"
-              style={{ transform: "rotate(-30deg)", opacity: 0.38 }}
-            >
-              {Array.from({ length: 88 }, (_, idx) => (
-                <span
-                  key={idx}
-                  className="text-white font-bold text-xs whitespace-nowrap"
-                  style={{ textShadow: "0 0 3px black" }}
-                >
-                  {watermarkText}
-                </span>
-              ))}
-            </div>
-          </div>
+          <div
+            className="absolute inset-0 pointer-events-none select-none"
+            style={{
+              backgroundImage: watermarkPattern,
+              backgroundRepeat: "repeat",
+              backgroundSize: "220px 140px",
+            }}
+          />
           <div
             className="absolute inset-0 z-20"
             onContextMenu={handleImageContextMenu}

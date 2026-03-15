@@ -1,28 +1,25 @@
 # Backend Dockerfile for Node/Express API (TypeScript)
 
 # Build stage
-FROM node:lts-alpine AS build
-# Patch Alpine vulnerabilities
-RUN apk upgrade --no-cache
+FROM cgr.dev/chainguard/node:latest-dev AS build
 ENV DB_HOST=mysql
 WORKDIR /app
-COPY package.json .
+COPY package*.json ./
 COPY tsconfig.backend.json .
 COPY demoRoutes.js .
 COPY demoRoutes.d.ts .
 COPY demoRoutes.d.ts.map .
 COPY backend-src ./backend-src
 COPY verify-build.js .
-RUN npm install --frozen-lockfile || yarn install --frozen-lockfile
+RUN if [ -f package-lock.json ]; then npm ci --include=dev --no-audit --no-fund; else npm install --no-audit --no-fund; fi
 RUN npm run build
 
-FROM node:lts-alpine AS runtime
-# Patch Alpine vulnerabilities
-RUN apk upgrade --no-cache
+FROM gcr.io/distroless/nodejs22-debian12:nonroot AS runtime
 ENV DB_HOST=mysql
 WORKDIR /app
-COPY --from=build /app/dist ./dist
+COPY package*.json ./
 COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/dist ./dist
 COPY --from=build /app/package.json ./package.json
 COPY --from=build /app/verify-build.js ./verify-build.js
 COPY --from=build /app/demoRoutes.js ./demoRoutes.js
@@ -32,8 +29,6 @@ COPY --from=build /app/backend-src/wait-for-mysql.sh ./backend-src/wait-for-mysq
 COPY --from=build /app/backend-src/healthcheck-debug.sh ./backend-src/healthcheck-debug.sh
 COPY --from=build /app/backend-src/db/site_settings.json ./db/site_settings.json
 COPY --from=build /app/backend-src/healthcheck.js ./healthcheck.js
-RUN chmod +x /app/healthcheck.js
 EXPOSE 3001
-HEALTHCHECK --interval=10s --timeout=5s --start-period=60s --retries=5 \
-    CMD node /app/healthcheck.js || exit 1
-CMD ["node", "dist/server.js"]
+HEALTHCHECK --interval=10s --timeout=5s --start-period=60s --retries=5 CMD ["/nodejs/bin/node", "/app/healthcheck.js"]
+CMD ["dist/server.js"]
