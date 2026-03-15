@@ -121,6 +121,10 @@ export const generateInvoiceHTML = (
 ): string => {
   const watermarkText = invoice.storeName || "AdaptiveGIS";
   const watermarkLine = Array(6).fill(watermarkText).join("   ");
+  const watermarkRows = Array.from({ length: 8 }, (_, index) => {
+    const offset = index % 2 === 0 ? "-10%" : "0%";
+    return `<div style="transform: translateX(${offset});">${watermarkLine}</div>`;
+  }).join("");
 
   // Header with logo and company info
   const headerHtml = `
@@ -174,8 +178,8 @@ export const generateInvoiceHTML = (
                 <div style="position: relative; width: 150px; height: 150px; border: 2px solid #cbd5e1; border-radius: 4px; overflow: hidden;">
                   <img src="${item.customization.value}" style="width: 100%; height: 100%; object-fit: cover; display: block;" crossorigin="anonymous" />
                   <div style="position: absolute; inset: 0; overflow: hidden; pointer-events: none;">
-                    <div style="position: absolute; left: -35%; top: -20%; width: 170%; transform: rotate(-30deg); opacity: 0.35; color: #ffffff; font-size: 10px; font-weight: 700; text-shadow: 0 0 2px rgba(0,0,0,0.8); line-height: 1.7; white-space: nowrap;">
-                      ${watermarkLine}<br/>${watermarkLine}<br/>${watermarkLine}<br/>${watermarkLine}<br/>${watermarkLine}
+                    <div style="position: absolute; inset: -28%; width: 156%; height: 156%; display: flex; flex-direction: column; justify-content: space-evenly; transform: rotate(-30deg); opacity: 0.35; color: #ffffff; font-size: 10px; font-weight: 700; text-shadow: 0 0 2px rgba(0,0,0,0.8); line-height: 1.2; white-space: nowrap;">
+                      ${watermarkRows}
                     </div>
                   </div>
                 </div>
