@@ -115,16 +115,41 @@ const formatCurrency = (value: number) => `$${value.toFixed(2)}`;
 const formatDate = (dateString: string) =>
   new Date(dateString).toLocaleDateString();
 
+const escapeSvgText = (value: string): string =>
+  value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+
+const createWatermarkDataUri = (value: string): string => {
+  const safeValue = escapeSvgText(value);
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="240" height="180" viewBox="0 0 240 180">
+      <g transform="rotate(-30 120 90)" fill="rgba(255,255,255,0.88)" font-family="Arial, sans-serif" font-size="18" font-weight="700">
+        <text x="-20" y="50">${safeValue}</text>
+        <text x="80" y="50">${safeValue}</text>
+        <text x="180" y="50">${safeValue}</text>
+        <text x="-40" y="105">${safeValue}</text>
+        <text x="60" y="105">${safeValue}</text>
+        <text x="160" y="105">${safeValue}</text>
+        <text x="-20" y="160">${safeValue}</text>
+        <text x="80" y="160">${safeValue}</text>
+        <text x="180" y="160">${safeValue}</text>
+      </g>
+    </svg>
+  `;
+
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+};
+
 export const generateInvoiceHTML = (
   invoice: InvoiceData,
   template: InvoiceTemplate = DEFAULT_TEMPLATE,
 ): string => {
   const watermarkText = invoice.storeName || "AdaptiveGIS";
-  const watermarkLine = Array(6).fill(watermarkText).join("   ");
-  const watermarkRows = Array.from({ length: 8 }, (_, index) => {
-    const offset = index % 2 === 0 ? "-10%" : "0%";
-    return `<div style="transform: translateX(${offset});">${watermarkLine}</div>`;
-  }).join("");
+  const watermarkDataUri = createWatermarkDataUri(watermarkText);
 
   // Header with logo and company info
   const headerHtml = `
@@ -177,11 +202,7 @@ export const generateInvoiceHTML = (
                 <div style="margin-bottom: 6px;"><strong style="color: #0ea5e9;">${item.customization.type === "gallery" ? "Gallery Design" : "Uploaded Design"}:</strong> ${item.customization.fileName || "Custom Image"}${item.customImageCost ? ` (+${formatCurrency(item.customImageCost)})` : ""}</div>
                 <div style="position: relative; width: 150px; height: 150px; border: 2px solid #cbd5e1; border-radius: 4px; overflow: hidden;">
                   <img src="${item.customization.value}" style="width: 100%; height: 100%; object-fit: cover; display: block;" crossorigin="anonymous" />
-                  <div style="position: absolute; inset: 0; overflow: hidden; pointer-events: none;">
-                    <div style="position: absolute; inset: -28%; width: 156%; height: 156%; display: flex; flex-direction: column; justify-content: space-evenly; transform: rotate(-30deg); opacity: 0.35; color: #ffffff; font-size: 10px; font-weight: 700; text-shadow: 0 0 2px rgba(0,0,0,0.8); line-height: 1.2; white-space: nowrap;">
-                      ${watermarkRows}
-                    </div>
-                  </div>
+                  <div style="position: absolute; inset: 0; pointer-events: none; background-image: url('${watermarkDataUri}'); background-repeat: repeat; background-size: 170px 128px; opacity: 0.42;"></div>
                 </div>
               </div>`
                   : ""
