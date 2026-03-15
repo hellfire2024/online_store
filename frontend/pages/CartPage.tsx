@@ -104,11 +104,40 @@ const CartItemRow: React.FC<{ item: CartItem }> = ({ item }) => {
   return (
     <div className="flex flex-col sm:flex-row items-start py-5 border-b border-slate-700 gap-4">
       <div className="shrink-0 w-full sm:w-auto flex sm:block justify-center">
-        <img
-          src={item.product.imageUrl}
-          alt={item.product.name}
-          className="w-32 h-32 sm:w-24 sm:h-24 object-cover rounded-md"
-        />
+        <div className="relative w-32 h-32 sm:w-24 sm:h-24 rounded-md overflow-hidden">
+          <img
+            src={item.product.imageUrl}
+            alt={item.product.name}
+            className="w-full h-full object-cover select-none pointer-events-none"
+            onContextMenu={handleImageContextMenu}
+            onDragStart={handleImageDragStart}
+            draggable={false}
+          />
+          <div className="absolute inset-0 pointer-events-none select-none overflow-hidden">
+            <div
+              className="absolute -inset-4 flex flex-col gap-3"
+              style={{ transform: "rotate(-30deg)", opacity: 0.35 }}
+            >
+              {Array.from({ length: 6 }, (_, rowIdx) => (
+                <div
+                  key={rowIdx}
+                  className="flex gap-4 whitespace-nowrap"
+                  style={{ marginLeft: rowIdx % 2 === 0 ? "0" : "-30px" }}
+                >
+                  {Array.from({ length: 5 }, (_, colIdx) => (
+                    <span
+                      key={colIdx}
+                      className="text-white font-bold"
+                      style={{ textShadow: "0 0 2px black", fontSize: "8px" }}
+                    >
+                      {watermarkText}
+                    </span>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
       <div className="grow w-full sm:w-auto">
         <h3 className="font-semibold text-white text-base sm:text-lg">
