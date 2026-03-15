@@ -138,13 +138,12 @@ const CheckoutPage: React.FC = () => {
     /^\d{5}(-\d{4})?$/.test(value.trim());
 
   const formatCardNumber = (value: string): string => {
-    const digits = value.replace(/\D/g, "").slice(0, 19);
-    return digits.replace(/(.{4})/g, "$1 ").trim();
+    return value.replace(/\D/g, "").slice(0, 16);
   };
 
   const isValidCardNumber = (value: string): boolean => {
     const digits = value.replace(/\D/g, "");
-    if (digits.length < 13 || digits.length > 19) return false;
+    if (digits.length !== 16) return false;
 
     let sum = 0;
     let shouldDouble = false;
@@ -1039,6 +1038,7 @@ const CheckoutPage: React.FC = () => {
                   }
                   inputMode="numeric"
                   autoComplete="cc-number"
+                  maxLength={16}
                   className={inputClasses}
                   required
                 />
