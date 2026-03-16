@@ -6,12 +6,6 @@ import React, {
   ReactNode,
 } from "react";
 import { apiClient } from "../services/apiClient";
-import {
-  fetchReviews as fetchMockReviews,
-  addReview as addMockReview,
-  updateReview as updateMockReview,
-  deleteReview as deleteMockReview,
-} from "../services/mockApi";
 
 interface ReviewsContextType {
   reviews: Review[];
@@ -29,14 +23,6 @@ export const ReviewsProvider: React.FC<{ children: ReactNode }> = ({
   const [reviews, setReviews] = useState<Review[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const getErrorStatus = (error: unknown): number | undefined => {
-    const err = error as any;
-    return err?.status ?? err?.response?.status;
-  };
-
-  const isLikelyMockReviewId = (reviewId: string): boolean =>
-    /^r\d+$/i.test(reviewId);
-
   useEffect(() => {
     const loadData = async () => {
       setIsLoading(true);
@@ -44,16 +30,8 @@ export const ReviewsProvider: React.FC<{ children: ReactNode }> = ({
         const reviewsData = await apiClient.reviews.getAll();
         setReviews(Array.isArray(reviewsData) ? reviewsData : []);
       } catch (error) {
-        console.error(
-          "Failed to load reviews from API, using mock data",
-          error,
-        );
-        try {
-          const mockReviewsData = await fetchMockReviews();
-          setReviews(mockReviewsData);
-        } catch (mockError) {
-          console.error("Failed to load mock reviews", mockError);
-        }
+        console.error("Failed to load reviews from API", error);
+        setReviews([]);
       } finally {
         setIsLoading(false);
       }
@@ -95,19 +73,6 @@ export const ReviewsProvider: React.FC<{ children: ReactNode }> = ({
         prev.map((r) => (r.id === updatedReview.id ? updatedReview : r)),
       );
     } catch (error) {
-      const status = getErrorStatus(error);
-      if (status === 404 && isLikelyMockReviewId(review.id)) {
-        console.warn(
-          "[ReviewsContext] API review not found, applying mock fallback update:",
-          review.id,
-        );
-        const updatedReview = await updateMockReview(review);
-        setReviews((prev) =>
-          prev.map((r) => (r.id === updatedReview.id ? updatedReview : r)),
-        );
-        return;
-      }
-
       const errorMessage =
         error instanceof Error ? error.message : String(error);
       console.error(
@@ -125,17 +90,6 @@ export const ReviewsProvider: React.FC<{ children: ReactNode }> = ({
       console.log("[ReviewsContext] Review deleted successfully:", reviewId);
       setReviews((prev) => prev.filter((r) => r.id !== reviewId));
     } catch (error) {
-      const status = getErrorStatus(error);
-      if (status === 404 && isLikelyMockReviewId(reviewId)) {
-        console.warn(
-          "[ReviewsContext] API review not found, applying mock fallback delete:",
-          reviewId,
-        );
-        await deleteMockReview(reviewId);
-        setReviews((prev) => prev.filter((r) => r.id !== reviewId));
-        return;
-      }
-
       const errorMessage =
         error instanceof Error ? error.message : String(error);
       console.error(
