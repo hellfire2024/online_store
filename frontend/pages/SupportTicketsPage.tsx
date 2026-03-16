@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useCustomerAuth } from "../context/CustomerAuthContext";
 import { useSiteSettings } from "../context/SiteSettingsContext";
 import { useToast } from "../hooks/useToast";
 import apiClient from "../services/apiClient";
+import Pagination from "../components/Pagination";
 
 interface SupportTicket {
   id: string;
@@ -44,6 +45,39 @@ const SupportTicketsPage: React.FC = () => {
   const [replyMessage, setReplyMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [ticketSearch, setTicketSearch] = useState("");
+  const [ticketCurrentPage, setTicketCurrentPage] = useState(1);
+  const [ticketItemsPerPage, setTicketItemsPerPage] = useState(25);
+
+  const filteredTickets = useMemo(() => {
+    const query = ticketSearch.trim().toLowerCase();
+    if (!query) return tickets;
+
+    return tickets.filter((ticket) => {
+      const replyText = ticket.replies.map((r) => r.message).join(" ");
+      const haystack = [
+        ticket.ticketNumber,
+        ticket.subject,
+        ticket.message,
+        ticket.orderId || "",
+        ticket.status,
+        ticket.priority,
+        replyText,
+      ]
+        .join(" ")
+        .toLowerCase();
+
+      return haystack.includes(query);
+    });
+  }, [tickets, ticketSearch]);
+
+  const paginatedTickets = useMemo(() => {
+    if (ticketItemsPerPage === -1) return filteredTickets;
+
+    const start = (ticketCurrentPage - 1) * ticketItemsPerPage;
+    const end = start + ticketItemsPerPage;
+    return filteredTickets.slice(start, end);
+  }, [filteredTickets, ticketCurrentPage, ticketItemsPerPage]);
 
   const ensureCustomerToken = (): boolean => {
     try {
@@ -120,6 +154,19 @@ const SupportTicketsPage: React.FC = () => {
 
     loadTickets();
   }, [isAuthenticated, customer?.id, addToast]);
+
+  useEffect(() => {
+    setTicketCurrentPage(1);
+  }, [ticketSearch]);
+
+  useEffect(() => {
+    if (
+      selectedTicket &&
+      !filteredTickets.some((ticket) => ticket.id === selectedTicket.id)
+    ) {
+      setSelectedTicket(null);
+    }
+  }, [filteredTickets, selectedTicket]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -428,6 +475,27 @@ const SupportTicketsPage: React.FC = () => {
         </form>
       ) : (
         <div className="space-y-4">
+          <div className="bg-slate-800 p-4 rounded-lg border border-slate-700">
+            <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3 items-end">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Search Tickets
+                </label>
+                <input
+                  type="text"
+                  value={ticketSearch}
+                  onChange={(e) => setTicketSearch(e.target.value)}
+                  placeholder="Search by ticket number, subject, message, status, priority..."
+                  className="w-full px-4 py-2 rounded bg-slate-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                />
+              </div>
+              <div className="text-sm text-gray-400 md:text-right">
+                Showing {paginatedTickets.length} of {filteredTickets.length}{" "}
+                tickets
+              </div>
+            </div>
+          </div>
+
           {isLoading ? (
             <div className="text-center py-12 bg-slate-800 rounded-lg">
               <p className="text-gray-400">Loading tickets...</p>
@@ -436,107 +504,121 @@ const SupportTicketsPage: React.FC = () => {
             <div className="text-center py-12 bg-slate-800 rounded-lg">
               <p className="text-gray-400">No support tickets yet</p>
             </div>
-          ) : (
-            <div className="grid gap-4">
-              {tickets.map((ticket) => (
-                <div
-                  key={ticket.id}
-                  className="bg-slate-800 p-4 rounded-lg cursor-pointer hover:bg-slate-700/50 transition"
-                  onClick={() =>
-                    setSelectedTicket(
-                      selectedTicket?.id === ticket.id ? null : ticket,
-                    )
-                  }
-                >
-                  <div className="flex justify-between items-start mb-2">
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-white">
-                        {ticket.ticketNumber}
-                      </h3>
-                      <p className="text-gray-300">{ticket.subject}</p>
-                      <p className="text-gray-400 text-sm mt-1">
-                        {new Date(ticket.createdAt).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <div className="flex gap-2">
-                      <span
-                        className={`px-3 py-1 rounded text-xs font-semibold ${getStatusColor(ticket.status)}`}
-                      >
-                        {ticket.status.replace("_", " ")}
-                      </span>
-                      <span
-                        className={`px-3 py-1 rounded text-xs font-semibold ${getPriorityColor(ticket.priority)}`}
-                      >
-                        {ticket.priority}
-                      </span>
-                    </div>
-                  </div>
-
-                  {selectedTicket?.id === ticket.id && (
-                    <div
-                      className="mt-4 pt-4 border-t border-slate-600 space-y-4"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <div className="flex justify-between items-center mb-3">
-                        <h4 className="font-semibold text-white">
-                          Conversation
-                        </h4>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedTicket(null);
-                          }}
-                          className="text-sm px-3 py-1 text-gray-400 hover:text-white hover:bg-slate-700 rounded transition-colors"
-                        >
-                          Back to List
-                        </button>
-                      </div>
-
-                      <div className="space-y-3 max-h-96 overflow-y-auto">
-                        {ticket.replies.map((reply, idx) => (
-                          <div
-                            key={idx}
-                            className={`p-3 rounded ${reply.author === "support" ? "bg-sky-900/30" : "bg-slate-700/50"}`}
-                          >
-                            <p className="text-xs text-gray-400 mb-1">
-                              {reply.author === "support"
-                                ? "Support Team"
-                                : "You"}{" "}
-                              • {new Date(reply.timestamp).toLocaleString()}
-                            </p>
-                            <p className="text-white text-sm">
-                              {reply.message}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-
-                      {ticket.status !== "closed" && (
-                        <form
-                          onSubmit={handleReply}
-                          onClick={(e) => e.stopPropagation()}
-                          className="space-y-2 border-t border-slate-600 pt-4"
-                        >
-                          <textarea
-                            value={replyMessage}
-                            onChange={(e) => setReplyMessage(e.target.value)}
-                            placeholder="Add a reply..."
-                            rows={3}
-                            className="w-full px-4 py-2 rounded bg-slate-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
-                          />
-                          <button
-                            type="submit"
-                            className="px-4 py-2 bg-sky-600 text-white rounded hover:bg-sky-700 transition-colors text-sm"
-                          >
-                            Send Reply
-                          </button>
-                        </form>
-                      )}
-                    </div>
-                  )}
-                </div>
-              ))}
+          ) : filteredTickets.length === 0 ? (
+            <div className="text-center py-12 bg-slate-800 rounded-lg">
+              <p className="text-gray-400">No tickets match your search</p>
             </div>
+          ) : (
+            <>
+              <div className="grid gap-4">
+                {paginatedTickets.map((ticket) => (
+                  <div
+                    key={ticket.id}
+                    className="bg-slate-800 p-4 rounded-lg cursor-pointer hover:bg-slate-700/50 transition"
+                    onClick={() =>
+                      setSelectedTicket(
+                        selectedTicket?.id === ticket.id ? null : ticket,
+                      )
+                    }
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="flex-1">
+                        <h3 className="text-lg font-semibold text-white">
+                          {ticket.ticketNumber}
+                        </h3>
+                        <p className="text-gray-300">{ticket.subject}</p>
+                        <p className="text-gray-400 text-sm mt-1">
+                          {new Date(ticket.createdAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <span
+                          className={`px-3 py-1 rounded text-xs font-semibold ${getStatusColor(ticket.status)}`}
+                        >
+                          {ticket.status.replace("_", " ")}
+                        </span>
+                        <span
+                          className={`px-3 py-1 rounded text-xs font-semibold ${getPriorityColor(ticket.priority)}`}
+                        >
+                          {ticket.priority}
+                        </span>
+                      </div>
+                    </div>
+
+                    {selectedTicket?.id === ticket.id && (
+                      <div
+                        className="mt-4 pt-4 border-t border-slate-600 space-y-4"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="flex justify-between items-center mb-3">
+                          <h4 className="font-semibold text-white">
+                            Conversation
+                          </h4>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedTicket(null);
+                            }}
+                            className="text-sm px-3 py-1 text-gray-400 hover:text-white hover:bg-slate-700 rounded transition-colors"
+                          >
+                            Back to List
+                          </button>
+                        </div>
+
+                        <div className="space-y-3 max-h-96 overflow-y-auto">
+                          {ticket.replies.map((reply, idx) => (
+                            <div
+                              key={idx}
+                              className={`p-3 rounded ${reply.author === "support" ? "bg-sky-900/30" : "bg-slate-700/50"}`}
+                            >
+                              <p className="text-xs text-gray-400 mb-1">
+                                {reply.author === "support"
+                                  ? "Support Team"
+                                  : "You"}{" "}
+                                • {new Date(reply.timestamp).toLocaleString()}
+                              </p>
+                              <p className="text-white text-sm">
+                                {reply.message}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+
+                        {ticket.status !== "closed" && (
+                          <form
+                            onSubmit={handleReply}
+                            onClick={(e) => e.stopPropagation()}
+                            className="space-y-2 border-t border-slate-600 pt-4"
+                          >
+                            <textarea
+                              value={replyMessage}
+                              onChange={(e) => setReplyMessage(e.target.value)}
+                              placeholder="Add a reply..."
+                              rows={3}
+                              className="w-full px-4 py-2 rounded bg-slate-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                            />
+                            <button
+                              type="submit"
+                              className="px-4 py-2 bg-sky-600 text-white rounded hover:bg-sky-700 transition-colors text-sm"
+                            >
+                              Send Reply
+                            </button>
+                          </form>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <Pagination
+                currentPage={ticketCurrentPage}
+                totalItems={filteredTickets.length}
+                itemsPerPage={ticketItemsPerPage}
+                onPageChange={setTicketCurrentPage}
+                onItemsPerPageChange={setTicketItemsPerPage}
+              />
+            </>
           )}
         </div>
       )}
