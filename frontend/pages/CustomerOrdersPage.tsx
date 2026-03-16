@@ -12,6 +12,31 @@ import {
   InvoiceData,
   DEFAULT_TEMPLATE,
 } from "../services/pdfInvoiceGenerator";
+import { apiClient } from "../services/apiClient";
+
+interface CustomerQuoteLineItem {
+  name: string;
+  description?: string;
+  quantity: number;
+  unitPrice: number;
+  productId?: string;
+  imageUrl?: string;
+}
+
+interface CustomerQuote {
+  id: string;
+  quoteNumber: string;
+  status: "draft" | "sent" | "accepted" | "expired" | "cancelled";
+  notes?: string;
+  lineItems: CustomerQuoteLineItem[];
+  subtotal: number;
+  taxAmount: number;
+  shippingCost: number;
+  total: number;
+  createdAt: string;
+  sentAt?: string;
+  acceptedAt?: string;
+}
 
 // Watermarked Image Component for Order Display
 const WatermarkedOrderImage: React.FC<{ src: string }> = ({ src }) => {
@@ -82,6 +107,8 @@ const CustomerOrdersPage: React.FC = () => {
   const [filterStartDate, setFilterStartDate] = useState<string>("");
   const [filterEndDate, setFilterEndDate] = useState<string>("");
   const [sortBy, setSortBy] = useState<string>("date-desc");
+  const [quotes, setQuotes] = useState<CustomerQuote[]>([]);
+  const [loadingQuoteId, setLoadingQuoteId] = useState<string | null>(null);
   const orderWatermarkText =
     `${siteSettings?.logoText || "AdaptiveGIS"} ${siteSettings?.logoTextAccent || "Store"}`.trim();
 
@@ -96,6 +123,25 @@ const CustomerOrdersPage: React.FC = () => {
     }
     fetchOrders();
   }, [isAuthenticated, isLoading, navigate, fetchOrders]);
+
+  useEffect(() => {
+    const loadQuotes = async () => {
+      if (!customer?.id || !isAuthenticated) {
+        setQuotes([]);
+        return;
+      }
+
+      try {
+        const quoteData = await apiClient.quotes.getForCustomer(customer.id);
+        setQuotes(Array.isArray(quoteData) ? quoteData : []);
+      } catch (error) {
+        console.error("Failed to fetch customer quotes:", error);
+        setQuotes([]);
+      }
+    };
+
+    void loadQuotes();
+  }, [customer?.id, isAuthenticated]);
 
   if (!customer) {
     return (
@@ -231,6 +277,75 @@ const CustomerOrdersPage: React.FC = () => {
     } catch (error) {
       console.error("Error during reorder:", error);
       addToast("Failed to reorder items", "error");
+    }
+  };
+
+  const handleAddQuoteToCart = async (quote: CustomerQuote) => {
+    if (loadingQuoteId) return;
+
+    if (!quote.lineItems || quote.lineItems.length === 0) {
+      addToast("This quote has no line items", "error");
+      return;
+    }
+
+    try {
+      setLoadingQuoteId(quote.id);
+      let added = 0;
+
+      quote.lineItems.forEach((item, idx) => {
+        const quantity = Number(item.quantity || 0);
+        const unitPrice = Number(item.unitPrice || 0);
+        if (!item.name || quantity <= 0 || unitPrice < 0) {
+          return;
+        }
+
+        const quoteProduct = {
+          id: item.productId || `quote-${quote.id}-${idx}`,
+          name: item.name,
+          price: unitPrice,
+          description:
+            item.description || `Custom quote item from ${quote.quoteNumber}`,
+          imageUrl:
+            item.imageUrl || "https://picsum.photos/seed/quote-item/300/300",
+          inventory: 9999,
+          customizable: false,
+        };
+
+        addToCart({
+          product: quoteProduct,
+          quantity,
+        });
+        added += 1;
+      });
+
+      if (added === 0) {
+        addToast("No valid quote items to add", "error");
+        return;
+      }
+
+      await apiClient.quotes.accept(quote.id);
+      setQuotes((prev) =>
+        prev.map((q) =>
+          q.id === quote.id
+            ? {
+                ...q,
+                status: "accepted",
+                acceptedAt: new Date().toISOString(),
+              }
+            : q,
+        ),
+      );
+
+      addToast(`Quote ${quote.quoteNumber} added to cart`, "success");
+      navigate("/cart");
+    } catch (error) {
+      console.error("Failed to add quote to cart:", error);
+      addToast(
+        `Failed to add quote to cart: ${error instanceof Error ? error.message : "Unknown error"}`,
+        "error",
+      );
+    } finally {
+      setLoadingQuoteId(null);
     }
   };
 
@@ -443,6 +558,80 @@ const CustomerOrdersPage: React.FC = () => {
             </div>
           );
         })()}
+
+      {/* Custom Quotes */}
+      {quotes.length > 0 && (
+        <div className="bg-slate-800 p-4 rounded-lg border border-slate-700 space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold text-white">Custom Quotes</h2>
+            <span className="text-sm text-gray-400">
+              {quotes.length} available
+            </span>
+          </div>
+
+          <div className="space-y-2">
+            {quotes.map((quote) => (
+              <div
+                key={quote.id}
+                className="bg-slate-700/50 border border-slate-600 rounded p-3"
+              >
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                  <div>
+                    <p className="text-white font-semibold">
+                      {quote.quoteNumber}
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      {new Date(quote.createdAt).toLocaleDateString()} •{" "}
+                      {quote.lineItems.length} item
+                      {quote.lineItems.length !== 1 ? "s" : ""}
+                    </p>
+                    {quote.notes && (
+                      <p className="text-sm text-gray-300 mt-1">
+                        {quote.notes}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="text-right">
+                    <p className="text-white font-bold text-lg">
+                      ${Number(quote.total).toFixed(2)}
+                    </p>
+                    <span
+                      className={`inline-block px-2 py-0.5 rounded text-xs capitalize ${
+                        quote.status === "accepted"
+                          ? "bg-green-900 text-green-200"
+                          : quote.status === "sent"
+                            ? "bg-blue-900 text-blue-200"
+                            : "bg-slate-800 text-gray-300"
+                      }`}
+                    >
+                      {quote.status}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="mt-3 flex justify-end">
+                  <button
+                    onClick={() => handleAddQuoteToCart(quote)}
+                    disabled={
+                      loadingQuoteId === quote.id ||
+                      quote.status === "cancelled" ||
+                      quote.status === "expired"
+                    }
+                    className="px-4 py-2 bg-sky-600 text-white rounded hover:bg-sky-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {loadingQuoteId === quote.id
+                      ? "Adding..."
+                      : quote.status === "accepted"
+                        ? "Add to Cart Again"
+                        : "Add Quote to Cart"}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Filters and Sort */}
       {customer && customer.orders.length > 0 && (

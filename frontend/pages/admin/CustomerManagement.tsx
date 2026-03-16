@@ -40,6 +40,33 @@ interface Customer {
   }>;
 }
 
+interface QuoteLineItemForm {
+  name: string;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+}
+
+interface CustomQuote {
+  id: string;
+  quoteNumber: string;
+  status: "draft" | "sent" | "accepted" | "expired" | "cancelled";
+  notes?: string;
+  lineItems: Array<{
+    name: string;
+    description?: string;
+    quantity: number;
+    unitPrice: number;
+  }>;
+  subtotal: number;
+  taxAmount: number;
+  shippingCost: number;
+  total: number;
+  createdAt: string;
+  sentAt?: string;
+  acceptedAt?: string;
+}
+
 const CustomerManagement: React.FC = () => {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [filteredCustomers, setFilteredCustomers] = useState<Customer[]>([]);
@@ -66,6 +93,17 @@ const CustomerManagement: React.FC = () => {
   const [selectedOrderDetail, setSelectedOrderDetail] = useState<any | null>(
     null,
   );
+  const [customerQuotes, setCustomerQuotes] = useState<CustomQuote[]>([]);
+  const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
+  const [isSendingQuote, setIsSendingQuote] = useState(false);
+  const [quoteForm, setQuoteForm] = useState({
+    notes: "",
+    taxAmount: 0,
+    shippingCost: 0,
+    lineItems: [
+      { name: "", description: "", quantity: 1, unitPrice: 0 },
+    ] as QuoteLineItemForm[],
+  });
   const [orderSearchTerm, setOrderSearchTerm] = useState("");
   const [orderSortBy, setOrderSortBy] = useState<
     "date-desc" | "date-asc" | "amount-desc" | "amount-asc"
@@ -331,6 +369,13 @@ const CustomerManagement: React.FC = () => {
       // Fetch full customer details including orders
       const fullCustomer = await apiClient.customers.getById(customer.id);
       setSelectedCustomer(fullCustomer);
+      try {
+        const quotes = await apiClient.quotes.getForAdminCustomer(customer.id);
+        setCustomerQuotes(Array.isArray(quotes) ? quotes : []);
+      } catch (quoteError) {
+        console.error("Failed to load customer quotes:", quoteError);
+        setCustomerQuotes([]);
+      }
       setOrderSearchTerm("");
       setOrderSortBy("date-desc");
       setOrderCurrentPage(1);
@@ -339,6 +384,110 @@ const CustomerManagement: React.FC = () => {
       addToast("Failed to load customer details", "error");
       // Fall back to the customer data we already have
       setSelectedCustomer(customer);
+      try {
+        const quotes = await apiClient.quotes.getForAdminCustomer(customer.id);
+        setCustomerQuotes(Array.isArray(quotes) ? quotes : []);
+      } catch {
+        setCustomerQuotes([]);
+      }
+    }
+  };
+
+  const openQuoteModal = () => {
+    if (!selectedCustomer) return;
+    setQuoteForm({
+      notes: "",
+      taxAmount: 0,
+      shippingCost: 0,
+      lineItems: [{ name: "", description: "", quantity: 1, unitPrice: 0 }],
+    });
+    setIsQuoteModalOpen(true);
+  };
+
+  const closeQuoteModal = () => {
+    setIsQuoteModalOpen(false);
+    setIsSendingQuote(false);
+  };
+
+  const updateQuoteLineItem = (
+    index: number,
+    field: keyof QuoteLineItemForm,
+    value: string | number,
+  ) => {
+    setQuoteForm((prev) => ({
+      ...prev,
+      lineItems: prev.lineItems.map((item, idx) =>
+        idx === index
+          ? {
+              ...item,
+              [field]:
+                field === "quantity" || field === "unitPrice"
+                  ? Number(value)
+                  : String(value),
+            }
+          : item,
+      ),
+    }));
+  };
+
+  const addQuoteLineItem = () => {
+    setQuoteForm((prev) => ({
+      ...prev,
+      lineItems: [
+        ...prev.lineItems,
+        { name: "", description: "", quantity: 1, unitPrice: 0 },
+      ],
+    }));
+  };
+
+  const removeQuoteLineItem = (index: number) => {
+    setQuoteForm((prev) => ({
+      ...prev,
+      lineItems:
+        prev.lineItems.length > 1
+          ? prev.lineItems.filter((_, idx) => idx !== index)
+          : prev.lineItems,
+    }));
+  };
+
+  const sendQuoteToCustomer = async () => {
+    if (!selectedCustomer || isSendingQuote) return;
+
+    const validLineItems = quoteForm.lineItems
+      .map((item) => ({
+        name: item.name.trim(),
+        description: item.description.trim() || undefined,
+        quantity: Number(item.quantity),
+        unitPrice: Number(item.unitPrice),
+      }))
+      .filter((item) => item.name && item.quantity > 0 && item.unitPrice >= 0);
+
+    if (validLineItems.length === 0) {
+      addToast("Please add at least one valid quote line item", "error");
+      return;
+    }
+
+    try {
+      setIsSendingQuote(true);
+      const created = await apiClient.quotes.createForCustomer(
+        selectedCustomer.id,
+        {
+          notes: quoteForm.notes.trim() || undefined,
+          taxAmount: Number(quoteForm.taxAmount) || 0,
+          shippingCost: Number(quoteForm.shippingCost) || 0,
+          lineItems: validLineItems,
+        },
+      );
+
+      setCustomerQuotes((prev) => [created, ...prev]);
+      addToast("Custom quote sent to customer", "success");
+      closeQuoteModal();
+    } catch (error) {
+      addToast(
+        `Failed to send quote: ${error instanceof Error ? error.message : "Unknown error"}`,
+        "error",
+      );
+      setIsSendingQuote(false);
     }
   };
 
@@ -1100,7 +1249,70 @@ const CustomerManagement: React.FC = () => {
                 </>
               )}
             </div>
+            <div className="bg-slate-700 p-4 rounded-lg mb-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-white">
+                  Custom Quotes
+                </h3>
+                <button
+                  onClick={openQuoteModal}
+                  className="px-3 py-1 bg-sky-600 text-white text-sm rounded hover:bg-sky-700 transition-colors"
+                >
+                  + Create Quote
+                </button>
+              </div>
+
+              {customerQuotes.length === 0 ? (
+                <div className="text-center py-8 border-2 border-dashed border-slate-600 rounded">
+                  <p className="text-gray-400">No quotes sent yet</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {customerQuotes.map((quote) => (
+                    <div
+                      key={quote.id}
+                      className="bg-slate-800 p-3 rounded border border-slate-600"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-white font-semibold">
+                            {quote.quoteNumber}
+                          </p>
+                          <p className="text-xs text-gray-400">
+                            {new Date(quote.createdAt).toLocaleString()} •{" "}
+                            {quote.lineItems.length} item
+                            {quote.lineItems.length !== 1 ? "s" : ""}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-white font-bold">
+                            ${Number(quote.total).toFixed(2)}
+                          </p>
+                          <span
+                            className={`inline-block px-2 py-0.5 rounded text-xs capitalize ${
+                              quote.status === "accepted"
+                                ? "bg-green-900 text-green-200"
+                                : quote.status === "sent"
+                                  ? "bg-blue-900 text-blue-200"
+                                  : "bg-slate-700 text-gray-300"
+                            }`}
+                          >
+                            {quote.status}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
             <div className="flex gap-3">
+              <button
+                onClick={openQuoteModal}
+                className="px-4 py-2 bg-sky-700 text-sky-100 hover:bg-sky-600 rounded-lg transition-colors"
+              >
+                Create Quote
+              </button>
               <button
                 onClick={() => handleSendPasswordReset(selectedCustomer)}
                 className="px-4 py-2 bg-purple-900 text-purple-200 hover:bg-purple-800 rounded-lg transition-colors"
@@ -1121,6 +1333,173 @@ const CustomerManagement: React.FC = () => {
                 className="flex-1 px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-500 transition-colors"
               >
                 Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isQuoteModalOpen && selectedCustomer && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-60 p-4">
+          <div className="bg-slate-800 p-6 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-slate-700">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-white">
+                Create Custom Quote for {selectedCustomer.firstName}{" "}
+                {selectedCustomer.lastName}
+              </h2>
+              <button
+                onClick={closeQuoteModal}
+                className="text-gray-400 hover:text-white text-2xl"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="space-y-3 mb-4">
+              {quoteForm.lineItems.map((item, index) => (
+                <div
+                  key={index}
+                  className="grid grid-cols-1 md:grid-cols-12 gap-2 bg-slate-700 p-3 rounded"
+                >
+                  <input
+                    type="text"
+                    value={item.name}
+                    onChange={(e) =>
+                      updateQuoteLineItem(index, "name", e.target.value)
+                    }
+                    placeholder="Item name"
+                    className="md:col-span-4 px-3 py-2 bg-slate-800 text-white rounded border border-slate-600"
+                  />
+                  <input
+                    type="text"
+                    value={item.description}
+                    onChange={(e) =>
+                      updateQuoteLineItem(index, "description", e.target.value)
+                    }
+                    placeholder="Description (optional)"
+                    className="md:col-span-4 px-3 py-2 bg-slate-800 text-white rounded border border-slate-600"
+                  />
+                  <input
+                    type="number"
+                    min={1}
+                    value={item.quantity}
+                    onChange={(e) =>
+                      updateQuoteLineItem(index, "quantity", e.target.value)
+                    }
+                    placeholder="Qty"
+                    className="md:col-span-1 px-3 py-2 bg-slate-800 text-white rounded border border-slate-600"
+                  />
+                  <input
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    value={item.unitPrice}
+                    onChange={(e) =>
+                      updateQuoteLineItem(index, "unitPrice", e.target.value)
+                    }
+                    placeholder="Price"
+                    className="md:col-span-2 px-3 py-2 bg-slate-800 text-white rounded border border-slate-600"
+                  />
+                  <button
+                    onClick={() => removeQuoteLineItem(index)}
+                    disabled={quoteForm.lineItems.length === 1}
+                    className="md:col-span-1 px-3 py-2 bg-red-700 text-white rounded hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))}
+
+              <button
+                onClick={addQuoteLineItem}
+                className="px-3 py-2 bg-slate-700 text-white rounded hover:bg-slate-600"
+              >
+                + Add Line Item
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+              <div>
+                <label className="block text-sm text-gray-300 mb-1">Tax</label>
+                <input
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={quoteForm.taxAmount}
+                  onChange={(e) =>
+                    setQuoteForm((prev) => ({
+                      ...prev,
+                      taxAmount: Number(e.target.value),
+                    }))
+                  }
+                  className="w-full px-3 py-2 bg-slate-700 text-white rounded border border-slate-600"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-300 mb-1">
+                  Shipping
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={quoteForm.shippingCost}
+                  onChange={(e) =>
+                    setQuoteForm((prev) => ({
+                      ...prev,
+                      shippingCost: Number(e.target.value),
+                    }))
+                  }
+                  className="w-full px-3 py-2 bg-slate-700 text-white rounded border border-slate-600"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-300 mb-1">
+                  Quote Total
+                </label>
+                <div className="px-3 py-2 bg-slate-900 text-white rounded border border-slate-600 font-semibold">
+                  $
+                  {(
+                    quoteForm.lineItems.reduce(
+                      (sum, line) =>
+                        sum +
+                        Number(line.quantity || 0) *
+                          Number(line.unitPrice || 0),
+                      0,
+                    ) +
+                    Number(quoteForm.taxAmount || 0) +
+                    Number(quoteForm.shippingCost || 0)
+                  ).toFixed(2)}
+                </div>
+              </div>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm text-gray-300 mb-1">Notes</label>
+              <textarea
+                value={quoteForm.notes}
+                onChange={(e) =>
+                  setQuoteForm((prev) => ({ ...prev, notes: e.target.value }))
+                }
+                rows={3}
+                placeholder="Optional message for the customer"
+                className="w-full px-3 py-2 bg-slate-700 text-white rounded border border-slate-600"
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={closeQuoteModal}
+                className="flex-1 px-4 py-2 bg-slate-700 text-white rounded hover:bg-slate-600"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={sendQuoteToCustomer}
+                disabled={isSendingQuote}
+                className="flex-1 px-4 py-2 bg-sky-600 text-white rounded hover:bg-sky-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSendingQuote ? "Sending..." : "Send Quote to Customer"}
               </button>
             </div>
           </div>

@@ -123,6 +123,28 @@ export async function runMigrations(): Promise<void> {
       FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE SET NULL,
       INDEX idx_customer (customer_id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
+    `CREATE TABLE IF NOT EXISTS custom_quotes (
+      id VARCHAR(36) PRIMARY KEY,
+      customer_id VARCHAR(36) NOT NULL,
+      customer_email VARCHAR(255),
+      customer_name VARCHAR(255),
+      quote_number VARCHAR(50) NOT NULL UNIQUE,
+      status ENUM('draft','sent','accepted','expired','cancelled') DEFAULT 'sent',
+      notes TEXT,
+      line_items LONGTEXT NOT NULL,
+      subtotal DECIMAL(10,2) NOT NULL DEFAULT 0,
+      tax_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
+      shipping_cost DECIMAL(10,2) NOT NULL DEFAULT 0,
+      total DECIMAL(10,2) NOT NULL DEFAULT 0,
+      created_by VARCHAR(36),
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      sent_at TIMESTAMP NULL,
+      accepted_at TIMESTAMP NULL,
+      FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE,
+      INDEX idx_quote_customer (customer_id),
+      INDEX idx_quote_status (status),
+      INDEX idx_quote_created (created_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
     `CREATE TABLE IF NOT EXISTS site_settings (
       id INT PRIMARY KEY DEFAULT 1,
       settings JSON NOT NULL,

@@ -557,6 +557,37 @@ class ApiClient {
       }),
   };
 
+  quotes = {
+    getForAdminCustomer: (customerId: string) =>
+      this.request<any[]>(`/quotes/admin/customer/${customerId}`),
+    createForCustomer: (
+      customerId: string,
+      data: {
+        notes?: string;
+        lineItems: Array<{
+          name: string;
+          description?: string;
+          quantity: number;
+          unitPrice: number;
+          productId?: string;
+          imageUrl?: string;
+        }>;
+        taxAmount?: number;
+        shippingCost?: number;
+      },
+    ) =>
+      this.request<any>(`/quotes/customer/${customerId}`, {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+    getForCustomer: (customerId: string) =>
+      this.request<any[]>(`/quotes/customer/${customerId}`),
+    accept: (quoteId: string) =>
+      this.request<any>(`/quotes/${quoteId}/accept`, {
+        method: "POST",
+      }),
+  };
+
   // Tickets with custom methods
   tickets = {
     getAll: () => this.request<any[]>("/tickets"),

@@ -130,6 +130,7 @@ import providersTaxRoutes from "./routes/providers-tax.js";
 import authRoutes from "./routes/auth.js";
 import ticketsApiRoutes from "./routes/ticketsApi.js";
 import customerAddressesRoutes from "./routes/customerAddresses.js";
+import quoteRoutes from "./routes/quotes.js";
 import shippingRoutes from "./routes/shippingApi.js";
 import uploadRoutes from "./routes/upload.js";
 import contactRoutes from "./routes/contact.js";
@@ -260,6 +261,7 @@ if (DEMO_MODE) {
   app.use("/api/tax/providers", providersTaxRoutes);
   app.use("/api/tickets", ticketsApiRoutes);
   app.use("/api/customer-addresses", customerAddressesRoutes);
+  app.use("/api/quotes", quoteRoutes);
   app.use("/api/smtp-test", smtpTestRoutes);
   app.use("/api/shipping", shippingRoutes);
   app.use("/api/contact", contactRoutes);
