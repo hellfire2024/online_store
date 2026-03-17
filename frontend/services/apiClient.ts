@@ -571,6 +571,7 @@ class ApiClient {
           unitPrice: number;
           productId?: string;
           imageUrl?: string;
+          requiresPhotoUpload?: boolean;
         }>;
         taxAmount?: number;
         shippingCost?: number;

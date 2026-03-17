@@ -17,6 +17,7 @@ interface QuoteLineItem {
   unitPrice: number;
   productId?: string;
   imageUrl?: string;
+  requiresPhotoUpload?: boolean;
 }
 
 interface QuoteRow extends RowDataPacket {
@@ -79,6 +80,7 @@ const normalizeLineItems = (lineItems: unknown): QuoteLineItem[] => {
       unitPrice: Number(item?.unitPrice || 0),
       productId: item?.productId ? String(item.productId) : undefined,
       imageUrl: item?.imageUrl ? String(item.imageUrl) : undefined,
+      requiresPhotoUpload: Boolean(item?.requiresPhotoUpload),
     }))
     .filter(
       (item) =>

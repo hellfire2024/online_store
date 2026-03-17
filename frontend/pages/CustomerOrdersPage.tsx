@@ -21,6 +21,7 @@ interface CustomerQuoteLineItem {
   unitPrice: number;
   productId?: string;
   imageUrl?: string;
+  requiresPhotoUpload?: boolean;
 }
 
 interface CustomerQuote {
@@ -109,8 +110,48 @@ const CustomerOrdersPage: React.FC = () => {
   const [sortBy, setSortBy] = useState<string>("date-desc");
   const [quotes, setQuotes] = useState<CustomerQuote[]>([]);
   const [loadingQuoteId, setLoadingQuoteId] = useState<string | null>(null);
+  const [quoteUploads, setQuoteUploads] = useState<
+    Record<string, Record<number, { dataUrl: string; fileName: string }>>
+  >({});
   const orderWatermarkText =
     `${siteSettings?.logoText || "AdaptiveGIS"} ${siteSettings?.logoTextAccent || "Store"}`.trim();
+  const commissionedWorkIcon = "/commissioned-work.svg";
+
+  const handleQuoteUploadChange = (
+    quoteId: string,
+    itemIndex: number,
+    file: File | null,
+  ) => {
+    if (!file) {
+      setQuoteUploads((prev) => {
+        const quoteEntry = { ...(prev[quoteId] || {}) };
+        delete quoteEntry[itemIndex];
+        return { ...prev, [quoteId]: quoteEntry };
+      });
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      addToast("Please upload an image file", "error");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const dataUrl = String(reader.result || "");
+      setQuoteUploads((prev) => ({
+        ...prev,
+        [quoteId]: {
+          ...(prev[quoteId] || {}),
+          [itemIndex]: {
+            dataUrl,
+            fileName: file.name,
+          },
+        },
+      }));
+    };
+    reader.readAsDataURL(file);
+  };
 
   useEffect(() => {
     if (isLoading) {
@@ -299,27 +340,44 @@ const CustomerOrdersPage: React.FC = () => {
           return;
         }
 
+        const uploadedForItem = quoteUploads[quote.id]?.[idx];
+        if (item.requiresPhotoUpload && !uploadedForItem?.dataUrl) {
+          return;
+        }
+
         const quoteProduct = {
           id: item.productId || `quote-${quote.id}-${idx}`,
           name: item.name,
           price: unitPrice,
           description:
             item.description || `Custom quote item from ${quote.quoteNumber}`,
-          imageUrl:
-            item.imageUrl || "https://picsum.photos/seed/quote-item/300/300",
+          imageUrl: commissionedWorkIcon,
           inventory: 9999,
-          customizable: false,
+          customizable: Boolean(item.requiresPhotoUpload),
+          allowCustomImageUpload: Boolean(item.requiresPhotoUpload),
+          customImageUploadPrice: 0,
         };
 
         addToCart({
           product: quoteProduct,
           quantity,
+          customization:
+            item.requiresPhotoUpload && uploadedForItem
+              ? {
+                  type: "upload",
+                  value: uploadedForItem.dataUrl,
+                  fileName: uploadedForItem.fileName,
+                }
+              : undefined,
         });
         added += 1;
       });
 
       if (added === 0) {
-        addToast("No valid quote items to add", "error");
+        addToast(
+          "Please upload required photo(s) before adding this quote to cart",
+          "error",
+        );
         return;
       }
 
@@ -576,20 +634,27 @@ const CustomerOrdersPage: React.FC = () => {
                 className="bg-slate-700/50 border border-slate-600 rounded p-3"
               >
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                  <div>
-                    <p className="text-white font-semibold">
-                      {quote.quoteNumber}
-                    </p>
-                    <p className="text-xs text-gray-400">
-                      {new Date(quote.createdAt).toLocaleDateString()} •{" "}
-                      {quote.lineItems.length} item
-                      {quote.lineItems.length !== 1 ? "s" : ""}
-                    </p>
-                    {quote.notes && (
-                      <p className="text-sm text-gray-300 mt-1">
-                        {quote.notes}
+                  <div className="flex items-start gap-3">
+                    <img
+                      src={commissionedWorkIcon}
+                      alt="Commissioned work"
+                      className="w-10 h-10 rounded border border-slate-600 object-cover"
+                    />
+                    <div>
+                      <p className="text-white font-semibold">
+                        {quote.quoteNumber}
                       </p>
-                    )}
+                      <p className="text-xs text-gray-400">
+                        {new Date(quote.createdAt).toLocaleDateString()} •{" "}
+                        {quote.lineItems.length} item
+                        {quote.lineItems.length !== 1 ? "s" : ""}
+                      </p>
+                      {quote.notes && (
+                        <p className="text-sm text-gray-300 mt-1">
+                          {quote.notes}
+                        </p>
+                      )}
+                    </div>
                   </div>
 
                   <div className="text-right">
@@ -609,6 +674,48 @@ const CustomerOrdersPage: React.FC = () => {
                     </span>
                   </div>
                 </div>
+
+                {quote.lineItems.some((item) => item.requiresPhotoUpload) && (
+                  <div className="mt-3 mb-3 p-3 bg-slate-800 rounded border border-slate-600">
+                    <p className="text-sm text-sky-300 font-medium mb-2">
+                      Photo Upload Required
+                    </p>
+                    <div className="space-y-2">
+                      {quote.lineItems.map((item, idx) => {
+                        if (!item.requiresPhotoUpload) return null;
+
+                        const uploaded = quoteUploads[quote.id]?.[idx];
+                        return (
+                          <div
+                            key={`${quote.id}-upload-${idx}`}
+                            className="flex flex-col md:flex-row md:items-center gap-2"
+                          >
+                            <label className="text-xs text-gray-300 md:w-72">
+                              {item.name}
+                            </label>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) =>
+                                handleQuoteUploadChange(
+                                  quote.id,
+                                  idx,
+                                  e.target.files?.[0] || null,
+                                )
+                              }
+                              className="text-xs text-gray-300"
+                            />
+                            {uploaded?.fileName && (
+                              <span className="text-xs text-green-300">
+                                Uploaded: {uploaded.fileName}
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
 
                 <div className="mt-3 flex justify-end">
                   <button

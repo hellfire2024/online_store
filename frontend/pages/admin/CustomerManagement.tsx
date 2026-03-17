@@ -45,6 +45,7 @@ interface QuoteLineItemForm {
   description: string;
   quantity: number;
   unitPrice: number;
+  requiresPhotoUpload: boolean;
 }
 
 interface CustomQuote {
@@ -57,6 +58,7 @@ interface CustomQuote {
     description?: string;
     quantity: number;
     unitPrice: number;
+    requiresPhotoUpload?: boolean;
   }>;
   subtotal: number;
   taxAmount: number;
@@ -101,7 +103,13 @@ const CustomerManagement: React.FC = () => {
     taxAmount: 0,
     shippingCost: 0,
     lineItems: [
-      { name: "", description: "", quantity: 1, unitPrice: 0 },
+      {
+        name: "",
+        description: "",
+        quantity: 1,
+        unitPrice: 0,
+        requiresPhotoUpload: false,
+      },
     ] as QuoteLineItemForm[],
   });
   const [orderSearchTerm, setOrderSearchTerm] = useState("");
@@ -399,7 +407,15 @@ const CustomerManagement: React.FC = () => {
       notes: "",
       taxAmount: 0,
       shippingCost: 0,
-      lineItems: [{ name: "", description: "", quantity: 1, unitPrice: 0 }],
+      lineItems: [
+        {
+          name: "",
+          description: "",
+          quantity: 1,
+          unitPrice: 0,
+          requiresPhotoUpload: false,
+        },
+      ],
     });
     setIsQuoteModalOpen(true);
   };
@@ -412,7 +428,7 @@ const CustomerManagement: React.FC = () => {
   const updateQuoteLineItem = (
     index: number,
     field: keyof QuoteLineItemForm,
-    value: string | number,
+    value: string | number | boolean,
   ) => {
     setQuoteForm((prev) => ({
       ...prev,
@@ -423,7 +439,9 @@ const CustomerManagement: React.FC = () => {
               [field]:
                 field === "quantity" || field === "unitPrice"
                   ? Number(value)
-                  : String(value),
+                  : field === "requiresPhotoUpload"
+                    ? Boolean(value)
+                    : String(value),
             }
           : item,
       ),
@@ -435,7 +453,13 @@ const CustomerManagement: React.FC = () => {
       ...prev,
       lineItems: [
         ...prev.lineItems,
-        { name: "", description: "", quantity: 1, unitPrice: 0 },
+        {
+          name: "",
+          description: "",
+          quantity: 1,
+          unitPrice: 0,
+          requiresPhotoUpload: false,
+        },
       ],
     }));
   };
@@ -459,6 +483,7 @@ const CustomerManagement: React.FC = () => {
         description: item.description.trim() || undefined,
         quantity: Number(item.quantity),
         unitPrice: Number(item.unitPrice),
+        requiresPhotoUpload: Boolean(item.requiresPhotoUpload),
       }))
       .filter((item) => item.name && item.quantity > 0 && item.unitPrice >= 0);
 
@@ -1400,6 +1425,21 @@ const CustomerManagement: React.FC = () => {
                     placeholder="Price"
                     className="md:col-span-2 px-3 py-2 bg-slate-800 text-white rounded border border-slate-600"
                   />
+                  <label className="md:col-span-1 flex items-center gap-2 px-2 text-xs text-gray-300">
+                    <input
+                      type="checkbox"
+                      checked={item.requiresPhotoUpload}
+                      onChange={(e) =>
+                        updateQuoteLineItem(
+                          index,
+                          "requiresPhotoUpload",
+                          e.target.checked,
+                        )
+                      }
+                      className="w-4 h-4 accent-sky-600"
+                    />
+                    Photo Req
+                  </label>
                   <button
                     onClick={() => removeQuoteLineItem(index)}
                     disabled={quoteForm.lineItems.length === 1}
