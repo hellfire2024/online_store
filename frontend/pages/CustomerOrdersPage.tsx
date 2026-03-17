@@ -7,6 +7,7 @@ import { useCart } from "../context/CartContext";
 import { useProducts } from "../context/ProductContext";
 import { CustomerOrder, CartItem } from "../types";
 import Pagination from "../components/Pagination";
+import DragDropFileUpload from "../components/DragDropFileUpload";
 import {
   downloadInvoicePDF,
   InvoiceData,
@@ -688,25 +689,24 @@ const CustomerOrdersPage: React.FC = () => {
                         return (
                           <div
                             key={`${quote.id}-upload-${idx}`}
-                            className="flex flex-col md:flex-row md:items-center gap-2"
+                            className="rounded-lg border border-slate-600 bg-slate-700/50 p-3"
                           >
-                            <label className="text-xs text-gray-300 md:w-72">
+                            <p className="text-sm font-medium text-white mb-2">
                               {item.name}
-                            </label>
-                            <input
-                              type="file"
-                              accept="image/*"
-                              onChange={(e) =>
-                                handleQuoteUploadChange(
-                                  quote.id,
-                                  idx,
-                                  e.target.files?.[0] || null,
-                                )
+                            </p>
+                            <DragDropFileUpload
+                              onFileSelect={(file) =>
+                                handleQuoteUploadChange(quote.id, idx, file)
                               }
-                              className="text-xs text-gray-300"
+                              acceptedFormats="image/*"
+                              maxSize={10 * 1024 * 1024}
+                              label="Upload Your Design"
+                              showPreview={true}
+                              previewUrl={uploaded?.dataUrl}
+                              previewAlt={item.name}
                             />
                             {uploaded?.fileName && (
-                              <span className="text-xs text-green-300">
+                              <span className="mt-2 block text-xs text-green-300">
                                 Uploaded: {uploaded.fileName}
                               </span>
                             )}
