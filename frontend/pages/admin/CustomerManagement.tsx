@@ -51,7 +51,14 @@ interface QuoteLineItemForm {
 interface CustomQuote {
   id: string;
   quoteNumber: string;
-  status: "draft" | "sent" | "accepted" | "expired" | "cancelled";
+  status:
+    | "draft"
+    | "sent"
+    | "accepted"
+    | "expired"
+    | "cancelled"
+    | "rejected"
+    | "change_requested";
   notes?: string;
   lineItems: Array<{
     name: string;
@@ -67,6 +74,9 @@ interface CustomQuote {
   createdAt: string;
   sentAt?: string;
   acceptedAt?: string;
+  rejectedAt?: string;
+  changeRequestedAt?: string;
+  changeRequestNote?: string;
 }
 
 const CustomerManagement: React.FC = () => {
@@ -98,6 +108,7 @@ const CustomerManagement: React.FC = () => {
   const [customerQuotes, setCustomerQuotes] = useState<CustomQuote[]>([]);
   const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
   const [isSendingQuote, setIsSendingQuote] = useState(false);
+  const [editingQuoteId, setEditingQuoteId] = useState<string | null>(null);
   const [quoteForm, setQuoteForm] = useState({
     notes: "",
     taxAmount: 0,
@@ -401,28 +412,46 @@ const CustomerManagement: React.FC = () => {
     }
   };
 
-  const openQuoteModal = () => {
+  const openQuoteModal = (quoteToEdit?: CustomQuote) => {
     if (!selectedCustomer) return;
-    setQuoteForm({
-      notes: "",
-      taxAmount: 0,
-      shippingCost: 0,
-      lineItems: [
-        {
-          name: "",
-          description: "",
-          quantity: 1,
-          unitPrice: 0,
-          requiresPhotoUpload: false,
-        },
-      ],
-    });
+    if (quoteToEdit) {
+      setEditingQuoteId(quoteToEdit.id);
+      setQuoteForm({
+        notes: quoteToEdit.notes || "",
+        taxAmount: quoteToEdit.taxAmount,
+        shippingCost: quoteToEdit.shippingCost,
+        lineItems: quoteToEdit.lineItems.map((item) => ({
+          name: item.name,
+          description: item.description || "",
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          requiresPhotoUpload: item.requiresPhotoUpload ?? false,
+        })),
+      });
+    } else {
+      setEditingQuoteId(null);
+      setQuoteForm({
+        notes: "",
+        taxAmount: 0,
+        shippingCost: 0,
+        lineItems: [
+          {
+            name: "",
+            description: "",
+            quantity: 1,
+            unitPrice: 0,
+            requiresPhotoUpload: false,
+          },
+        ],
+      });
+    }
     setIsQuoteModalOpen(true);
   };
 
   const closeQuoteModal = () => {
     setIsQuoteModalOpen(false);
     setIsSendingQuote(false);
+    setEditingQuoteId(null);
   };
 
   const updateQuoteLineItem = (
@@ -494,18 +523,30 @@ const CustomerManagement: React.FC = () => {
 
     try {
       setIsSendingQuote(true);
-      const created = await apiClient.quotes.createForCustomer(
-        selectedCustomer.id,
-        {
+      if (editingQuoteId) {
+        const updated = await apiClient.quotes.updateForAdmin(editingQuoteId, {
           notes: quoteForm.notes.trim() || undefined,
           taxAmount: Number(quoteForm.taxAmount) || 0,
           shippingCost: Number(quoteForm.shippingCost) || 0,
           lineItems: validLineItems,
-        },
-      );
-
-      setCustomerQuotes((prev) => [created, ...prev]);
-      addToast("Custom quote sent to customer", "success");
+        });
+        setCustomerQuotes((prev) =>
+          prev.map((q) => (q.id === editingQuoteId ? updated : q)),
+        );
+        addToast("Quote updated and re-sent to customer", "success");
+      } else {
+        const created = await apiClient.quotes.createForCustomer(
+          selectedCustomer.id,
+          {
+            notes: quoteForm.notes.trim() || undefined,
+            taxAmount: Number(quoteForm.taxAmount) || 0,
+            shippingCost: Number(quoteForm.shippingCost) || 0,
+            lineItems: validLineItems,
+          },
+        );
+        setCustomerQuotes((prev) => [created, ...prev]);
+        addToast("Custom quote sent to customer", "success");
+      }
       closeQuoteModal();
     } catch (error) {
       addToast(
@@ -1296,10 +1337,14 @@ const CustomerManagement: React.FC = () => {
                   {customerQuotes.map((quote) => (
                     <div
                       key={quote.id}
-                      className="bg-slate-800 p-3 rounded border border-slate-600"
+                      className={`bg-slate-800 p-3 rounded border ${
+                        quote.status === "change_requested"
+                          ? "border-amber-600/60"
+                          : "border-slate-600"
+                      }`}
                     >
-                      <div className="flex items-center justify-between">
-                        <div>
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
                           <p className="text-white font-semibold">
                             {quote.quoteNumber}
                           </p>
@@ -1308,8 +1353,19 @@ const CustomerManagement: React.FC = () => {
                             {quote.lineItems.length} item
                             {quote.lineItems.length !== 1 ? "s" : ""}
                           </p>
+                          {quote.status === "change_requested" &&
+                            quote.changeRequestNote && (
+                              <div className="mt-2 rounded border border-amber-700/40 bg-amber-900/20 p-2">
+                                <p className="text-xs font-semibold text-amber-300 mb-0.5">
+                                  Customer change request:
+                                </p>
+                                <p className="text-xs text-amber-100">
+                                  {quote.changeRequestNote}
+                                </p>
+                              </div>
+                            )}
                         </div>
-                        <div className="text-right">
+                        <div className="text-right shrink-0">
                           <p className="text-white font-bold">
                             ${Number(quote.total).toFixed(2)}
                           </p>
@@ -1319,11 +1375,25 @@ const CustomerManagement: React.FC = () => {
                                 ? "bg-green-900 text-green-200"
                                 : quote.status === "sent"
                                   ? "bg-blue-900 text-blue-200"
-                                  : "bg-slate-700 text-gray-300"
+                                  : quote.status === "change_requested"
+                                    ? "bg-amber-900 text-amber-200"
+                                    : quote.status === "rejected"
+                                      ? "bg-red-900 text-red-200"
+                                      : "bg-slate-700 text-gray-300"
                             }`}
                           >
-                            {quote.status}
+                            {quote.status === "change_requested"
+                              ? "Change Requested"
+                              : quote.status}
                           </span>
+                          {quote.status === "change_requested" && (
+                            <button
+                              onClick={() => openQuoteModal(quote)}
+                              className="mt-2 block w-full px-2 py-1 text-xs bg-amber-700 text-white rounded hover:bg-amber-600 transition-colors"
+                            >
+                              Edit &amp; Re-send
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -1369,8 +1439,10 @@ const CustomerManagement: React.FC = () => {
           <div className="bg-slate-800 p-6 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-slate-700">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold text-white">
-                Create Custom Quote for {selectedCustomer.firstName}{" "}
-                {selectedCustomer.lastName}
+                {editingQuoteId
+                  ? "Edit & Re-send Quote"
+                  : "Create Custom Quote"}{" "}
+                for {selectedCustomer.firstName} {selectedCustomer.lastName}
               </h2>
               <button
                 onClick={closeQuoteModal}
@@ -1591,7 +1663,11 @@ const CustomerManagement: React.FC = () => {
                 disabled={isSendingQuote}
                 className="flex-1 px-4 py-2 bg-sky-600 text-white rounded hover:bg-sky-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isSendingQuote ? "Sending..." : "Send Quote to Customer"}
+                {isSendingQuote
+                  ? "Sending..."
+                  : editingQuoteId
+                    ? "Update & Re-send Quote"
+                    : "Send Quote to Customer"}
               </button>
             </div>
           </div>

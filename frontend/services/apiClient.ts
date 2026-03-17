@@ -587,6 +587,34 @@ class ApiClient {
       this.request<any>(`/quotes/${quoteId}/accept`, {
         method: "POST",
       }),
+    reject: (quoteId: string) =>
+      this.request<any>(`/quotes/${quoteId}/reject`, {
+        method: "POST",
+      }),
+    requestChange: (quoteId: string, note: string) =>
+      this.request<any>(`/quotes/${quoteId}/request-change`, {
+        method: "POST",
+        body: JSON.stringify({ note }),
+      }),
+    updateForAdmin: (
+      quoteId: string,
+      data: {
+        notes?: string;
+        lineItems: Array<{
+          name: string;
+          description?: string;
+          quantity: number;
+          unitPrice: number;
+          requiresPhotoUpload?: boolean;
+        }>;
+        taxAmount?: number;
+        shippingCost?: number;
+      },
+    ) =>
+      this.request<any>(`/quotes/${quoteId}`, {
+        method: "PUT",
+        body: JSON.stringify(data),
+      }),
   };
 
   // Tickets with custom methods

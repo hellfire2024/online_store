@@ -37,6 +37,9 @@ interface QuoteRow extends RowDataPacket {
   created_at: Date;
   sent_at: Date | null;
   accepted_at: Date | null;
+  rejected_at: Date | null;
+  change_requested_at: Date | null;
+  change_request_note: string | null;
 }
 
 const parseJsonSafely = <T>(raw: string | null, fallback: T): T => {
@@ -65,6 +68,9 @@ const mapQuote = (row: QuoteRow) => ({
   createdAt: row.created_at,
   sentAt: row.sent_at || undefined,
   acceptedAt: row.accepted_at || undefined,
+  rejectedAt: row.rejected_at || undefined,
+  changeRequestedAt: row.change_requested_at || undefined,
+  changeRequestNote: row.change_request_note || undefined,
 });
 
 const normalizeLineItems = (lineItems: unknown): QuoteLineItem[] => {
@@ -237,6 +243,166 @@ router.get(
     }
   },
 );
+
+// Customer: reject a quote
+router.post(
+  "/:quoteId/reject",
+  requireCustomer,
+  async (req: Request, res: Response) => {
+    try {
+      const { quoteId } = req.params;
+      const authUser = (req as AuthenticatedRequest).authUser;
+
+      const [rows] = await pool.query<QuoteRow[]>(
+        `SELECT * FROM custom_quotes WHERE id = ? LIMIT 1`,
+        [quoteId],
+      );
+
+      if (!rows || rows.length === 0) {
+        res.status(404).json({ error: "Quote not found" });
+        return;
+      }
+
+      const quote = rows[0];
+      if (authUser && String(authUser.id) !== String(quote.customer_id)) {
+        res.status(403).json({ error: "Forbidden" });
+        return;
+      }
+
+      await pool.query(
+        `UPDATE custom_quotes SET status = 'rejected', rejected_at = NOW() WHERE id = ?`,
+        [quoteId],
+      );
+
+      const [updated] = await pool.query<QuoteRow[]>(
+        `SELECT * FROM custom_quotes WHERE id = ? LIMIT 1`,
+        [quoteId],
+      );
+      res.json(mapQuote(updated[0]));
+    } catch (error) {
+      console.error("Error rejecting quote:", error);
+      res.status(500).json({ error: "Failed to reject quote" });
+    }
+  },
+);
+
+// Customer: request changes to a quote
+router.post(
+  "/:quoteId/request-change",
+  requireCustomer,
+  async (req: Request, res: Response) => {
+    try {
+      const { quoteId } = req.params;
+      const { note } = req.body as { note?: string };
+      const authUser = (req as AuthenticatedRequest).authUser;
+
+      const [rows] = await pool.query<QuoteRow[]>(
+        `SELECT * FROM custom_quotes WHERE id = ? LIMIT 1`,
+        [quoteId],
+      );
+
+      if (!rows || rows.length === 0) {
+        res.status(404).json({ error: "Quote not found" });
+        return;
+      }
+
+      const quote = rows[0];
+      if (authUser && String(authUser.id) !== String(quote.customer_id)) {
+        res.status(403).json({ error: "Forbidden" });
+        return;
+      }
+
+      const safeNote = note ? String(note).trim().slice(0, 2000) : null;
+
+      await pool.query(
+        `UPDATE custom_quotes
+         SET status = 'change_requested',
+             change_request_note = ?,
+             change_requested_at = NOW()
+         WHERE id = ?`,
+        [safeNote, quoteId],
+      );
+
+      const [updated] = await pool.query<QuoteRow[]>(
+        `SELECT * FROM custom_quotes WHERE id = ? LIMIT 1`,
+        [quoteId],
+      );
+      res.json(mapQuote(updated[0]));
+    } catch (error) {
+      console.error("Error requesting quote change:", error);
+      res.status(500).json({ error: "Failed to request change" });
+    }
+  },
+);
+
+// Admin: update/re-send an existing quote
+router.put("/:quoteId", requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const { quoteId } = req.params;
+    const { lineItems, notes, taxAmount, shippingCost } = req.body;
+
+    const [rows] = await pool.query<QuoteRow[]>(
+      `SELECT * FROM custom_quotes WHERE id = ? LIMIT 1`,
+      [quoteId],
+    );
+
+    if (!rows || rows.length === 0) {
+      res.status(404).json({ error: "Quote not found" });
+      return;
+    }
+
+    const normalizedLineItems = normalizeLineItems(lineItems);
+    if (normalizedLineItems.length === 0) {
+      res
+        .status(400)
+        .json({ error: "At least one valid line item is required" });
+      return;
+    }
+
+    const safeTax = Number.isFinite(Number(taxAmount)) ? Number(taxAmount) : 0;
+    const safeShipping = Number.isFinite(Number(shippingCost))
+      ? Number(shippingCost)
+      : 0;
+    const subtotal = normalizedLineItems.reduce(
+      (sum, item) => sum + item.quantity * item.unitPrice,
+      0,
+    );
+    const total = subtotal + safeTax + safeShipping;
+
+    await pool.query(
+      `UPDATE custom_quotes
+         SET status = 'sent',
+             notes = ?,
+             line_items = ?,
+             subtotal = ?,
+             tax_amount = ?,
+             shipping_cost = ?,
+             total = ?,
+             change_request_note = NULL,
+             change_requested_at = NULL,
+             sent_at = NOW()
+         WHERE id = ?`,
+      [
+        notes ? String(notes).trim() : null,
+        JSON.stringify(normalizedLineItems),
+        subtotal,
+        safeTax,
+        safeShipping,
+        total,
+        quoteId,
+      ],
+    );
+
+    const [updated] = await pool.query<QuoteRow[]>(
+      `SELECT * FROM custom_quotes WHERE id = ? LIMIT 1`,
+      [quoteId],
+    );
+    res.json(mapQuote(updated[0]));
+  } catch (error) {
+    console.error("Error updating quote:", error);
+    res.status(500).json({ error: "Failed to update quote" });
+  }
+});
 
 router.post(
   "/:quoteId/accept",

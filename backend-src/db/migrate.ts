@@ -534,6 +534,27 @@ export async function runMigrations(): Promise<void> {
     );
     await alterTableAddColumn("products", "gallery_id", "VARCHAR(36)");
 
+    // custom_quotes: add change-request + rejected fields
+    await alterTableAddColumn(
+      "custom_quotes",
+      "change_request_note",
+      "TEXT NULL",
+    );
+    await alterTableAddColumn("custom_quotes", "rejected_at", "TIMESTAMP NULL");
+    await alterTableAddColumn(
+      "custom_quotes",
+      "change_requested_at",
+      "TIMESTAMP NULL",
+    );
+    // Extend status enum to include rejected + change_requested
+    try {
+      await pool.query(
+        `ALTER TABLE custom_quotes MODIFY COLUMN status ENUM('draft','sent','accepted','expired','cancelled','rejected','change_requested') DEFAULT 'sent'`,
+      );
+    } catch (_e) {
+      // already has extended enum or not needed
+    }
+
     // Fix staff table structure if it has old schema
     await fixStaffTableStructure();
 
