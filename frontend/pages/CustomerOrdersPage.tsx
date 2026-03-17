@@ -676,12 +676,95 @@ const CustomerOrdersPage: React.FC = () => {
                   </div>
                 </div>
 
+                {/* Line Items Details */}
+                <div className="mt-4 pt-4 border-t border-slate-600">
+                  <h4 className="text-sm font-semibold text-gray-300 mb-3">
+                    Quote Items
+                  </h4>
+                  <div className="space-y-3 max-h-80 overflow-y-auto">
+                    {quote.lineItems.map((item, idx) => (
+                      <div
+                        key={idx}
+                        className="bg-slate-800/50 rounded border border-slate-700 p-3"
+                      >
+                        <div className="flex gap-3">
+                          {/* Icon */}
+                          <div className="shrink-0">
+                            <div className="w-16 h-16 rounded border border-slate-600 overflow-hidden bg-slate-700 flex items-center justify-center">
+                              <img
+                                src={commissionedWorkIcon}
+                                alt="Commissioned work"
+                                className="w-12 h-12 object-contain"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Details */}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-white font-medium">{item.name}</p>
+                            {item.description && (
+                              <p className="text-xs text-gray-400 mt-1">
+                                {item.description}
+                              </p>
+                            )}
+                            <div className="flex flex-wrap gap-2 mt-2">
+                              <span className="text-xs text-gray-300">
+                                Qty: {item.quantity}
+                              </span>
+                              <span className="text-xs text-gray-300">
+                                ${Number(item.unitPrice).toFixed(2)} each
+                              </span>
+                              {item.requiresPhotoUpload && (
+                                <span className="inline-block px-2 py-0.5 rounded text-xs bg-sky-900/50 text-sky-200 border border-sky-700">
+                                  Photo Required
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Price */}
+                          <div className="text-right shrink-0">
+                            <p className="text-white font-bold">
+                              ${(Number(item.unitPrice) * Number(item.quantity)).toFixed(2)}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Price Breakdown */}
+                <div className="mt-4 pt-4 border-t border-slate-600 space-y-1 text-sm">
+                  <div className="flex justify-between text-gray-300">
+                    <span>Subtotal</span>
+                    <span>${Number(quote.subtotal).toFixed(2)}</span>
+                  </div>
+                  {quote.taxAmount > 0 && (
+                    <div className="flex justify-between text-gray-300">
+                      <span>Tax</span>
+                      <span>${Number(quote.taxAmount).toFixed(2)}</span>
+                    </div>
+                  )}
+                  {quote.shippingCost > 0 && (
+                    <div className="flex justify-between text-gray-300">
+                      <span>Shipping</span>
+                      <span>${Number(quote.shippingCost).toFixed(2)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-white font-bold pt-1 border-t border-slate-600">
+                    <span>Total</span>
+                    <span>${Number(quote.total).toFixed(2)}</span>
+                  </div>
+                </div>
+
+                {/* Upload Section for Items Requiring Photos */}
                 {quote.lineItems.some((item) => item.requiresPhotoUpload) && (
-                  <div className="mt-3 mb-3 p-3 bg-slate-800 rounded border border-slate-600">
-                    <p className="text-sm text-sky-300 font-medium mb-2">
+                  <div className="mt-4 pt-4 border-t border-slate-600 p-3 bg-slate-800 rounded">
+                    <p className="text-sm text-sky-300 font-medium mb-3">
                       Photo Upload Required
                     </p>
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       {quote.lineItems.map((item, idx) => {
                         if (!item.requiresPhotoUpload) return null;
 
@@ -717,7 +800,7 @@ const CustomerOrdersPage: React.FC = () => {
                   </div>
                 )}
 
-                <div className="mt-3 flex justify-end">
+                <div className="mt-4 flex justify-end">
                   <button
                     onClick={() => handleAddQuoteToCart(quote)}
                     disabled={
