@@ -1384,48 +1384,99 @@ const CustomerManagement: React.FC = () => {
               {quoteForm.lineItems.map((item, index) => (
                 <div
                   key={index}
-                  className="grid grid-cols-1 md:grid-cols-12 gap-2 bg-slate-700 p-3 rounded"
+                  className="rounded-lg border border-slate-600 bg-slate-700 p-4 space-y-4"
                 >
-                  <input
-                    type="text"
-                    value={item.name}
-                    onChange={(e) =>
-                      updateQuoteLineItem(index, "name", e.target.value)
-                    }
-                    placeholder="Item name"
-                    className="md:col-span-4 px-3 py-2 bg-slate-800 text-white rounded border border-slate-600"
-                  />
-                  <input
-                    type="text"
-                    value={item.description}
-                    onChange={(e) =>
-                      updateQuoteLineItem(index, "description", e.target.value)
-                    }
-                    placeholder="Description (optional)"
-                    className="md:col-span-4 px-3 py-2 bg-slate-800 text-white rounded border border-slate-600"
-                  />
-                  <input
-                    type="number"
-                    min={1}
-                    value={item.quantity}
-                    onChange={(e) =>
-                      updateQuoteLineItem(index, "quantity", e.target.value)
-                    }
-                    placeholder="Qty"
-                    className="md:col-span-1 px-3 py-2 bg-slate-800 text-white rounded border border-slate-600"
-                  />
-                  <input
-                    type="number"
-                    min={0}
-                    step="0.01"
-                    value={item.unitPrice}
-                    onChange={(e) =>
-                      updateQuoteLineItem(index, "unitPrice", e.target.value)
-                    }
-                    placeholder="Price"
-                    className="md:col-span-2 px-3 py-2 bg-slate-800 text-white rounded border border-slate-600"
-                  />
-                  <label className="md:col-span-1 flex items-center gap-2 px-2 text-xs text-gray-300">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-300">
+                        Line Item {index + 1}
+                      </p>
+                      <p className="mt-1 text-sm text-slate-400">
+                        Define the quoted work and whether the customer must
+                        upload a reference photo.
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => removeQuoteLineItem(index)}
+                      disabled={quoteForm.lineItems.length === 1}
+                      className="inline-flex items-center gap-2 rounded-md bg-red-700 px-3 py-2 text-sm font-medium text-white hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <TrashIcon className="h-4 w-4" />
+                      Remove
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
+                    <div className="md:col-span-4">
+                      <label className="mb-1 block text-sm font-medium text-slate-200">
+                        Item name
+                      </label>
+                      <input
+                        type="text"
+                        value={item.name}
+                        onChange={(e) =>
+                          updateQuoteLineItem(index, "name", e.target.value)
+                        }
+                        placeholder="Item name"
+                        className="w-full px-3 py-2 bg-slate-800 text-white rounded border border-slate-600"
+                      />
+                    </div>
+                    <div className="md:col-span-4">
+                      <label className="mb-1 block text-sm font-medium text-slate-200">
+                        Description
+                      </label>
+                      <input
+                        type="text"
+                        value={item.description}
+                        onChange={(e) =>
+                          updateQuoteLineItem(
+                            index,
+                            "description",
+                            e.target.value,
+                          )
+                        }
+                        placeholder="Description (optional)"
+                        className="w-full px-3 py-2 bg-slate-800 text-white rounded border border-slate-600"
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="mb-1 block text-sm font-medium text-slate-200">
+                        Quantity
+                      </label>
+                      <input
+                        type="number"
+                        min={1}
+                        value={item.quantity}
+                        onChange={(e) =>
+                          updateQuoteLineItem(index, "quantity", e.target.value)
+                        }
+                        placeholder="Qty"
+                        className="w-full px-3 py-2 bg-slate-800 text-white rounded border border-slate-600"
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="mb-1 block text-sm font-medium text-slate-200">
+                        Unit price
+                      </label>
+                      <input
+                        type="number"
+                        min={0}
+                        step="0.01"
+                        value={item.unitPrice}
+                        onChange={(e) =>
+                          updateQuoteLineItem(
+                            index,
+                            "unitPrice",
+                            e.target.value,
+                          )
+                        }
+                        placeholder="Price"
+                        className="w-full px-3 py-2 bg-slate-800 text-white rounded border border-slate-600"
+                      />
+                    </div>
+                  </div>
+
+                  <label className="flex items-start gap-3 rounded-md border border-slate-500 bg-slate-800 px-3 py-3 text-sm text-slate-200">
                     <input
                       type="checkbox"
                       checked={item.requiresPhotoUpload}
@@ -1436,17 +1487,18 @@ const CustomerManagement: React.FC = () => {
                           e.target.checked,
                         )
                       }
-                      className="w-4 h-4 accent-sky-600"
+                      className="mt-0.5 h-4 w-4 shrink-0 accent-sky-600"
                     />
-                    Photo Req
+                    <span>
+                      <span className="block font-medium text-white">
+                        Require customer photo upload
+                      </span>
+                      <span className="block text-xs text-slate-400">
+                        Prevents this quote from being added to cart until the
+                        customer uploads a reference image.
+                      </span>
+                    </span>
                   </label>
-                  <button
-                    onClick={() => removeQuoteLineItem(index)}
-                    disabled={quoteForm.lineItems.length === 1}
-                    className="md:col-span-1 px-3 py-2 bg-red-700 text-white rounded hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Remove
-                  </button>
                 </div>
               ))}
 
