@@ -188,15 +188,16 @@ const CustomerManagement: React.FC = () => {
   }, [selectedCustomer]);
 
   const quoteYearOptions = useMemo(() => {
-    const years = Array.from(
-      new Set(
-        customerQuotes
-          .map((quote) => new Date(quote.createdAt).getFullYear())
-          .filter((year) => Number.isFinite(year)),
-      ),
-    );
+    const orderYears = (selectedCustomer?.orders || [])
+      .map((order) => new Date(order.date).getFullYear())
+      .filter((year) => Number.isFinite(year));
+    const quoteYears = customerQuotes
+      .map((quote) => new Date(quote.createdAt).getFullYear())
+      .filter((year) => Number.isFinite(year));
+
+    const years = Array.from(new Set([...orderYears, ...quoteYears]));
     return years.sort((a, b) => b - a);
-  }, [customerQuotes]);
+  }, [customerQuotes, selectedCustomer]);
 
   useEffect(() => {
     const loadCustomers = async () => {
@@ -451,6 +452,8 @@ const CustomerManagement: React.FC = () => {
       setOrderSearchTerm("");
       setOrderSortBy("date-desc");
       setOrderCurrentPage(1);
+      setQuoteFilterDateRange("last 30 days");
+      setQuoteCurrentPage(1);
     } catch (error) {
       console.error("Failed to load customer details:", error);
       addToast("Failed to load customer details", "error");
@@ -462,6 +465,11 @@ const CustomerManagement: React.FC = () => {
       } catch {
         setCustomerQuotes([]);
       }
+      setOrderSearchTerm("");
+      setOrderSortBy("date-desc");
+      setOrderCurrentPage(1);
+      setQuoteFilterDateRange("last 30 days");
+      setQuoteCurrentPage(1);
     }
   };
 
@@ -700,10 +708,18 @@ const CustomerManagement: React.FC = () => {
   const filterAndSortOrders = (orders: any[]) => {
     if (!orders) return [];
 
+    const { start, end } = getQuoteDateRange();
+
     // Filter by search term
     let filtered = orders.filter((order) =>
       order.orderNumber.toLowerCase().includes(orderSearchTerm.toLowerCase()),
     );
+
+    // Shared date-range filter for orders and quotes
+    filtered = filtered.filter((order) => {
+      const orderDate = new Date(order.date);
+      return orderDate >= start && orderDate <= end;
+    });
 
     // Sort orders
     const sorted = [...filtered].sort((a, b) => {
@@ -1305,7 +1321,7 @@ const CustomerManagement: React.FC = () => {
               ) : (
                 <>
                   {/* Search and Sort Controls */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
                     <div>
                       <input
                         type="text"
@@ -1328,6 +1344,28 @@ const CustomerManagement: React.FC = () => {
                         <option value="date-asc">Oldest First</option>
                         <option value="amount-desc">Highest Amount</option>
                         <option value="amount-asc">Lowest Amount</option>
+                      </select>
+                    </div>
+                    <div>
+                      <select
+                        value={quoteFilterDateRange}
+                        onChange={(e) => {
+                          setQuoteFilterDateRange(e.target.value);
+                          setOrderCurrentPage(1);
+                          setQuoteCurrentPage(1);
+                        }}
+                        className="w-full px-3 py-2 bg-slate-800 text-white rounded border border-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-500 text-sm"
+                      >
+                        <option value="last 30 days">Last 30 Days</option>
+                        <option value="past 3 months">Past 3 Months</option>
+                        {quoteYearOptions.length > 0 && (
+                          <option disabled>-----</option>
+                        )}
+                        {quoteYearOptions.map((year) => (
+                          <option key={year} value={String(year)}>
+                            {year}
+                          </option>
+                        ))}
                       </select>
                     </div>
                   </div>
@@ -1466,6 +1504,7 @@ const CustomerManagement: React.FC = () => {
                     value={quoteFilterDateRange}
                     onChange={(e) => {
                       setQuoteFilterDateRange(e.target.value);
+                      setOrderCurrentPage(1);
                       setQuoteCurrentPage(1);
                     }}
                     className="px-2 py-1 text-xs rounded bg-slate-600 text-white border border-slate-500"
