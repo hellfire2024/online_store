@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useCustomerAuth } from "../context/CustomerAuthContext";
 import { useToast } from "../hooks/useToast";
@@ -144,6 +144,16 @@ const CustomerOrdersPage: React.FC = () => {
   const [quoteCurrentPage, setQuoteCurrentPage] = useState(1);
   const [quoteItemsPerPage, setQuoteItemsPerPage] = useState(10);
   const pendingQuoteRef = useRef<HTMLDivElement>(null);
+  const quoteYearOptions = useMemo(() => {
+    const years = Array.from(
+      new Set(
+        quotes
+          .map((quote) => new Date(quote.createdAt).getFullYear())
+          .filter((year) => Number.isFinite(year)),
+      ),
+    );
+    return years.sort((a, b) => b - a);
+  }, [quotes]);
   const orderWatermarkText =
     `${siteSettings?.logoText || "AdaptiveGIS"} ${siteSettings?.logoTextAccent || "Store"}`.trim();
   const commissionedWorkIcon = "/commissioned-work.svg";
@@ -652,12 +662,11 @@ const CustomerOrdersPage: React.FC = () => {
     } else if (quoteFilterDateRange === "past 3 months") {
       start.setMonth(now.getMonth() - 3);
     } else {
-      // Year selection
-      const year = parseInt(quoteFilterDateRange);
-      if (!isNaN(year)) {
-        start = new Date(year, 0, 1);
-        end.setFullYear(year + 1);
-        end.setDate(0);
+      const year = parseInt(quoteFilterDateRange, 10);
+      if (!Number.isNaN(year)) {
+        start = new Date(year, 0, 1, 0, 0, 0, 0);
+        end.setFullYear(year, 11, 31);
+        end.setHours(23, 59, 59, 999);
       }
     }
 
@@ -885,27 +894,12 @@ const CustomerOrdersPage: React.FC = () => {
               >
                 <option value="last 30 days">Last 30 Days</option>
                 <option value="past 3 months">Past 3 Months</option>
-                <option disabled>―――――――</option>
-                <option value="2026">2026</option>
-                <option value="2025">2025</option>
-                <option value="2024">2024</option>
-                <option value="2023">2023</option>
-                <option value="2022">2022</option>
-                <option value="2021">2021</option>
-                <option value="2020">2020</option>
-                <option value="2019">2019</option>
-                <option value="2018">2018</option>
-                <option value="2017">2017</option>
-                <option value="2016">2016</option>
-                <option value="2015">2015</option>
-                <option value="2014">2014</option>
-                <option value="2013">2013</option>
-                <option value="2012">2012</option>
-                <option value="2011">2011</option>
-                <option value="2010">2010</option>
-                <option value="2009">2009</option>
-                <option value="2008">2008</option>
-                <option value="2007">2007</option>
+                {quoteYearOptions.length > 0 && <option disabled>-----</option>}
+                {quoteYearOptions.map((year) => (
+                  <option key={year} value={String(year)}>
+                    {year}
+                  </option>
+                ))}
               </select>
               <label className="text-xs text-gray-400">Sort:</label>
               <select

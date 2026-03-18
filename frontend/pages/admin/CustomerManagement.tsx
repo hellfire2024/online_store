@@ -138,6 +138,10 @@ const CustomerManagement: React.FC = () => {
   >("date-desc");
   const [orderCurrentPage, setOrderCurrentPage] = useState(1);
   const [orderItemsPerPage, setOrderItemsPerPage] = useState(10);
+  const [quoteFilterDateRange, setQuoteFilterDateRange] =
+    useState<string>("last 30 days");
+  const [quoteCurrentPage, setQuoteCurrentPage] = useState(1);
+  const [quoteItemsPerPage, setQuoteItemsPerPage] = useState(10);
   const { addToast } = useToast();
   const { siteSettings } = useSiteSettings();
   const { sendPasswordResetEmail } = useAdmin();
@@ -182,6 +186,17 @@ const CustomerManagement: React.FC = () => {
       lastOrderDate,
     };
   }, [selectedCustomer]);
+
+  const quoteYearOptions = useMemo(() => {
+    const years = Array.from(
+      new Set(
+        customerQuotes
+          .map((quote) => new Date(quote.createdAt).getFullYear())
+          .filter((year) => Number.isFinite(year)),
+      ),
+    );
+    return years.sort((a, b) => b - a);
+  }, [customerQuotes]);
 
   useEffect(() => {
     const loadCustomers = async () => {
@@ -231,6 +246,35 @@ const CustomerManagement: React.FC = () => {
     setFilteredCustomers(filtered);
     setCurrentPage(1);
   }, [searchTerm, sortBy, customers]);
+
+  const getQuoteDateRange = (): { start: Date; end: Date } => {
+    const now = new Date();
+    const end = new Date(now);
+    let start = new Date(now);
+
+    if (quoteFilterDateRange === "last 30 days") {
+      start.setDate(now.getDate() - 30);
+    } else if (quoteFilterDateRange === "past 3 months") {
+      start.setMonth(now.getMonth() - 3);
+    } else {
+      const year = parseInt(quoteFilterDateRange, 10);
+      if (!Number.isNaN(year)) {
+        start = new Date(year, 0, 1, 0, 0, 0, 0);
+        end.setFullYear(year, 11, 31);
+        end.setHours(23, 59, 59, 999);
+      }
+    }
+
+    return { start, end };
+  };
+
+  const getFilteredQuotes = (): CustomQuote[] => {
+    const { start, end } = getQuoteDateRange();
+    return customerQuotes.filter((quote) => {
+      const quoteDate = new Date(quote.createdAt);
+      return quoteDate >= start && quoteDate <= end;
+    });
+  };
 
   const handleOpenModal = (customer?: Customer) => {
     if (customer) {
@@ -1416,12 +1460,38 @@ const CustomerManagement: React.FC = () => {
                 <h3 className="text-lg font-semibold text-white">
                   Custom Quotes
                 </h3>
-                <button
-                  onClick={openQuoteModal}
-                  className="px-3 py-1 bg-sky-600 text-white text-sm rounded hover:bg-sky-700 transition-colors"
-                >
-                  + Create Quote
-                </button>
+                <div className="flex items-center gap-3">
+                  <label className="text-xs text-gray-400">Date Range:</label>
+                  <select
+                    value={quoteFilterDateRange}
+                    onChange={(e) => {
+                      setQuoteFilterDateRange(e.target.value);
+                      setQuoteCurrentPage(1);
+                    }}
+                    className="px-2 py-1 text-xs rounded bg-slate-600 text-white border border-slate-500"
+                  >
+                    <option value="last 30 days">Last 30 Days</option>
+                    <option value="past 3 months">Past 3 Months</option>
+                    {quoteYearOptions.length > 0 && (
+                      <option disabled>-----</option>
+                    )}
+                    {quoteYearOptions.map((year) => (
+                      <option key={year} value={String(year)}>
+                        {year}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="text-sm text-gray-400">
+                    {getFilteredQuotes().length} quote
+                    {getFilteredQuotes().length !== 1 ? "s" : ""}
+                  </span>
+                  <button
+                    onClick={openQuoteModal}
+                    className="px-3 py-1 bg-sky-600 text-white text-sm rounded hover:bg-sky-700 transition-colors"
+                  >
+                    + Create Quote
+                  </button>
+                </div>
               </div>
 
               {customerQuotes.length === 0 ? (
@@ -1429,72 +1499,109 @@ const CustomerManagement: React.FC = () => {
                   <p className="text-gray-400">No quotes sent yet</p>
                 </div>
               ) : (
-                <div className="space-y-2">
-                  {customerQuotes.map((quote) => (
-                    <div
-                      key={quote.id}
-                      className={`bg-slate-800 p-3 rounded border ${
-                        quote.status === "change_requested"
-                          ? "border-amber-600/60"
-                          : "border-slate-600"
-                      }`}
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <p className="text-white font-semibold">
-                            {quote.quoteNumber}
-                          </p>
-                          <p className="text-xs text-gray-400">
-                            {new Date(quote.createdAt).toLocaleString()} •{" "}
-                            {quote.lineItems.length} item
-                            {quote.lineItems.length !== 1 ? "s" : ""}
-                          </p>
-                          {quote.status === "change_requested" &&
-                            quote.changeRequestNote && (
-                              <div className="mt-2 rounded border border-amber-700/40 bg-amber-900/20 p-2">
-                                <p className="text-xs font-semibold text-amber-300 mb-0.5">
-                                  Customer change request:
-                                </p>
-                                <p className="text-xs text-amber-100">
-                                  {quote.changeRequestNote}
-                                </p>
-                              </div>
-                            )}
-                        </div>
-                        <div className="text-right shrink-0">
-                          <p className="text-white font-bold">
-                            ${Number(quote.total).toFixed(2)}
-                          </p>
-                          <span
-                            className={`inline-block px-2 py-0.5 rounded text-xs capitalize ${
-                              quote.status === "accepted"
-                                ? "bg-green-900 text-green-200"
-                                : quote.status === "sent"
-                                  ? "bg-blue-900 text-blue-200"
-                                  : quote.status === "change_requested"
-                                    ? "bg-amber-900 text-amber-200"
-                                    : quote.status === "rejected"
-                                      ? "bg-red-900 text-red-200"
-                                      : "bg-slate-700 text-gray-300"
+                (() => {
+                  const filteredQuotes = getFilteredQuotes();
+                  const paginatedQuotes =
+                    quoteItemsPerPage === -1
+                      ? filteredQuotes
+                      : filteredQuotes.slice(
+                          (quoteCurrentPage - 1) * quoteItemsPerPage,
+                          quoteCurrentPage * quoteItemsPerPage,
+                        );
+
+                  if (filteredQuotes.length === 0) {
+                    return (
+                      <div className="text-center py-8 border-2 border-dashed border-slate-600 rounded">
+                        <p className="text-gray-400">
+                          No quotes found in this date range
+                        </p>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <>
+                      <div className="space-y-2">
+                        {paginatedQuotes.map((quote) => (
+                          <div
+                            key={quote.id}
+                            className={`bg-slate-800 p-3 rounded border ${
+                              quote.status === "change_requested"
+                                ? "border-amber-600/60"
+                                : "border-slate-600"
                             }`}
                           >
-                            {quote.status === "change_requested"
-                              ? "Change Requested"
-                              : quote.status}
-                          </span>
-                          {quote.status === "change_requested" && (
-                            <button
-                              onClick={() => openQuoteModal(quote)}
-                              className="mt-2 block w-full px-2 py-1 text-xs bg-amber-700 text-white rounded hover:bg-amber-600 transition-colors"
-                            >
-                              Edit &amp; Re-send
-                            </button>
-                          )}
-                        </div>
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="min-w-0">
+                                <p className="text-white font-semibold">
+                                  {quote.quoteNumber}
+                                </p>
+                                <p className="text-xs text-gray-400">
+                                  {new Date(quote.createdAt).toLocaleString()} •{" "}
+                                  {quote.lineItems.length} item
+                                  {quote.lineItems.length !== 1 ? "s" : ""}
+                                </p>
+                                {quote.status === "change_requested" &&
+                                  quote.changeRequestNote && (
+                                    <div className="mt-2 rounded border border-amber-700/40 bg-amber-900/20 p-2">
+                                      <p className="text-xs font-semibold text-amber-300 mb-0.5">
+                                        Customer change request:
+                                      </p>
+                                      <p className="text-xs text-amber-100">
+                                        {quote.changeRequestNote}
+                                      </p>
+                                    </div>
+                                  )}
+                              </div>
+                              <div className="text-right shrink-0">
+                                <p className="text-white font-bold">
+                                  ${Number(quote.total).toFixed(2)}
+                                </p>
+                                <span
+                                  className={`inline-block px-2 py-0.5 rounded text-xs capitalize ${
+                                    quote.status === "accepted"
+                                      ? "bg-green-900 text-green-200"
+                                      : quote.status === "sent"
+                                        ? "bg-blue-900 text-blue-200"
+                                        : quote.status === "change_requested"
+                                          ? "bg-amber-900 text-amber-200"
+                                          : quote.status === "rejected"
+                                            ? "bg-red-900 text-red-200"
+                                            : "bg-slate-700 text-gray-300"
+                                  }`}
+                                >
+                                  {quote.status === "change_requested"
+                                    ? "Change Requested"
+                                    : quote.status}
+                                </span>
+                                {quote.status === "change_requested" && (
+                                  <button
+                                    onClick={() => openQuoteModal(quote)}
+                                    className="mt-2 block w-full px-2 py-1 text-xs bg-amber-700 text-white rounded hover:bg-amber-600 transition-colors"
+                                  >
+                                    Edit &amp; Re-send
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    </div>
-                  ))}
-                </div>
+                      <div className="mt-4 pt-4 border-t border-slate-600">
+                        <Pagination
+                          currentPage={quoteCurrentPage}
+                          totalItems={filteredQuotes.length}
+                          itemsPerPage={quoteItemsPerPage}
+                          onPageChange={setQuoteCurrentPage}
+                          onItemsPerPageChange={(value) => {
+                            setQuoteItemsPerPage(value);
+                            setQuoteCurrentPage(1);
+                          }}
+                        />
+                      </div>
+                    </>
+                  );
+                })()
               )}
             </div>
             <div className="flex gap-3">
