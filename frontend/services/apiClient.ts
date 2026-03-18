@@ -579,6 +579,7 @@ class ApiClient {
         }>;
         taxAmount?: number;
         shippingCost?: number;
+        expirationDays?: number;
       },
     ) =>
       this.request<any>(`/quotes/customer/${customerId}`, {
@@ -617,6 +618,7 @@ class ApiClient {
         }>;
         taxAmount?: number;
         shippingCost?: number;
+        expirationDays?: number;
       },
     ) =>
       this.request<any>(`/quotes/${quoteId}`, {

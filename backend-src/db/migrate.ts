@@ -555,6 +555,15 @@ export async function runMigrations(): Promise<void> {
       // already has extended enum or not needed
     }
 
+    // custom_quotes: add expiration_date column
+    try {
+      await pool.query(
+        `ALTER TABLE custom_quotes ADD COLUMN expiration_date TIMESTAMP NULL`,
+      );
+    } catch (_e) {
+      // column already exists or table doesn't exist yet
+    }
+
     // Fix staff table structure if it has old schema
     await fixStaffTableStructure();
 

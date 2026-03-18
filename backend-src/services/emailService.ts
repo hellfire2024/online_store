@@ -258,6 +258,135 @@ export async function sendOrderConfirmationEmail(
   }
 }
 
+export async function sendQuoteEmail(
+  customerEmail: string,
+  customerName: string,
+  quoteNumber: string,
+  quoteDetails: any,
+) {
+  try {
+    const transport = transporter || (await initializeTransporter());
+    if (!transport || !cachedConfig) {
+      console.log(
+        "Email service not available - skipping quote email",
+      );
+      return { success: false, message: "Email service not configured" };
+    }
+
+    const itemsHtml = quoteDetails.lineItems
+      .map((item: any) => {
+        const itemPrice = (item.quantity * item.unitPrice).toFixed(2);
+        return `
+      <tr>
+        <td style="padding: 8px; border-bottom: 1px solid #ddd;">${item.name}</td>
+        <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: center;">${item.quantity}</td>
+        <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right;">$${Number(item.unitPrice).toFixed(2)}</td>
+        <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right;">$${itemPrice}</td>
+      </tr>`;
+      })
+      .join("");
+
+    const expirationText = quoteDetails.expirationDate
+      ? `<p style="color: #d97706; font-weight: bold; padding: 10px; background: #fef3c7; border-radius: 5px;">⚠️ This quote expires on ${new Date(quoteDetails.expirationDate).toLocaleDateString()}</p>`
+      : "";
+
+    const html = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: #1e293b; color: #fff; padding: 20px; border-radius: 5px; margin-bottom: 20px; }
+          .quote-info { background: #f0f9ff; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+          table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+          th { background: #f3f4f6; padding: 10px; text-align: left; font-weight: bold; border-bottom: 2px solid #d1d5db; }
+          .total-row { font-weight: bold; font-size: 16px; background: #f9fafb; }
+          .button { display: inline-block; background: #0ea5e9; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; margin-top: 15px; font-weight: bold; }
+          .notes { background: #f3f4f6; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #0ea5e9; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>Custom Quote</h1>
+            <p>We've prepared a custom quote just for you!</p>
+          </div>
+          
+          <div class="quote-info">
+            <p><strong>Quote Number:</strong> ${quoteNumber}</p>
+            <p><strong>Recipient:</strong> ${customerName}</p>
+            <p><strong>Quote Date:</strong> ${new Date().toLocaleDateString()}</p>
+          </div>
+
+          ${expirationText}
+
+          <h2>Quote Details</h2>
+          <table>
+            <tr>
+              <th>Item</th>
+              <th>Qty</th>
+              <th>Unit Price</th>
+              <th>Total</th>
+            </tr>
+            ${itemsHtml}
+            <tr>
+              <td colspan="3" style="text-align: right; padding: 10px; font-weight: bold;">Subtotal:</td>
+              <td style="padding: 10px; text-align: right;">$${Number(quoteDetails.subtotal).toFixed(2)}</td>
+            </tr>
+            <tr>
+              <td colspan="3" style="text-align: right; padding: 10px;">Shipping:</td>
+              <td style="padding: 10px; text-align: right;">$${Number(quoteDetails.shippingCost).toFixed(2)}</td>
+            </tr>
+            <tr>
+              <td colspan="3" style="text-align: right; padding: 10px;">Tax:</td>
+              <td style="padding: 10px; text-align: right;">$${Number(quoteDetails.taxAmount).toFixed(2)}</td>
+            </tr>
+            <tr class="total-row">
+              <td colspan="3" style="text-align: right; padding: 10px;">Total:</td>
+              <td style="padding: 10px; text-align: right;">$${Number(quoteDetails.total).toFixed(2)}</td>
+            </tr>
+          </table>
+
+          ${quoteDetails.notes ? `<div class="notes"><strong>Additional Notes:</strong><p>${quoteDetails.notes}</p></div>` : ""}
+
+          <p style="text-align: center; margin: 30px 0;">
+            <a href="${process.env.FRONTEND_URL || "https://customthreadsonline.com"}/quotes" class="button">View & Accept Quote</a>
+          </p>
+
+          <p style="margin-top: 30px; color: #666; font-size: 12px;">
+            To accept this quote or request changes, please log in to your account and view your quotes.<br/>
+            If you have any questions, please don't hesitate to reach out to us.
+          </p>
+
+          <p style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #ddd; color: #888; font-size: 11px;">
+            Custom Threads Online Store
+          </p>
+        </div>
+      </body>
+    </html>
+    `;
+
+    const result = await transport.sendMail({
+      from: `${cachedConfig.from_name} <${cachedConfig.from_email}>`,
+      to: customerEmail,
+      subject: `Your Custom Quote - ${quoteNumber}`,
+      html,
+    });
+
+    console.log("[Quote Email] Sent successfully:", {
+      to: customerEmail,
+      quoteNumber,
+      messageId: (result as any).messageId,
+    });
+
+    return { success: true, message: "Quote email sent successfully" };
+  } catch (error) {
+    console.error("Error sending quote email:", error);
+    return { success: false, message: "Failed to send email", error };
+  }
+}
+
 export async function sendShippingNotificationEmail(
   customerEmail: string,
   customerName: string,

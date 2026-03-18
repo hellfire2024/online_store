@@ -52,6 +52,7 @@ interface CustomerQuote {
   rejectedAt?: string;
   changeRequestedAt?: string;
   changeRequestNote?: string;
+  expirationDate?: string;
 }
 
 // Watermarked Image Component for Order Display

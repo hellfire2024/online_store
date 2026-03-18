@@ -7,6 +7,7 @@ import {
   requireAdmin,
   requireCustomer,
 } from "../middleware/auth.js";
+import { sendQuoteEmail } from "../services/emailService.js";
 
 const router = Router();
 
@@ -44,6 +45,7 @@ interface QuoteRow extends RowDataPacket {
   rejected_at: Date | null;
   change_requested_at: Date | null;
   change_request_note: string | null;
+  expiration_date: Date | null;
 }
 
 const parseJsonSafely = <T>(raw: string | null, fallback: T): T => {
@@ -75,6 +77,7 @@ const mapQuote = (row: QuoteRow) => ({
   rejectedAt: row.rejected_at || undefined,
   changeRequestedAt: row.change_requested_at || undefined,
   changeRequestNote: row.change_request_note || undefined,
+  expirationDate: row.expiration_date || undefined,
 });
 
 const normalizeLineItems = (lineItems: unknown): QuoteLineItem[] => {
@@ -148,7 +151,7 @@ router.post(
   async (req: Request, res: Response) => {
     try {
       const { customerId } = req.params;
-      const { lineItems, notes, taxAmount, shippingCost } = req.body;
+      const { lineItems, notes, taxAmount, shippingCost, expirationDays } = req.body;
       const authUser = (req as AuthenticatedRequest).authUser;
 
       const normalizedLineItems = normalizeLineItems(lineItems);
@@ -188,14 +191,19 @@ router.post(
       }, 0);
       const total = subtotal + safeTax + safeShipping;
 
+      // Calculate expiration date
+      const expirationDate = expirationDays
+        ? new Date(Date.now() + expirationDays * 24 * 60 * 60 * 1000)
+        : null;
+
       const quoteId = uuidv4();
       const quoteNumber = buildQuoteNumber();
 
       await pool.query(
         `INSERT INTO custom_quotes (
           id, customer_id, customer_email, customer_name, quote_number, status,
-          notes, line_items, subtotal, tax_amount, shipping_cost, total, created_by, sent_at
-        ) VALUES (?, ?, ?, ?, ?, 'sent', ?, ?, ?, ?, ?, ?, ?, ?)`,
+          notes, line_items, subtotal, tax_amount, shipping_cost, total, created_by, sent_at, expiration_date
+        ) VALUES (?, ?, ?, ?, ?, 'sent', ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           quoteId,
           customer.id,
@@ -210,6 +218,7 @@ router.post(
           total,
           authUser?.id || null,
           new Date(),
+          expirationDate,
         ],
       );
 
@@ -225,7 +234,24 @@ router.post(
         return;
       }
 
-      res.status(201).json(mapQuote(rows[0]));
+      const quote = mapQuote(rows[0]);
+
+      // Send quote email asynchronously (don't block response)
+      if (customer.email) {
+        sendQuoteEmail(customer.email, customerName || customer.email, quoteNumber, {
+          lineItems: normalizedLineItems,
+          subtotal,
+          taxAmount: safeTax,
+          shippingCost: safeShipping,
+          total,
+          notes: notes || undefined,
+          expirationDate,
+        }).catch((err) => {
+          console.error("Failed to send quote email:", err);
+        });
+      }
+
+      res.status(201).json(quote);
     } catch (error) {
       console.error("Error creating custom quote:", error);
       res.status(500).json({ error: "Failed to create custom quote" });
@@ -356,7 +382,7 @@ router.post(
 router.put("/:quoteId", requireAdmin, async (req: Request, res: Response) => {
   try {
     const { quoteId } = req.params;
-    const { lineItems, notes, taxAmount, shippingCost } = req.body;
+    const { lineItems, notes, taxAmount, shippingCost, expirationDays } = req.body;
 
     const [rows] = await pool.query<QuoteRow[]>(
       `SELECT * FROM custom_quotes WHERE id = ? LIMIT 1`,
@@ -389,6 +415,11 @@ router.put("/:quoteId", requireAdmin, async (req: Request, res: Response) => {
     }, 0);
     const total = subtotal + safeTax + safeShipping;
 
+    // Calculate expiration date
+    const expirationDate = expirationDays
+      ? new Date(Date.now() + expirationDays * 24 * 60 * 60 * 1000)
+      : null;
+
     await pool.query(
       `UPDATE custom_quotes
          SET status = 'sent',
@@ -398,6 +429,7 @@ router.put("/:quoteId", requireAdmin, async (req: Request, res: Response) => {
              tax_amount = ?,
              shipping_cost = ?,
              total = ?,
+             expiration_date = ?,
              change_request_note = NULL,
              change_requested_at = NULL,
              sent_at = NOW()
@@ -409,6 +441,7 @@ router.put("/:quoteId", requireAdmin, async (req: Request, res: Response) => {
         safeTax,
         safeShipping,
         total,
+        expirationDate,
         quoteId,
       ],
     );
@@ -417,7 +450,25 @@ router.put("/:quoteId", requireAdmin, async (req: Request, res: Response) => {
       `SELECT * FROM custom_quotes WHERE id = ? LIMIT 1`,
       [quoteId],
     );
-    res.json(mapQuote(updated[0]));
+
+    const quote = mapQuote(updated[0]);
+
+    // Send updated quote email asynchronously
+    if (updated[0].customer_email) {
+      sendQuoteEmail(updated[0].customer_email, updated[0].customer_name || updated[0].customer_email, updated[0].quote_number, {
+        lineItems: normalizedLineItems,
+        subtotal,
+        taxAmount: safeTax,
+        shippingCost: safeShipping,
+        total,
+        notes: notes || undefined,
+        expirationDate,
+      }).catch((err) => {
+        console.error("Failed to send updated quote email:", err);
+      });
+    }
+
+    res.json(quote);
   } catch (error) {
     console.error("Error updating quote:", error);
     res.status(500).json({ error: "Failed to update quote" });

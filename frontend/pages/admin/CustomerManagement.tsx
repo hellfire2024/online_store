@@ -85,6 +85,7 @@ interface CustomQuote {
   rejectedAt?: string;
   changeRequestedAt?: string;
   changeRequestNote?: string;
+  expirationDate?: string;
 }
 
 const CustomerManagement: React.FC = () => {
@@ -121,6 +122,7 @@ const CustomerManagement: React.FC = () => {
     notes: "",
     taxAmount: 0,
     shippingCost: 0,
+    expirationDays: 30,
     lineItems: [
       {
         name: "",
@@ -515,6 +517,7 @@ const CustomerManagement: React.FC = () => {
         notes: quoteToEdit.notes || "",
         taxAmount: Number(quoteToEdit.taxAmount || 0),
         shippingCost: Number(quoteToEdit.shippingCost || 0),
+        expirationDays: 30,
         lineItems:
           safeLineItems.length > 0
             ? safeLineItems.map((item) => ({
@@ -546,6 +549,8 @@ const CustomerManagement: React.FC = () => {
       setQuoteForm({
         notes: "",
         taxAmount: 0,
+        shippingCost: 0,
+        expirationDays: 30,
         shippingCost: 0,
         lineItems: [
           {
@@ -707,6 +712,7 @@ const CustomerManagement: React.FC = () => {
           notes: quoteForm.notes.trim() || undefined,
           taxAmount: Number(quoteForm.taxAmount) || 0,
           shippingCost: Number(quoteForm.shippingCost) || 0,
+          expirationDays: Number(quoteForm.expirationDays) || 30,
           lineItems: validLineItems,
         });
         setCustomerQuotes((prev) =>
@@ -720,6 +726,7 @@ const CustomerManagement: React.FC = () => {
             notes: quoteForm.notes.trim() || undefined,
             taxAmount: Number(quoteForm.taxAmount) || 0,
             shippingCost: Number(quoteForm.shippingCost) || 0,
+            expirationDays: Number(quoteForm.expirationDays) || 30,
             lineItems: validLineItems,
           },
         );
@@ -1638,6 +1645,12 @@ const CustomerManagement: React.FC = () => {
                                     • {quote.lineItems.length} item
                                     {quote.lineItems.length !== 1 ? "s" : ""}
                                   </p>
+                                  {quote.expirationDate && (
+                                    <p className={`text-xs mt-1 ${new Date(quote.expirationDate) < new Date() ? "text-red-400" : "text-green-400"}`}>
+                                      {new Date(quote.expirationDate) < new Date() ? "Expired " : "Expires "}
+                                      {new Date(quote.expirationDate).toLocaleDateString()}
+                                    </p>
+                                  )}
                                   {quote.status === "change_requested" &&
                                     quote.changeRequestNote && (
                                       <div className="mt-2 rounded border border-amber-700/40 bg-amber-900/20 p-2">
@@ -2024,6 +2037,35 @@ const CustomerManagement: React.FC = () => {
                     Number(quoteForm.shippingCost || 0)
                   ).toFixed(2)}
                 </div>
+              </div>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm text-gray-300 mb-1">
+                Quote Expires In (days)
+              </label>
+              <div className="flex gap-2">
+                <select
+                  value={quoteForm.expirationDays}
+                  onChange={(e) =>
+                    setQuoteForm((prev) => ({
+                      ...prev,
+                      expirationDays: Number(e.target.value),
+                    }))
+                  }
+                  className="flex-1 px-3 py-2 bg-slate-700 text-white rounded border border-slate-600"
+                >
+                  <option value={7}>7 days</option>
+                  <option value={14}>14 days</option>
+                  <option value={30}>30 days</option>
+                  <option value={60}>60 days</option>
+                  <option value={90}>90 days</option>
+                </select>
+                {quoteForm.expirationDays && (
+                  <div className="px-3 py-2 bg-slate-900 text-white rounded border border-slate-600 text-sm whitespace-nowrap">
+                    {new Date(Date.now() + quoteForm.expirationDays * 24 * 60 * 60 * 1000).toLocaleDateString()}
+                  </div>
+                )}
               </div>
             </div>
 
