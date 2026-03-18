@@ -424,24 +424,39 @@ const CustomerManagement: React.FC = () => {
   const openQuoteModal = (quoteToEdit?: CustomQuote) => {
     if (!selectedCustomer) return;
     if (quoteToEdit) {
+      const safeLineItems = Array.isArray(quoteToEdit.lineItems)
+        ? quoteToEdit.lineItems
+        : [];
       setEditingQuoteId(quoteToEdit.id);
       setQuoteForm({
         notes: quoteToEdit.notes || "",
-        taxAmount: quoteToEdit.taxAmount,
-        shippingCost: quoteToEdit.shippingCost,
-        lineItems: quoteToEdit.lineItems.map((item) => ({
-          name: item.name,
-          description: item.description || "",
-          quantity: item.quantity,
-          unitPrice: item.unitPrice,
-          options: Array.isArray(item.options)
-            ? item.options.map((option) => ({
-                name: option.name || "",
-                priceDelta: Number(option.priceDelta || 0),
+        taxAmount: Number(quoteToEdit.taxAmount || 0),
+        shippingCost: Number(quoteToEdit.shippingCost || 0),
+        lineItems:
+          safeLineItems.length > 0
+            ? safeLineItems.map((item) => ({
+                name: item.name,
+                description: item.description || "",
+                quantity: item.quantity,
+                unitPrice: item.unitPrice,
+                options: Array.isArray(item.options)
+                  ? item.options.map((option) => ({
+                      name: option.name || "",
+                      priceDelta: Number(option.priceDelta || 0),
+                    }))
+                  : [],
+                requiresPhotoUpload: item.requiresPhotoUpload ?? false,
               }))
-            : [],
-          requiresPhotoUpload: item.requiresPhotoUpload ?? false,
-        })),
+            : [
+                {
+                  name: "",
+                  description: "",
+                  quantity: 1,
+                  unitPrice: 0,
+                  options: [],
+                  requiresPhotoUpload: false,
+                },
+              ],
       });
     } else {
       setEditingQuoteId(null);
