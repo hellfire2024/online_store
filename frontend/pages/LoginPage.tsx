@@ -52,6 +52,7 @@ const LoginPage: React.FC = () => {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
+            autoComplete="email"
             className={inputClasses}
             placeholder="you@example.com"
           />
@@ -70,6 +71,7 @@ const LoginPage: React.FC = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              autoComplete="current-password"
               className={`${inputClasses} pr-12`}
               placeholder="••••••••"
             />
