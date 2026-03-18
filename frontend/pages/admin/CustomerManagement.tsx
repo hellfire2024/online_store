@@ -1646,9 +1646,16 @@ const CustomerManagement: React.FC = () => {
                                     {quote.lineItems.length !== 1 ? "s" : ""}
                                   </p>
                                   {quote.expirationDate && (
-                                    <p className={`text-xs mt-1 ${new Date(quote.expirationDate) < new Date() ? "text-red-400" : "text-green-400"}`}>
-                                      {new Date(quote.expirationDate) < new Date() ? "Expired " : "Expires "}
-                                      {new Date(quote.expirationDate).toLocaleDateString()}
+                                    <p
+                                      className={`text-xs mt-1 ${new Date(quote.expirationDate) < new Date() ? "text-red-400" : "text-green-400"}`}
+                                    >
+                                      {new Date(quote.expirationDate) <
+                                      new Date()
+                                        ? "Expired "
+                                        : "Expires "}
+                                      {new Date(
+                                        quote.expirationDate,
+                                      ).toLocaleDateString()}
                                     </p>
                                   )}
                                   {quote.status === "change_requested" &&
@@ -2063,7 +2070,10 @@ const CustomerManagement: React.FC = () => {
                 </select>
                 {quoteForm.expirationDays && (
                   <div className="px-3 py-2 bg-slate-900 text-white rounded border border-slate-600 text-sm whitespace-nowrap">
-                    {new Date(Date.now() + quoteForm.expirationDays * 24 * 60 * 60 * 1000).toLocaleDateString()}
+                    {new Date(
+                      Date.now() +
+                        quoteForm.expirationDays * 24 * 60 * 60 * 1000,
+                    ).toLocaleDateString()}
                   </div>
                 )}
               </div>

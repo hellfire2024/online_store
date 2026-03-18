@@ -267,9 +267,7 @@ export async function sendQuoteEmail(
   try {
     const transport = transporter || (await initializeTransporter());
     if (!transport || !cachedConfig) {
-      console.log(
-        "Email service not available - skipping quote email",
-      );
+      console.log("Email service not available - skipping quote email");
       return { success: false, message: "Email service not configured" };
     }
 

@@ -151,7 +151,8 @@ router.post(
   async (req: Request, res: Response) => {
     try {
       const { customerId } = req.params;
-      const { lineItems, notes, taxAmount, shippingCost, expirationDays } = req.body;
+      const { lineItems, notes, taxAmount, shippingCost, expirationDays } =
+        req.body;
       const authUser = (req as AuthenticatedRequest).authUser;
 
       const normalizedLineItems = normalizeLineItems(lineItems);
@@ -238,15 +239,20 @@ router.post(
 
       // Send quote email asynchronously (don't block response)
       if (customer.email) {
-        sendQuoteEmail(customer.email, customerName || customer.email, quoteNumber, {
-          lineItems: normalizedLineItems,
-          subtotal,
-          taxAmount: safeTax,
-          shippingCost: safeShipping,
-          total,
-          notes: notes || undefined,
-          expirationDate,
-        }).catch((err) => {
+        sendQuoteEmail(
+          customer.email,
+          customerName || customer.email,
+          quoteNumber,
+          {
+            lineItems: normalizedLineItems,
+            subtotal,
+            taxAmount: safeTax,
+            shippingCost: safeShipping,
+            total,
+            notes: notes || undefined,
+            expirationDate,
+          },
+        ).catch((err) => {
           console.error("Failed to send quote email:", err);
         });
       }
@@ -382,7 +388,8 @@ router.post(
 router.put("/:quoteId", requireAdmin, async (req: Request, res: Response) => {
   try {
     const { quoteId } = req.params;
-    const { lineItems, notes, taxAmount, shippingCost, expirationDays } = req.body;
+    const { lineItems, notes, taxAmount, shippingCost, expirationDays } =
+      req.body;
 
     const [rows] = await pool.query<QuoteRow[]>(
       `SELECT * FROM custom_quotes WHERE id = ? LIMIT 1`,
@@ -455,15 +462,20 @@ router.put("/:quoteId", requireAdmin, async (req: Request, res: Response) => {
 
     // Send updated quote email asynchronously
     if (updated[0].customer_email) {
-      sendQuoteEmail(updated[0].customer_email, updated[0].customer_name || updated[0].customer_email, updated[0].quote_number, {
-        lineItems: normalizedLineItems,
-        subtotal,
-        taxAmount: safeTax,
-        shippingCost: safeShipping,
-        total,
-        notes: notes || undefined,
-        expirationDate,
-      }).catch((err) => {
+      sendQuoteEmail(
+        updated[0].customer_email,
+        updated[0].customer_name || updated[0].customer_email,
+        updated[0].quote_number,
+        {
+          lineItems: normalizedLineItems,
+          subtotal,
+          taxAmount: safeTax,
+          shippingCost: safeShipping,
+          total,
+          notes: notes || undefined,
+          expirationDate,
+        },
+      ).catch((err) => {
         console.error("Failed to send updated quote email:", err);
       });
     }
