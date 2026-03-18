@@ -139,6 +139,10 @@ const CustomerOrdersPage: React.FC = () => {
   const [quoteSortBy, setQuoteSortBy] = useState<
     "date-desc" | "date-asc" | "price-desc" | "price-asc"
   >("date-desc");
+  const [quoteFilterDateRange, setQuoteFilterDateRange] =
+    useState<string>("last 30 days");
+  const [quoteCurrentPage, setQuoteCurrentPage] = useState(1);
+  const [quoteItemsPerPage, setQuoteItemsPerPage] = useState(10);
   const pendingQuoteRef = useRef<HTMLDivElement>(null);
   const orderWatermarkText =
     `${siteSettings?.logoText || "AdaptiveGIS"} ${siteSettings?.logoTextAccent || "Store"}`.trim();
@@ -638,6 +642,36 @@ const CustomerOrdersPage: React.FC = () => {
     }
   };
 
+  const getQuoteDateRange = (): { start: Date; end: Date } => {
+    const now = new Date();
+    const end = new Date(now);
+    let start = new Date(now);
+
+    if (quoteFilterDateRange === "last 30 days") {
+      start.setDate(now.getDate() - 30);
+    } else if (quoteFilterDateRange === "past 3 months") {
+      start.setMonth(now.getMonth() - 3);
+    } else {
+      // Year selection
+      const year = parseInt(quoteFilterDateRange);
+      if (!isNaN(year)) {
+        start = new Date(year, 0, 1);
+        end.setFullYear(year + 1);
+        end.setDate(0);
+      }
+    }
+
+    return { start, end };
+  };
+
+  const getFilteredQuotes = (): CustomerQuote[] => {
+    const { start, end } = getQuoteDateRange();
+    return quotes.filter((quote) => {
+      const quoteDate = new Date(quote.createdAt);
+      return quoteDate >= start && quoteDate <= end;
+    });
+  };
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "pending":
@@ -840,6 +874,39 @@ const CustomerOrdersPage: React.FC = () => {
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold text-white">Custom Quotes</h2>
             <div className="flex items-center gap-3">
+              <label className="text-xs text-gray-400">Date Range:</label>
+              <select
+                value={quoteFilterDateRange}
+                onChange={(e) => {
+                  setQuoteFilterDateRange(e.target.value);
+                  setQuoteCurrentPage(1);
+                }}
+                className="px-2 py-1 text-xs rounded bg-slate-700 text-white border border-slate-600"
+              >
+                <option value="last 30 days">Last 30 Days</option>
+                <option value="past 3 months">Past 3 Months</option>
+                <option disabled>―――――――</option>
+                <option value="2026">2026</option>
+                <option value="2025">2025</option>
+                <option value="2024">2024</option>
+                <option value="2023">2023</option>
+                <option value="2022">2022</option>
+                <option value="2021">2021</option>
+                <option value="2020">2020</option>
+                <option value="2019">2019</option>
+                <option value="2018">2018</option>
+                <option value="2017">2017</option>
+                <option value="2016">2016</option>
+                <option value="2015">2015</option>
+                <option value="2014">2014</option>
+                <option value="2013">2013</option>
+                <option value="2012">2012</option>
+                <option value="2011">2011</option>
+                <option value="2010">2010</option>
+                <option value="2009">2009</option>
+                <option value="2008">2008</option>
+                <option value="2007">2007</option>
+              </select>
               <label className="text-xs text-gray-400">Sort:</label>
               <select
                 value={quoteSortBy}
@@ -860,403 +927,461 @@ const CustomerOrdersPage: React.FC = () => {
                 <option value="price-asc">Price: Low to High</option>
               </select>
               <span className="text-sm text-gray-400">
-                {quotes.length} quote{quotes.length !== 1 ? "s" : ""}
+                {getFilteredQuotes().length} quote
+                {getFilteredQuotes().length !== 1 ? "s" : ""}
               </span>
             </div>
           </div>
 
           <div className="space-y-2">
-            {sortQuotes(quotes).map((quote) => {
-              const isExpanded = expandedQuoteId === quote.id;
-              const statusColor =
-                quote.status === "accepted"
-                  ? "bg-green-900 text-green-200"
-                  : quote.status === "sent"
-                    ? "bg-blue-900 text-blue-200"
-                    : quote.status === "change_requested"
-                      ? "bg-amber-900 text-amber-200"
-                      : quote.status === "rejected"
-                        ? "bg-red-900 text-red-200"
-                        : "bg-slate-700 text-gray-300";
-              const borderColor =
-                quote.status === "change_requested"
-                  ? "border-amber-600"
-                  : quote.status === "sent"
-                    ? "border-blue-600"
-                    : "border-slate-600";
+            {(() => {
+              const filteredQuotes = getFilteredQuotes();
+              const sortedQuotes = sortQuotes(filteredQuotes);
+              const paginatedQuotes =
+                quoteItemsPerPage === -1
+                  ? sortedQuotes
+                  : sortedQuotes.slice(
+                      (quoteCurrentPage - 1) * quoteItemsPerPage,
+                      quoteCurrentPage * quoteItemsPerPage,
+                    );
+
+              if (filteredQuotes.length === 0) {
+                return (
+                  <div className="text-center py-6 text-gray-400">
+                    No quotes found in this date range
+                  </div>
+                );
+              }
 
               return (
-                <div
-                  key={quote.id}
-                  className={`bg-slate-700/50 border ${borderColor} rounded overflow-hidden`}
-                >
-                  {/* Card Header — always visible, click to toggle */}
-                  <div
-                    className="p-3 cursor-pointer hover:bg-slate-700/60 transition"
-                    onClick={() =>
-                      setExpandedQuoteId(isExpanded ? null : quote.id)
-                    }
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <img
-                          src={commissionedWorkIcon}
-                          alt="Commissioned work"
-                          className="w-9 h-9 rounded border border-slate-600 object-cover shrink-0"
-                        />
-                        <div className="min-w-0">
-                          <p className="text-white font-semibold">
-                            {quote.quoteNumber}
-                          </p>
-                          <p className="text-xs text-gray-400">
-                            {new Date(quote.createdAt).toLocaleDateString()} •{" "}
-                            {quote.lineItems.length} item
-                            {quote.lineItems.length !== 1 ? "s" : ""}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3 shrink-0">
-                        <div className="text-right">
-                          <p className="text-white font-bold">
-                            ${Number(quote.total).toFixed(2)}
-                          </p>
-                          <span
-                            className={`inline-block px-2 py-0.5 rounded text-xs capitalize ${statusColor}`}
-                          >
-                            {quote.status === "change_requested"
-                              ? "Change Requested"
-                              : quote.status}
-                          </span>
-                        </div>
+                <>
+                  {paginatedQuotes.map((quote) => {
+                    const isExpanded = expandedQuoteId === quote.id;
+                    const statusColor =
+                      quote.status === "accepted"
+                        ? "bg-green-900 text-green-200"
+                        : quote.status === "sent"
+                          ? "bg-blue-900 text-blue-200"
+                          : quote.status === "change_requested"
+                            ? "bg-amber-900 text-amber-200"
+                            : quote.status === "rejected"
+                              ? "bg-red-900 text-red-200"
+                              : "bg-slate-700 text-gray-300";
+                    const borderColor =
+                      quote.status === "change_requested"
+                        ? "border-amber-600"
+                        : quote.status === "sent"
+                          ? "border-blue-600"
+                          : "border-slate-600";
+
+                    return (
+                      <div
+                        key={quote.id}
+                        className={`bg-slate-700/50 border ${borderColor} rounded overflow-hidden`}
+                      >
+                        {/* Card Header — always visible, click to toggle */}
                         <div
-                          className={`shrink-0 flex h-8 w-8 items-center justify-center rounded-full border transition-all duration-200 ${
-                            isExpanded
-                              ? "border-sky-400/50 bg-sky-500/15 text-sky-300"
-                              : "border-slate-600 bg-slate-700/40 text-slate-300"
-                          }`}
+                          className="p-3 cursor-pointer hover:bg-slate-700/60 transition"
+                          onClick={() =>
+                            setExpandedQuoteId(isExpanded ? null : quote.id)
+                          }
                         >
-                          <svg
-                            className={`w-4 h-4 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                            aria-hidden="true"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2.5}
-                              d="M6 9l6 6 6-6"
-                            />
-                          </svg>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Pending attention banner */}
-                    {quote.status === "sent" && (
-                      <div className="mt-2 flex items-center gap-2 text-xs text-blue-300">
-                        <span className="inline-block w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
-                        Quote ready for review — click to view details
-                      </div>
-                    )}
-                    {quote.status === "change_requested" && (
-                      <div className="mt-2 flex items-center gap-2 text-xs text-amber-300">
-                        <span className="inline-block w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-                        Change request submitted — awaiting updated quote
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Expandable Details */}
-                  {isExpanded && (
-                    <div className="border-t border-slate-600 p-3 space-y-4 bg-slate-800/40">
-                      {quote.notes && (
-                        <p className="text-sm text-gray-300 italic">
-                          {quote.notes}
-                        </p>
-                      )}
-
-                      {/* Change Request Note */}
-                      {quote.status === "change_requested" &&
-                        quote.changeRequestNote && (
-                          <div className="rounded border border-amber-700/50 bg-amber-900/20 p-3">
-                            <p className="text-xs font-semibold text-amber-300 mb-1">
-                              Your change request:
-                            </p>
-                            <p className="text-sm text-amber-100">
-                              {quote.changeRequestNote}
-                            </p>
-                          </div>
-                        )}
-
-                      {/* Line Items */}
-                      <div>
-                        <h4 className="text-sm font-semibold text-gray-300 mb-3">
-                          Quote Items
-                        </h4>
-                        <div className="space-y-3">
-                          {quote.lineItems.map((item, idx) => (
-                            <div
-                              key={idx}
-                              className="bg-slate-800/50 rounded border border-slate-700 p-3"
-                            >
-                              <div className="flex gap-3">
-                                <div className="shrink-0">
-                                  <div className="w-16 h-16 rounded border border-slate-600 overflow-hidden bg-slate-700 flex items-center justify-center">
-                                    <img
-                                      src={commissionedWorkIcon}
-                                      alt="Commissioned work"
-                                      className="w-12 h-12 object-contain"
-                                    />
-                                  </div>
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-white font-medium">
-                                    {item.name}
-                                  </p>
-                                  {item.description && (
-                                    <p className="text-xs text-gray-400 mt-1">
-                                      {item.description}
-                                    </p>
-                                  )}
-                                  <div className="flex flex-wrap gap-2 mt-2">
-                                    <span className="text-xs text-gray-300">
-                                      Qty: {item.quantity}
-                                    </span>
-                                    <span className="text-xs text-gray-300">
-                                      ${Number(item.unitPrice).toFixed(2)} base
-                                    </span>
-                                    {(item.options || []).length > 0 && (
-                                      <span className="text-xs text-amber-300">
-                                        +$
-                                        {(item.options || [])
-                                          .reduce(
-                                            (sum, option) =>
-                                              sum +
-                                              Number(option.priceDelta || 0),
-                                            0,
-                                          )
-                                          .toFixed(2)}{" "}
-                                        options
-                                      </span>
-                                    )}
-                                    {item.requiresPhotoUpload && (
-                                      <span className="inline-block px-2 py-0.5 rounded text-xs bg-sky-900/50 text-sky-200 border border-sky-700">
-                                        Photo Required
-                                      </span>
-                                    )}
-                                  </div>
-                                  {(item.options || []).length > 0 && (
-                                    <div className="mt-2 space-y-1">
-                                      {(item.options || []).map(
-                                        (option, optionIdx) => (
-                                          <div
-                                            key={optionIdx}
-                                            className="text-xs text-amber-200"
-                                          >
-                                            • {option.name} ({" "}
-                                            {Number(option.priceDelta) >= 0
-                                              ? "+"
-                                              : ""}
-                                            $
-                                            {Number(option.priceDelta).toFixed(
-                                              2,
-                                            )}
-                                            )
-                                          </div>
-                                        ),
-                                      )}
-                                    </div>
-                                  )}
-                                </div>
-                                <div className="text-right shrink-0">
-                                  <p className="text-white font-bold">
-                                    $
-                                    {(
-                                      (Number(item.unitPrice) +
-                                        (item.options || []).reduce(
-                                          (sum, option) =>
-                                            sum +
-                                            Number(option.priceDelta || 0),
-                                          0,
-                                        )) *
-                                      Number(item.quantity)
-                                    ).toFixed(2)}
-                                  </p>
-                                </div>
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <img
+                                src={commissionedWorkIcon}
+                                alt="Commissioned work"
+                                className="w-9 h-9 rounded border border-slate-600 object-cover shrink-0"
+                              />
+                              <div className="min-w-0">
+                                <p className="text-white font-semibold">
+                                  {quote.quoteNumber}
+                                </p>
+                                <p className="text-xs text-gray-400">
+                                  {new Date(
+                                    quote.createdAt,
+                                  ).toLocaleDateString()}{" "}
+                                  • {quote.lineItems.length} item
+                                  {quote.lineItems.length !== 1 ? "s" : ""}
+                                </p>
                               </div>
                             </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Price Breakdown */}
-                      <div className="space-y-1 text-sm pt-2 border-t border-slate-600">
-                        <div className="flex justify-between text-gray-300">
-                          <span>Subtotal</span>
-                          <span>${Number(quote.subtotal).toFixed(2)}</span>
-                        </div>
-                        {quote.taxAmount > 0 && (
-                          <div className="flex justify-between text-gray-300">
-                            <span>Tax</span>
-                            <span>${Number(quote.taxAmount).toFixed(2)}</span>
-                          </div>
-                        )}
-                        {quote.shippingCost > 0 && (
-                          <div className="flex justify-between text-gray-300">
-                            <span>Shipping</span>
-                            <span>
-                              ${Number(quote.shippingCost).toFixed(2)}
-                            </span>
-                          </div>
-                        )}
-                        <div className="flex justify-between text-white font-bold pt-1 border-t border-slate-600">
-                          <span>Total</span>
-                          <span>${Number(quote.total).toFixed(2)}</span>
-                        </div>
-                      </div>
-
-                      {/* Photo Uploads */}
-                      {quote.lineItems.some(
-                        (item) => item.requiresPhotoUpload,
-                      ) && (
-                        <div className="pt-2 border-t border-slate-600 p-3 bg-slate-800 rounded">
-                          <p className="text-sm text-sky-300 font-medium mb-3">
-                            Photo Upload Required
-                          </p>
-                          <div className="space-y-3">
-                            {quote.lineItems.map((item, idx) => {
-                              if (!item.requiresPhotoUpload) return null;
-                              const uploaded = quoteUploads[quote.id]?.[idx];
-                              return (
-                                <div
-                                  key={`${quote.id}-upload-${idx}`}
-                                  className="rounded-lg border border-slate-600 bg-slate-700/50 p-3"
+                            <div className="flex items-center gap-3 shrink-0">
+                              <div className="text-right">
+                                <p className="text-white font-bold">
+                                  ${Number(quote.total).toFixed(2)}
+                                </p>
+                                <span
+                                  className={`inline-block px-2 py-0.5 rounded text-xs capitalize ${statusColor}`}
                                 >
-                                  <p className="text-sm font-medium text-white mb-2">
-                                    {item.name}
-                                  </p>
-                                  <DragDropFileUpload
-                                    onFileSelect={(file) =>
-                                      handleQuoteUploadChange(
-                                        quote.id,
-                                        idx,
-                                        file,
-                                      )
-                                    }
-                                    acceptedFormats="image/*"
-                                    maxSize={10 * 1024 * 1024}
-                                    label="Upload Your Design"
-                                    showPreview={true}
-                                    previewUrl={uploaded?.dataUrl}
-                                    previewAlt={item.name}
+                                  {quote.status === "change_requested"
+                                    ? "Change Requested"
+                                    : quote.status}
+                                </span>
+                              </div>
+                              <div
+                                className={`shrink-0 flex h-8 w-8 items-center justify-center rounded-full border transition-all duration-200 ${
+                                  isExpanded
+                                    ? "border-sky-400/50 bg-sky-500/15 text-sky-300"
+                                    : "border-slate-600 bg-slate-700/40 text-slate-300"
+                                }`}
+                              >
+                                <svg
+                                  className={`w-4 h-4 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                  aria-hidden="true"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2.5}
+                                    d="M6 9l6 6 6-6"
                                   />
-                                  {uploaded?.fileName && (
-                                    <span className="mt-2 block text-xs text-green-300">
-                                      Uploaded: {uploaded.fileName}
-                                    </span>
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Action Buttons */}
-                      <div className="flex flex-wrap justify-end gap-2 pt-2 border-t border-slate-600">
-                        {/* Request Change inline panel */}
-                        {requestingChangeQuoteId === quote.id ? (
-                          <div className="w-full space-y-2">
-                            <label className="block text-sm font-medium text-gray-300">
-                              Describe what you'd like changed:
-                            </label>
-                            <textarea
-                              value={changeNoteText}
-                              onChange={(e) =>
-                                setChangeNoteText(e.target.value)
-                              }
-                              placeholder="e.g. Please adjust the size, change the color, or update the quantity..."
-                              rows={3}
-                              className="w-full px-3 py-2 rounded bg-slate-700 border border-slate-600 text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none"
-                            />
-                            <div className="flex justify-end gap-2">
-                              <button
-                                onClick={() => {
-                                  setRequestingChangeQuoteId(null);
-                                  setChangeNoteText("");
-                                }}
-                                className="px-3 py-1.5 text-sm bg-slate-700 text-gray-300 rounded hover:bg-slate-600"
-                              >
-                                Cancel
-                              </button>
-                              <button
-                                onClick={() => handleRequestChange(quote.id)}
-                                disabled={
-                                  submittingQuoteAction === quote.id + "_change"
-                                }
-                                className="px-3 py-1.5 text-sm bg-amber-600 text-white rounded hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                              >
-                                {submittingQuoteAction === quote.id + "_change"
-                                  ? "Submitting..."
-                                  : "Submit Request"}
-                              </button>
+                                </svg>
+                              </div>
                             </div>
                           </div>
-                        ) : (
-                          <>
-                            {/* Request Change button — only when sent */}
-                            {quote.status === "sent" && (
-                              <button
-                                onClick={() => {
-                                  setRequestingChangeQuoteId(quote.id);
-                                  setChangeNoteText("");
-                                }}
-                                className="px-3 py-1.5 text-sm bg-amber-700 text-white rounded hover:bg-amber-600"
-                              >
-                                Request Changes
-                              </button>
+
+                          {/* Pending attention banner */}
+                          {quote.status === "sent" && (
+                            <div className="mt-2 flex items-center gap-2 text-xs text-blue-300">
+                              <span className="inline-block w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
+                              Quote ready for review — click to view details
+                            </div>
+                          )}
+                          {quote.status === "change_requested" && (
+                            <div className="mt-2 flex items-center gap-2 text-xs text-amber-300">
+                              <span className="inline-block w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                              Change request submitted — awaiting updated quote
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Expandable Details */}
+                        {isExpanded && (
+                          <div className="border-t border-slate-600 p-3 space-y-4 bg-slate-800/40">
+                            {quote.notes && (
+                              <p className="text-sm text-gray-300 italic">
+                                {quote.notes}
+                              </p>
                             )}
 
-                            {/* Reject button — only when sent */}
-                            {quote.status === "sent" && (
-                              <button
-                                onClick={() => handleRejectQuote(quote.id)}
-                                disabled={
-                                  submittingQuoteAction === quote.id + "_reject"
-                                }
-                                className="px-3 py-1.5 text-sm bg-red-800 text-white rounded hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                              >
-                                {submittingQuoteAction === quote.id + "_reject"
-                                  ? "Rejecting..."
-                                  : "Reject Quote"}
-                              </button>
+                            {/* Change Request Note */}
+                            {quote.status === "change_requested" &&
+                              quote.changeRequestNote && (
+                                <div className="rounded border border-amber-700/50 bg-amber-900/20 p-3">
+                                  <p className="text-xs font-semibold text-amber-300 mb-1">
+                                    Your change request:
+                                  </p>
+                                  <p className="text-sm text-amber-100">
+                                    {quote.changeRequestNote}
+                                  </p>
+                                </div>
+                              )}
+
+                            {/* Line Items */}
+                            <div>
+                              <h4 className="text-sm font-semibold text-gray-300 mb-3">
+                                Quote Items
+                              </h4>
+                              <div className="space-y-3">
+                                {quote.lineItems.map((item, idx) => (
+                                  <div
+                                    key={idx}
+                                    className="bg-slate-800/50 rounded border border-slate-700 p-3"
+                                  >
+                                    <div className="flex gap-3">
+                                      <div className="shrink-0">
+                                        <div className="w-16 h-16 rounded border border-slate-600 overflow-hidden bg-slate-700 flex items-center justify-center">
+                                          <img
+                                            src={commissionedWorkIcon}
+                                            alt="Commissioned work"
+                                            className="w-12 h-12 object-contain"
+                                          />
+                                        </div>
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                        <p className="text-white font-medium">
+                                          {item.name}
+                                        </p>
+                                        {item.description && (
+                                          <p className="text-xs text-gray-400 mt-1">
+                                            {item.description}
+                                          </p>
+                                        )}
+                                        <div className="flex flex-wrap gap-2 mt-2">
+                                          <span className="text-xs text-gray-300">
+                                            Qty: {item.quantity}
+                                          </span>
+                                          <span className="text-xs text-gray-300">
+                                            ${Number(item.unitPrice).toFixed(2)}{" "}
+                                            base
+                                          </span>
+                                          {(item.options || []).length > 0 && (
+                                            <span className="text-xs text-amber-300">
+                                              +$
+                                              {(item.options || [])
+                                                .reduce(
+                                                  (sum, option) =>
+                                                    sum +
+                                                    Number(
+                                                      option.priceDelta || 0,
+                                                    ),
+                                                  0,
+                                                )
+                                                .toFixed(2)}{" "}
+                                              options
+                                            </span>
+                                          )}
+                                          {item.requiresPhotoUpload && (
+                                            <span className="inline-block px-2 py-0.5 rounded text-xs bg-sky-900/50 text-sky-200 border border-sky-700">
+                                              Photo Required
+                                            </span>
+                                          )}
+                                        </div>
+                                        {(item.options || []).length > 0 && (
+                                          <div className="mt-2 space-y-1">
+                                            {(item.options || []).map(
+                                              (option, optionIdx) => (
+                                                <div
+                                                  key={optionIdx}
+                                                  className="text-xs text-amber-200"
+                                                >
+                                                  • {option.name} ({" "}
+                                                  {Number(option.priceDelta) >=
+                                                  0
+                                                    ? "+"
+                                                    : ""}
+                                                  $
+                                                  {Number(
+                                                    option.priceDelta,
+                                                  ).toFixed(2)}
+                                                  )
+                                                </div>
+                                              ),
+                                            )}
+                                          </div>
+                                        )}
+                                      </div>
+                                      <div className="text-right shrink-0">
+                                        <p className="text-white font-bold">
+                                          $
+                                          {(
+                                            (Number(item.unitPrice) +
+                                              (item.options || []).reduce(
+                                                (sum, option) =>
+                                                  sum +
+                                                  Number(
+                                                    option.priceDelta || 0,
+                                                  ),
+                                                0,
+                                              )) *
+                                            Number(item.quantity)
+                                          ).toFixed(2)}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Price Breakdown */}
+                            <div className="space-y-1 text-sm pt-2 border-t border-slate-600">
+                              <div className="flex justify-between text-gray-300">
+                                <span>Subtotal</span>
+                                <span>
+                                  ${Number(quote.subtotal).toFixed(2)}
+                                </span>
+                              </div>
+                              {quote.taxAmount > 0 && (
+                                <div className="flex justify-between text-gray-300">
+                                  <span>Tax</span>
+                                  <span>
+                                    ${Number(quote.taxAmount).toFixed(2)}
+                                  </span>
+                                </div>
+                              )}
+                              {quote.shippingCost > 0 && (
+                                <div className="flex justify-between text-gray-300">
+                                  <span>Shipping</span>
+                                  <span>
+                                    ${Number(quote.shippingCost).toFixed(2)}
+                                  </span>
+                                </div>
+                              )}
+                              <div className="flex justify-between text-white font-bold pt-1 border-t border-slate-600">
+                                <span>Total</span>
+                                <span>${Number(quote.total).toFixed(2)}</span>
+                              </div>
+                            </div>
+
+                            {/* Photo Uploads */}
+                            {quote.lineItems.some(
+                              (item) => item.requiresPhotoUpload,
+                            ) && (
+                              <div className="pt-2 border-t border-slate-600 p-3 bg-slate-800 rounded">
+                                <p className="text-sm text-sky-300 font-medium mb-3">
+                                  Photo Upload Required
+                                </p>
+                                <div className="space-y-3">
+                                  {quote.lineItems.map((item, idx) => {
+                                    if (!item.requiresPhotoUpload) return null;
+                                    const uploaded =
+                                      quoteUploads[quote.id]?.[idx];
+                                    return (
+                                      <div
+                                        key={`${quote.id}-upload-${idx}`}
+                                        className="rounded-lg border border-slate-600 bg-slate-700/50 p-3"
+                                      >
+                                        <p className="text-sm font-medium text-white mb-2">
+                                          {item.name}
+                                        </p>
+                                        <DragDropFileUpload
+                                          onFileSelect={(file) =>
+                                            handleQuoteUploadChange(
+                                              quote.id,
+                                              idx,
+                                              file,
+                                            )
+                                          }
+                                          acceptedFormats="image/*"
+                                          maxSize={10 * 1024 * 1024}
+                                          label="Upload Your Design"
+                                          showPreview={true}
+                                          previewUrl={uploaded?.dataUrl}
+                                          previewAlt={item.name}
+                                        />
+                                        {uploaded?.fileName && (
+                                          <span className="mt-2 block text-xs text-green-300">
+                                            Uploaded: {uploaded.fileName}
+                                          </span>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
                             )}
 
-                            {/* Add to cart — for sent/accepted quotes */}
-                            {(quote.status === "sent" ||
-                              quote.status === "accepted") && (
-                              <button
-                                onClick={() => handleAddQuoteToCart(quote)}
-                                disabled={loadingQuoteId === quote.id}
-                                className="px-4 py-1.5 text-sm bg-sky-600 text-white rounded hover:bg-sky-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                              >
-                                {loadingQuoteId === quote.id
-                                  ? "Adding..."
-                                  : quote.status === "accepted"
-                                    ? "Add to Cart Again"
-                                    : "Add Quote to Cart"}
-                              </button>
-                            )}
-                          </>
+                            {/* Action Buttons */}
+                            <div className="flex flex-wrap justify-end gap-2 pt-2 border-t border-slate-600">
+                              {/* Request Change inline panel */}
+                              {requestingChangeQuoteId === quote.id ? (
+                                <div className="w-full space-y-2">
+                                  <label className="block text-sm font-medium text-gray-300">
+                                    Describe what you'd like changed:
+                                  </label>
+                                  <textarea
+                                    value={changeNoteText}
+                                    onChange={(e) =>
+                                      setChangeNoteText(e.target.value)
+                                    }
+                                    placeholder="e.g. Please adjust the size, change the color, or update the quantity..."
+                                    rows={3}
+                                    className="w-full px-3 py-2 rounded bg-slate-700 border border-slate-600 text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none"
+                                  />
+                                  <div className="flex justify-end gap-2">
+                                    <button
+                                      onClick={() => {
+                                        setRequestingChangeQuoteId(null);
+                                        setChangeNoteText("");
+                                      }}
+                                      className="px-3 py-1.5 text-sm bg-slate-700 text-gray-300 rounded hover:bg-slate-600"
+                                    >
+                                      Cancel
+                                    </button>
+                                    <button
+                                      onClick={() =>
+                                        handleRequestChange(quote.id)
+                                      }
+                                      disabled={
+                                        submittingQuoteAction ===
+                                        quote.id + "_change"
+                                      }
+                                      className="px-3 py-1.5 text-sm bg-amber-600 text-white rounded hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                      {submittingQuoteAction ===
+                                      quote.id + "_change"
+                                        ? "Submitting..."
+                                        : "Submit Request"}
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <>
+                                  {/* Request Change button — only when sent */}
+                                  {quote.status === "sent" && (
+                                    <button
+                                      onClick={() => {
+                                        setRequestingChangeQuoteId(quote.id);
+                                        setChangeNoteText("");
+                                      }}
+                                      className="px-3 py-1.5 text-sm bg-amber-700 text-white rounded hover:bg-amber-600"
+                                    >
+                                      Request Changes
+                                    </button>
+                                  )}
+
+                                  {/* Reject button — only when sent */}
+                                  {quote.status === "sent" && (
+                                    <button
+                                      onClick={() =>
+                                        handleRejectQuote(quote.id)
+                                      }
+                                      disabled={
+                                        submittingQuoteAction ===
+                                        quote.id + "_reject"
+                                      }
+                                      className="px-3 py-1.5 text-sm bg-red-800 text-white rounded hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                      {submittingQuoteAction ===
+                                      quote.id + "_reject"
+                                        ? "Rejecting..."
+                                        : "Reject Quote"}
+                                    </button>
+                                  )}
+
+                                  {/* Add to cart — for sent/accepted quotes */}
+                                  {(quote.status === "sent" ||
+                                    quote.status === "accepted") && (
+                                    <button
+                                      onClick={() =>
+                                        handleAddQuoteToCart(quote)
+                                      }
+                                      disabled={loadingQuoteId === quote.id}
+                                      className="px-4 py-1.5 text-sm bg-sky-600 text-white rounded hover:bg-sky-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                      {loadingQuoteId === quote.id
+                                        ? "Adding..."
+                                        : quote.status === "accepted"
+                                          ? "Add to Cart Again"
+                                          : "Add Quote to Cart"}
+                                    </button>
+                                  )}
+                                </>
+                              )}
+                            </div>
+                          </div>
                         )}
                       </div>
-                    </div>
-                  )}
-                </div>
+                    );
+                  })}
+                  <Pagination
+                    currentPage={quoteCurrentPage}
+                    totalItems={sortedQuotes.length}
+                    itemsPerPage={quoteItemsPerPage}
+                    onPageChange={setQuoteCurrentPage}
+                    onItemsPerPageChange={(value) => {
+                      setQuoteItemsPerPage(value);
+                      setQuoteCurrentPage(1);
+                    }}
+                  />
+                </>
               );
-            })}
+            })()}
           </div>
         </div>
       )}
