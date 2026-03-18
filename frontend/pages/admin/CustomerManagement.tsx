@@ -140,6 +140,10 @@ const CustomerManagement: React.FC = () => {
   const [orderItemsPerPage, setOrderItemsPerPage] = useState(10);
   const [quoteFilterDateRange, setQuoteFilterDateRange] =
     useState<string>("last 30 days");
+  const [quoteSearchTerm, setQuoteSearchTerm] = useState("");
+  const [quoteSortBy, setQuoteSortBy] = useState<
+    "date-desc" | "date-asc" | "amount-desc" | "amount-asc"
+  >("date-desc");
   const [quoteCurrentPage, setQuoteCurrentPage] = useState(1);
   const [quoteItemsPerPage, setQuoteItemsPerPage] = useState(10);
   const { addToast } = useToast();
@@ -271,9 +275,28 @@ const CustomerManagement: React.FC = () => {
 
   const getFilteredQuotes = (): CustomQuote[] => {
     const { start, end } = getQuoteDateRange();
-    return customerQuotes.filter((quote) => {
+    let filtered = customerQuotes.filter((quote) => {
       const quoteDate = new Date(quote.createdAt);
       return quoteDate >= start && quoteDate <= end;
+    });
+    if (quoteSearchTerm) {
+      filtered = filtered.filter((quote) =>
+        quote.quoteNumber.toLowerCase().includes(quoteSearchTerm.toLowerCase()),
+      );
+    }
+    return [...filtered].sort((a, b) => {
+      switch (quoteSortBy) {
+        case "date-desc":
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        case "date-asc":
+          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        case "amount-desc":
+          return Number(b.total) - Number(a.total);
+        case "amount-asc":
+          return Number(a.total) - Number(b.total);
+        default:
+          return 0;
+      }
     });
   };
 
@@ -453,6 +476,8 @@ const CustomerManagement: React.FC = () => {
       setOrderSortBy("date-desc");
       setOrderCurrentPage(1);
       setQuoteFilterDateRange("last 30 days");
+      setQuoteSearchTerm("");
+      setQuoteSortBy("date-desc");
       setQuoteCurrentPage(1);
     } catch (error) {
       console.error("Failed to load customer details:", error);
@@ -469,6 +494,8 @@ const CustomerManagement: React.FC = () => {
       setOrderSortBy("date-desc");
       setOrderCurrentPage(1);
       setQuoteFilterDateRange("last 30 days");
+      setQuoteSearchTerm("");
+      setQuoteSortBy("date-desc");
       setQuoteCurrentPage(1);
     }
   };
@@ -1498,39 +1525,12 @@ const CustomerManagement: React.FC = () => {
                 <h3 className="text-lg font-semibold text-white">
                   Custom Quotes
                 </h3>
-                <div className="flex items-center gap-3">
-                  <label className="text-xs text-gray-400">Date Range:</label>
-                  <select
-                    value={quoteFilterDateRange}
-                    onChange={(e) => {
-                      setQuoteFilterDateRange(e.target.value);
-                      setOrderCurrentPage(1);
-                      setQuoteCurrentPage(1);
-                    }}
-                    className="px-2 py-1 text-xs rounded bg-slate-600 text-white border border-slate-500"
-                  >
-                    <option value="last 30 days">Last 30 Days</option>
-                    <option value="past 3 months">Past 3 Months</option>
-                    {quoteYearOptions.length > 0 && (
-                      <option disabled>-----</option>
-                    )}
-                    {quoteYearOptions.map((year) => (
-                      <option key={year} value={String(year)}>
-                        {year}
-                      </option>
-                    ))}
-                  </select>
-                  <span className="text-sm text-gray-400">
-                    {getFilteredQuotes().length} quote
-                    {getFilteredQuotes().length !== 1 ? "s" : ""}
-                  </span>
-                  <button
-                    onClick={openQuoteModal}
-                    className="px-3 py-1 bg-sky-600 text-white text-sm rounded hover:bg-sky-700 transition-colors"
-                  >
-                    + Create Quote
-                  </button>
-                </div>
+                <button
+                  onClick={openQuoteModal}
+                  className="px-3 py-1 bg-sky-600 text-white text-sm rounded hover:bg-sky-700 transition-colors"
+                >
+                  + Create Quote
+                </button>
               </div>
 
               {customerQuotes.length === 0 ? (
@@ -1538,7 +1538,61 @@ const CustomerManagement: React.FC = () => {
                   <p className="text-gray-400">No quotes sent yet</p>
                 </div>
               ) : (
-                (() => {
+                <>
+                  {/* Search and Sort Controls */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+                    <div>
+                      <input
+                        type="text"
+                        placeholder="Search quote number..."
+                        value={quoteSearchTerm}
+                        onChange={(e) => {
+                          setQuoteSearchTerm(e.target.value);
+                          setQuoteCurrentPage(1);
+                        }}
+                        className="w-full px-3 py-2 bg-slate-800 text-white rounded border border-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-500 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <select
+                        value={quoteSortBy}
+                        onChange={(e) => {
+                          setQuoteSortBy(e.target.value as any);
+                          setQuoteCurrentPage(1);
+                        }}
+                        className="w-full px-3 py-2 bg-slate-800 text-white rounded border border-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-500 text-sm"
+                      >
+                        <option value="date-desc">Newest First</option>
+                        <option value="date-asc">Oldest First</option>
+                        <option value="amount-desc">Highest Amount</option>
+                        <option value="amount-asc">Lowest Amount</option>
+                      </select>
+                    </div>
+                    <div>
+                      <select
+                        value={quoteFilterDateRange}
+                        onChange={(e) => {
+                          setQuoteFilterDateRange(e.target.value);
+                          setOrderCurrentPage(1);
+                          setQuoteCurrentPage(1);
+                        }}
+                        className="w-full px-3 py-2 bg-slate-800 text-white rounded border border-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-500 text-sm"
+                      >
+                        <option value="last 30 days">Last 30 Days</option>
+                        <option value="past 3 months">Past 3 Months</option>
+                        {quoteYearOptions.length > 0 && (
+                          <option disabled>-----</option>
+                        )}
+                        {quoteYearOptions.map((year) => (
+                          <option key={year} value={String(year)}>
+                            {year}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {(() => {
                   const filteredQuotes = getFilteredQuotes();
                   const paginatedQuotes =
                     quoteItemsPerPage === -1
@@ -1640,7 +1694,8 @@ const CustomerManagement: React.FC = () => {
                       </div>
                     </>
                   );
-                })()
+                  })()}
+                </>
               )}
             </div>
             <div className="flex gap-3">
