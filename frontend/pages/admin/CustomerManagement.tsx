@@ -287,9 +287,13 @@ const CustomerManagement: React.FC = () => {
     return [...filtered].sort((a, b) => {
       switch (quoteSortBy) {
         case "date-desc":
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+          return (
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
         case "date-asc":
-          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+          return (
+            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+          );
         case "amount-desc":
           return Number(b.total) - Number(a.total);
         case "amount-asc":
@@ -1593,107 +1597,107 @@ const CustomerManagement: React.FC = () => {
                   </div>
 
                   {(() => {
-                  const filteredQuotes = getFilteredQuotes();
-                  const paginatedQuotes =
-                    quoteItemsPerPage === -1
-                      ? filteredQuotes
-                      : filteredQuotes.slice(
-                          (quoteCurrentPage - 1) * quoteItemsPerPage,
-                          quoteCurrentPage * quoteItemsPerPage,
-                        );
+                    const filteredQuotes = getFilteredQuotes();
+                    const paginatedQuotes =
+                      quoteItemsPerPage === -1
+                        ? filteredQuotes
+                        : filteredQuotes.slice(
+                            (quoteCurrentPage - 1) * quoteItemsPerPage,
+                            quoteCurrentPage * quoteItemsPerPage,
+                          );
 
-                  if (filteredQuotes.length === 0) {
+                    if (filteredQuotes.length === 0) {
+                      return (
+                        <div className="text-center py-8 border-2 border-dashed border-slate-600 rounded">
+                          <p className="text-gray-400">
+                            No quotes found in this date range
+                          </p>
+                        </div>
+                      );
+                    }
+
                     return (
-                      <div className="text-center py-8 border-2 border-dashed border-slate-600 rounded">
-                        <p className="text-gray-400">
-                          No quotes found in this date range
-                        </p>
-                      </div>
-                    );
-                  }
-
-                  return (
-                    <>
-                      <div className="space-y-2">
-                        {paginatedQuotes.map((quote) => (
-                          <div
-                            key={quote.id}
-                            className={`bg-slate-800 p-3 rounded border ${
-                              quote.status === "change_requested"
-                                ? "border-amber-600/60"
-                                : "border-slate-600"
-                            }`}
-                          >
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="min-w-0">
-                                <p className="text-white font-semibold">
-                                  {quote.quoteNumber}
-                                </p>
-                                <p className="text-xs text-gray-400">
-                                  {new Date(quote.createdAt).toLocaleString()} •{" "}
-                                  {quote.lineItems.length} item
-                                  {quote.lineItems.length !== 1 ? "s" : ""}
-                                </p>
-                                {quote.status === "change_requested" &&
-                                  quote.changeRequestNote && (
-                                    <div className="mt-2 rounded border border-amber-700/40 bg-amber-900/20 p-2">
-                                      <p className="text-xs font-semibold text-amber-300 mb-0.5">
-                                        Customer change request:
-                                      </p>
-                                      <p className="text-xs text-amber-100">
-                                        {quote.changeRequestNote}
-                                      </p>
-                                    </div>
-                                  )}
-                              </div>
-                              <div className="text-right shrink-0">
-                                <p className="text-white font-bold">
-                                  ${Number(quote.total).toFixed(2)}
-                                </p>
-                                <span
-                                  className={`inline-block px-2 py-0.5 rounded text-xs capitalize ${
-                                    quote.status === "accepted"
-                                      ? "bg-green-900 text-green-200"
-                                      : quote.status === "sent"
-                                        ? "bg-blue-900 text-blue-200"
-                                        : quote.status === "change_requested"
-                                          ? "bg-amber-900 text-amber-200"
-                                          : quote.status === "rejected"
-                                            ? "bg-red-900 text-red-200"
-                                            : "bg-slate-700 text-gray-300"
-                                  }`}
-                                >
-                                  {quote.status === "change_requested"
-                                    ? "Change Requested"
-                                    : quote.status}
-                                </span>
-                                {quote.status === "change_requested" && (
-                                  <button
-                                    onClick={() => openQuoteModal(quote)}
-                                    className="mt-2 block w-full px-2 py-1 text-xs bg-amber-700 text-white rounded hover:bg-amber-600 transition-colors"
+                      <>
+                        <div className="space-y-2">
+                          {paginatedQuotes.map((quote) => (
+                            <div
+                              key={quote.id}
+                              className={`bg-slate-800 p-3 rounded border ${
+                                quote.status === "change_requested"
+                                  ? "border-amber-600/60"
+                                  : "border-slate-600"
+                              }`}
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="min-w-0">
+                                  <p className="text-white font-semibold">
+                                    {quote.quoteNumber}
+                                  </p>
+                                  <p className="text-xs text-gray-400">
+                                    {new Date(quote.createdAt).toLocaleString()}{" "}
+                                    • {quote.lineItems.length} item
+                                    {quote.lineItems.length !== 1 ? "s" : ""}
+                                  </p>
+                                  {quote.status === "change_requested" &&
+                                    quote.changeRequestNote && (
+                                      <div className="mt-2 rounded border border-amber-700/40 bg-amber-900/20 p-2">
+                                        <p className="text-xs font-semibold text-amber-300 mb-0.5">
+                                          Customer change request:
+                                        </p>
+                                        <p className="text-xs text-amber-100">
+                                          {quote.changeRequestNote}
+                                        </p>
+                                      </div>
+                                    )}
+                                </div>
+                                <div className="text-right shrink-0">
+                                  <p className="text-white font-bold">
+                                    ${Number(quote.total).toFixed(2)}
+                                  </p>
+                                  <span
+                                    className={`inline-block px-2 py-0.5 rounded text-xs capitalize ${
+                                      quote.status === "accepted"
+                                        ? "bg-green-900 text-green-200"
+                                        : quote.status === "sent"
+                                          ? "bg-blue-900 text-blue-200"
+                                          : quote.status === "change_requested"
+                                            ? "bg-amber-900 text-amber-200"
+                                            : quote.status === "rejected"
+                                              ? "bg-red-900 text-red-200"
+                                              : "bg-slate-700 text-gray-300"
+                                    }`}
                                   >
-                                    Edit &amp; Re-send
-                                  </button>
-                                )}
+                                    {quote.status === "change_requested"
+                                      ? "Change Requested"
+                                      : quote.status}
+                                  </span>
+                                  {quote.status === "change_requested" && (
+                                    <button
+                                      onClick={() => openQuoteModal(quote)}
+                                      className="mt-2 block w-full px-2 py-1 text-xs bg-amber-700 text-white rounded hover:bg-amber-600 transition-colors"
+                                    >
+                                      Edit &amp; Re-send
+                                    </button>
+                                  )}
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        ))}
-                      </div>
-                      <div className="mt-4 pt-4 border-t border-slate-600">
-                        <Pagination
-                          currentPage={quoteCurrentPage}
-                          totalItems={filteredQuotes.length}
-                          itemsPerPage={quoteItemsPerPage}
-                          onPageChange={setQuoteCurrentPage}
-                          onItemsPerPageChange={(value) => {
-                            setQuoteItemsPerPage(value);
-                            setQuoteCurrentPage(1);
-                          }}
-                        />
-                      </div>
-                    </>
-                  );
+                          ))}
+                        </div>
+                        <div className="mt-4 pt-4 border-t border-slate-600">
+                          <Pagination
+                            currentPage={quoteCurrentPage}
+                            totalItems={filteredQuotes.length}
+                            itemsPerPage={quoteItemsPerPage}
+                            onPageChange={setQuoteCurrentPage}
+                            onItemsPerPageChange={(value) => {
+                              setQuoteItemsPerPage(value);
+                              setQuoteCurrentPage(1);
+                            }}
+                          />
+                        </div>
+                      </>
+                    );
                   })()}
                 </>
               )}
