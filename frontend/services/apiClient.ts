@@ -569,6 +569,10 @@ class ApiClient {
           description?: string;
           quantity: number;
           unitPrice: number;
+          options?: Array<{
+            name: string;
+            priceDelta: number;
+          }>;
           productId?: string;
           imageUrl?: string;
           requiresPhotoUpload?: boolean;
@@ -605,6 +609,10 @@ class ApiClient {
           description?: string;
           quantity: number;
           unitPrice: number;
+          options?: Array<{
+            name: string;
+            priceDelta: number;
+          }>;
           requiresPhotoUpload?: boolean;
         }>;
         taxAmount?: number;

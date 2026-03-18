@@ -20,6 +20,10 @@ interface CustomerQuoteLineItem {
   description?: string;
   quantity: number;
   unitPrice: number;
+  options?: Array<{
+    name: string;
+    priceDelta: number;
+  }>;
   productId?: string;
   imageUrl?: string;
   requiresPhotoUpload?: boolean;
@@ -132,6 +136,9 @@ const CustomerOrdersPage: React.FC = () => {
   const [submittingQuoteAction, setSubmittingQuoteAction] = useState<
     string | null
   >(null);
+  const [quoteSortBy, setQuoteSortBy] = useState<
+    "date-desc" | "date-asc" | "price-desc" | "price-asc"
+  >("date-desc");
   const pendingQuoteRef = useRef<HTMLDivElement>(null);
   const orderWatermarkText =
     `${siteSettings?.logoText || "AdaptiveGIS"} ${siteSettings?.logoTextAccent || "Store"}`.trim();
@@ -372,6 +379,11 @@ const CustomerOrdersPage: React.FC = () => {
       quote.lineItems.forEach((item, idx) => {
         const quantity = Number(item.quantity || 0);
         const unitPrice = Number(item.unitPrice || 0);
+        const optionsPriceDelta = (item.options || []).reduce(
+          (sum, option) => sum + Number(option.priceDelta || 0),
+          0,
+        );
+        const effectiveUnitPrice = unitPrice + optionsPriceDelta;
         if (!item.name || quantity <= 0 || unitPrice < 0) {
           return;
         }
@@ -384,9 +396,14 @@ const CustomerOrdersPage: React.FC = () => {
         const quoteProduct = {
           id: item.productId || `quote-${quote.id}-${idx}`,
           name: item.name,
-          price: unitPrice,
+          price: effectiveUnitPrice,
           description:
-            item.description || `Custom quote item from ${quote.quoteNumber}`,
+            item.description ||
+            `Custom quote item from ${quote.quoteNumber}${
+              (item.options || []).length > 0
+                ? ` (${(item.options || []).map((option) => option.name).join(", ")})`
+                : ""
+            }`,
           imageUrl: commissionedWorkIcon,
           inventory: 9999,
           customizable: Boolean(item.requiresPhotoUpload),
@@ -600,6 +617,27 @@ const CustomerOrdersPage: React.FC = () => {
     }
   };
 
+  const sortQuotes = (quoteList: CustomerQuote[]): CustomerQuote[] => {
+    const sorted = [...quoteList];
+    switch (quoteSortBy) {
+      case "date-asc":
+        return sorted.sort(
+          (a, b) =>
+            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+        );
+      case "price-desc":
+        return sorted.sort((a, b) => Number(b.total) - Number(a.total));
+      case "price-asc":
+        return sorted.sort((a, b) => Number(a.total) - Number(b.total));
+      case "date-desc":
+      default:
+        return sorted.sort(
+          (a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+        );
+    }
+  };
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "pending":
@@ -801,16 +839,35 @@ const CustomerOrdersPage: React.FC = () => {
         >
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold text-white">Custom Quotes</h2>
-            <span className="text-sm text-gray-400">
-              {quotes.length} quote{quotes.length !== 1 ? "s" : ""}
-            </span>
+            <div className="flex items-center gap-3">
+              <label className="text-xs text-gray-400">Sort:</label>
+              <select
+                value={quoteSortBy}
+                onChange={(e) =>
+                  setQuoteSortBy(
+                    e.target.value as
+                      | "date-desc"
+                      | "date-asc"
+                      | "price-desc"
+                      | "price-asc",
+                  )
+                }
+                className="px-2 py-1 text-xs rounded bg-slate-700 text-white border border-slate-600"
+              >
+                <option value="date-desc">Date: Newest</option>
+                <option value="date-asc">Date: Oldest</option>
+                <option value="price-desc">Price: High to Low</option>
+                <option value="price-asc">Price: Low to High</option>
+              </select>
+              <span className="text-sm text-gray-400">
+                {quotes.length} quote{quotes.length !== 1 ? "s" : ""}
+              </span>
+            </div>
           </div>
 
           <div className="space-y-2">
-            {quotes.map((quote) => {
+            {sortQuotes(quotes).map((quote) => {
               const isExpanded = expandedQuoteId === quote.id;
-              const isPending =
-                quote.status === "sent" || quote.status === "change_requested";
               const statusColor =
                 quote.status === "accepted"
                   ? "bg-green-900 text-green-200"
@@ -968,20 +1025,62 @@ const CustomerOrdersPage: React.FC = () => {
                                       Qty: {item.quantity}
                                     </span>
                                     <span className="text-xs text-gray-300">
-                                      ${Number(item.unitPrice).toFixed(2)} each
+                                      ${Number(item.unitPrice).toFixed(2)} base
                                     </span>
+                                    {(item.options || []).length > 0 && (
+                                      <span className="text-xs text-amber-300">
+                                        +$
+                                        {(item.options || [])
+                                          .reduce(
+                                            (sum, option) =>
+                                              sum +
+                                              Number(option.priceDelta || 0),
+                                            0,
+                                          )
+                                          .toFixed(2)}{" "}
+                                        options
+                                      </span>
+                                    )}
                                     {item.requiresPhotoUpload && (
                                       <span className="inline-block px-2 py-0.5 rounded text-xs bg-sky-900/50 text-sky-200 border border-sky-700">
                                         Photo Required
                                       </span>
                                     )}
                                   </div>
+                                  {(item.options || []).length > 0 && (
+                                    <div className="mt-2 space-y-1">
+                                      {(item.options || []).map(
+                                        (option, optionIdx) => (
+                                          <div
+                                            key={optionIdx}
+                                            className="text-xs text-amber-200"
+                                          >
+                                            • {option.name} ({" "}
+                                            {Number(option.priceDelta) >= 0
+                                              ? "+"
+                                              : ""}
+                                            $
+                                            {Number(option.priceDelta).toFixed(
+                                              2,
+                                            )}
+                                            )
+                                          </div>
+                                        ),
+                                      )}
+                                    </div>
+                                  )}
                                 </div>
                                 <div className="text-right shrink-0">
                                   <p className="text-white font-bold">
                                     $
                                     {(
-                                      Number(item.unitPrice) *
+                                      (Number(item.unitPrice) +
+                                        (item.options || []).reduce(
+                                          (sum, option) =>
+                                            sum +
+                                            Number(option.priceDelta || 0),
+                                          0,
+                                        )) *
                                       Number(item.quantity)
                                     ).toFixed(2)}
                                   </p>

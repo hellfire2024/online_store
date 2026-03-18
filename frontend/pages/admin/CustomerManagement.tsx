@@ -45,6 +45,10 @@ interface QuoteLineItemForm {
   description: string;
   quantity: number;
   unitPrice: number;
+  options: Array<{
+    name: string;
+    priceDelta: number;
+  }>;
   requiresPhotoUpload: boolean;
 }
 
@@ -65,6 +69,10 @@ interface CustomQuote {
     description?: string;
     quantity: number;
     unitPrice: number;
+    options?: Array<{
+      name: string;
+      priceDelta: number;
+    }>;
     requiresPhotoUpload?: boolean;
   }>;
   subtotal: number;
@@ -119,6 +127,7 @@ const CustomerManagement: React.FC = () => {
         description: "",
         quantity: 1,
         unitPrice: 0,
+        options: [],
         requiresPhotoUpload: false,
       },
     ] as QuoteLineItemForm[],
@@ -425,6 +434,12 @@ const CustomerManagement: React.FC = () => {
           description: item.description || "",
           quantity: item.quantity,
           unitPrice: item.unitPrice,
+          options: Array.isArray(item.options)
+            ? item.options.map((option) => ({
+                name: option.name || "",
+                priceDelta: Number(option.priceDelta || 0),
+              }))
+            : [],
           requiresPhotoUpload: item.requiresPhotoUpload ?? false,
         })),
       });
@@ -440,6 +455,7 @@ const CustomerManagement: React.FC = () => {
             description: "",
             quantity: 1,
             unitPrice: 0,
+            options: [],
             requiresPhotoUpload: false,
           },
         ],
@@ -487,9 +503,68 @@ const CustomerManagement: React.FC = () => {
           description: "",
           quantity: 1,
           unitPrice: 0,
+          options: [],
           requiresPhotoUpload: false,
         },
       ],
+    }));
+  };
+
+  const addQuoteLineItemOption = (lineItemIndex: number) => {
+    setQuoteForm((prev) => ({
+      ...prev,
+      lineItems: prev.lineItems.map((item, idx) =>
+        idx === lineItemIndex
+          ? {
+              ...item,
+              options: [...(item.options || []), { name: "", priceDelta: 0 }],
+            }
+          : item,
+      ),
+    }));
+  };
+
+  const updateQuoteLineItemOption = (
+    lineItemIndex: number,
+    optionIndex: number,
+    field: "name" | "priceDelta",
+    value: string,
+  ) => {
+    setQuoteForm((prev) => ({
+      ...prev,
+      lineItems: prev.lineItems.map((item, idx) => {
+        if (idx !== lineItemIndex) return item;
+        return {
+          ...item,
+          options: (item.options || []).map((option, optIdx) =>
+            optIdx === optionIndex
+              ? {
+                  ...option,
+                  [field]: field === "priceDelta" ? Number(value || 0) : value,
+                }
+              : option,
+          ),
+        };
+      }),
+    }));
+  };
+
+  const removeQuoteLineItemOption = (
+    lineItemIndex: number,
+    optionIndex: number,
+  ) => {
+    setQuoteForm((prev) => ({
+      ...prev,
+      lineItems: prev.lineItems.map((item, idx) =>
+        idx === lineItemIndex
+          ? {
+              ...item,
+              options: (item.options || []).filter(
+                (_, optIdx) => optIdx !== optionIndex,
+              ),
+            }
+          : item,
+      ),
     }));
   };
 
@@ -512,6 +587,12 @@ const CustomerManagement: React.FC = () => {
         description: item.description.trim() || undefined,
         quantity: Number(item.quantity),
         unitPrice: Number(item.unitPrice),
+        options: (item.options || [])
+          .map((option) => ({
+            name: String(option.name || "").trim(),
+            priceDelta: Number(option.priceDelta || 0),
+          }))
+          .filter((option) => option.name),
         requiresPhotoUpload: Boolean(item.requiresPhotoUpload),
       }))
       .filter((item) => item.name && item.quantity > 0 && item.unitPrice >= 0);
@@ -1548,6 +1629,89 @@ const CustomerManagement: React.FC = () => {
                     </div>
                   </div>
 
+                  <div className="rounded-md border border-slate-500 bg-slate-800/70 p-3">
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <p className="text-sm font-medium text-white">
+                        Line Item Options
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => addQuoteLineItemOption(index)}
+                        className="px-2 py-1 text-xs bg-slate-700 text-sky-300 rounded hover:bg-slate-600"
+                      >
+                        + Add Option
+                      </button>
+                    </div>
+
+                    {(item.options || []).length === 0 ? (
+                      <p className="text-xs text-slate-400">
+                        No options yet. Add options like Size, Color, Material,
+                        or Finish.
+                      </p>
+                    ) : (
+                      <div className="space-y-2">
+                        {(item.options || []).map((option, optionIndex) => (
+                          <div
+                            key={optionIndex}
+                            className="grid grid-cols-1 md:grid-cols-12 gap-2 items-end"
+                          >
+                            <div className="md:col-span-7">
+                              <label className="mb-1 block text-xs font-medium text-slate-300">
+                                Option name
+                              </label>
+                              <input
+                                type="text"
+                                value={option.name}
+                                onChange={(e) =>
+                                  updateQuoteLineItemOption(
+                                    index,
+                                    optionIndex,
+                                    "name",
+                                    e.target.value,
+                                  )
+                                }
+                                placeholder="e.g. Extra Large, Gloss Finish"
+                                className="w-full px-3 py-2 bg-slate-900 text-white rounded border border-slate-600"
+                              />
+                            </div>
+                            <div className="md:col-span-4">
+                              <label className="mb-1 block text-xs font-medium text-slate-300">
+                                Price delta
+                              </label>
+                              <input
+                                type="number"
+                                step="0.01"
+                                value={option.priceDelta}
+                                onChange={(e) =>
+                                  updateQuoteLineItemOption(
+                                    index,
+                                    optionIndex,
+                                    "priceDelta",
+                                    e.target.value,
+                                  )
+                                }
+                                placeholder="0.00"
+                                className="w-full px-3 py-2 bg-slate-900 text-white rounded border border-slate-600"
+                              />
+                            </div>
+                            <div className="md:col-span-1">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  removeQuoteLineItemOption(index, optionIndex)
+                                }
+                                className="w-full px-2 py-2 bg-red-800 text-white rounded hover:bg-red-700"
+                                title="Remove option"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
                   <label className="flex items-start gap-3 rounded-md border border-slate-500 bg-slate-800 px-3 py-3 text-sm text-slate-200">
                     <input
                       type="checkbox"
@@ -1624,13 +1788,18 @@ const CustomerManagement: React.FC = () => {
                 <div className="px-3 py-2 bg-slate-900 text-white rounded border border-slate-600 font-semibold">
                   $
                   {(
-                    quoteForm.lineItems.reduce(
-                      (sum, line) =>
+                    quoteForm.lineItems.reduce((sum, line) => {
+                      const optionsTotal = (line.options || []).reduce(
+                        (optionSum, option) =>
+                          optionSum + Number(option.priceDelta || 0),
+                        0,
+                      );
+                      return (
                         sum +
                         Number(line.quantity || 0) *
-                          Number(line.unitPrice || 0),
-                      0,
-                    ) +
+                          (Number(line.unitPrice || 0) + optionsTotal)
+                      );
+                    }, 0) +
                     Number(quoteForm.taxAmount || 0) +
                     Number(quoteForm.shippingCost || 0)
                   ).toFixed(2)}

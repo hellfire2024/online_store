@@ -15,6 +15,10 @@ interface QuoteLineItem {
   description?: string;
   quantity: number;
   unitPrice: number;
+  options?: Array<{
+    name: string;
+    priceDelta: number;
+  }>;
   productId?: string;
   imageUrl?: string;
   requiresPhotoUpload?: boolean;
@@ -84,6 +88,16 @@ const normalizeLineItems = (lineItems: unknown): QuoteLineItem[] => {
         : undefined,
       quantity: Number(item?.quantity || 0),
       unitPrice: Number(item?.unitPrice || 0),
+      options: Array.isArray(item?.options)
+        ? item.options
+            .map((option: any) => ({
+              name: String(option?.name || "").trim(),
+              priceDelta: Number(option?.priceDelta || 0),
+            }))
+            .filter((option: { name: string; priceDelta: number }) => {
+              return option.name && Number.isFinite(option.priceDelta);
+            })
+        : undefined,
       productId: item?.productId ? String(item.productId) : undefined,
       imageUrl: item?.imageUrl ? String(item.imageUrl) : undefined,
       requiresPhotoUpload: Boolean(item?.requiresPhotoUpload),
@@ -165,10 +179,13 @@ router.post(
       const safeShipping = Number.isFinite(Number(shippingCost))
         ? Number(shippingCost)
         : 0;
-      const subtotal = normalizedLineItems.reduce(
-        (sum, item) => sum + item.quantity * item.unitPrice,
-        0,
-      );
+      const subtotal = normalizedLineItems.reduce((sum, item) => {
+        const optionDelta = (item.options || []).reduce(
+          (optionSum, option) => optionSum + Number(option.priceDelta || 0),
+          0,
+        );
+        return sum + item.quantity * (item.unitPrice + optionDelta);
+      }, 0);
       const total = subtotal + safeTax + safeShipping;
 
       const quoteId = uuidv4();
@@ -363,10 +380,13 @@ router.put("/:quoteId", requireAdmin, async (req: Request, res: Response) => {
     const safeShipping = Number.isFinite(Number(shippingCost))
       ? Number(shippingCost)
       : 0;
-    const subtotal = normalizedLineItems.reduce(
-      (sum, item) => sum + item.quantity * item.unitPrice,
-      0,
-    );
+    const subtotal = normalizedLineItems.reduce((sum, item) => {
+      const optionDelta = (item.options || []).reduce(
+        (optionSum, option) => optionSum + Number(option.priceDelta || 0),
+        0,
+      );
+      return sum + item.quantity * (item.unitPrice + optionDelta);
+    }, 0);
     const total = subtotal + safeTax + safeShipping;
 
     await pool.query(
