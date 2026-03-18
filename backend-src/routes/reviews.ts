@@ -5,6 +5,31 @@ import { v4 as uuidv4 } from "uuid";
 
 const router = Router();
 
+const parseImagesSafely = (raw: unknown): string[] | undefined => {
+  if (!raw) return undefined;
+
+  if (Array.isArray(raw)) {
+    return raw.filter((value): value is string => typeof value === "string");
+  }
+
+  if (typeof raw === "string") {
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        return parsed.filter(
+          (value): value is string => typeof value === "string",
+        );
+      }
+      return undefined;
+    } catch {
+      // Keep endpoint resilient if one row has malformed legacy JSON in images.
+      return undefined;
+    }
+  }
+
+  return undefined;
+};
+
 // Get all reviews
 router.get("/", async (_req: Request, res: Response) => {
   try {
@@ -22,7 +47,7 @@ router.get("/", async (_req: Request, res: Response) => {
       createdAt: row.created_at,
       approvedAt: row.approved_at || undefined,
       rejectionReason: row.rejection_reason || undefined,
-      images: row.images ? JSON.parse(row.images) : undefined,
+      images: parseImagesSafely(row.images),
     }));
 
     return res.json(reviews);
@@ -55,7 +80,7 @@ router.get("/:id", async (req: Request, res: Response) => {
       createdAt: row.created_at,
       approvedAt: row.approved_at || undefined,
       rejectionReason: row.rejection_reason || undefined,
-      images: row.images ? JSON.parse(row.images) : undefined,
+      images: parseImagesSafely(row.images),
     });
   } catch (error) {
     console.error("Error fetching review:", error);
