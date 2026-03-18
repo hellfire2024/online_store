@@ -114,6 +114,8 @@ const CustomerManagement: React.FC = () => {
   const [selectedOrderDetail, setSelectedOrderDetail] = useState<any | null>(
     null,
   );
+  const [selectedQuoteDetail, setSelectedQuoteDetail] =
+    useState<CustomQuote | null>(null);
   const [customerQuotes, setCustomerQuotes] = useState<CustomQuote[]>([]);
   const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
   const [isSendingQuote, setIsSendingQuote] = useState(false);
@@ -156,6 +158,46 @@ const CustomerManagement: React.FC = () => {
   const toNumber = (value: unknown, fallback = 0) => {
     const num = Number(value);
     return Number.isFinite(num) ? num : fallback;
+  };
+
+  const isQuoteExpired = (quote: CustomQuote) => {
+    return Boolean(
+      quote.expirationDate && new Date(quote.expirationDate) < new Date(),
+    );
+  };
+
+  const getOrderStatusClasses = (status: string) => {
+    switch (status) {
+      case "pending":
+        return "bg-yellow-900 text-yellow-200";
+      case "processing":
+        return "bg-blue-900 text-blue-200";
+      case "shipped":
+        return "bg-purple-900 text-purple-200";
+      case "delivered":
+        return "bg-green-900 text-green-200";
+      default:
+        return "bg-red-900 text-red-200";
+    }
+  };
+
+  const getQuoteStatusClasses = (quote: CustomQuote) => {
+    if (isQuoteExpired(quote)) {
+      return "bg-red-900 text-red-200";
+    }
+
+    switch (quote.status) {
+      case "accepted":
+        return "bg-green-900 text-green-200";
+      case "sent":
+        return "bg-blue-900 text-blue-200";
+      case "change_requested":
+        return "bg-amber-900 text-amber-200";
+      case "rejected":
+        return "bg-red-900 text-red-200";
+      default:
+        return "bg-slate-700 text-gray-300";
+    }
   };
 
   const orderStats = useMemo(() => {
@@ -551,7 +593,6 @@ const CustomerManagement: React.FC = () => {
         taxAmount: 0,
         shippingCost: 0,
         expirationDays: 30,
-        shippingCost: 0,
         lineItems: [
           {
             name: "",
@@ -1421,91 +1462,60 @@ const CustomerManagement: React.FC = () => {
                       </div>
                     ) : (
                       <>
-                        <div className="space-y-2 mb-4">
+                        <div className="space-y-3 mb-4">
                           {paginatedOrders.map((order) => (
                             <div
                               key={order.id}
-                              className="bg-slate-800 p-3 rounded border border-slate-600 hover:border-sky-500 transition-all cursor-pointer hover:shadow-lg"
-                              onClick={() => setSelectedOrderDetail(order)}
+                              className="rounded-xl border border-slate-600 bg-slate-800 p-4 transition-all hover:border-sky-500 hover:shadow-lg cursor-pointer"
+                              onClick={() => {
+                                setSelectedQuoteDetail(null);
+                                setSelectedOrderDetail(order);
+                              }}
                             >
-                              <div className="flex justify-between items-start mb-2">
-                                <div>
-                                  <div className="flex items-center gap-2">
+                              <div className="flex items-start justify-between gap-4">
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center gap-2 mb-1">
                                     <h4 className="text-white font-semibold">
                                       Order #{order.orderNumber}
                                     </h4>
                                     <span
-                                      className={`px-2 py-0.5 rounded text-xs font-medium capitalize ${
-                                        order.status === "pending"
-                                          ? "bg-yellow-900 text-yellow-200"
-                                          : order.status === "processing"
-                                            ? "bg-blue-900 text-blue-200"
-                                            : order.status === "shipped"
-                                              ? "bg-purple-900 text-purple-200"
-                                              : order.status === "delivered"
-                                                ? "bg-green-900 text-green-200"
-                                                : "bg-red-900 text-red-200"
-                                      }`}
+                                      className={`inline-block rounded px-2 py-0.5 text-xs font-medium capitalize ${getOrderStatusClasses(order.status)}`}
                                     >
                                       {order.status}
                                     </span>
                                   </div>
-                                  <p className="text-xs text-gray-400">
-                                    {new Date(order.date).toLocaleDateString()}
+                                  <p className="text-sm text-gray-400">
+                                    {new Date(order.date).toLocaleString()}
                                   </p>
-                                </div>
-                                <div className="text-right">
-                                  <p className="text-white font-bold text-lg">
-                                    ${Number(order.total).toFixed(2)}
-                                  </p>
-                                  <p className="text-xs text-gray-400">
-                                    {order.items.length} item
-                                    {order.items.length !== 1 ? "s" : ""}
-                                  </p>
-                                </div>
-                              </div>
-                              <div className="border-t border-slate-600 pt-2 mt-2">
-                                <div className="space-y-1">
-                                  {order.items.map((item: any, idx: number) => {
-                                    const productName =
-                                      item.name ||
-                                      item.productName ||
-                                      item.product?.name ||
-                                      "Unknown Product";
-                                    const productPrice =
-                                      item.price ||
-                                      item.product?.price ||
-                                      item.basePrice ||
-                                      0;
-                                    return (
-                                      <div
-                                        key={idx}
-                                        className="flex justify-between text-xs"
-                                      >
-                                        <span className="text-gray-300">
-                                          {productName} × {item.quantity}
-                                        </span>
-                                        <span className="text-gray-400">
-                                          $
-                                          {(
-                                            productPrice * item.quantity
-                                          ).toFixed(2)}
-                                        </span>
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              </div>
-                              {order.trackingNumber && (
-                                <div className="mt-2 pt-2 border-t border-slate-600">
-                                  <p className="text-xs text-gray-400">
-                                    Tracking:{" "}
-                                    <span className="text-sky-400 font-mono">
-                                      {order.trackingNumber}
+                                  <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-400">
+                                    <span>
+                                      {order.items.length} item
+                                      {order.items.length !== 1 ? "s" : ""}
                                     </span>
-                                  </p>
+                                    {order.trackingNumber && (
+                                      <span>
+                                        Tracking:{" "}
+                                        <span className="font-mono text-sky-400">
+                                          {order.trackingNumber}
+                                        </span>
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
-                              )}
+                                <div className="flex items-center gap-4 shrink-0">
+                                  <div className="text-right">
+                                    <p className="text-lg font-bold text-white">
+                                      ${Number(order.total).toFixed(2)}
+                                    </p>
+                                    <p className="text-xs text-gray-400">
+                                      Click to view details
+                                    </p>
+                                  </div>
+                                  <div className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-500 bg-slate-700 text-slate-300">
+                                    &gt;
+                                  </div>
+                                </div>
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -1625,80 +1635,74 @@ const CustomerManagement: React.FC = () => {
 
                     return (
                       <>
-                        <div className="space-y-2">
+                        <div className="space-y-3">
                           {paginatedQuotes.map((quote) => (
                             <div
                               key={quote.id}
-                              className={`bg-slate-800 p-3 rounded border ${
+                              className={`cursor-pointer rounded-xl border bg-slate-800 p-4 transition-all hover:border-sky-500 hover:shadow-lg ${
                                 quote.status === "change_requested"
                                   ? "border-amber-600/60"
                                   : "border-slate-600"
                               }`}
+                              onClick={() => {
+                                setSelectedOrderDetail(null);
+                                setSelectedQuoteDetail(quote);
+                              }}
                             >
-                              <div className="flex items-start justify-between gap-2">
-                                <div className="min-w-0">
-                                  <p className="text-white font-semibold">
-                                    {quote.quoteNumber}
-                                  </p>
-                                  <p className="text-xs text-gray-400">
-                                    {new Date(quote.createdAt).toLocaleString()}{" "}
-                                    • {quote.lineItems.length} item
-                                    {quote.lineItems.length !== 1 ? "s" : ""}
-                                  </p>
-                                  {quote.expirationDate && (
-                                    <p
-                                      className={`text-xs mt-1 ${new Date(quote.expirationDate) < new Date() ? "text-red-400" : "text-green-400"}`}
-                                    >
-                                      {new Date(quote.expirationDate) <
-                                      new Date()
-                                        ? "Expired "
-                                        : "Expires "}
-                                      {new Date(
-                                        quote.expirationDate,
-                                      ).toLocaleDateString()}
+                              <div className="flex items-start justify-between gap-4">
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <p className="text-white font-semibold">
+                                      {quote.quoteNumber}
                                     </p>
-                                  )}
-                                  {quote.status === "change_requested" &&
-                                    quote.changeRequestNote && (
-                                      <div className="mt-2 rounded border border-amber-700/40 bg-amber-900/20 p-2">
-                                        <p className="text-xs font-semibold text-amber-300 mb-0.5">
-                                          Customer change request:
-                                        </p>
-                                        <p className="text-xs text-amber-100">
-                                          {quote.changeRequestNote}
-                                        </p>
-                                      </div>
-                                    )}
-                                </div>
-                                <div className="text-right shrink-0">
-                                  <p className="text-white font-bold">
-                                    ${Number(quote.total).toFixed(2)}
-                                  </p>
-                                  <span
-                                    className={`inline-block px-2 py-0.5 rounded text-xs capitalize ${
-                                      quote.status === "accepted"
-                                        ? "bg-green-900 text-green-200"
-                                        : quote.status === "sent"
-                                          ? "bg-blue-900 text-blue-200"
-                                          : quote.status === "change_requested"
-                                            ? "bg-amber-900 text-amber-200"
-                                            : quote.status === "rejected"
-                                              ? "bg-red-900 text-red-200"
-                                              : "bg-slate-700 text-gray-300"
-                                    }`}
-                                  >
-                                    {quote.status === "change_requested"
-                                      ? "Change Requested"
-                                      : quote.status}
-                                  </span>
-                                  {quote.status === "change_requested" && (
-                                    <button
-                                      onClick={() => openQuoteModal(quote)}
-                                      className="mt-2 block w-full px-2 py-1 text-xs bg-amber-700 text-white rounded hover:bg-amber-600 transition-colors"
+                                    <span
+                                      className={`inline-block rounded px-2 py-0.5 text-xs capitalize ${getQuoteStatusClasses(quote)}`}
                                     >
-                                      Edit &amp; Re-send
-                                    </button>
-                                  )}
+                                      {isQuoteExpired(quote)
+                                        ? "expired"
+                                        : quote.status === "change_requested"
+                                          ? "Change Requested"
+                                          : quote.status}
+                                    </span>
+                                  </div>
+                                  <p className="text-sm text-gray-400">
+                                    {new Date(quote.createdAt).toLocaleString()}
+                                  </p>
+                                  <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-400">
+                                    <span>
+                                      {quote.lineItems.length} item
+                                      {quote.lineItems.length !== 1 ? "s" : ""}
+                                    </span>
+                                    {quote.expirationDate && (
+                                      <span
+                                        className={
+                                          isQuoteExpired(quote)
+                                            ? "text-red-400"
+                                            : "text-green-400"
+                                        }
+                                      >
+                                        {isQuoteExpired(quote)
+                                          ? "Expired"
+                                          : "Expires"}{" "}
+                                        {new Date(
+                                          quote.expirationDate,
+                                        ).toLocaleDateString()}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-4 shrink-0">
+                                  <div className="text-right">
+                                    <p className="text-lg font-bold text-white">
+                                      ${Number(quote.total).toFixed(2)}
+                                    </p>
+                                    <p className="text-xs text-gray-400">
+                                      Click to view details
+                                    </p>
+                                  </div>
+                                  <div className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-500 bg-slate-700 text-slate-300">
+                                    &gt;
+                                  </div>
                                 </div>
                               </div>
                             </div>
@@ -1723,12 +1727,6 @@ const CustomerManagement: React.FC = () => {
               )}
             </div>
             <div className="flex gap-3">
-              <button
-                onClick={openQuoteModal}
-                className="px-4 py-2 bg-sky-700 text-sky-100 hover:bg-sky-600 rounded-lg transition-colors"
-              >
-                Create Quote
-              </button>
               <button
                 onClick={() => handleSendPasswordReset(selectedCustomer)}
                 className="px-4 py-2 bg-purple-900 text-purple-200 hover:bg-purple-800 rounded-lg transition-colors"
@@ -2145,6 +2143,242 @@ const CustomerManagement: React.FC = () => {
               >
                 Delete
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selectedQuoteDetail && (
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-start justify-center z-60 p-4 overflow-y-auto">
+          <div className="bg-slate-800 rounded-lg max-w-3xl w-full my-8 border-2 border-sky-600">
+            <div className="p-6">
+              <div className="flex justify-between items-start mb-6">
+                <div>
+                  <h2 className="text-2xl font-bold text-white">
+                    {selectedQuoteDetail.quoteNumber}
+                  </h2>
+                  <p className="text-gray-400">
+                    {new Date(selectedQuoteDetail.createdAt).toLocaleString()}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setSelectedQuoteDetail(null)}
+                  className="text-gray-400 hover:text-white text-3xl font-bold leading-none -mt-2"
+                >
+                  ×
+                </button>
+              </div>
+
+              <div className="bg-slate-700 p-4 rounded-lg mb-6">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <p className="text-sm text-gray-400 mb-1">Status</p>
+                    <span
+                      className={`inline-block px-4 py-2 rounded-lg text-sm font-bold capitalize ${getQuoteStatusClasses(selectedQuoteDetail)}`}
+                    >
+                      {isQuoteExpired(selectedQuoteDetail)
+                        ? "expired"
+                        : selectedQuoteDetail.status === "change_requested"
+                          ? "Change Requested"
+                          : selectedQuoteDetail.status}
+                    </span>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm text-gray-400 mb-1">Total Amount</p>
+                    <p className="text-3xl font-bold text-white">
+                      ${Number(selectedQuoteDetail.total).toFixed(2)}
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-slate-600 pt-4">
+                  <div>
+                    <p className="text-sm text-gray-400 mb-1">Sent</p>
+                    <p className="text-white">
+                      {selectedQuoteDetail.sentAt
+                        ? new Date(selectedQuoteDetail.sentAt).toLocaleString()
+                        : "Not sent"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-400 mb-1">Expiration</p>
+                    <p
+                      className={
+                        isQuoteExpired(selectedQuoteDetail)
+                          ? "text-red-400"
+                          : "text-white"
+                      }
+                    >
+                      {selectedQuoteDetail.expirationDate
+                        ? new Date(
+                            selectedQuoteDetail.expirationDate,
+                          ).toLocaleString()
+                        : "No expiration set"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-slate-700 p-4 rounded-lg mb-6">
+                <h3 className="text-lg font-semibold text-white mb-4">
+                  Quote Items
+                </h3>
+                <div className="space-y-4">
+                  {selectedQuoteDetail.lineItems.map((item, idx) => {
+                    const optionsTotal = (item.options || []).reduce(
+                      (sum, option) => sum + Number(option.priceDelta || 0),
+                      0,
+                    );
+                    const unitPrice =
+                      Number(item.unitPrice || 0) + optionsTotal;
+                    const lineTotal = unitPrice * Number(item.quantity || 0);
+
+                    return (
+                      <div
+                        key={`${selectedQuoteDetail.id}-${idx}`}
+                        className="rounded border border-slate-600 bg-slate-800 p-4"
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="min-w-0 flex-1">
+                            <p className="text-lg font-semibold text-white">
+                              {item.name}
+                            </p>
+                            {item.description && (
+                              <p className="mt-1 text-sm text-gray-400">
+                                {item.description}
+                              </p>
+                            )}
+                            {(item.options || []).length > 0 && (
+                              <div className="mt-3 rounded border border-slate-600 bg-slate-700/50 p-3">
+                                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-300">
+                                  Options
+                                </p>
+                                <div className="space-y-1 text-sm text-gray-300">
+                                  {(item.options || []).map(
+                                    (option, optionIdx) => (
+                                      <div
+                                        key={optionIdx}
+                                        className="flex justify-between gap-4"
+                                      >
+                                        <span>{option.name}</span>
+                                        <span>
+                                          +$
+                                          {Number(
+                                            option.priceDelta || 0,
+                                          ).toFixed(2)}
+                                        </span>
+                                      </div>
+                                    ),
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                            {item.requiresPhotoUpload && (
+                              <p className="mt-3 text-sm text-amber-300">
+                                Customer photo upload required for this line
+                                item.
+                              </p>
+                            )}
+                          </div>
+                          <div className="min-w-35 rounded-lg border border-slate-600 bg-slate-700 p-3 text-sm">
+                            <div className="flex justify-between text-gray-300">
+                              <span>Qty</span>
+                              <span>{item.quantity}</span>
+                            </div>
+                            <div className="mt-2 flex justify-between text-gray-300">
+                              <span>Unit</span>
+                              <span>${unitPrice.toFixed(2)}</span>
+                            </div>
+                            <div className="mt-2 border-t border-slate-600 pt-2 flex justify-between font-semibold text-white">
+                              <span>Total</span>
+                              <span>${lineTotal.toFixed(2)}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="bg-slate-700 p-4 rounded-lg mb-6">
+                <h3 className="text-lg font-semibold text-white mb-3">
+                  Quote Summary
+                </h3>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-gray-300">
+                    <span>Subtotal</span>
+                    <span>
+                      ${Number(selectedQuoteDetail.subtotal).toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-gray-300">
+                    <span>Tax</span>
+                    <span>
+                      ${Number(selectedQuoteDetail.taxAmount).toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-gray-300">
+                    <span>Shipping</span>
+                    <span>
+                      ${Number(selectedQuoteDetail.shippingCost).toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="border-t border-slate-600 pt-2 flex justify-between text-white font-bold text-lg">
+                    <span>Total</span>
+                    <span>${Number(selectedQuoteDetail.total).toFixed(2)}</span>
+                  </div>
+                </div>
+              </div>
+
+              {(selectedQuoteDetail.notes ||
+                selectedQuoteDetail.changeRequestNote) && (
+                <div className="bg-slate-700 p-4 rounded-lg mb-6 space-y-4">
+                  {selectedQuoteDetail.notes && (
+                    <div>
+                      <h3 className="text-lg font-semibold text-white mb-2">
+                        Admin Notes
+                      </h3>
+                      <p className="text-sm text-gray-300 whitespace-pre-wrap">
+                        {selectedQuoteDetail.notes}
+                      </p>
+                    </div>
+                  )}
+                  {selectedQuoteDetail.changeRequestNote && (
+                    <div>
+                      <h3 className="text-lg font-semibold text-white mb-2">
+                        Customer Change Request
+                      </h3>
+                      <p className="text-sm text-amber-200 whitespace-pre-wrap">
+                        {selectedQuoteDetail.changeRequestNote}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setIsContactModalOpen(true)}
+                  className="flex-1 px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 transition-colors"
+                >
+                  Contact Customer
+                </button>
+                <button
+                  onClick={() => {
+                    setSelectedQuoteDetail(null);
+                    openQuoteModal(selectedQuoteDetail);
+                  }}
+                  className="flex-1 px-4 py-2 bg-amber-700 text-white rounded-lg hover:bg-amber-600 transition-colors"
+                >
+                  Edit Quote
+                </button>
+                <button
+                  onClick={() => setSelectedQuoteDetail(null)}
+                  className="px-6 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-500 transition-colors"
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         </div>
