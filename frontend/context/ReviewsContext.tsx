@@ -6,6 +6,7 @@ import React, {
   ReactNode,
 } from "react";
 import { apiClient } from "../services/apiClient";
+import { Review } from "../types";
 
 interface ReviewsContextType {
   reviews: Review[];
