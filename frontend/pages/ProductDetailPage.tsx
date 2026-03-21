@@ -13,6 +13,7 @@ import DragDropFileUpload from "../components/DragDropFileUpload";
 import {
   getCurrentProductPrice,
   isProductArchived,
+  isProductOnSale,
 } from "../utils/productPricing";
 
 type CustomizationTab = "gallery" | "upload" | "ideas";
@@ -323,6 +324,14 @@ const ProductDetailPage: React.FC = () => {
     return price;
   }, [product, selectedOptions, customText, uploadedImage]);
 
+  const basePrice = Number(product?.price || 0);
+  const currentBasePrice = product ? getCurrentProductPrice(product) : 0;
+  const onSale = product ? isProductOnSale(product) : false;
+  const savingsAmount = Math.max(0, basePrice - currentBasePrice);
+  const savingsPercent =
+    basePrice > 0 ? Math.round((savingsAmount / basePrice) * 100) : 0;
+  const originalDisplayPrice = displayPrice + savingsAmount;
+
   if (loading || !product) {
     return (
       <div className="mt-16">
@@ -411,9 +420,28 @@ const ProductDetailPage: React.FC = () => {
 
         <div>
           <h1 className="text-4xl font-bold text-white mb-2">{product.name}</h1>
-          <p className="text-3xl text-sky-400 font-light mb-4">
-            ${displayPrice.toFixed(2)}
-          </p>
+          {onSale ? (
+            <div className="mb-4 space-y-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-red-900 text-red-200 border border-red-700">
+                  ON SALE
+                </span>
+                <p className="text-sm text-gray-300 line-through">
+                  Was ${originalDisplayPrice.toFixed(2)}
+                </p>
+              </div>
+              <p className="text-3xl text-sky-400 font-light">
+                Now ${displayPrice.toFixed(2)}
+              </p>
+              <p className="text-sm text-red-300 font-medium">
+                You save ${savingsAmount.toFixed(2)} ({savingsPercent}% off)
+              </p>
+            </div>
+          ) : (
+            <p className="text-3xl text-sky-400 font-light mb-4">
+              ${displayPrice.toFixed(2)}
+            </p>
+          )}
           <p className="text-gray-300 mb-6 leading-relaxed">
             {product.description}
           </p>
