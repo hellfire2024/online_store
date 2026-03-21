@@ -19,6 +19,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
     "Watermark";
   const currentPrice = getCurrentProductPrice(product);
   const onSale = isProductOnSale(product);
+  const savings = Math.max(0, Number(product.price) - Number(currentPrice));
 
   // Prevent image download
   const handleImageContextMenu = (e: React.MouseEvent) => {
@@ -34,6 +35,11 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
     <div className="bg-slate-800 rounded-lg overflow-hidden group transition-all duration-300 hover:shadow-2xl hover:shadow-sky-900/50 hover:-translate-y-1 border border-slate-700 hover:border-sky-500">
       <Link to={`/product/${generateSlug(product.name)}`}>
         <div className="w-full h-64 bg-slate-700 relative overflow-hidden">
+          {onSale && (
+            <div className="absolute top-3 left-0 z-10 bg-red-600 text-white text-xs font-bold tracking-wide px-3 py-1 rounded-r-md shadow-lg">
+              ON SALE
+            </div>
+          )}
           <img
             src={product.imageUrl}
             alt={product.name}
@@ -78,9 +84,14 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                 : `$${Number(currentPrice).toFixed(2)}`}
             </p>
             {onSale && (
-              <p className="text-xs text-gray-400 line-through">
-                ${Number(product.price).toFixed(2)}
-              </p>
+              <div className="space-y-0.5">
+                <p className="text-xs text-gray-400 line-through">
+                  ${Number(product.price).toFixed(2)}
+                </p>
+                <p className="text-xs text-red-300 font-medium">
+                  Save ${savings.toFixed(2)}
+                </p>
+              </div>
             )}
           </div>
         </div>
