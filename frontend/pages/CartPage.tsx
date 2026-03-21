@@ -3,7 +3,10 @@ import { Link } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { CartItem } from "../types";
 import { useSiteSettings } from "../context/SiteSettingsContext";
-import { getCurrentProductPrice } from "../utils/productPricing";
+import {
+  getCurrentProductPrice,
+  isProductOnSale,
+} from "../utils/productPricing";
 
 const TrashIcon: React.FC = () => (
   <svg
@@ -101,6 +104,7 @@ const CartItemRow: React.FC<{ item: CartItem }> = ({ item }) => {
   const basePrice = toNumber(getCurrentProductPrice(item.product));
   const finalPrice =
     basePrice + optionsDelta + customTextCost + customImageCost;
+  const onSale = isProductOnSale(item.product);
 
   return (
     <div className="flex flex-col sm:flex-row items-start py-5 border-b border-slate-700 gap-4">
@@ -141,12 +145,24 @@ const CartItemRow: React.FC<{ item: CartItem }> = ({ item }) => {
         </div>
       </div>
       <div className="grow w-full sm:w-auto">
-        <h3 className="font-semibold text-white text-base sm:text-lg">
-          {item.product.name}
-        </h3>
+        <div className="flex items-center gap-2 flex-wrap">
+          <h3 className="font-semibold text-white text-base sm:text-lg">
+            {item.product.name}
+          </h3>
+          {onSale && (
+            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-red-900 text-red-200 border border-red-700">
+              ON SALE
+            </span>
+          )}
+        </div>
         <p className="text-sm text-gray-300">
           Base price (each): ${basePrice.toFixed(2)}
         </p>
+        {onSale && (
+          <p className="text-xs text-red-300 mt-1">
+            Sale price applied. Sale prices are final.
+          </p>
+        )}
         {selectedOptionDetails.length > 0 && (
           <div className="mt-1 space-y-0.5">
             <p className="text-xs text-gray-300">Options (each):</p>
@@ -279,6 +295,7 @@ const CartItemRow: React.FC<{ item: CartItem }> = ({ item }) => {
 
 const CartPage: React.FC = () => {
   const { cartItems, itemCount, totalPrice } = useCart();
+  const hasSaleItems = cartItems.some((item) => isProductOnSale(item.product));
 
   if (itemCount === 0) {
     return (
@@ -310,6 +327,11 @@ const CartPage: React.FC = () => {
       <h1 className="text-2xl sm:text-3xl font-bold text-white mb-4 sm:mb-6">
         Your Shopping Cart
       </h1>
+      {hasSaleItems && (
+        <div className="mb-4 rounded-lg border border-red-700 bg-red-950/30 px-4 py-3 text-sm text-red-200">
+          Some items in your cart are on sale. Sale prices are final.
+        </div>
+      )}
       <div>
         {cartItems.map((item, idx) => (
           <CartItemRow

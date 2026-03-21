@@ -1,7 +1,10 @@
 import React, { createContext, useState, useContext, ReactNode } from "react";
 import { CartItem } from "../types";
 import { useToast } from "../hooks/useToast";
-import { getCurrentProductPrice } from "../utils/productPricing";
+import {
+  getCurrentProductPrice,
+  isProductOnSale,
+} from "../utils/productPricing";
 
 interface CartContextType {
   cartItems: CartItem[];
@@ -62,7 +65,9 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
 
       if (existingItemIndex !== -1) {
         addToast(
-          `${newItem.product.name} quantity increased in cart.`,
+          isProductOnSale(newItem.product)
+            ? `${newItem.product.name} quantity increased in cart. Sale price applied. Final sale.`
+            : `${newItem.product.name} quantity increased in cart.`,
           "success",
         );
         return prevItems.map((item, index) =>
@@ -71,7 +76,12 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
             : item,
         );
       } else {
-        addToast(`${newItem.product.name} added to cart.`, "success");
+        addToast(
+          isProductOnSale(newItem.product)
+            ? `${newItem.product.name} added to cart on sale. Sale prices are final.`
+            : `${newItem.product.name} added to cart.`,
+          "success",
+        );
         return [...prevItems, newItem];
       }
     });
