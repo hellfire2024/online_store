@@ -3,16 +3,20 @@ import { useProducts } from "../context/ProductContext";
 import ProductCard from "../components/ProductCard";
 import Spinner from "../components/Spinner";
 import Pagination from "../components/Pagination";
+import { isProductArchived } from "../utils/productPricing";
 
 const StorePage: React.FC = () => {
   const { products, isLoading } = useProducts();
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(12);
+  const visibleProducts = products.filter(
+    (product) => !isProductArchived(product),
+  );
 
   const paginatedProducts =
     itemsPerPage === -1
-      ? products
-      : products.slice(
+      ? visibleProducts
+      : visibleProducts.slice(
           (currentPage - 1) * itemsPerPage,
           currentPage * itemsPerPage,
         );
@@ -40,7 +44,7 @@ const StorePage: React.FC = () => {
           </div>
           <Pagination
             currentPage={currentPage}
-            totalItems={products.length}
+            totalItems={visibleProducts.length}
             itemsPerPage={itemsPerPage}
             onPageChange={setCurrentPage}
             onItemsPerPageChange={(value) => {

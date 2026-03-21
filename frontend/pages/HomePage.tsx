@@ -12,6 +12,7 @@ import { HomePageContent, GalleryImage } from "../types";
 import Spinner from "../components/Spinner";
 import { useToast } from "../hooks/useToast";
 import * as Icons from "../components/Icons";
+import { isProductArchived } from "../utils/productPricing";
 
 type GalleryImageCompat = {
   id: string;
@@ -116,7 +117,9 @@ const HomePage: React.FC = () => {
     );
   }
 
-  const featuredProducts = products.slice(0, 4);
+  const featuredProducts = products
+    .filter((product) => !isProductArchived(product))
+    .slice(0, 4);
   const approvedReviews = reviews.filter((r) => r.status === "approved");
   const maxReviews = siteSettings?.maxReviewsDisplayed || 5;
   const featuredReviews = approvedReviews.slice(0, maxReviews);

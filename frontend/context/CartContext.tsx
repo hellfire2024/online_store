@@ -1,6 +1,7 @@
 import React, { createContext, useState, useContext, ReactNode } from "react";
 import { CartItem } from "../types";
 import { useToast } from "../hooks/useToast";
+import { getCurrentProductPrice } from "../utils/productPricing";
 
 interface CartContextType {
   cartItems: CartItem[];
@@ -150,7 +151,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
         : 0;
     return (
       total +
-      (Number(item.product.price) +
+      (getCurrentProductPrice(item.product) +
         optionsDelta +
         customTextCost +
         customImageCost) *

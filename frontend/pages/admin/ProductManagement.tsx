@@ -305,6 +305,14 @@ const ProductManagement: React.FC = () => {
     }
   };
 
+  const toDateTimeLocalValue = (value?: string) => {
+    if (!value) return "";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  };
+
   // Filter out any null/undefined products and ensure valid data
   const validProducts = products.filter((p): p is Product => p != null);
 
@@ -340,9 +348,16 @@ const ProductManagement: React.FC = () => {
     const newProd = {
       name: "",
       price: 0,
+      effectivePrice: 0,
       description: "",
       imageUrl: "",
       inventory: 0,
+      isArchived: false,
+      saleType: "none" as const,
+      saleValue: undefined,
+      saleStartAt: "",
+      saleEndAt: "",
+      reorderPricingMode: "current" as const,
       customizable: false,
       lowStockThreshold: 0,
       optionLists: [],
@@ -358,8 +373,13 @@ const ProductManagement: React.FC = () => {
   };
 
   const handleEdit = (product: Product) => {
-    setEditingProduct({ ...product });
-    setOriginalProduct({ ...product });
+    const normalizedProduct = {
+      ...product,
+      saleStartAt: toDateTimeLocalValue(product.saleStartAt),
+      saleEndAt: toDateTimeLocalValue(product.saleEndAt),
+    };
+    setEditingProduct(normalizedProduct);
+    setOriginalProduct(normalizedProduct);
     setImagePreview(product.imageUrl);
   };
 
@@ -636,9 +656,32 @@ const ProductManagement: React.FC = () => {
       return;
     }
 
-    if (!productToSave.inventory || Number(productToSave.inventory) < 0) {
+    if (
+      productToSave.inventory === undefined ||
+      Number(productToSave.inventory) < 0
+    ) {
       addToast("Product inventory must be 0 or greater", "error");
       return;
+    }
+
+    if (productToSave.saleType !== "none") {
+      const saleValue = Number(productToSave.saleValue || 0);
+      if (saleValue <= 0) {
+        addToast("Sale value must be greater than 0", "error");
+        return;
+      }
+      if (productToSave.saleType === "percent" && saleValue >= 100) {
+        addToast("Percentage sale must be less than 100", "error");
+        return;
+      }
+      if (
+        productToSave.saleStartAt &&
+        productToSave.saleEndAt &&
+        new Date(productToSave.saleEndAt) < new Date(productToSave.saleStartAt)
+      ) {
+        addToast("Sale end date must be after start date", "error");
+        return;
+      }
     }
 
     if (!productToSave.imageUrl?.trim()) {
@@ -743,6 +786,11 @@ const ProductManagement: React.FC = () => {
                 (product.lowStockThreshold ?? 0) > 0 &&
                 Number(product.inventory) <= (product.lowStockThreshold ?? 0) &&
                 !isOut;
+              const archived = Boolean(product.isArchived);
+              const currentPrice = Number(
+                product.effectivePrice ?? product.price,
+              );
+              const basePrice = Number(product.price);
               const cacheBust = imageVersions[product.id];
               return (
                 <tr key={product.id} className="border-t border-slate-700">
@@ -755,23 +803,70 @@ const ProductManagement: React.FC = () => {
                     />
                     <span>{product.name}</span>
                   </td>
-                  <td className="p-4">${Number(product.price).toFixed(2)}</td>
+                  <td className="p-4">
+                    {product.isOnSale && currentPrice < basePrice ? (
+                      <div>
+                        <div className="text-red-300 font-semibold">
+                          ${currentPrice.toFixed(2)}
+                        </div>
+                        <div className="text-xs text-gray-400 line-through">
+                          ${basePrice.toFixed(2)}
+                        </div>
+                      </div>
+                    ) : (
+                      `$${basePrice.toFixed(2)}`
+                    )}
+                  </td>
                   <td className="p-4">{product.inventory}</td>
                   <td className="p-4">
-                    <span
-                      className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                        isOut
-                          ? "bg-red-900 text-red-200"
-                          : isLow
-                            ? "bg-yellow-900 text-yellow-200"
-                            : "bg-green-900 text-green-200"
-                      }`}
-                    >
-                      {isOut ? "Out of stock" : isLow ? "Low stock" : "Healthy"}
-                    </span>
+                    <div className="flex flex-wrap gap-2">
+                      <span
+                        className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                          archived
+                            ? "bg-slate-600 text-slate-200"
+                            : isOut
+                              ? "bg-red-900 text-red-200"
+                              : isLow
+                                ? "bg-yellow-900 text-yellow-200"
+                                : "bg-green-900 text-green-200"
+                        }`}
+                      >
+                        {archived
+                          ? "Archived"
+                          : isOut
+                            ? "Out of stock"
+                            : isLow
+                              ? "Low stock"
+                              : "Healthy"}
+                      </span>
+                      {product.isOnSale && (
+                        <span className="px-2 py-1 rounded-full text-xs font-semibold bg-red-900 text-red-200">
+                          On Sale
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="p-4">
                     <div className="flex gap-2">
+                      <button
+                        onClick={async () => {
+                          await updateProduct({
+                            ...product,
+                            isArchived: !product.isArchived,
+                          });
+                          await fetchProducts();
+                          addToast(
+                            product.isArchived
+                              ? "Product unarchived"
+                              : "Product archived",
+                            "success",
+                          );
+                        }}
+                        className={`p-2 ${product.isArchived ? "text-green-400 hover:text-green-300" : "text-amber-400 hover:text-amber-300"}`}
+                        title={product.isArchived ? "Unarchive" : "Archive"}
+                      >
+                        {product.isArchived ? "↩" : "🗄"}
+                      </button>
                       <button
                         onClick={() => handleEdit(product)}
                         className="text-sky-400 hover:text-sky-300 p-2"
@@ -885,6 +980,112 @@ const ProductManagement: React.FC = () => {
                     onChange={handleChange}
                     className="w-full p-2 bg-slate-700 border border-slate-600 rounded-md text-white"
                   />
+                </div>
+              </div>
+
+              <div className="bg-slate-700/40 rounded-lg border border-slate-600 p-4 space-y-4">
+                <h3 className="text-sm font-semibold text-gray-200 uppercase tracking-wide">
+                  Availability & Sales
+                </h3>
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    name="isArchived"
+                    id="isArchived"
+                    checked={Boolean(currentProduct.isArchived)}
+                    onChange={handleCheckboxChange}
+                    className="h-4 w-4 rounded border-gray-300 text-sky-600 focus:ring-sky-500"
+                  />
+                  <label
+                    htmlFor="isArchived"
+                    className="ml-2 block text-sm text-gray-300"
+                  >
+                    Archive product (hide from storefront, keep for history)
+                  </label>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-300 mb-1">
+                      Sale Type
+                    </label>
+                    <select
+                      name="saleType"
+                      value={currentProduct.saleType || "none"}
+                      onChange={handleChange}
+                      className="w-full p-2 bg-slate-700 border border-slate-600 rounded-md text-white"
+                    >
+                      <option value="none">No sale</option>
+                      <option value="percent">Percent off</option>
+                      <option value="fixed">Fixed sale price</option>
+                    </select>
+                  </div>
+                  {(currentProduct.saleType || "none") !== "none" && (
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-300 mb-1">
+                        {currentProduct.saleType === "percent"
+                          ? "Discount (%)"
+                          : "Sale Price ($)"}
+                      </label>
+                      <input
+                        type="number"
+                        name="saleValue"
+                        step="0.01"
+                        min="0"
+                        value={currentProduct.saleValue ?? ""}
+                        onChange={handleChange}
+                        className="w-full p-2 bg-slate-700 border border-slate-600 rounded-md text-white"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {(currentProduct.saleType || "none") !== "none" && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-300 mb-1">
+                        Sale Start (optional)
+                      </label>
+                      <input
+                        type="datetime-local"
+                        name="saleStartAt"
+                        value={toDateTimeLocalValue(currentProduct.saleStartAt)}
+                        onChange={handleChange}
+                        className="w-full p-2 bg-slate-700 border border-slate-600 rounded-md text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-300 mb-1">
+                        Sale End (optional)
+                      </label>
+                      <input
+                        type="datetime-local"
+                        name="saleEndAt"
+                        value={toDateTimeLocalValue(currentProduct.saleEndAt)}
+                        onChange={handleChange}
+                        className="w-full p-2 bg-slate-700 border border-slate-600 rounded-md text-white"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-300 mb-1">
+                    Reorder Pricing Behavior
+                  </label>
+                  <select
+                    name="reorderPricingMode"
+                    value={currentProduct.reorderPricingMode || "current"}
+                    onChange={handleChange}
+                    className="w-full p-2 bg-slate-700 border border-slate-600 rounded-md text-white"
+                  >
+                    <option value="current">
+                      Use current product price on reorder
+                    </option>
+                    <option value="historical">
+                      Keep historical order price on reorder
+                    </option>
+                  </select>
                 </div>
               </div>
               <div>

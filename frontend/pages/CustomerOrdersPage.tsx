@@ -14,6 +14,10 @@ import {
   DEFAULT_TEMPLATE,
 } from "../services/pdfInvoiceGenerator";
 import { apiClient } from "../services/apiClient";
+import {
+  getCurrentProductPrice,
+  isProductArchived,
+} from "../utils/productPricing";
 
 interface CustomerQuoteLineItem {
   name: string;
@@ -343,6 +347,11 @@ const CustomerOrdersPage: React.FC = () => {
           continue;
         }
 
+        if (isProductArchived(product)) {
+          addToast(`Product "${itemName}" is archived and unavailable`, "info");
+          continue;
+        }
+
         // Reconstruct CartItem from order item
         const rawSelectedOptions =
           (item as any).selectedOptionsRaw || (item as any).selectedOptions;
@@ -352,8 +361,29 @@ const CustomerOrdersPage: React.FC = () => {
             ? rawSelectedOptions
             : undefined;
 
+        const historicalUnitPrice = Number(
+          (item as any).price || (item.product && item.product.price) || 0,
+        );
+        const shouldUseHistoricalPrice =
+          product.reorderPricingMode === "historical" &&
+          Number.isFinite(historicalUnitPrice) &&
+          historicalUnitPrice > 0;
+
+        const reorderProduct = shouldUseHistoricalPrice
+          ? {
+              ...product,
+              price: historicalUnitPrice,
+              effectivePrice: historicalUnitPrice,
+              salePrice: undefined,
+              isOnSale: false,
+            }
+          : {
+              ...product,
+              effectivePrice: getCurrentProductPrice(product),
+            };
+
         const cartItem: CartItem = {
-          product,
+          product: reorderProduct,
           quantity: item.quantity,
           selectedOptions,
           customization: (item as any).customization,

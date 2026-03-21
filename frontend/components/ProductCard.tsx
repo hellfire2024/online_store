@@ -3,6 +3,10 @@ import { Link } from "react-router-dom";
 import { Product } from "../types";
 import { generateSlug } from "../services/slugService";
 import { useSiteSettings } from "../context/SiteSettingsContext";
+import {
+  getCurrentProductPrice,
+  isProductOnSale,
+} from "../utils/productPricing";
 
 interface ProductCardProps {
   product: Product;
@@ -13,6 +17,8 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const watermarkText =
     `${siteSettings?.logoText || ""}${siteSettings?.logoTextAccent || ""}`.trim() ||
     "Watermark";
+  const currentPrice = getCurrentProductPrice(product);
+  const onSale = isProductOnSale(product);
 
   // Prevent image download
   const handleImageContextMenu = (e: React.MouseEvent) => {
@@ -65,11 +71,18 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           <h3 className="text-lg font-semibold text-white truncate">
             {product.name}
           </h3>
-          <p className="text-sky-400 font-bold mt-2">
-            {product.optionLists?.length
-              ? `From $${Number(product.price).toFixed(2)}`
-              : `$${Number(product.price).toFixed(2)}`}
-          </p>
+          <div className="mt-2">
+            <p className="text-sky-400 font-bold">
+              {product.optionLists?.length
+                ? `From $${Number(currentPrice).toFixed(2)}`
+                : `$${Number(currentPrice).toFixed(2)}`}
+            </p>
+            {onSale && (
+              <p className="text-xs text-gray-400 line-through">
+                ${Number(product.price).toFixed(2)}
+              </p>
+            )}
+          </div>
         </div>
       </Link>
     </div>

@@ -2,9 +2,18 @@ export interface Product {
   id: string;
   name: string;
   price: number;
+  effectivePrice?: number;
+  salePrice?: number;
+  isOnSale?: boolean;
   description: string;
   imageUrl: string;
   inventory: number;
+  isArchived?: boolean;
+  saleType?: "none" | "percent" | "fixed";
+  saleValue?: number;
+  saleStartAt?: string;
+  saleEndAt?: string;
+  reorderPricingMode?: "current" | "historical";
   customizable: boolean;
   galleryId?: string; // Link to a specific gallery
   enableAIIdeas?: boolean; // Enable AI design ideas for this product

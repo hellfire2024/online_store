@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { CartItem } from "../types";
 import { useSiteSettings } from "../context/SiteSettingsContext";
+import { getCurrentProductPrice } from "../utils/productPricing";
 
 const TrashIcon: React.FC = () => (
   <svg
@@ -97,7 +98,7 @@ const CartItemRow: React.FC<{ item: CartItem }> = ({ item }) => {
       ? toNumber(item.product.customImageUploadPrice)
       : 0;
 
-  const basePrice = toNumber(item.product.price);
+  const basePrice = toNumber(getCurrentProductPrice(item.product));
   const finalPrice =
     basePrice + optionsDelta + customTextCost + customImageCost;
 

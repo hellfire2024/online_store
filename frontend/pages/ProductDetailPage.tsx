@@ -10,6 +10,10 @@ import { useSiteSettings } from "../context/SiteSettingsContext";
 import { generateSlug } from "../services/slugService";
 import Spinner from "../components/Spinner";
 import DragDropFileUpload from "../components/DragDropFileUpload";
+import {
+  getCurrentProductPrice,
+  isProductArchived,
+} from "../utils/productPricing";
 
 type CustomizationTab = "gallery" | "upload" | "ideas";
 
@@ -86,7 +90,9 @@ const ProductDetailPage: React.FC = () => {
   useEffect(() => {
     if (products.length > 0 && slug) {
       // Find product by matching generated slug to URL slug
-      const foundProduct = products.find((p) => generateSlug(p.name) === slug);
+      const foundProduct = products.find(
+        (p) => generateSlug(p.name) === slug && !isProductArchived(p),
+      );
       if (foundProduct) {
         setProduct(foundProduct);
         // Initialize selected options - allow multiple selections per list
@@ -284,7 +290,7 @@ const ProductDetailPage: React.FC = () => {
   // Calculate display price including all selected options and custom text - memoized
   const displayPrice = useMemo(() => {
     if (!product) return 0;
-    let price = Number(product.price);
+    let price = getCurrentProductPrice(product);
     if (product.optionLists) {
       product.optionLists.forEach((list) => {
         const selectedOptionIds = selectedOptions[list.id] || [];

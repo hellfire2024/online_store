@@ -72,6 +72,12 @@ export async function runMigrations(): Promise<void> {
       name VARCHAR(255) NOT NULL,
       description TEXT,
       price DECIMAL(10,2) NOT NULL,
+      is_archived BOOLEAN DEFAULT FALSE,
+      sale_type ENUM('none','percent','fixed') DEFAULT 'none',
+      sale_value DECIMAL(10,2) NULL,
+      sale_start_at TIMESTAMP NULL,
+      sale_end_at TIMESTAMP NULL,
+      reorder_pricing_mode ENUM('current','historical') DEFAULT 'current',
       image_url LONGTEXT,
       inventory INT DEFAULT 0,
       customizable BOOLEAN DEFAULT FALSE,
@@ -531,6 +537,24 @@ export async function runMigrations(): Promise<void> {
       "products",
       "custom_text_max_length",
       "INT DEFAULT 100",
+    );
+    await alterTableAddColumn(
+      "products",
+      "is_archived",
+      "BOOLEAN DEFAULT FALSE",
+    );
+    await alterTableAddColumn(
+      "products",
+      "sale_type",
+      "ENUM('none','percent','fixed') DEFAULT 'none'",
+    );
+    await alterTableAddColumn("products", "sale_value", "DECIMAL(10,2) NULL");
+    await alterTableAddColumn("products", "sale_start_at", "TIMESTAMP NULL");
+    await alterTableAddColumn("products", "sale_end_at", "TIMESTAMP NULL");
+    await alterTableAddColumn(
+      "products",
+      "reorder_pricing_mode",
+      "ENUM('current','historical') DEFAULT 'current'",
     );
     await alterTableAddColumn("products", "gallery_id", "VARCHAR(36)");
 

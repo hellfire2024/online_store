@@ -288,7 +288,10 @@ class ApiClient {
 
   // Products
   products = {
-    getAll: () => this.request<any[]>("/products"),
+    getAll: (includeArchived = false) =>
+      this.request<any[]>(
+        includeArchived ? "/products?includeArchived=true" : "/products",
+      ),
     getById: (id: string) => this.request<any>(`/products/${id}`),
     create: (data: any) =>
       this.request<any>("/products", {

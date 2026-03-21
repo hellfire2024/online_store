@@ -4,6 +4,7 @@ import { useCart } from "../context/CartContext";
 import { useCustomerAuth } from "../context/CustomerAuthContext";
 import { useSiteSettings } from "../context/SiteSettingsContext";
 import apiClient from "../services/apiClient";
+import { getCurrentProductPrice } from "../utils/productPricing";
 import { useToast } from "../hooks/useToast";
 import { calculateTax } from "../services/taxService";
 
@@ -368,7 +369,7 @@ const CheckoutPage: React.FC = () => {
             }
           });
         }
-        const itemPrice = toNumber(item.product.price);
+        const itemPrice = toNumber(getCurrentProductPrice(item.product));
         let customTextCost = 0;
         if (item.customText && item.product.customTextPricePerChar) {
           customTextCost =
@@ -620,7 +621,7 @@ const CheckoutPage: React.FC = () => {
               ? toNumber(item.product.customImageUploadPrice)
               : 0;
 
-          const basePrice = toNumber(item.product.price);
+          const basePrice = toNumber(getCurrentProductPrice(item.product));
 
           return {
             productId: item.product.id,

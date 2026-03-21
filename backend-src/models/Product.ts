@@ -7,6 +7,15 @@ interface Product {
   name: string;
   description?: string;
   price: number;
+  effectivePrice?: number;
+  isOnSale?: boolean;
+  salePrice?: number;
+  isArchived?: boolean;
+  saleType?: "none" | "percent" | "fixed";
+  saleValue?: number;
+  saleStartAt?: string;
+  saleEndAt?: string;
+  reorderPricingMode?: "current" | "historical";
   imageUrl?: string;
   inventory: number;
   lowStockThreshold?: number;
@@ -47,7 +56,75 @@ function sanitizeImageUrl(imageUrl?: string): string | null {
   return imageUrl || null;
 }
 
-export async function findAll(): Promise<Product[]> {
+function computeEffectivePricing(product: Product): {
+  effectivePrice: number;
+  salePrice?: number;
+  isOnSale: boolean;
+} {
+  const basePrice = Number(product.price || 0);
+  const saleType = product.saleType || "none";
+  const saleValue = Number(product.saleValue || 0);
+
+  const now = new Date();
+  const startsAt = product.saleStartAt ? new Date(product.saleStartAt) : null;
+  const endsAt = product.saleEndAt ? new Date(product.saleEndAt) : null;
+
+  const isInWindow =
+    (!startsAt || startsAt <= now) && (!endsAt || endsAt >= now);
+
+  if (!isInWindow || saleType === "none" || saleValue <= 0) {
+    return { effectivePrice: basePrice, isOnSale: false };
+  }
+
+  let computedSalePrice = basePrice;
+  if (saleType === "percent") {
+    computedSalePrice = basePrice * (1 - saleValue / 100);
+  } else if (saleType === "fixed") {
+    computedSalePrice = saleValue;
+  }
+
+  computedSalePrice = Math.max(0, Number(computedSalePrice.toFixed(2)));
+
+  if (computedSalePrice >= basePrice) {
+    return { effectivePrice: basePrice, isOnSale: false };
+  }
+
+  return {
+    effectivePrice: computedSalePrice,
+    salePrice: computedSalePrice,
+    isOnSale: true,
+  };
+}
+
+function normalizeProductRow(row: RowDataPacket): Product {
+  const product: Product = {
+    ...(row as Product),
+    isArchived: Boolean(row.isArchived),
+    saleType: (row.saleType || "none") as "none" | "percent" | "fixed",
+    saleValue:
+      row.saleValue === null || row.saleValue === undefined
+        ? undefined
+        : Number(row.saleValue),
+    saleStartAt: row.saleStartAt
+      ? new Date(row.saleStartAt).toISOString()
+      : undefined,
+    saleEndAt: row.saleEndAt
+      ? new Date(row.saleEndAt).toISOString()
+      : undefined,
+    reorderPricingMode: (row.reorderPricingMode || "current") as
+      | "current"
+      | "historical",
+  };
+
+  const pricing = computeEffectivePricing(product);
+  product.effectivePrice = pricing.effectivePrice;
+  product.salePrice = pricing.salePrice;
+  product.isOnSale = pricing.isOnSale;
+
+  return product;
+}
+
+export async function findAll(includeArchived = true): Promise<Product[]> {
   const [rows] = await pool.query<RowDataPacket[]>(
     `SELECT id, name, description, price, image_url as imageUrl, inventory, 
             low_stock_threshold as lowStockThreshold, customizable, 
@@ -56,11 +133,19 @@ export async function findAll(): Promise<Product[]> {
             custom_image_upload_price as customImageUploadPrice,
             allow_custom_text as allowCustomText,
             custom_text_price_per_char as customTextPricePerChar,
-            custom_text_max_length as customTextMaxLength
-     FROM products ORDER BY name`,
+            custom_text_max_length as customTextMaxLength,
+            is_archived as isArchived,
+            sale_type as saleType,
+            sale_value as saleValue,
+            sale_start_at as saleStartAt,
+            sale_end_at as saleEndAt,
+            reorder_pricing_mode as reorderPricingMode
+     FROM products
+     ${includeArchived ? "" : "WHERE is_archived = FALSE"}
+     ORDER BY name`,
   );
 
-  const products = rows as Product[];
+  const products = rows.map(normalizeProductRow);
 
   // Load option lists for each product
   for (const product of products) {
@@ -90,14 +175,20 @@ export async function findById(id: string): Promise<Product | null> {
             custom_image_upload_price as customImageUploadPrice,
             allow_custom_text as allowCustomText,
             custom_text_price_per_char as customTextPricePerChar,
-            custom_text_max_length as customTextMaxLength
+            custom_text_max_length as customTextMaxLength,
+            is_archived as isArchived,
+            sale_type as saleType,
+            sale_value as saleValue,
+            sale_start_at as saleStartAt,
+            sale_end_at as saleEndAt,
+            reorder_pricing_mode as reorderPricingMode
      FROM products WHERE id = ?`,
     [id],
   );
 
   if (rows.length === 0) return null;
 
-  const product = rows[0] as Product;
+  const product = normalizeProductRow(rows[0]);
   product.optionLists = await findOptionLists(id);
   // Convert 0 to undefined for customImageUploadPrice when feature is not enabled
   if (!product.allowCustomImageUpload || product.customImageUploadPrice === 0) {
@@ -147,13 +238,23 @@ export async function create(data: Partial<Product>): Promise<Product> {
   return withTransaction(async (connection) => {
     const id = uuidv4();
     const sanitizedImageUrl = sanitizeImageUrl(data.imageUrl);
+    const saleType = data.saleType || "none";
+    const normalizedSaleValue =
+      saleType === "none" ? null : (data.saleValue ?? null);
+    const normalizedSaleStartAt =
+      saleType === "none" || !data.saleStartAt
+        ? null
+        : new Date(data.saleStartAt);
+    const normalizedSaleEndAt =
+      saleType === "none" || !data.saleEndAt ? null : new Date(data.saleEndAt);
 
     await connection.query(
       `INSERT INTO products (id, name, description, price, image_url, inventory,
                              low_stock_threshold, customizable, enable_ai_ideas, gallery_id,
                              allow_custom_image_upload, custom_image_upload_price,
-                             allow_custom_text, custom_text_price_per_char, custom_text_max_length)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                             allow_custom_text, custom_text_price_per_char, custom_text_max_length,
+                             is_archived, sale_type, sale_value, sale_start_at, sale_end_at, reorder_pricing_mode)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id,
         data.name,
@@ -170,6 +271,12 @@ export async function create(data: Partial<Product>): Promise<Product> {
         data.allowCustomText || false,
         data.customTextPricePerChar ?? null,
         data.customTextMaxLength ?? 100,
+        data.isArchived || false,
+        saleType,
+        normalizedSaleValue,
+        normalizedSaleStartAt,
+        normalizedSaleEndAt,
+        data.reorderPricingMode || "current",
       ],
     );
 
@@ -204,12 +311,39 @@ export async function update(
       // If sanitized is null (base64), keep current imageUrl
     }
 
+    const resolvedSaleType = data.saleType ?? currentProduct.saleType ?? "none";
+    const resolvedSaleValue =
+      resolvedSaleType === "none"
+        ? null
+        : (data.saleValue ?? currentProduct.saleValue ?? null);
+
+    const resolveDate = (
+      incomingValue: string | null | undefined,
+      currentValue?: string,
+    ) => {
+      if (resolvedSaleType === "none") return null;
+      if (incomingValue === null || incomingValue === "") return null;
+      if (incomingValue) return new Date(incomingValue);
+      return currentValue ? new Date(currentValue) : null;
+    };
+
+    const resolvedSaleStartAt = resolveDate(
+      data.saleStartAt as string | null | undefined,
+      currentProduct.saleStartAt,
+    );
+    const resolvedSaleEndAt = resolveDate(
+      data.saleEndAt as string | null | undefined,
+      currentProduct.saleEndAt,
+    );
+
     const [result] = await connection.query<ResultSetHeader>(
       `UPDATE products SET name = ?, description = ?, price = ?, image_url = ?,
                           inventory = ?, low_stock_threshold = ?, customizable = ?,
                           enable_ai_ideas = ?, gallery_id = ?,
                           allow_custom_image_upload = ?, custom_image_upload_price = ?,
-                          allow_custom_text = ?, custom_text_price_per_char = ?, custom_text_max_length = ?
+                          allow_custom_text = ?, custom_text_price_per_char = ?, custom_text_max_length = ?,
+                          is_archived = ?, sale_type = ?, sale_value = ?, sale_start_at = ?, sale_end_at = ?,
+                          reorder_pricing_mode = ?
        WHERE id = ?`,
       [
         data.name ?? currentProduct.name,
@@ -230,6 +364,14 @@ export async function update(
           currentProduct.customTextPricePerChar ??
           null,
         data.customTextMaxLength ?? currentProduct.customTextMaxLength ?? 100,
+        data.isArchived ?? currentProduct.isArchived ?? false,
+        resolvedSaleType,
+        resolvedSaleValue,
+        resolvedSaleStartAt,
+        resolvedSaleEndAt,
+        data.reorderPricingMode ??
+          currentProduct.reorderPricingMode ??
+          "current",
         id,
       ],
     );

@@ -34,7 +34,7 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({
   const fetchProducts = async () => {
     setIsLoading(true);
     try {
-      const productsData = await apiClient.products.getAll();
+      const productsData = await apiClient.products.getAll(true);
       setProducts(Array.isArray(productsData) ? productsData : []);
     } catch (error) {
       try {
