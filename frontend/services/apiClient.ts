@@ -372,6 +372,7 @@ class ApiClient {
   // Settings
   settings = {
     get: () => this.request<any>("/settings"),
+    getCommerceStatus: () => this.request<any>("/settings/commerce-status"),
     update: (data: any) =>
       this.request<any>("/settings", {
         method: "PUT",
@@ -546,6 +547,11 @@ class ApiClient {
       this.request<any[]>(`/orders/customer/${customerId}`),
     create: (data: any) =>
       this.request<any>("/orders", {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+    requestApproval: (data: any) =>
+      this.request<any>("/orders/request-approval", {
         method: "POST",
         body: JSON.stringify(data),
       }),

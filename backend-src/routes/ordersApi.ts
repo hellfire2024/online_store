@@ -5,6 +5,7 @@ import { v4 as uuidv4 } from "uuid";
 import {
   sendOrderConfirmationEmail,
   sendShippingNotificationEmail,
+  sendContactFormEmail,
 } from "../services/emailService.js";
 import { requireCustomer, AuthenticatedRequest } from "../middleware/auth.js";
 
@@ -27,6 +28,38 @@ interface OrderRow extends RowDataPacket {
   created_at: Date;
   updated_at: Date;
 }
+
+interface SettingsRow extends RowDataPacket {
+  settings: string | null;
+}
+
+const parseSettings = (raw: string | null) => {
+  if (!raw) {
+    return {};
+  }
+
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return {};
+  }
+};
+
+const readSalesEmail = async (): Promise<string | null> => {
+  const [rows] = await pool.query<SettingsRow[]>(
+    "SELECT settings FROM site_settings WHERE id = 1 LIMIT 1",
+  );
+
+  if (!rows.length) {
+    return process.env.CONTACT_EMAIL || null;
+  }
+
+  const parsed = parseSettings(rows[0].settings);
+  const supportEmail = String(parsed?.supportEmail || "").trim();
+  const footerEmail = String(parsed?.footerConfig?.contactEmail || "").trim();
+
+  return supportEmail || footerEmail || process.env.CONTACT_EMAIL || null;
+};
 
 // GET all orders (admin)
 router.get("/", async (_req: Request, res: Response) => {
@@ -175,6 +208,149 @@ router.post("/", async (req: Request, res: Response) => {
   } catch (error) {
     console.error("Error creating order:", error);
     res.status(500).json({ error: "Failed to create order" });
+  }
+});
+
+// POST request assisted checkout approval when payment/shipping/tax are unavailable
+router.post("/request-approval", async (req: Request, res: Response) => {
+  try {
+    const {
+      customerId,
+      customerEmail,
+      customerName,
+      orderData,
+      unavailableServices,
+      requestNotes,
+    } = req.body || {};
+
+    if (!customerEmail || !customerName || !orderData) {
+      res.status(400).json({ error: "Missing required fields" });
+      return;
+    }
+
+    const requestId = uuidv4();
+    const requestNumber = `REQ-${Date.now().toString().slice(-8)}-${Math.floor(
+      Math.random() * 900 + 100,
+    )}`;
+
+    const subtotal = Number(orderData.subtotal || 0);
+    const taxAmount = Number(orderData.tax || 0);
+    const shippingCost = Number(orderData.shipping || 0);
+    const total = Number(
+      orderData.total || subtotal + taxAmount + shippingCost,
+    );
+
+    const normalizedUnavailableServices = Array.isArray(unavailableServices)
+      ? unavailableServices.map((service) => String(service))
+      : [];
+
+    const requestPayload = {
+      ...orderData,
+      requestType: "approval_request",
+      unavailableServices: normalizedUnavailableServices,
+      requestNotes: String(requestNotes || "").trim() || undefined,
+      requestSubmittedAt: new Date().toISOString(),
+    };
+
+    await pool.query(
+      `INSERT INTO orders (
+        id, customer_id, customer_email, customer_name, order_number, order_data,
+        subtotal, tax_amount, shipping_cost, total, status
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'approval_requested')`,
+      [
+        requestId,
+        customerId || null,
+        customerEmail,
+        customerName,
+        requestNumber,
+        JSON.stringify(requestPayload),
+        subtotal,
+        taxAmount,
+        shippingCost,
+        total,
+      ],
+    );
+
+    let emailSent = false;
+    let emailMessage = "Sales request saved. Email was not sent.";
+
+    try {
+      const salesEmail = await readSalesEmail();
+      if (salesEmail) {
+        const emailResult = await sendContactFormEmail(
+          salesEmail,
+          customerEmail,
+          customerName,
+          `Order Approval Request ${requestNumber}`,
+          [
+            {
+              id: "requestNumber",
+              type: "text",
+              label: "Request Number",
+              required: true,
+              value: requestNumber,
+            },
+            {
+              id: "customerEmail",
+              type: "email",
+              label: "Customer Email",
+              required: true,
+              value: customerEmail,
+            },
+            {
+              id: "services",
+              type: "text",
+              label: "Unavailable Services",
+              required: false,
+              value:
+                normalizedUnavailableServices.length > 0
+                  ? normalizedUnavailableServices.join(", ")
+                  : "Not provided",
+            },
+            {
+              id: "orderTotal",
+              type: "text",
+              label: "Requested Order Total",
+              required: true,
+              value: `$${total.toFixed(2)}`,
+            },
+            {
+              id: "message",
+              type: "textarea",
+              label: "Customer Notes",
+              required: false,
+              value:
+                String(requestNotes || "").trim() ||
+                "No additional notes provided.",
+            },
+          ],
+        );
+
+        emailSent = Boolean(emailResult.success);
+        emailMessage = emailResult.message || emailMessage;
+      } else {
+        emailMessage =
+          "Sales request saved but no sales email recipient is configured.";
+      }
+    } catch (emailError) {
+      console.error(
+        "Failed to send assisted checkout request email:",
+        emailError,
+      );
+      emailMessage = "Sales request saved, but email delivery failed.";
+    }
+
+    res.status(201).json({
+      success: true,
+      requestNumber,
+      emailSent,
+      message: emailMessage,
+    });
+  } catch (error) {
+    console.error("Error creating assisted checkout request:", error);
+    res
+      .status(500)
+      .json({ error: "Failed to submit assisted checkout request" });
   }
 });
 

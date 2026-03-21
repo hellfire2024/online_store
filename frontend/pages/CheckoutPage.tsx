@@ -53,6 +53,8 @@ const CheckoutPage: React.FC = () => {
     expiryYear: "",
     cvc: "",
   });
+  const [commerceStatus, setCommerceStatus] = useState<any>(null);
+  const [requestNotes, setRequestNotes] = useState("");
 
   const usStateMap: Record<string, string> = {
     alabama: "AL",
@@ -189,6 +191,99 @@ const CheckoutPage: React.FC = () => {
       total,
     };
   };
+
+  const buildLocalCommerceStatus = () => {
+    const paymentProvider = String(siteSettings?.paymentProvider || "none");
+    const paymentKey = String(
+      siteSettings?.paymentApiKeys?.[
+        paymentProvider as keyof typeof siteSettings.paymentApiKeys
+      ] || "",
+    ).trim();
+    const paymentAvailable =
+      paymentProvider !== "none" && paymentKey.length > 0;
+
+    const carriers = siteSettings?.shippingCarriers || {};
+    const sender = siteSettings?.fromAddress || {};
+    const senderReady =
+      Boolean(sender.street1) &&
+      Boolean(sender.city) &&
+      Boolean(sender.state) &&
+      Boolean(sender.zip);
+    const shippingCarrierReady =
+      (carriers.easypost?.enabled && Boolean(carriers.easypost?.apiKey)) ||
+      (carriers.shippo?.enabled && Boolean(carriers.shippo?.apiKey)) ||
+      (carriers.shipstation?.enabled &&
+        Boolean(carriers.shipstation?.apiKey) &&
+        Boolean(carriers.shipstation?.apiSecret));
+    const shippingAvailable = Boolean(shippingCarrierReady && senderReady);
+
+    const taxConfig = siteSettings?.taxConfig;
+    const taxProvider = String(taxConfig?.provider || "manual");
+    const taxCredentials = taxConfig?.credentials || {};
+    let taxAvailable = false;
+    if (taxConfig?.enableTaxCollection === false) {
+      taxAvailable = false;
+    } else if (taxProvider === "manual") {
+      taxAvailable = Number.isFinite(Number(taxConfig?.defaultTaxRate));
+    } else if (taxProvider === "stripe") {
+      taxAvailable = Boolean(taxCredentials.stripeApiKey);
+    } else if (taxProvider === "taxjar") {
+      taxAvailable = Boolean(taxCredentials.taxjarApiKey);
+    } else if (taxProvider === "avalara") {
+      taxAvailable = Boolean(
+        taxCredentials.avalaraAccountId && taxCredentials.avalaraLicenseKey,
+      );
+    } else if (taxProvider === "taxcloud") {
+      taxAvailable = Boolean(
+        taxCredentials.taxcloudApiKey && taxCredentials.taxcloudUserId,
+      );
+    } else if (taxProvider === "zamp") {
+      taxAvailable = Boolean(taxCredentials.zampApiKey);
+    } else if (taxProvider === "anrok") {
+      taxAvailable = Boolean(taxCredentials.anrokApiKey);
+    }
+
+    return {
+      payment: {
+        available: paymentAvailable,
+        reason:
+          paymentProvider === "none"
+            ? "No payment provider configured"
+            : "Payment provider credentials are missing",
+      },
+      shipping: {
+        available: shippingAvailable,
+        reason: !shippingCarrierReady
+          ? "No shipping carrier is configured"
+          : "Sender address is incomplete",
+      },
+      tax: {
+        available: taxAvailable,
+        reason: "Tax provider is not fully configured",
+      },
+      overallReady: paymentAvailable && shippingAvailable && taxAvailable,
+    };
+  };
+
+  const effectiveCommerceStatus = commerceStatus || buildLocalCommerceStatus();
+  const unavailableServices = [
+    !effectiveCommerceStatus.payment?.available ? "payment" : null,
+    !effectiveCommerceStatus.shipping?.available ? "shipping" : null,
+    !effectiveCommerceStatus.tax?.available ? "tax" : null,
+  ].filter(Boolean) as string[];
+  const isAssistedCheckoutRequired = unavailableServices.length > 0;
+
+  React.useEffect(() => {
+    const loadCommerceStatus = async () => {
+      try {
+        const status = await apiClient.settings.getCommerceStatus();
+        setCommerceStatus(status);
+      } catch (error) {
+        setCommerceStatus(null);
+      }
+    };
+    loadCommerceStatus();
+  }, [siteSettings]);
 
   // Auto-populate customer data when logged in
   React.useEffect(() => {
@@ -537,19 +632,21 @@ const CheckoutPage: React.FC = () => {
       return;
     }
 
-    if (!isValidCardNumber(paymentData.cardNumber)) {
-      addToast("Please enter a valid card number", "error");
-      return;
-    }
+    if (!isAssistedCheckoutRequired) {
+      if (!isValidCardNumber(paymentData.cardNumber)) {
+        addToast("Please enter a valid card number", "error");
+        return;
+      }
 
-    if (!isValidExpiry()) {
-      addToast("Please select a valid expiration date", "error");
-      return;
-    }
+      if (!isValidExpiry()) {
+        addToast("Please select a valid expiration date", "error");
+        return;
+      }
 
-    if (!isValidCvc(paymentData.cvc)) {
-      addToast("Please enter a valid CVC", "error");
-      return;
+      if (!isValidCvc(paymentData.cvc)) {
+        addToast("Please enter a valid CVC", "error");
+        return;
+      }
     }
 
     try {
@@ -667,6 +764,50 @@ const CheckoutPage: React.FC = () => {
         },
       };
 
+      if (isAssistedCheckoutRequired) {
+        const assistedResult = await apiClient.orders.requestApproval({
+          customerId: customer?.id || null,
+          customerEmail: formData.email,
+          customerName: `${formData.firstName} ${formData.lastName}`,
+          orderData: orderDetails,
+          unavailableServices,
+          requestNotes,
+        });
+
+        const assistedOrderDetails = {
+          ...orderDetails,
+          orderNumber:
+            assistedResult?.requestNumber || orderDetails.orderNumber,
+          requestType: "approval_request",
+        };
+
+        sessionStorage.setItem(
+          "orderDetails",
+          JSON.stringify(assistedOrderDetails),
+        );
+        localStorage.setItem(
+          "orderDetails",
+          JSON.stringify(assistedOrderDetails),
+        );
+        localStorage.setItem("shouldShowOrderConfirmation", "true");
+
+        addToast(
+          "Order request sent to sales team for approval and payment options.",
+          "success",
+        );
+
+        navigate(
+          `/order-confirmation?orderNumber=${encodeURIComponent(assistedOrderDetails.orderNumber)}`,
+          {
+            state: assistedOrderDetails,
+            replace: true,
+          },
+        );
+
+        setTimeout(() => clearCart(), 100);
+        return;
+      }
+
       // Store in both sessionStorage and localStorage for HashRouter compatibility
       sessionStorage.setItem("orderDetails", JSON.stringify(orderDetails));
       localStorage.setItem("orderDetails", JSON.stringify(orderDetails));
@@ -700,8 +841,6 @@ const CheckoutPage: React.FC = () => {
 
       addToast("Order placed successfully!", "success");
 
-      // Navigate with both state and orderNumber parameter for better cross-domain support
-      // Pass orderNumber as param so OrderConfirmationPage can fetch from API if needed
       navigate(
         `/order-confirmation?orderNumber=${encodeURIComponent(orderDetails.orderNumber)}`,
         {
@@ -710,7 +849,6 @@ const CheckoutPage: React.FC = () => {
         },
       );
 
-      // Clear cart after navigation to avoid triggering the empty cart redirect
       setTimeout(() => clearCart(), 100);
     } catch (error) {
       console.error("Error processing order:", error);
@@ -883,6 +1021,20 @@ const CheckoutPage: React.FC = () => {
           {/* Shipping & Payment Form */}
           <div className="lg:col-span-3 bg-slate-800 p-8 rounded-lg shadow-2xl border border-slate-700">
             <form onSubmit={handlePlaceOrder}>
+              {isAssistedCheckoutRequired && (
+                <div className="mb-6 rounded-lg border border-amber-500/60 bg-amber-500/10 p-4 text-amber-100">
+                  <p className="font-semibold mb-1">
+                    Checkout options are not available at this time.
+                  </p>
+                  <p className="text-sm">
+                    We can submit your order as an email request to the sales
+                    team for approval and completion/payment options.
+                  </p>
+                  <p className="text-xs mt-2 text-amber-200">
+                    Unavailable services: {unavailableServices.join(", ")}
+                  </p>
+                </div>
+              )}
               <h2 className="text-2xl font-semibold text-white mb-6">
                 Shipping Information
               </h2>
@@ -1010,93 +1162,112 @@ const CheckoutPage: React.FC = () => {
                 </div>
               </div>
 
-              <h2 className="text-2xl font-semibold text-white mt-8 mb-6">
-                Payment Details
-              </h2>
-              <div className="space-y-4">
-                <input
-                  type="text"
-                  placeholder="Card Number"
-                  value={paymentData.cardNumber}
-                  onChange={(e) =>
-                    setPaymentData({
-                      ...paymentData,
-                      cardNumber: formatCardNumber(e.target.value),
-                    })
-                  }
-                  inputMode="numeric"
-                  autoComplete="cc-number"
-                  maxLength={19}
-                  className={inputClasses}
-                  required
-                />
-                <div className="grid grid-cols-3 gap-4">
-                  <select
-                    value={paymentData.expiryMonth}
-                    onChange={(e) =>
-                      setPaymentData({
-                        ...paymentData,
-                        expiryMonth: e.target.value,
-                      })
-                    }
-                    autoComplete="cc-exp-month"
+              {isAssistedCheckoutRequired ? (
+                <div className="mt-8 space-y-4">
+                  <h2 className="text-2xl font-semibold text-white">
+                    Sales Team Request
+                  </h2>
+                  <textarea
+                    value={requestNotes}
+                    onChange={(e) => setRequestNotes(e.target.value)}
+                    placeholder="Add any details for the sales team (timeline, preferred payment method, shipping notes, etc.)"
+                    rows={4}
                     className={inputClasses}
-                    required
-                  >
-                    <option value="">Month</option>
-                    {Array.from({ length: 12 }, (_, i) =>
-                      String(i + 1).padStart(2, "0"),
-                    ).map((month) => (
-                      <option key={month} value={month}>
-                        {month}
-                      </option>
-                    ))}
-                  </select>
-                  <select
-                    value={paymentData.expiryYear}
-                    onChange={(e) =>
-                      setPaymentData({
-                        ...paymentData,
-                        expiryYear: e.target.value,
-                      })
-                    }
-                    autoComplete="cc-exp-year"
-                    className={inputClasses}
-                    required
-                  >
-                    <option value="">Year</option>
-                    {Array.from(
-                      { length: 11 },
-                      (_, i) => new Date().getFullYear() + i,
-                    ).map((year) => (
-                      <option key={year} value={String(year)}>
-                        {year}
-                      </option>
-                    ))}
-                  </select>
-                  <input
-                    type="text"
-                    placeholder="CVC"
-                    value={paymentData.cvc}
-                    onChange={(e) =>
-                      setPaymentData({
-                        ...paymentData,
-                        cvc: formatCvc(e.target.value),
-                      })
-                    }
-                    inputMode="numeric"
-                    autoComplete="cc-csc"
-                    className={inputClasses}
-                    required
                   />
                 </div>
-              </div>
+              ) : (
+                <>
+                  <h2 className="text-2xl font-semibold text-white mt-8 mb-6">
+                    Payment Details
+                  </h2>
+                  <div className="space-y-4">
+                    <input
+                      type="text"
+                      placeholder="Card Number"
+                      value={paymentData.cardNumber}
+                      onChange={(e) =>
+                        setPaymentData({
+                          ...paymentData,
+                          cardNumber: formatCardNumber(e.target.value),
+                        })
+                      }
+                      inputMode="numeric"
+                      autoComplete="cc-number"
+                      maxLength={19}
+                      className={inputClasses}
+                      required
+                    />
+                    <div className="grid grid-cols-3 gap-4">
+                      <select
+                        value={paymentData.expiryMonth}
+                        onChange={(e) =>
+                          setPaymentData({
+                            ...paymentData,
+                            expiryMonth: e.target.value,
+                          })
+                        }
+                        autoComplete="cc-exp-month"
+                        className={inputClasses}
+                        required
+                      >
+                        <option value="">Month</option>
+                        {Array.from({ length: 12 }, (_, i) =>
+                          String(i + 1).padStart(2, "0"),
+                        ).map((month) => (
+                          <option key={month} value={month}>
+                            {month}
+                          </option>
+                        ))}
+                      </select>
+                      <select
+                        value={paymentData.expiryYear}
+                        onChange={(e) =>
+                          setPaymentData({
+                            ...paymentData,
+                            expiryYear: e.target.value,
+                          })
+                        }
+                        autoComplete="cc-exp-year"
+                        className={inputClasses}
+                        required
+                      >
+                        <option value="">Year</option>
+                        {Array.from(
+                          { length: 11 },
+                          (_, i) => new Date().getFullYear() + i,
+                        ).map((year) => (
+                          <option key={year} value={String(year)}>
+                            {year}
+                          </option>
+                        ))}
+                      </select>
+                      <input
+                        type="text"
+                        placeholder="CVC"
+                        value={paymentData.cvc}
+                        onChange={(e) =>
+                          setPaymentData({
+                            ...paymentData,
+                            cvc: formatCvc(e.target.value),
+                          })
+                        }
+                        inputMode="numeric"
+                        autoComplete="cc-csc"
+                        className={inputClasses}
+                        required
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
               <div className="mt-8">
                 <button
                   type="submit"
                   className="w-full bg-sky-500 text-white font-bold py-3 rounded-lg hover:bg-sky-600 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-sky-500"
                 >
-                  Place Order
+                  {isAssistedCheckoutRequired
+                    ? "Submit Request to Sales Team"
+                    : "Place Order"}
                 </button>
               </div>
             </form>

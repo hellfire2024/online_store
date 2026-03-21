@@ -9,18 +9,25 @@ const router = Router();
  */
 router.post("/calculate", async (req: Request, res: Response): Promise<any> => {
   try {
-    const { cartItems, shippingCost, shippingState, shippingZip } = req.body;
+    const {
+      cartItems,
+      shippingCost,
+      shippingState,
+      shippingZip,
+      stripeApiKey,
+    } = req.body;
 
     // Get Stripe API key from environment
-    const stripeApiKey = process.env.STRIPE_SECRET_KEY;
-    if (!stripeApiKey) {
+    const resolvedStripeApiKey =
+      String(stripeApiKey || "").trim() || process.env.STRIPE_SECRET_KEY;
+    if (!resolvedStripeApiKey) {
       return res.status(500).json({
         error: "Stripe API key not configured",
         usesFallback: true,
       });
     }
 
-    const stripe = new Stripe(stripeApiKey);
+    const stripe = new Stripe(resolvedStripeApiKey);
 
     // Calculate subtotal and prepare line items for Stripe Tax
     const subtotal = calculateSubtotal(cartItems);
@@ -34,7 +41,9 @@ router.post("/calculate", async (req: Request, res: Response): Promise<any> => {
               const optionList = item.product.optionLists?.find((ol: any) =>
                 ol.options.some((o: any) => o.id === optionId),
               );
-              const option = optionList?.options.find((o: any) => o.id === optionId);
+              const option = optionList?.options.find(
+                (o: any) => o.id === optionId,
+              );
               return (sum as number) + (option?.priceDelta || 0);
             }, 0)
           : 0);
@@ -61,8 +70,7 @@ router.post("/calculate", async (req: Request, res: Response): Promise<any> => {
         },
       });
 
-      const taxAmount =
-        (taxCalculation.tax_amount_exclusive || 0) / 100; // Convert cents to dollars
+      const taxAmount = (taxCalculation.tax_amount_exclusive || 0) / 100; // Convert cents to dollars
       const taxRate = subtotal > 0 ? (taxAmount / subtotal) * 100 : 0;
 
       return res.json({
@@ -70,8 +78,7 @@ router.post("/calculate", async (req: Request, res: Response): Promise<any> => {
         taxableAmount: subtotal,
         taxRate: Math.round(taxRate * 100) / 100, // Round to 2 decimals
         taxAmount: Math.round(taxAmount * 100) / 100,
-        total:
-          Math.round((subtotal + shippingCost + taxAmount) * 100) / 100,
+        total: Math.round((subtotal + shippingCost + taxAmount) * 100) / 100,
         stripeTaxTransactionId: taxCalculation.id,
       });
     } catch (stripeError: any) {
@@ -107,7 +114,9 @@ function calculateSubtotal(cartItems: any[]): number {
           const optionList = item.product.optionLists?.find((ol: any) =>
             ol.options.some((o: any) => o.id === optionId),
           );
-          const option = optionList?.options.find((o: any) => o.id === optionId);
+          const option = optionList?.options.find(
+            (o: any) => o.id === optionId,
+          );
           return (sum as number) + (option?.priceDelta || 0);
         }, 0)
       : 0;

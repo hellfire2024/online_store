@@ -8,17 +8,24 @@ const router = Router();
  */
 router.post("/stripe", async (req: Request, res: Response): Promise<any> => {
   try {
-    const { cartItems, shippingCost, shippingState, shippingZip } = req.body;
+    const {
+      cartItems,
+      shippingCost,
+      shippingState,
+      shippingZip,
+      stripeApiKey,
+    } = req.body;
 
-    const stripeApiKey = process.env.STRIPE_SECRET_KEY;
-    if (!stripeApiKey) {
+    const resolvedStripeApiKey =
+      String(stripeApiKey || "").trim() || process.env.STRIPE_SECRET_KEY;
+    if (!resolvedStripeApiKey) {
       return res.status(500).json({
         error: "Stripe API key not configured",
         usesFallback: true,
       });
     }
 
-    const stripe = new Stripe(stripeApiKey);
+    const stripe = new Stripe(resolvedStripeApiKey);
 
     const subtotal = calculateSubtotal(cartItems);
 
@@ -30,7 +37,9 @@ router.post("/stripe", async (req: Request, res: Response): Promise<any> => {
               const optionList = item.product.optionLists?.find((ol: any) =>
                 ol.options.some((o: any) => o.id === optionId),
               );
-              const option = optionList?.options.find((o: any) => o.id === optionId);
+              const option = optionList?.options.find(
+                (o: any) => o.id === optionId,
+              );
               return (sum as number) + (option?.priceDelta || 0);
             }, 0)
           : 0);
@@ -90,7 +99,8 @@ router.post("/stripe", async (req: Request, res: Response): Promise<any> => {
  */
 router.post("/taxjar", async (req: Request, res: Response): Promise<any> => {
   try {
-    const { cartItems, shippingCost, shippingState, shippingZip, apiKey } = req.body;
+    const { cartItems, shippingCost, shippingState, shippingZip, apiKey } =
+      req.body;
 
     if (!apiKey) {
       return res.status(400).json({ error: "TaxJar API key required" });
@@ -108,7 +118,9 @@ router.post("/taxjar", async (req: Request, res: Response): Promise<any> => {
               const optionList = item.product.optionLists?.find((ol: any) =>
                 ol.options.some((o: any) => o.id === optionId),
               );
-              const option = optionList?.options.find((o: any) => o.id === optionId);
+              const option = optionList?.options.find(
+                (o: any) => o.id === optionId,
+              );
               return (sum as number) + (option?.priceDelta || 0);
             }, 0)
           : 0),
@@ -137,11 +149,13 @@ router.post("/taxjar", async (req: Request, res: Response): Promise<any> => {
     });
 
     if (!response.ok) {
-      const error = await response.json() as any;
-      throw new Error(`TaxJar API error: ${error.error?.message || response.statusText}`);
+      const error = (await response.json()) as any;
+      throw new Error(
+        `TaxJar API error: ${error.error?.message || response.statusText}`,
+      );
     }
 
-    const data = await response.json() as any;
+    const data = (await response.json()) as any;
     const taxAmount = data.tax.amount_to_collect;
     const taxRate = data.tax.rate * 100;
 
@@ -155,7 +169,9 @@ router.post("/taxjar", async (req: Request, res: Response): Promise<any> => {
     });
   } catch (error: any) {
     console.error("TaxJar error:", error);
-    return res.status(500).json({ error: error.message || "TaxJar calculation failed" });
+    return res
+      .status(500)
+      .json({ error: error.message || "TaxJar calculation failed" });
   }
 });
 
@@ -193,7 +209,9 @@ router.post("/avalara", async (req: Request, res: Response): Promise<any> => {
               const optionList = item.product.optionLists?.find((ol: any) =>
                 ol.options.some((o: any) => o.id === optionId),
               );
-              const option = optionList?.options.find((o: any) => o.id === optionId);
+              const option = optionList?.options.find(
+                (o: any) => o.id === optionId,
+              );
               return (sum as number) + (option?.priceDelta || 0);
             }, 0)
           : 0);
@@ -243,11 +261,13 @@ router.post("/avalara", async (req: Request, res: Response): Promise<any> => {
     });
 
     if (!response.ok) {
-      const error = await response.json() as any;
-      throw new Error(`Avalara API error: ${error.errors?.[0]?.message || response.statusText}`);
+      const error = (await response.json()) as any;
+      throw new Error(
+        `Avalara API error: ${error.errors?.[0]?.message || response.statusText}`,
+      );
     }
 
-    const data = await response.json() as any;
+    const data = (await response.json()) as any;
     const taxAmount = data.totalTaxCalculated || data.totalTax || 0;
     const taxableAmount = data.totalTaxable || subtotal;
     const taxRate = taxableAmount > 0 ? (taxAmount / taxableAmount) * 100 : 0;
@@ -262,7 +282,9 @@ router.post("/avalara", async (req: Request, res: Response): Promise<any> => {
     });
   } catch (error: any) {
     console.error("Avalara error:", error);
-    return res.status(500).json({ error: error.message || "Avalara calculation failed" });
+    return res
+      .status(500)
+      .json({ error: error.message || "Avalara calculation failed" });
   }
 });
 
@@ -271,7 +293,14 @@ router.post("/avalara", async (req: Request, res: Response): Promise<any> => {
  */
 router.post("/taxcloud", async (req: Request, res: Response): Promise<any> => {
   try {
-    const { cartItems, shippingCost, shippingState, shippingZip, apiKey, userId } = req.body;
+    const {
+      cartItems,
+      shippingCost,
+      shippingState,
+      shippingZip,
+      apiKey,
+      userId,
+    } = req.body;
 
     if (!apiKey || !userId) {
       return res.status(400).json({ error: "TaxCloud credentials required" });
@@ -290,7 +319,9 @@ router.post("/taxcloud", async (req: Request, res: Response): Promise<any> => {
               const optionList = item.product.optionLists?.find((ol: any) =>
                 ol.options.some((o: any) => o.id === optionId),
               );
-              const option = optionList?.options.find((o: any) => o.id === optionId);
+              const option = optionList?.options.find(
+                (o: any) => o.id === optionId,
+              );
               return (sum as number) + (option?.priceDelta || 0);
             }, 0)
           : 0),
@@ -319,20 +350,25 @@ router.post("/taxcloud", async (req: Request, res: Response): Promise<any> => {
       DeliveryType: 0,
     };
 
-    const response = await fetch("https://api.taxcloud.net/v2/transactions/lookup", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
+    const response = await fetch(
+      "https://api.taxcloud.net/v2/transactions/lookup",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(request),
       },
-      body: JSON.stringify(request),
-    });
+    );
 
     if (!response.ok) {
-      const error = await response.json() as any;
-      throw new Error(`TaxCloud API error: ${error.Message || response.statusText}`);
+      const error = (await response.json()) as any;
+      throw new Error(
+        `TaxCloud API error: ${error.Message || response.statusText}`,
+      );
     }
 
-    const data = await response.json() as any;
+    const data = (await response.json()) as any;
     const taxAmount = data.Header.TotalTax;
     const taxRate = subtotal > 0 ? (taxAmount / subtotal) * 100 : 0;
 
@@ -346,7 +382,9 @@ router.post("/taxcloud", async (req: Request, res: Response): Promise<any> => {
     });
   } catch (error: any) {
     console.error("TaxCloud error:", error);
-    return res.status(500).json({ error: error.message || "TaxCloud calculation failed" });
+    return res
+      .status(500)
+      .json({ error: error.message || "TaxCloud calculation failed" });
   }
 });
 
@@ -355,7 +393,8 @@ router.post("/taxcloud", async (req: Request, res: Response): Promise<any> => {
  */
 router.post("/zamp", async (req: Request, res: Response): Promise<any> => {
   try {
-    const { cartItems, shippingCost, shippingState, shippingZip, apiKey } = req.body;
+    const { cartItems, shippingCost, shippingState, shippingZip, apiKey } =
+      req.body;
 
     if (!apiKey) {
       return res.status(400).json({ error: "Zamp API key required" });
@@ -372,7 +411,9 @@ router.post("/zamp", async (req: Request, res: Response): Promise<any> => {
               const optionList = item.product.optionLists?.find((ol: any) =>
                 ol.options.some((o: any) => o.id === optionId),
               );
-              const option = optionList?.options.find((o: any) => o.id === optionId);
+              const option = optionList?.options.find(
+                (o: any) => o.id === optionId,
+              );
               return (sum as number) + (option?.priceDelta || 0);
             }, 0)
           : 0),
@@ -402,11 +443,13 @@ router.post("/zamp", async (req: Request, res: Response): Promise<any> => {
     });
 
     if (!response.ok) {
-      const error = await response.json() as any;
-      throw new Error(`Zamp API error: ${error.message || response.statusText}`);
+      const error = (await response.json()) as any;
+      throw new Error(
+        `Zamp API error: ${error.message || response.statusText}`,
+      );
     }
 
-    const data = await response.json() as any;
+    const data = (await response.json()) as any;
     const taxAmount = data.total_tax;
     const taxRate = data.effective_tax_rate * 100;
 
@@ -420,7 +463,9 @@ router.post("/zamp", async (req: Request, res: Response): Promise<any> => {
     });
   } catch (error: any) {
     console.error("Zamp error:", error);
-    return res.status(500).json({ error: error.message || "Zamp calculation failed" });
+    return res
+      .status(500)
+      .json({ error: error.message || "Zamp calculation failed" });
   }
 });
 
@@ -429,7 +474,8 @@ router.post("/zamp", async (req: Request, res: Response): Promise<any> => {
  */
 router.post("/anrok", async (req: Request, res: Response): Promise<any> => {
   try {
-    const { cartItems, shippingCost, shippingState, shippingZip, apiKey } = req.body;
+    const { cartItems, shippingCost, shippingState, shippingZip, apiKey } =
+      req.body;
 
     if (!apiKey) {
       return res.status(400).json({ error: "Anrok API key required" });
@@ -446,7 +492,9 @@ router.post("/anrok", async (req: Request, res: Response): Promise<any> => {
               const optionList = item.product.optionLists?.find((ol: any) =>
                 ol.options.some((o: any) => o.id === optionId),
               );
-              const option = optionList?.options.find((o: any) => o.id === optionId);
+              const option = optionList?.options.find(
+                (o: any) => o.id === optionId,
+              );
               return (sum as number) + (option?.priceDelta || 0);
             }, 0)
           : 0),
@@ -474,11 +522,13 @@ router.post("/anrok", async (req: Request, res: Response): Promise<any> => {
     });
 
     if (!response.ok) {
-      const error = await response.json() as any;
-      throw new Error(`Anrok API error: ${error.message || response.statusText}`);
+      const error = (await response.json()) as any;
+      throw new Error(
+        `Anrok API error: ${error.message || response.statusText}`,
+      );
     }
 
-    const data = await response.json() as any;
+    const data = (await response.json()) as any;
     const taxAmount = data.tax_amount;
     const taxRate = data.effective_tax_rate * 100;
 
@@ -492,7 +542,9 @@ router.post("/anrok", async (req: Request, res: Response): Promise<any> => {
     });
   } catch (error: any) {
     console.error("Anrok error:", error);
-    return res.status(500).json({ error: error.message || "Anrok calculation failed" });
+    return res
+      .status(500)
+      .json({ error: error.message || "Anrok calculation failed" });
   }
 });
 
@@ -504,7 +556,9 @@ function calculateSubtotal(cartItems: any[]): number {
           const optionList = item.product.optionLists?.find((ol: any) =>
             ol.options.some((o: any) => o.id === optionId),
           );
-          const option = optionList?.options.find((o: any) => o.id === optionId);
+          const option = optionList?.options.find(
+            (o: any) => o.id === optionId,
+          );
           return (sum as number) + (option?.priceDelta || 0);
         }, 0)
       : 0;

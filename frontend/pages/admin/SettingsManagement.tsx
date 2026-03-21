@@ -392,6 +392,7 @@ const SettingsManagement: React.FC = () => {
     enabled: true,
     priority: 0,
   });
+  const [commerceStatus, setCommerceStatus] = useState<any>(null);
 
   const hasSettingsUnsavedChanges =
     JSON.stringify(settings) !== JSON.stringify(siteSettings);
@@ -406,6 +407,19 @@ const SettingsManagement: React.FC = () => {
     if (!hasSettingsUnsavedChanges) {
       setSettings(siteSettings);
     }
+  }, [siteSettings]);
+
+  useEffect(() => {
+    const loadCommerceStatus = async () => {
+      try {
+        const status = await apiClient.settings.getCommerceStatus();
+        setCommerceStatus(status);
+      } catch {
+        setCommerceStatus(null);
+      }
+    };
+
+    loadCommerceStatus();
   }, [siteSettings]);
 
   // Initialize default form fields if they don't exist
@@ -1276,6 +1290,15 @@ const SettingsManagement: React.FC = () => {
             <h2 className="text-xl font-semibold text-white">
               Payment Configuration
             </h2>
+            {commerceStatus?.payment && !commerceStatus.payment.available && (
+              <div className="rounded-lg border border-amber-500/60 bg-amber-500/10 p-4 text-amber-100">
+                <p className="font-semibold">Payment is not fully configured</p>
+                <p className="text-sm mt-1">
+                  {commerceStatus.payment.reason ||
+                    "Customers will be offered a sales-team approval request flow until payment setup is completed."}
+                </p>
+              </div>
+            )}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">
                 Payment Provider
@@ -1428,6 +1451,17 @@ const SettingsManagement: React.FC = () => {
             <h2 className="text-2xl font-semibold text-white mb-4">
               Shipping Configuration
             </h2>
+            {commerceStatus?.shipping && !commerceStatus.shipping.available && (
+              <div className="rounded-lg border border-amber-500/60 bg-amber-500/10 p-4 text-amber-100">
+                <p className="font-semibold">
+                  Shipping is not fully configured
+                </p>
+                <p className="text-sm mt-1">
+                  {commerceStatus.shipping.reason ||
+                    "Customers will be offered a sales-team approval request flow until shipping setup is completed."}
+                </p>
+              </div>
+            )}
 
             {/* From Address */}
             <div className="bg-slate-700 p-6 rounded-lg border border-slate-600">
@@ -1968,6 +2002,15 @@ const SettingsManagement: React.FC = () => {
             <h2 className="text-2xl font-semibold text-white mb-4">
               Tax Configuration
             </h2>
+            {commerceStatus?.tax && !commerceStatus.tax.available && (
+              <div className="rounded-lg border border-amber-500/60 bg-amber-500/10 p-4 text-amber-100">
+                <p className="font-semibold">Tax is not fully configured</p>
+                <p className="text-sm mt-1">
+                  {commerceStatus.tax.reason ||
+                    "Customers will be offered a sales-team approval request flow until tax setup is completed."}
+                </p>
+              </div>
+            )}
 
             {/* Global Settings */}
             <div className="bg-slate-700 p-6 rounded-lg border border-slate-600">
