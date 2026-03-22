@@ -929,7 +929,9 @@ router.put(
         paymentLinkEmail = {
           attempted: true,
           sent: Boolean(emailResult.success),
-          message: String(emailResult.message || "Payment link email processed."),
+          message: String(
+            emailResult.message || "Payment link email processed.",
+          ),
           paymentLink,
         };
       }

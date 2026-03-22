@@ -525,7 +525,11 @@ export async function sendPaymentLinkEmail(
     return { success: true, message: "Payment link email sent" };
   } catch (error) {
     console.error("Error sending payment link email:", error);
-    return { success: false, message: "Failed to send payment link email", error };
+    return {
+      success: false,
+      message: "Failed to send payment link email",
+      error,
+    };
   }
 }
 

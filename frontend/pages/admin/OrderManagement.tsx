@@ -594,7 +594,10 @@ const OrderManagement: React.FC = () => {
         setPaymentLink(link);
         const emailStatus = workflowResult?.paymentLinkEmail;
         if (emailStatus?.attempted && emailStatus?.sent) {
-          addToast("Order approved. Payment link email sent to customer.", "success");
+          addToast(
+            "Order approved. Payment link email sent to customer.",
+            "success",
+          );
         } else if (emailStatus?.attempted && !emailStatus?.sent) {
           addToast(
             `Order approved, but payment email failed: ${emailStatus.message || "Unknown error"}`,
