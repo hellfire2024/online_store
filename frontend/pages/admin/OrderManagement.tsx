@@ -195,9 +195,7 @@ const OrderManagement: React.FC = () => {
     );
 
     if (filterStatus === "cash_on_pickup") {
-      filtered = filtered.filter(
-        (o) => isCashOnPickupOrder(o),
-      );
+      filtered = filtered.filter((o) => isCashOnPickupOrder(o));
     } else if (filterStatus === "cop_awaiting_payment") {
       filtered = filtered.filter(
         (o) =>
