@@ -131,6 +131,26 @@ const normalizeOrderStatus = (value: unknown): string | null => {
   return allowed.includes(normalized) ? normalized : null;
 };
 
+type PaymentCollectionMethod = "cash" | "card" | "bank_transfer" | "other";
+
+const normalizePaymentCollectionMethod = (
+  value: unknown,
+): PaymentCollectionMethod | null => {
+  const normalized = String(value || "")
+    .trim()
+    .toLowerCase();
+  const allowed: PaymentCollectionMethod[] = [
+    "cash",
+    "card",
+    "bank_transfer",
+    "other",
+  ];
+
+  return allowed.includes(normalized as PaymentCollectionMethod)
+    ? (normalized as PaymentCollectionMethod)
+    : null;
+};
+
 const isStandardStatusTransitionAllowed = (
   currentStatus: string,
   nextStatus: string,
@@ -325,6 +345,10 @@ router.post("/", async (req: Request, res: Response) => {
       requestedMethod,
       {
         collectedOnSite: false,
+        invoiceIssuedAt:
+          requestedMethod === "invoice" || paymentStatus === "pending_offline"
+            ? new Date().toISOString()
+            : undefined,
       },
     );
 
@@ -423,6 +447,10 @@ router.post("/request-approval", async (req: Request, res: Response) => {
       paymentMethodRequested,
       {
         collectedOnSite: false,
+        invoiceIssuedAt:
+          requestedPaymentStatus === "pending_offline"
+            ? new Date().toISOString()
+            : undefined,
       },
     );
 
@@ -572,6 +600,9 @@ router.put(
         status,
         paymentStatus,
         requestedPaymentMethod,
+        paymentCollectionMethod,
+        paymentCollectedAt,
+        invoiceIssuedAt,
         paymentDeclineReason,
         approvalNotes,
         approvedWithoutPayment,
@@ -608,12 +639,35 @@ router.put(
         requestedPaymentMethod || existingPayment.requestedMethod,
       );
 
+      const normalizedCollectionMethod = normalizePaymentCollectionMethod(
+        paymentCollectionMethod,
+      );
+
+      const hasCollectedAtInput = hasText(paymentCollectedAt);
+      const resolvedCollectedAt = hasCollectedAtInput
+        ? paymentCollectedAt.trim()
+        : undefined;
+
+      const existingInvoiceIssuedAt = hasText(existingPayment.invoiceIssuedAt)
+        ? String(existingPayment.invoiceIssuedAt)
+        : undefined;
+
+      const resolvedInvoiceIssuedAt = hasText(invoiceIssuedAt)
+        ? invoiceIssuedAt.trim()
+        : existingInvoiceIssuedAt ||
+          (normalizedPaymentStatus === "pending_offline"
+            ? new Date().toISOString()
+            : undefined);
+
       if (normalizedPaymentStatus === "paid" && !isSuperAdmin) {
-        res.status(400).json({
-          error:
-            "Direct paid status updates are restricted. Use payment provider integration or super-admin override.",
-        });
-        return;
+        const canRecordCashCollection = normalizedCollectionMethod === "cash";
+        if (!canRecordCashCollection) {
+          res.status(400).json({
+            error:
+              "Direct paid status updates are restricted unless recording a cash collection.",
+          });
+          return;
+        }
       }
 
       if (
@@ -702,6 +756,33 @@ router.put(
           ...existingPayment,
           status: normalizedPaymentStatus,
           requestedMethod: normalizedRequestedPaymentMethod,
+          invoiceIssuedAt: resolvedInvoiceIssuedAt,
+          collectionMethod:
+            normalizedCollectionMethod ||
+            (typeof existingPayment.collectionMethod === "string"
+              ? existingPayment.collectionMethod
+              : undefined),
+          collectedAt:
+            normalizedPaymentStatus === "paid" ||
+            normalizedPaymentStatus === "cash_on_pickup_paid"
+              ? resolvedCollectedAt ||
+                (typeof existingPayment.collectedAt === "string"
+                  ? existingPayment.collectedAt
+                  : new Date().toISOString())
+              : undefined,
+          paidAt:
+            normalizedPaymentStatus === "paid" ||
+            normalizedPaymentStatus === "cash_on_pickup_paid"
+              ? resolvedCollectedAt ||
+                (typeof existingPayment.paidAt === "string"
+                  ? existingPayment.paidAt
+                  : new Date().toISOString())
+              : undefined,
+          collectedBy:
+            normalizedPaymentStatus === "paid" ||
+            normalizedPaymentStatus === "cash_on_pickup_paid"
+              ? authUser?.id || null
+              : undefined,
           declineReason: hasText(paymentDeclineReason)
             ? paymentDeclineReason.trim()
             : undefined,

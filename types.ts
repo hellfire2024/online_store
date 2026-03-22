@@ -195,6 +195,9 @@ export interface CustomerOrder {
     | "cash_on_pickup_requested"
     | "cash_on_pickup_paid";
   requestedPaymentMethod?: string;
+  invoiceIssuedAt?: string;
+  paymentCollectedAt?: string;
+  paymentCollectionMethod?: "cash" | "card" | "bank_transfer" | "other";
   shippingAddress: CustomerAddress;
   items: CartItem[];
   trackingNumber?: string;

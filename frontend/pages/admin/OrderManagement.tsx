@@ -35,6 +35,9 @@ interface Order {
   notes?: string;
   paymentStatus?: string;
   requestedPaymentMethod?: string;
+  invoiceIssuedAt?: string;
+  paymentCollectedAt?: string;
+  paymentCollectionMethod?: string;
 }
 
 const isCashOnPickupOrder = (order: Pick<Order, "requestedPaymentMethod">) =>
@@ -46,6 +49,35 @@ const isCashOnPickupPaid = (
   isCashOnPickupOrder(order) &&
   order.paymentStatus === "cash_on_pickup_paid" &&
   order.status === "delivered";
+
+const isInvoiceOutstanding = (
+  order: Pick<
+    Order,
+    "requestedPaymentMethod" | "paymentStatus" | "status" | "invoiceIssuedAt"
+  >,
+) => {
+  if (order.status === "cancelled") return false;
+  if (order.requestedPaymentMethod !== "invoice") return false;
+  return order.paymentStatus !== "paid";
+};
+
+const getInvoiceAgingDays = (
+  order: Pick<Order, "invoiceIssuedAt">,
+): number | null => {
+  if (!order.invoiceIssuedAt) return null;
+  const issuedAtMs = new Date(order.invoiceIssuedAt).getTime();
+  if (!Number.isFinite(issuedAtMs)) return null;
+  const diffMs = Date.now() - issuedAtMs;
+  return Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
+};
+
+const formatPaymentMethodLabel = (method?: string) => {
+  if (!method || method === "unspecified") return "Unspecified";
+  return method
+    .split("_")
+    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+    .join(" ");
+};
 
 const getPaymentProviderStatus = (settings: any) => {
   const provider = String(settings?.paymentProvider || "none");
@@ -151,6 +183,12 @@ const OrderManagement: React.FC = () => {
             paymentStatus: (orderData.payment as any)?.status || undefined,
             requestedPaymentMethod:
               (orderData.payment as any)?.requestedMethod || undefined,
+            invoiceIssuedAt: (orderData.payment as any)?.invoiceIssuedAt,
+            paymentCollectedAt:
+              (orderData.payment as any)?.collectedAt ||
+              (orderData.payment as any)?.paidAt,
+            paymentCollectionMethod:
+              (orderData.payment as any)?.collectionMethod || undefined,
           };
 
           // Guard against inconsistent legacy states where CoP was marked paid
@@ -238,6 +276,8 @@ const OrderManagement: React.FC = () => {
 
     if (filterStatus === "cash_on_pickup") {
       filtered = filtered.filter((o) => isCashOnPickupOrder(o));
+    } else if (filterStatus === "invoice_outstanding") {
+      filtered = filtered.filter((o) => isInvoiceOutstanding(o));
     } else if (filterStatus === "cop_awaiting_payment") {
       filtered = filtered.filter(
         (o) =>
@@ -370,6 +410,7 @@ const OrderManagement: React.FC = () => {
       | "approve_with_payment"
       | "approve_without_payment"
       | "approve_for_pickup"
+      | "mark_invoice_cash_paid"
       | "mark_cash_paid"
       | "decline",
   ) => {
@@ -389,6 +430,7 @@ const OrderManagement: React.FC = () => {
           workflowData = {
             status: "processing",
             paymentStatus: "pending_offline",
+            invoiceIssuedAt: new Date().toISOString(),
             approvalNotes: workflowNotes || undefined,
           };
           break;
@@ -412,6 +454,17 @@ const OrderManagement: React.FC = () => {
           workflowData = {
             status: "delivered",
             paymentStatus: "cash_on_pickup_paid",
+            paymentCollectionMethod: "cash",
+            paymentCollectedAt: new Date().toISOString(),
+            approvalNotes: workflowNotes || undefined,
+          };
+          break;
+        case "mark_invoice_cash_paid":
+          workflowData = {
+            status: order.status,
+            paymentStatus: "paid",
+            paymentCollectionMethod: "cash",
+            paymentCollectedAt: new Date().toISOString(),
             approvalNotes: workflowNotes || undefined,
           };
           break;
@@ -431,7 +484,9 @@ const OrderManagement: React.FC = () => {
           ? ("cancelled" as const)
           : action === "mark_cash_paid"
             ? ("delivered" as const)
-            : ("processing" as const);
+            : action === "mark_invoice_cash_paid"
+              ? order.status
+              : ("processing" as const);
 
       setOrders((prev) =>
         prev.map((o) =>
@@ -442,6 +497,13 @@ const OrderManagement: React.FC = () => {
                 paymentStatus:
                   (workflowData.paymentStatus as string | undefined) ??
                   o.paymentStatus,
+                paymentCollectedAt:
+                  (workflowData.paymentCollectedAt as string | undefined) ??
+                  o.paymentCollectedAt,
+                paymentCollectionMethod:
+                  (workflowData.paymentCollectionMethod as
+                    | string
+                    | undefined) ?? o.paymentCollectionMethod,
               }
             : o,
         ),
@@ -469,6 +531,9 @@ const OrderManagement: React.FC = () => {
           "Cash received — order marked as paid and delivered.",
           "success",
         );
+      } else if (action === "mark_invoice_cash_paid") {
+        setIsModalOpen(false);
+        addToast("Cash invoice payment recorded.", "success");
       } else if (action === "decline") {
         setIsModalOpen(false);
         addToast("Order request declined.", "success");
@@ -564,6 +629,7 @@ const OrderManagement: React.FC = () => {
             <option value="cop_awaiting_payment">
               Cash on Pickup – Unpaid
             </option>
+            <option value="invoice_outstanding">Invoice Outstanding</option>
             <option value="pending">Pending</option>
             <option value="processing">Processing</option>
             <option value="shipped">Shipped</option>
@@ -606,6 +672,9 @@ const OrderManagement: React.FC = () => {
               </th>
               <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">
                 Status
+              </th>
+              <th className="px-6 py-3 text-center text-sm font-semibold text-gray-300">
+                A/R Days
               </th>
               <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">
                 Actions
@@ -665,6 +734,11 @@ const OrderManagement: React.FC = () => {
                     );
                   })()}
                 </td>
+                <td className="px-6 py-4 text-center text-gray-300 text-sm">
+                  {isInvoiceOutstanding(order)
+                    ? (getInvoiceAgingDays(order) ?? 0)
+                    : "-"}
+                </td>
                 <td
                   className="px-6 py-4 space-x-2"
                   onClick={(e) => e.stopPropagation()}
@@ -706,6 +780,42 @@ const OrderManagement: React.FC = () => {
               <p className="text-white">
                 {new Date(selectedOrder.date).toLocaleString()}
               </p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <p className="text-gray-400 text-sm">Payment Method</p>
+              <p className="text-white">
+                {formatPaymentMethodLabel(selectedOrder.requestedPaymentMethod)}
+              </p>
+            </div>
+            <div>
+              <p className="text-gray-400 text-sm">Payment Status</p>
+              <p className="text-white capitalize">
+                {(selectedOrder.paymentStatus || "unpaid").replace(/_/g, " ")}
+              </p>
+              {selectedOrder.invoiceIssuedAt &&
+                selectedOrder.paymentStatus !== "paid" && (
+                  <p className="text-xs text-amber-300 mt-1">
+                    Outstanding for {getInvoiceAgingDays(selectedOrder) ?? 0}{" "}
+                    days
+                  </p>
+                )}
+              {selectedOrder.invoiceIssuedAt &&
+                selectedOrder.paymentCollectedAt && (
+                  <p className="text-xs text-emerald-300 mt-1">
+                    Paid in{" "}
+                    {Math.max(
+                      0,
+                      Math.floor(
+                        (new Date(selectedOrder.paymentCollectedAt).getTime() -
+                          new Date(selectedOrder.invoiceIssuedAt).getTime()) /
+                          (1000 * 60 * 60 * 24),
+                      ),
+                    )}{" "}
+                    day(s)
+                  </p>
+                )}
             </div>
           </div>
           <div className="mb-4">
@@ -949,6 +1059,51 @@ const OrderManagement: React.FC = () => {
                         {paymentUnavailableReason}.
                       </p>
                     )}
+                  </div>
+                )}
+              {/* ── Invoice outstanding panel ─────────────────────────── */}
+              {isInvoiceOutstanding(editingOrder) &&
+                editingOrder.status !== "approval_requested" && (
+                  <div className="rounded-lg border border-orange-500/60 bg-orange-500/10 p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <p className="text-orange-200 font-semibold text-sm">
+                        🧾 Invoice Payment Pending
+                      </p>
+                      <span className="px-2 py-0.5 rounded text-xs font-semibold bg-orange-900 text-orange-200">
+                        {getInvoiceAgingDays(editingOrder) ?? 0} days
+                        outstanding
+                      </span>
+                    </div>
+                    <p className="text-xs text-orange-300">
+                      Payment method:{" "}
+                      {formatPaymentMethodLabel(
+                        editingOrder.requestedPaymentMethod,
+                      )}
+                    </p>
+                    <textarea
+                      value={workflowNotes}
+                      onChange={(e) => setWorkflowNotes(e.target.value)}
+                      placeholder="Payment collection notes (optional)..."
+                      rows={2}
+                      className="w-full px-3 py-2 rounded bg-slate-700 text-white placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        disabled={workflowLoading}
+                        onClick={() =>
+                          handleApprovalAction(
+                            editingOrder,
+                            "mark_invoice_cash_paid",
+                          )
+                        }
+                        className="flex-1 px-3 py-2 text-xs bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition-colors"
+                      >
+                        {workflowLoading
+                          ? "Saving…"
+                          : "Mark Cash Payment Received"}
+                      </button>
+                    </div>
                   </div>
                 )}
               <div>

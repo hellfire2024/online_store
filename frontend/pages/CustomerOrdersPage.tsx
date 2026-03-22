@@ -271,6 +271,22 @@ const CustomerOrdersPage: React.FC = () => {
     }
   };
 
+  const getPaymentMethodLabel = (method?: string) => {
+    if (!method || method === "unspecified") return "Unspecified";
+    return method
+      .split("_")
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(" ");
+  };
+
+  const getPaymentStatusLabel = (status?: string) => {
+    if (!status) return "Unpaid";
+    return status
+      .split("_")
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(" ");
+  };
+
   const handleDownloadInvoice = async (order: CustomerOrder) => {
     const invoiceData: InvoiceData = {
       orderNumber: order.orderNumber,
@@ -314,7 +330,31 @@ const CustomerOrdersPage: React.FC = () => {
       shipping: order.shippingCost || 0,
       total: order.total,
       trackingNumber: order.trackingNumber,
-      paymentMethod: "Credit Card",
+      paymentMethod: getPaymentMethodLabel(order.requestedPaymentMethod),
+      paymentStatus: getPaymentStatusLabel(order.paymentStatus),
+      invoiceIssuedAt: order.invoiceIssuedAt,
+      paymentCollectedAt: order.paymentCollectedAt,
+      daysOutstanding:
+        order.invoiceIssuedAt && order.paymentStatus !== "paid"
+          ? Math.max(
+              0,
+              Math.floor(
+                (Date.now() - new Date(order.invoiceIssuedAt).getTime()) /
+                  (1000 * 60 * 60 * 24),
+              ),
+            )
+          : undefined,
+      daysToPayment:
+        order.invoiceIssuedAt && order.paymentCollectedAt
+          ? Math.max(
+              0,
+              Math.floor(
+                (new Date(order.paymentCollectedAt).getTime() -
+                  new Date(order.invoiceIssuedAt).getTime()) /
+                  (1000 * 60 * 60 * 24),
+              ),
+            )
+          : undefined,
       notes: `Order Status: ${order.status}`,
     };
     const template = siteSettings?.invoiceTemplate || DEFAULT_TEMPLATE;

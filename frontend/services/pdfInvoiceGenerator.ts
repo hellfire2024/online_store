@@ -86,6 +86,11 @@ export interface InvoiceData {
   total: number;
   trackingNumber?: string;
   paymentMethod?: string;
+  paymentStatus?: string;
+  invoiceIssuedAt?: string;
+  paymentCollectedAt?: string;
+  daysOutstanding?: number;
+  daysToPayment?: number;
   notes?: string;
 }
 
@@ -328,6 +333,11 @@ export const generateInvoiceHTML = (
           <div style="margin-bottom: 20px;">
             <div class="detail-label">Payment Method</div>
             <div class="detail-value">${invoice.paymentMethod}</div>
+            ${invoice.paymentStatus ? `<div class="detail-value" style="margin-top: 6px;"><strong>Payment Status:</strong> ${invoice.paymentStatus}</div>` : ""}
+            ${invoice.invoiceIssuedAt ? `<div class="detail-value" style="margin-top: 6px;"><strong>Invoice Issued:</strong> ${formatDate(invoice.invoiceIssuedAt)}</div>` : ""}
+            ${invoice.paymentCollectedAt ? `<div class="detail-value" style="margin-top: 6px;"><strong>Payment Collected:</strong> ${formatDate(invoice.paymentCollectedAt)}</div>` : ""}
+            ${typeof invoice.daysOutstanding === "number" ? `<div class="detail-value" style="margin-top: 6px;"><strong>Outstanding Age:</strong> ${invoice.daysOutstanding} day(s)</div>` : ""}
+            ${typeof invoice.daysToPayment === "number" ? `<div class="detail-value" style="margin-top: 6px;"><strong>Invoice-to-Payment:</strong> ${invoice.daysToPayment} day(s)</div>` : ""}
           </div>
         `
             : ""

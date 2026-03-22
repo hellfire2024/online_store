@@ -13,6 +13,8 @@ interface OrderDetails {
   shipping: number;
   tax: number;
   total: number;
+  paymentMethod?: string;
+  paymentStatus?: string;
   items: Array<{
     name: string;
     quantity: number;
@@ -270,6 +272,8 @@ const OrderConfirmationPage: React.FC = () => {
       tax: orderDetails.tax,
       shipping: orderDetails.shipping,
       total: orderDetails.total,
+      paymentMethod: orderDetails.paymentMethod || "Unspecified",
+      paymentStatus: orderDetails.paymentStatus || "Unpaid",
       notes: `Order Date: ${new Date().toLocaleDateString()}`,
     };
 

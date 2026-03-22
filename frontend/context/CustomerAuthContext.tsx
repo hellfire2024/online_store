@@ -668,6 +668,10 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
         }
 
         const shipping = orderData?.shippingAddress || {};
+        const payment =
+          orderData?.payment && typeof orderData.payment === "object"
+            ? orderData.payment
+            : {};
         const shippingAddress = {
           id: `order-${order.order_number}-shipping`,
           type: "shipping" as const,
@@ -694,6 +698,12 @@ export const CustomerAuthProvider: React.FC<{ children: ReactNode }> = ({
           taxAmount: Number(order.tax_amount ?? orderData.tax ?? 0),
           total: Number(order.total ?? orderData.total ?? 0),
           status: order.status || "pending",
+          paymentStatus: payment.status || undefined,
+          requestedPaymentMethod: payment.requestedMethod || undefined,
+          invoiceIssuedAt: payment.invoiceIssuedAt || undefined,
+          paymentCollectedAt:
+            payment.collectedAt || payment.paidAt || undefined,
+          paymentCollectionMethod: payment.collectionMethod || undefined,
           shippingAddress,
           items: Array.isArray(orderData.items) ? orderData.items : [],
           trackingNumber: order.tracking_number || undefined,
