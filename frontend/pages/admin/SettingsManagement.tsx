@@ -650,6 +650,31 @@ const SettingsManagement: React.FC = () => {
     try {
       let finalSettings = { ...settings };
 
+      finalSettings.paymentApiKeys = {
+        stripe: String(finalSettings.paymentApiKeys?.stripe || "").trim(),
+        paypal: String(finalSettings.paymentApiKeys?.paypal || "").trim(),
+        square: String(finalSettings.paymentApiKeys?.square || "").trim(),
+        authorizeNet: String(
+          finalSettings.paymentApiKeys?.authorizeNet || "",
+        ).trim(),
+      };
+
+      const selectedPaymentProvider = String(
+        finalSettings.paymentProvider || "none",
+      );
+      if (
+        selectedPaymentProvider !== "none" &&
+        !finalSettings.paymentApiKeys?.[
+          selectedPaymentProvider as keyof typeof finalSettings.paymentApiKeys
+        ]
+      ) {
+        addToast(
+          `Please enter API credentials for ${selectedPaymentProvider} before saving.`,
+          "error",
+        );
+        return;
+      }
+
       const footerPhone = finalSettings.footerConfig?.contactPhone?.trim();
       const fromAddressPhone = finalSettings.fromAddress?.phone?.trim();
 
@@ -694,6 +719,8 @@ const SettingsManagement: React.FC = () => {
 
       console.log("Attempting to save settings:", finalSettings);
 
+      await updateSiteSettings(finalSettings);
+
       const emailConfig = finalSettings.emailConfig;
       if (
         emailConfig?.provider &&
@@ -701,10 +728,27 @@ const SettingsManagement: React.FC = () => {
         emailConfig.fromEmail &&
         emailConfig.fromName
       ) {
-        await apiClient.emailConfig.save(emailConfig);
+        try {
+          await apiClient.emailConfig.save(emailConfig);
+        } catch (emailSyncError) {
+          console.warn(
+            "Email config sync failed after settings save:",
+            emailSyncError,
+          );
+          addToast(
+            "Settings saved, but email provider sync failed. Re-check Email tab config.",
+            "error",
+          );
+        }
       }
 
-      await updateSiteSettings(finalSettings);
+      try {
+        const status = await apiClient.settings.getCommerceStatus();
+        setCommerceStatus(status);
+      } catch {
+        setCommerceStatus(null);
+      }
+
       addToast("Settings updated successfully!", "success");
       setSelectedFaviconFile(null);
       setSelectedLogoFile(null);

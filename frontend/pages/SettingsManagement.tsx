@@ -414,6 +414,31 @@ const SettingsManagement: React.FC = () => {
     try {
       let finalSettings = { ...settings };
 
+      finalSettings.paymentApiKeys = {
+        stripe: String(finalSettings.paymentApiKeys?.stripe || "").trim(),
+        paypal: String(finalSettings.paymentApiKeys?.paypal || "").trim(),
+        square: String(finalSettings.paymentApiKeys?.square || "").trim(),
+        authorizeNet: String(
+          finalSettings.paymentApiKeys?.authorizeNet || "",
+        ).trim(),
+      };
+
+      const selectedPaymentProvider = String(
+        finalSettings.paymentProvider || "none",
+      );
+      if (
+        selectedPaymentProvider !== "none" &&
+        !finalSettings.paymentApiKeys?.[
+          selectedPaymentProvider as keyof typeof finalSettings.paymentApiKeys
+        ]
+      ) {
+        addToast(
+          `Please enter API credentials for ${selectedPaymentProvider} before saving.`,
+          "error",
+        );
+        return;
+      }
+
       if (selectedFaviconFile) {
         try {
           const faviconUrl = await uploadFavicon(selectedFaviconFile);
