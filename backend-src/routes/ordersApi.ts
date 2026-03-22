@@ -564,247 +564,255 @@ router.put(
   "/:orderNumber/workflow",
   requireAdmin,
   async (req: Request, res: Response) => {
-  try {
-    const { orderNumber } = req.params;
-    const authUser = (req as AuthenticatedRequest).authUser;
-    const isSuperAdmin = authUser?.role === "super_admin";
-    const {
-      status,
-      paymentStatus,
-      requestedPaymentMethod,
-      paymentDeclineReason,
-      approvalNotes,
-      approvedWithoutPayment,
-      forceStatusOverride,
-      statusOverrideReason,
-      trackingNumber,
-      shipper,
-    } = req.body || {};
+    try {
+      const { orderNumber } = req.params;
+      const authUser = (req as AuthenticatedRequest).authUser;
+      const isSuperAdmin = authUser?.role === "super_admin";
+      const {
+        status,
+        paymentStatus,
+        requestedPaymentMethod,
+        paymentDeclineReason,
+        approvalNotes,
+        approvedWithoutPayment,
+        forceStatusOverride,
+        statusOverrideReason,
+        trackingNumber,
+        shipper,
+      } = req.body || {};
 
-    const [rows] = await pool.query<OrderRow[]>(
-      "SELECT * FROM orders WHERE order_number = ?",
-      [orderNumber],
-    );
+      const [rows] = await pool.query<OrderRow[]>(
+        "SELECT * FROM orders WHERE order_number = ?",
+        [orderNumber],
+      );
 
-    if (!rows.length) {
-      res.status(404).json({ error: "Order not found" });
-      return;
-    }
+      if (!rows.length) {
+        res.status(404).json({ error: "Order not found" });
+        return;
+      }
 
-    const existingOrder = rows[0];
-    const existingOrderData = parseOrderData(existingOrder.order_data);
-    const existingPayment =
-      existingOrderData.payment && typeof existingOrderData.payment === "object"
-        ? (existingOrderData.payment as Record<string, unknown>)
-        : {};
+      const existingOrder = rows[0];
+      const existingOrderData = parseOrderData(existingOrder.order_data);
+      const existingPayment =
+        existingOrderData.payment &&
+        typeof existingOrderData.payment === "object"
+          ? (existingOrderData.payment as Record<string, unknown>)
+          : {};
 
-    const normalizedPaymentStatus =
-      normalizePaymentStatus(paymentStatus) ||
-      normalizePaymentStatus(existingPayment.status) ||
-      "unpaid";
+      const normalizedPaymentStatus =
+        normalizePaymentStatus(paymentStatus) ||
+        normalizePaymentStatus(existingPayment.status) ||
+        "unpaid";
 
-    const normalizedRequestedPaymentMethod = normalizeRequestedPaymentMethod(
-      requestedPaymentMethod || existingPayment.requestedMethod,
-    );
+      const normalizedRequestedPaymentMethod = normalizeRequestedPaymentMethod(
+        requestedPaymentMethod || existingPayment.requestedMethod,
+      );
 
-    if (normalizedPaymentStatus === "paid" && !isSuperAdmin) {
-      res.status(400).json({
-        error:
-          "Direct paid status updates are restricted. Use payment provider integration or super-admin override.",
-      });
-      return;
-    }
+      if (normalizedPaymentStatus === "paid" && !isSuperAdmin) {
+        res.status(400).json({
+          error:
+            "Direct paid status updates are restricted. Use payment provider integration or super-admin override.",
+        });
+        return;
+      }
 
-    if (
-      normalizedPaymentStatus === "cash_on_pickup_paid" &&
-      normalizedRequestedPaymentMethod !== "cash_on_pickup"
-    ) {
-      res.status(400).json({
-        error:
-          "cash_on_pickup_paid is only valid for cash-on-pickup orders.",
-      });
-      return;
-    }
+      if (
+        normalizedPaymentStatus === "cash_on_pickup_paid" &&
+        normalizedRequestedPaymentMethod !== "cash_on_pickup"
+      ) {
+        res.status(400).json({
+          error: "cash_on_pickup_paid is only valid for cash-on-pickup orders.",
+        });
+        return;
+      }
 
-    const normalizedStatus =
-      normalizeOrderStatus(status) || String(existingOrder.status || "pending");
+      const normalizedStatus =
+        normalizeOrderStatus(status) ||
+        String(existingOrder.status || "pending");
 
-    const currentStatus =
-      normalizeOrderStatus(existingOrder.status) || String(existingOrder.status);
+      const currentStatus =
+        normalizeOrderStatus(existingOrder.status) ||
+        String(existingOrder.status);
 
-    const shouldApproveWithoutPayment = Boolean(approvedWithoutPayment);
-    const paymentMarkedPaid =
-      normalizedPaymentStatus === "paid" ||
-      normalizedPaymentStatus === "cash_on_pickup_paid";
+      const shouldApproveWithoutPayment = Boolean(approvedWithoutPayment);
+      const paymentMarkedPaid =
+        normalizedPaymentStatus === "paid" ||
+        normalizedPaymentStatus === "cash_on_pickup_paid";
 
-    const resolvedStatus =
-      normalizedStatus === "approval_requested" &&
-      (shouldApproveWithoutPayment || paymentMarkedPaid)
-        ? "processing"
-        : normalizedStatus;
+      const resolvedStatus =
+        normalizedStatus === "approval_requested" &&
+        (shouldApproveWithoutPayment || paymentMarkedPaid)
+          ? "processing"
+          : normalizedStatus;
 
-    const forceOverrideRequested = Boolean(forceStatusOverride);
+      const forceOverrideRequested = Boolean(forceStatusOverride);
 
-    if (forceOverrideRequested && !isSuperAdmin) {
-      res.status(403).json({
-        error: "Only super admins can force status overrides.",
-      });
-      return;
-    }
+      if (forceOverrideRequested && !isSuperAdmin) {
+        res.status(403).json({
+          error: "Only super admins can force status overrides.",
+        });
+        return;
+      }
 
-    if (
-      resolvedStatus !== currentStatus &&
-      !forceOverrideRequested &&
-      !isStandardStatusTransitionAllowed(currentStatus, resolvedStatus)
-    ) {
-      res.status(409).json({
-        error: `Invalid status transition from ${currentStatus} to ${resolvedStatus}.`,
-      });
-      return;
-    }
+      if (
+        resolvedStatus !== currentStatus &&
+        !forceOverrideRequested &&
+        !isStandardStatusTransitionAllowed(currentStatus, resolvedStatus)
+      ) {
+        res.status(409).json({
+          error: `Invalid status transition from ${currentStatus} to ${resolvedStatus}.`,
+        });
+        return;
+      }
 
-    const statusOverrideApplied =
-      forceOverrideRequested && isSuperAdmin && resolvedStatus !== currentStatus;
+      const statusOverrideApplied =
+        forceOverrideRequested &&
+        isSuperAdmin &&
+        resolvedStatus !== currentStatus;
 
-    const updatedOrderData = {
-      ...existingOrderData,
-      approval: {
-        ...(existingOrderData.approval &&
-        typeof existingOrderData.approval === "object"
-          ? (existingOrderData.approval as Record<string, unknown>)
-          : {}),
-        approvedWithoutPayment: shouldApproveWithoutPayment,
-        notes: hasText(approvalNotes) ? approvalNotes.trim() : undefined,
-        approvedAt:
-          shouldApproveWithoutPayment || paymentMarkedPaid
-            ? new Date().toISOString()
+      const updatedOrderData = {
+        ...existingOrderData,
+        approval: {
+          ...(existingOrderData.approval &&
+          typeof existingOrderData.approval === "object"
+            ? (existingOrderData.approval as Record<string, unknown>)
+            : {}),
+          approvedWithoutPayment: shouldApproveWithoutPayment,
+          notes: hasText(approvalNotes) ? approvalNotes.trim() : undefined,
+          approvedAt:
+            shouldApproveWithoutPayment || paymentMarkedPaid
+              ? new Date().toISOString()
+              : undefined,
+          statusOverride: statusOverrideApplied
+            ? {
+                fromStatus: currentStatus,
+                toStatus: resolvedStatus,
+                reason: hasText(statusOverrideReason)
+                  ? statusOverrideReason.trim()
+                  : hasText(approvalNotes)
+                    ? approvalNotes.trim()
+                    : undefined,
+                overriddenBy: authUser?.id || null,
+                overriddenByRole: authUser?.role || "admin",
+                overriddenAt: new Date().toISOString(),
+              }
             : undefined,
-        statusOverride: statusOverrideApplied
-          ? {
-              fromStatus: currentStatus,
-              toStatus: resolvedStatus,
-              reason: hasText(statusOverrideReason)
-                ? statusOverrideReason.trim()
-                : hasText(approvalNotes)
-                  ? approvalNotes.trim()
-                  : undefined,
-              overriddenBy: authUser?.id || null,
-              overriddenByRole: authUser?.role || "admin",
-              overriddenAt: new Date().toISOString(),
-            }
-          : undefined,
-      },
-      payment: {
-        ...existingPayment,
-        status: normalizedPaymentStatus,
-        requestedMethod: normalizedRequestedPaymentMethod,
-        declineReason: hasText(paymentDeclineReason)
-          ? paymentDeclineReason.trim()
-          : undefined,
-        lastUpdatedAt: new Date().toISOString(),
-      },
-    };
+        },
+        payment: {
+          ...existingPayment,
+          status: normalizedPaymentStatus,
+          requestedMethod: normalizedRequestedPaymentMethod,
+          declineReason: hasText(paymentDeclineReason)
+            ? paymentDeclineReason.trim()
+            : undefined,
+          lastUpdatedAt: new Date().toISOString(),
+        },
+      };
 
-    const nextTrackingNumber =
-      typeof trackingNumber === "string"
-        ? trackingNumber.trim() || null
-        : existingOrder.tracking_number;
+      const nextTrackingNumber =
+        typeof trackingNumber === "string"
+          ? trackingNumber.trim() || null
+          : existingOrder.tracking_number;
 
-    const nextShipper =
-      typeof shipper === "string"
-        ? shipper.trim() || null
-        : existingOrder.shipper;
+      const nextShipper =
+        typeof shipper === "string"
+          ? shipper.trim() || null
+          : existingOrder.shipper;
 
-    await pool.query(
-      `UPDATE orders
+      await pool.query(
+        `UPDATE orders
        SET status = ?,
            tracking_number = ?,
            shipper = ?,
            order_data = ?,
            updated_at = NOW()
        WHERE order_number = ?`,
-      [
-        resolvedStatus,
-        nextTrackingNumber,
-        nextShipper,
-        JSON.stringify(updatedOrderData),
-        orderNumber,
-      ],
-    );
+        [
+          resolvedStatus,
+          nextTrackingNumber,
+          nextShipper,
+          JSON.stringify(updatedOrderData),
+          orderNumber,
+        ],
+      );
 
-    res.json({
-      success: true,
-      orderNumber,
-      status: resolvedStatus,
-      statusOverrideApplied,
-      payment: updatedOrderData.payment,
-      approval: updatedOrderData.approval,
-      trackingNumber: nextTrackingNumber,
-      shipper: nextShipper,
-    });
-  } catch (error) {
-    console.error("Error updating order workflow:", error);
-    res.status(500).json({ error: "Failed to update order workflow" });
-  }
-},
+      res.json({
+        success: true,
+        orderNumber,
+        status: resolvedStatus,
+        statusOverrideApplied,
+        payment: updatedOrderData.payment,
+        approval: updatedOrderData.approval,
+        trackingNumber: nextTrackingNumber,
+        shipper: nextShipper,
+      });
+    } catch (error) {
+      console.error("Error updating order workflow:", error);
+      res.status(500).json({ error: "Failed to update order workflow" });
+    }
+  },
 );
 
 // PUT update order with shipping info
-router.put("/:orderNumber/ship", requireAdmin, async (req: Request, res: Response) => {
-  try {
-    const { orderNumber } = req.params;
-    const { trackingNumber, shipper, shippingUrl } = req.body;
+router.put(
+  "/:orderNumber/ship",
+  requireAdmin,
+  async (req: Request, res: Response) => {
+    try {
+      const { orderNumber } = req.params;
+      const { trackingNumber, shipper, shippingUrl } = req.body;
 
-    if (!trackingNumber || !shipper) {
-      res.status(400).json({ error: "Missing tracking number or shipper" });
-      return;
-    }
+      if (!trackingNumber || !shipper) {
+        res.status(400).json({ error: "Missing tracking number or shipper" });
+        return;
+      }
 
-    // Get order details
-    const [rows] = await pool.query<OrderRow[]>(
-      "SELECT * FROM orders WHERE order_number = ?",
-      [orderNumber],
-    );
-
-    if (rows.length === 0) {
-      res.status(404).json({ error: "Order not found" });
-      return;
-    }
-
-    const order = rows[0];
-
-    // Update order with shipping info
-    await pool.query(
-      `UPDATE orders SET status = 'shipped', tracking_number = ?, shipper = ?, updated_at = NOW()
-       WHERE order_number = ?`,
-      [trackingNumber, shipper, orderNumber],
-    );
-
-    // Send shipping notification email
-    let emailResult = {
-      success: false,
-      message: "Customer email not available",
-    };
-    if (order.customer_email && order.customer_name) {
-      emailResult = await sendShippingNotificationEmail(
-        order.customer_email,
-        order.customer_name,
-        orderNumber,
-        trackingNumber,
-        shipper,
-        shippingUrl,
+      // Get order details
+      const [rows] = await pool.query<OrderRow[]>(
+        "SELECT * FROM orders WHERE order_number = ?",
+        [orderNumber],
       );
-    }
 
-    res.json({
-      success: true,
-      message: "Order updated with shipping info",
-      emailSent: emailResult.success,
-    });
-  } catch (error) {
-    console.error("Error updating order:", error);
-    res.status(500).json({ error: "Failed to update order" });
-  }
-});
+      if (rows.length === 0) {
+        res.status(404).json({ error: "Order not found" });
+        return;
+      }
+
+      const order = rows[0];
+
+      // Update order with shipping info
+      await pool.query(
+        `UPDATE orders SET status = 'shipped', tracking_number = ?, shipper = ?, updated_at = NOW()
+       WHERE order_number = ?`,
+        [trackingNumber, shipper, orderNumber],
+      );
+
+      // Send shipping notification email
+      let emailResult = {
+        success: false,
+        message: "Customer email not available",
+      };
+      if (order.customer_email && order.customer_name) {
+        emailResult = await sendShippingNotificationEmail(
+          order.customer_email,
+          order.customer_name,
+          orderNumber,
+          trackingNumber,
+          shipper,
+          shippingUrl,
+        );
+      }
+
+      res.json({
+        success: true,
+        message: "Order updated with shipping info",
+        emailSent: emailResult.success,
+      });
+    } catch (error) {
+      console.error("Error updating order:", error);
+      res.status(500).json({ error: "Failed to update order" });
+    }
+  },
+);
 
 export default router;

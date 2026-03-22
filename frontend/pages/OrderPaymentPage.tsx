@@ -49,7 +49,8 @@ const OrderPaymentPage: React.FC = () => {
           unknown
         >;
         const providerKey = String(providerKeys[provider] || "").trim();
-        const providerConfigured = provider !== "none" && providerKey.length > 0;
+        const providerConfigured =
+          provider !== "none" && providerKey.length > 0;
 
         if (providerConfigured) {
           setPaymentStatusMessage(
