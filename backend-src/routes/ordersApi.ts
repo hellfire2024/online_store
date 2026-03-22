@@ -74,7 +74,9 @@ const hasText = (value: unknown): value is string =>
   typeof value === "string" && value.trim().length > 0;
 
 const normalizePaymentStatus = (value: unknown): PaymentStatus | null => {
-  const normalized = String(value || "").trim().toLowerCase();
+  const normalized = String(value || "")
+    .trim()
+    .toLowerCase();
   const allowed: PaymentStatus[] = [
     "unpaid",
     "paid",
@@ -90,7 +92,9 @@ const normalizePaymentStatus = (value: unknown): PaymentStatus | null => {
 };
 
 const normalizeRequestedPaymentMethod = (value: unknown): string => {
-  const normalized = String(value || "").trim().toLowerCase();
+  const normalized = String(value || "")
+    .trim()
+    .toLowerCase();
 
   if (normalized === "cash_on_pickup") {
     return "cash_on_pickup";
@@ -104,15 +108,13 @@ const normalizeRequestedPaymentMethod = (value: unknown): string => {
     return "invoice";
   }
 
-  if (normalized === "phone_payment") {
-    return "phone_payment";
-  }
-
   return "unspecified";
 };
 
 const normalizeOrderStatus = (value: unknown): string | null => {
-  const normalized = String(value || "").trim().toLowerCase();
+  const normalized = String(value || "")
+    .trim()
+    .toLowerCase();
   const allowed = [
     "approval_requested",
     "pending",
@@ -290,7 +292,9 @@ router.post("/", async (req: Request, res: Response) => {
     const requestedMethod = normalizeRequestedPaymentMethod(
       orderData?.paymentMethod,
     );
-    const explicitPaymentStatus = normalizePaymentStatus(orderData?.paymentStatus);
+    const explicitPaymentStatus = normalizePaymentStatus(
+      orderData?.paymentStatus,
+    );
     const paymentStatus = explicitPaymentStatus || "unpaid";
 
     const normalizedOrderData = attachPaymentWorkflowToOrderData(

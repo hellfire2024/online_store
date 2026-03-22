@@ -30,6 +30,7 @@ import ProductDetailPage from "../pages/ProductDetailPage";
 import CartPage from "../pages/CartPage";
 import CheckoutPage from "../pages/CheckoutPage";
 import OrderConfirmationPage from "../pages/OrderConfirmationPage";
+import OrderPaymentPage from "../pages/OrderPaymentPage";
 import LoginPage from "../pages/LoginPage";
 import RegisterPage from "../pages/RegisterPage";
 import CustomPage from "../pages/CustomPage";
@@ -171,6 +172,7 @@ const AppContent: React.FC = () => {
             path="/order-confirmation"
             element={<OrderConfirmationPage />}
           />
+          <Route path="/pay/:orderNumber" element={<OrderPaymentPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />

@@ -1183,7 +1183,6 @@ const CheckoutPage: React.FC = () => {
                           },
                           { value: "cash_on_pickup", label: "Cash on Pickup" },
                           { value: "invoice", label: "Invoice / Bill Me" },
-                          { value: "phone_payment", label: "Pay by Phone" },
                         ] as const
                       ).map(({ value, label }) => (
                         <label

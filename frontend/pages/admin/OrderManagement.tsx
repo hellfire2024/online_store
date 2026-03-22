@@ -314,7 +314,7 @@ const OrderManagement: React.FC = () => {
       );
 
       if (action === "approve_with_payment") {
-        const link = `${window.location.origin}/pay/${order.orderNumber}`;
+        const link = `${window.location.origin}/#/pay/${order.orderNumber}`;
         setPaymentLink(link);
         addToast(
           "Order approved. Copy the payment link and share it with the customer.",
