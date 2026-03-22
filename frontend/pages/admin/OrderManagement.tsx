@@ -46,6 +46,24 @@ const isCashOnPickupPaid = (
   order.paymentStatus === "cash_on_pickup_paid" &&
   order.status === "delivered";
 
+const getPaymentProviderStatus = (settings: any) => {
+  const provider = String(settings?.paymentProvider || "none");
+  const providerKeys = (settings?.paymentApiKeys || {}) as Record<
+    string,
+    unknown
+  >;
+  const providerKey = String(providerKeys[provider] || "").trim();
+  const enabled = provider !== "none" && providerKey.length > 0;
+
+  return {
+    enabled,
+    reason:
+      provider === "none"
+        ? "No payment provider is configured"
+        : "Payment provider credentials are missing",
+  };
+};
+
 const OrderManagement: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
@@ -68,8 +86,28 @@ const OrderManagement: React.FC = () => {
   const [workflowNotes, setWorkflowNotes] = useState("");
   const [workflowLoading, setWorkflowLoading] = useState(false);
   const [paymentLink, setPaymentLink] = useState("");
+  const [onlinePaymentEnabled, setOnlinePaymentEnabled] = useState(false);
+  const [paymentUnavailableReason, setPaymentUnavailableReason] = useState(
+    "Online payment is not configured.",
+  );
 
   const shippers = ["UPS", "FedEx", "USPS", "DHL", "Other"];
+
+  useEffect(() => {
+    const loadPaymentStatus = async () => {
+      try {
+        const settings = await apiClient.settings.get();
+        const paymentStatus = getPaymentProviderStatus(settings);
+        setOnlinePaymentEnabled(paymentStatus.enabled);
+        setPaymentUnavailableReason(paymentStatus.reason);
+      } catch {
+        setOnlinePaymentEnabled(false);
+        setPaymentUnavailableReason("Unable to verify payment provider setup");
+      }
+    };
+
+    loadPaymentStatus();
+  }, []);
 
   useEffect(() => {
     const loadOrders = async () => {
@@ -296,6 +334,14 @@ const OrderManagement: React.FC = () => {
   ) => {
     setWorkflowLoading(true);
     try {
+      if (action === "approve_with_payment" && !onlinePaymentEnabled) {
+        addToast(
+          `${paymentUnavailableReason}. Use Approve (No Payment) until a payment gateway is connected.`,
+          "error",
+        );
+        return;
+      }
+
       let workflowData: Record<string, unknown> = {};
       switch (action) {
         case "approve_with_payment":
@@ -817,7 +863,7 @@ const OrderManagement: React.FC = () => {
                     <div className="grid grid-cols-2 gap-2">
                       <button
                         type="button"
-                        disabled={workflowLoading}
+                        disabled={workflowLoading || !onlinePaymentEnabled}
                         onClick={() =>
                           handleApprovalAction(
                             editingOrder,
@@ -828,7 +874,9 @@ const OrderManagement: React.FC = () => {
                       >
                         {workflowLoading
                           ? "Saving…"
-                          : "Approve & Get Payment Link"}
+                          : onlinePaymentEnabled
+                            ? "Approve & Get Payment Link"
+                            : "Payment Link Unavailable"}
                       </button>
                       <button
                         type="button"
@@ -854,6 +902,11 @@ const OrderManagement: React.FC = () => {
                         {workflowLoading ? "Saving…" : "Decline Request"}
                       </button>
                     </div>
+                    {!onlinePaymentEnabled && (
+                      <p className="text-xs text-amber-300">
+                        Online payment links are disabled: {paymentUnavailableReason}.
+                      </p>
+                    )}
                   </div>
                 )}
               <div>
