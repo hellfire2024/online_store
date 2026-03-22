@@ -58,8 +58,16 @@ const isInvoiceOutstanding = (
 ) => {
   if (order.status === "cancelled") return false;
   if (order.requestedPaymentMethod !== "invoice") return false;
-  return order.paymentStatus !== "paid";
+  return (
+    order.paymentStatus === "unpaid" ||
+    order.paymentStatus === "pending_offline" ||
+    !order.paymentStatus
+  );
 };
+
+const hasPaymentBeenReceived = (order: Pick<Order, "paymentStatus">): boolean =>
+  order.paymentStatus === "paid" ||
+  order.paymentStatus === "cash_on_pickup_paid";
 
 const getInvoiceAgingDays = (
   order: Pick<Order, "invoiceIssuedAt">,
@@ -410,7 +418,9 @@ const OrderManagement: React.FC = () => {
       | "approve_with_payment"
       | "approve_without_payment"
       | "approve_for_pickup"
+      | "switch_to_card_and_send_link"
       | "mark_invoice_cash_paid"
+      | "mark_refund_issued"
       | "mark_cash_paid"
       | "decline",
   ) => {
@@ -449,6 +459,15 @@ const OrderManagement: React.FC = () => {
             approvalNotes: workflowNotes || undefined,
           };
           break;
+        case "switch_to_card_and_send_link":
+          workflowData = {
+            status: order.status,
+            requestedPaymentMethod: "online_card",
+            paymentStatus: "pending_offline",
+            invoiceIssuedAt: new Date().toISOString(),
+            approvalNotes: workflowNotes || undefined,
+          };
+          break;
         case "mark_cash_paid":
           // Admin confirms cash was received in person.
           workflowData = {
@@ -466,6 +485,13 @@ const OrderManagement: React.FC = () => {
             paymentCollectionMethod: "cash",
             paymentCollectedAt: new Date().toISOString(),
             approvalNotes: workflowNotes || undefined,
+          };
+          break;
+        case "mark_refund_issued":
+          workflowData = {
+            status: order.status,
+            paymentStatus: "refund_issued",
+            approvalNotes: workflowNotes || "Refund issued by admin",
           };
           break;
         case "decline":
@@ -486,7 +512,10 @@ const OrderManagement: React.FC = () => {
             ? ("delivered" as const)
             : action === "mark_invoice_cash_paid"
               ? order.status
-              : ("processing" as const);
+              : action === "switch_to_card_and_send_link" ||
+                  action === "mark_refund_issued"
+                ? order.status
+                : ("processing" as const);
 
       setOrders((prev) =>
         prev.map((o) =>
@@ -497,6 +526,9 @@ const OrderManagement: React.FC = () => {
                 paymentStatus:
                   (workflowData.paymentStatus as string | undefined) ??
                   o.paymentStatus,
+                requestedPaymentMethod:
+                  (workflowData.requestedPaymentMethod as string | undefined) ??
+                  o.requestedPaymentMethod,
                 paymentCollectedAt:
                   (workflowData.paymentCollectedAt as string | undefined) ??
                   o.paymentCollectedAt,
@@ -534,6 +566,16 @@ const OrderManagement: React.FC = () => {
       } else if (action === "mark_invoice_cash_paid") {
         setIsModalOpen(false);
         addToast("Cash invoice payment recorded.", "success");
+      } else if (action === "switch_to_card_and_send_link") {
+        const link = `${window.location.origin}/#/pay/${order.orderNumber}`;
+        setPaymentLink(link);
+        addToast(
+          "Payment method changed to card. Share the payment link with the customer.",
+          "success",
+        );
+      } else if (action === "mark_refund_issued") {
+        setIsModalOpen(false);
+        addToast("Refund has been marked as issued.", "success");
       } else if (action === "decline") {
         setIsModalOpen(false);
         addToast("Order request declined.", "success");
@@ -570,6 +612,11 @@ const OrderManagement: React.FC = () => {
     order: Order,
   ): { className: string; label: string } | null => {
     if (!isCashOnPickupOrder(order)) return null;
+    if (order.paymentStatus === "refund_issued")
+      return {
+        className: "bg-rose-900 text-rose-200",
+        label: "CoP: Refund Issued",
+      };
     if (isCashOnPickupPaid(order))
       return {
         className: "bg-emerald-900 text-emerald-200",
@@ -941,6 +988,24 @@ const OrderManagement: React.FC = () => {
                           {workflowLoading ? "Saving…" : "Mark Cash Received"}
                         </button>
                       )}
+                      {editingOrder.status === "processing" &&
+                        onlinePaymentEnabled && (
+                          <button
+                            type="button"
+                            disabled={workflowLoading}
+                            onClick={() =>
+                              handleApprovalAction(
+                                editingOrder,
+                                "switch_to_card_and_send_link",
+                              )
+                            }
+                            className="flex-1 px-3 py-2 text-xs bg-sky-600 text-white rounded-lg hover:bg-sky-700 disabled:opacity-50 transition-colors"
+                          >
+                            {workflowLoading
+                              ? "Saving…"
+                              : "Switch to Card & Send Link"}
+                          </button>
+                        )}
                       <button
                         type="button"
                         disabled={workflowLoading}
@@ -952,6 +1017,13 @@ const OrderManagement: React.FC = () => {
                         {workflowLoading ? "Saving…" : "Decline"}
                       </button>
                     </div>
+                    {editingOrder.status === "processing" &&
+                      !onlinePaymentEnabled && (
+                        <p className="text-xs text-amber-300">
+                          Card payment link conversion is unavailable:{" "}
+                          {paymentUnavailableReason}.
+                        </p>
+                      )}
                   </div>
                 )}
               {isCashOnPickupPaid(editingOrder) && (
@@ -1088,6 +1160,26 @@ const OrderManagement: React.FC = () => {
                       className="w-full px-3 py-2 rounded bg-slate-700 text-white placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
                     />
                     <div className="flex gap-2">
+                      {editingOrder.requestedPaymentMethod ===
+                        "cash_on_pickup" &&
+                        !hasPaymentBeenReceived(editingOrder) &&
+                        onlinePaymentEnabled && (
+                          <button
+                            type="button"
+                            disabled={workflowLoading}
+                            onClick={() =>
+                              handleApprovalAction(
+                                editingOrder,
+                                "switch_to_card_and_send_link",
+                              )
+                            }
+                            className="flex-1 px-3 py-2 text-xs bg-sky-600 text-white rounded-lg hover:bg-sky-700 disabled:opacity-50 transition-colors"
+                          >
+                            {workflowLoading
+                              ? "Saving…"
+                              : "Switch to Card & Send Link"}
+                          </button>
+                        )}
                       <button
                         type="button"
                         disabled={workflowLoading}
@@ -1104,6 +1196,43 @@ const OrderManagement: React.FC = () => {
                           : "Mark Cash Payment Received"}
                       </button>
                     </div>
+                    {!onlinePaymentEnabled &&
+                      editingOrder.requestedPaymentMethod ===
+                        "cash_on_pickup" && (
+                        <p className="text-xs text-amber-300">
+                          Card payment link conversion is unavailable:{" "}
+                          {paymentUnavailableReason}.
+                        </p>
+                      )}
+                  </div>
+                )}
+              {hasPaymentBeenReceived(editingOrder) &&
+                editingOrder.paymentStatus !== "refund_issued" && (
+                  <div className="rounded-lg border border-rose-500/60 bg-rose-500/10 p-4 space-y-3">
+                    <p className="text-rose-200 font-semibold text-sm">
+                      ↩ Payment Received
+                    </p>
+                    <p className="text-xs text-rose-300">
+                      If needed, mark this order as refunded. This updates
+                      customer invoices.
+                    </p>
+                    <textarea
+                      value={workflowNotes}
+                      onChange={(e) => setWorkflowNotes(e.target.value)}
+                      placeholder="Refund reason (recommended)..."
+                      rows={2}
+                      className="w-full px-3 py-2 rounded bg-slate-700 text-white placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500"
+                    />
+                    <button
+                      type="button"
+                      disabled={workflowLoading}
+                      onClick={() =>
+                        handleApprovalAction(editingOrder, "mark_refund_issued")
+                      }
+                      className="w-full px-3 py-2 text-xs bg-rose-700 text-white rounded-lg hover:bg-rose-800 disabled:opacity-50 transition-colors"
+                    >
+                      {workflowLoading ? "Saving…" : "Mark Refund Issued"}
+                    </button>
                   </div>
                 )}
               <div>

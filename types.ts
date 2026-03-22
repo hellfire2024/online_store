@@ -190,6 +190,7 @@ export interface CustomerOrder {
   paymentStatus?:
     | "unpaid"
     | "paid"
+    | "refund_issued"
     | "declined"
     | "pending_offline"
     | "cash_on_pickup_requested"

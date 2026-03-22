@@ -18,6 +18,7 @@ const router = Router();
 type PaymentStatus =
   | "unpaid"
   | "paid"
+  | "refund_issued"
   | "declined"
   | "pending_offline"
   | "cash_on_pickup_requested"
@@ -84,6 +85,7 @@ const normalizePaymentStatus = (value: unknown): PaymentStatus | null => {
   const allowed: PaymentStatus[] = [
     "unpaid",
     "paid",
+    "refund_issued",
     "declined",
     "pending_offline",
     "cash_on_pickup_requested",
@@ -635,6 +637,9 @@ router.put(
         normalizePaymentStatus(existingPayment.status) ||
         "unpaid";
 
+      const existingNormalizedPaymentStatus =
+        normalizePaymentStatus(existingPayment.status) || "unpaid";
+
       const normalizedRequestedPaymentMethod = normalizeRequestedPaymentMethod(
         requestedPaymentMethod || existingPayment.requestedMethod,
       );
@@ -658,6 +663,36 @@ router.put(
           (normalizedPaymentStatus === "pending_offline"
             ? new Date().toISOString()
             : undefined);
+
+      const existingPaymentWasReceived =
+        existingNormalizedPaymentStatus === "paid" ||
+        existingNormalizedPaymentStatus === "cash_on_pickup_paid";
+
+      const nextPaymentIsReceived =
+        normalizedPaymentStatus === "paid" ||
+        normalizedPaymentStatus === "cash_on_pickup_paid";
+
+      const requestedMethodSwitchesCashToCard =
+        String(existingPayment.requestedMethod || "") === "cash_on_pickup" &&
+        normalizedRequestedPaymentMethod === "online_card";
+
+      if (requestedMethodSwitchesCashToCard && existingPaymentWasReceived) {
+        res.status(409).json({
+          error:
+            "Cannot switch payment method from cash to card after payment is already received.",
+        });
+        return;
+      }
+
+      if (
+        normalizedPaymentStatus === "refund_issued" &&
+        !existingPaymentWasReceived
+      ) {
+        res.status(409).json({
+          error: "Refund can only be issued after payment has been received.",
+        });
+        return;
+      }
 
       if (normalizedPaymentStatus === "paid" && !isSuperAdmin) {
         const canRecordCashCollection = normalizedCollectionMethod === "cash";
@@ -689,9 +724,7 @@ router.put(
         String(existingOrder.status);
 
       const shouldApproveWithoutPayment = Boolean(approvedWithoutPayment);
-      const paymentMarkedPaid =
-        normalizedPaymentStatus === "paid" ||
-        normalizedPaymentStatus === "cash_on_pickup_paid";
+      const paymentMarkedPaid = nextPaymentIsReceived;
 
       const resolvedStatus =
         normalizedStatus === "approval_requested" &&
@@ -777,6 +810,19 @@ router.put(
                 (typeof existingPayment.paidAt === "string"
                   ? existingPayment.paidAt
                   : new Date().toISOString())
+              : undefined,
+          refundedAt:
+            normalizedPaymentStatus === "refund_issued"
+              ? new Date().toISOString()
+              : undefined,
+          refundedBy:
+            normalizedPaymentStatus === "refund_issued"
+              ? authUser?.id || null
+              : undefined,
+          refundReason:
+            normalizedPaymentStatus === "refund_issued" &&
+            hasText(approvalNotes)
+              ? approvalNotes.trim()
               : undefined,
           collectedBy:
             normalizedPaymentStatus === "paid" ||
