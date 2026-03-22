@@ -11,6 +11,14 @@ import { requireCustomer, AuthenticatedRequest } from "../middleware/auth.js";
 
 const router = Router();
 
+type PaymentStatus =
+  | "unpaid"
+  | "paid"
+  | "declined"
+  | "pending_offline"
+  | "cash_on_pickup_requested"
+  | "cash_on_pickup_paid";
+
 interface OrderRow extends RowDataPacket {
   id: string;
   customer_id: string | null;
@@ -45,20 +53,128 @@ const parseSettings = (raw: string | null) => {
   }
 };
 
-const readSalesEmail = async (): Promise<string | null> => {
+const parseOrderData = (raw: string | null): Record<string, unknown> => {
+  if (!raw) {
+    return {};
+  }
+
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === "object") {
+      return parsed as Record<string, unknown>;
+    }
+  } catch {
+    // Ignore parse failures and return an empty object.
+  }
+
+  return {};
+};
+
+const hasText = (value: unknown): value is string =>
+  typeof value === "string" && value.trim().length > 0;
+
+const normalizePaymentStatus = (value: unknown): PaymentStatus | null => {
+  const normalized = String(value || "").trim().toLowerCase();
+  const allowed: PaymentStatus[] = [
+    "unpaid",
+    "paid",
+    "declined",
+    "pending_offline",
+    "cash_on_pickup_requested",
+    "cash_on_pickup_paid",
+  ];
+
+  return allowed.includes(normalized as PaymentStatus)
+    ? (normalized as PaymentStatus)
+    : null;
+};
+
+const normalizeRequestedPaymentMethod = (value: unknown): string => {
+  const normalized = String(value || "").trim().toLowerCase();
+
+  if (normalized === "cash_on_pickup") {
+    return "cash_on_pickup";
+  }
+
+  if (normalized === "online_card") {
+    return "online_card";
+  }
+
+  if (normalized === "invoice") {
+    return "invoice";
+  }
+
+  if (normalized === "phone_payment") {
+    return "phone_payment";
+  }
+
+  return "unspecified";
+};
+
+const normalizeOrderStatus = (value: unknown): string | null => {
+  const normalized = String(value || "").trim().toLowerCase();
+  const allowed = [
+    "approval_requested",
+    "pending",
+    "processing",
+    "shipped",
+    "delivered",
+    "cancelled",
+  ];
+
+  return allowed.includes(normalized) ? normalized : null;
+};
+
+const isLikelyEmail = (value: string): boolean =>
+  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+
+const readSalesRecipients = async (): Promise<string[]> => {
   const [rows] = await pool.query<SettingsRow[]>(
     "SELECT settings FROM site_settings WHERE id = 1 LIMIT 1",
   );
 
-  if (!rows.length) {
-    return process.env.CONTACT_EMAIL || null;
-  }
+  const parsed = rows.length ? parseSettings(rows[0].settings) : {};
 
-  const parsed = parseSettings(rows[0].settings);
-  const supportEmail = String(parsed?.supportEmail || "").trim();
-  const footerEmail = String(parsed?.footerConfig?.contactEmail || "").trim();
+  const candidates = [
+    parsed?.salesEmail,
+    parsed?.orderNotificationEmail,
+    parsed?.supportEmail,
+    parsed?.contactEmail,
+    parsed?.footerContactEmail,
+    parsed?.footerConfig?.contactEmail,
+    parsed?.contactPage?.targetEmail,
+    process.env.SALES_EMAIL,
+    process.env.CONTACT_EMAIL,
+  ]
+    .map((value) => String(value || "").trim())
+    .filter((value) => value.length > 0)
+    .filter(isLikelyEmail);
 
-  return supportEmail || footerEmail || process.env.CONTACT_EMAIL || null;
+  return Array.from(new Set(candidates));
+};
+
+const attachPaymentWorkflowToOrderData = (
+  orderData: Record<string, unknown>,
+  paymentStatus: PaymentStatus,
+  requestedPaymentMethod: string,
+  extras?: Record<string, unknown>,
+): Record<string, unknown> => {
+  const existingPayment =
+    orderData.payment && typeof orderData.payment === "object"
+      ? (orderData.payment as Record<string, unknown>)
+      : {};
+
+  return {
+    ...orderData,
+    payment: {
+      ...existingPayment,
+      status: paymentStatus,
+      requestedMethod:
+        String(existingPayment.requestedMethod || "") || requestedPaymentMethod,
+      lastUpdatedAt: new Date().toISOString(),
+      ...extras,
+    },
+  };
 };
 
 // GET all orders (admin)
@@ -134,7 +250,7 @@ router.get("/:orderNumber", async (req: Request, res: Response) => {
     }
 
     const order = rows[0];
-    const orderData = order.order_data ? JSON.parse(order.order_data) : null;
+    const orderData = parseOrderData(order.order_data);
 
     res.json({
       id: order.id,
@@ -171,6 +287,21 @@ router.post("/", async (req: Request, res: Response) => {
     const shippingCost = Number(orderData.shipping || 0);
     const total = Number(orderData.total || 0);
 
+    const requestedMethod = normalizeRequestedPaymentMethod(
+      orderData?.paymentMethod,
+    );
+    const explicitPaymentStatus = normalizePaymentStatus(orderData?.paymentStatus);
+    const paymentStatus = explicitPaymentStatus || "unpaid";
+
+    const normalizedOrderData = attachPaymentWorkflowToOrderData(
+      { ...(orderData as Record<string, unknown>) },
+      paymentStatus,
+      requestedMethod,
+      {
+        collectedOnSite: false,
+      },
+    );
+
     // Insert order into database
     await pool.query(
       `INSERT INTO orders (
@@ -183,7 +314,7 @@ router.post("/", async (req: Request, res: Response) => {
         customerEmail,
         customerName,
         orderNumber,
-        JSON.stringify(orderData),
+        JSON.stringify(normalizedOrderData),
         subtotal,
         taxAmount,
         shippingCost,
@@ -196,7 +327,7 @@ router.post("/", async (req: Request, res: Response) => {
       customerEmail,
       customerName,
       orderNumber,
-      orderData,
+      normalizedOrderData,
     );
 
     res.status(201).json({
@@ -221,6 +352,7 @@ router.post("/request-approval", async (req: Request, res: Response) => {
       orderData,
       unavailableServices,
       requestNotes,
+      requestedPaymentMethod,
     } = req.body || {};
 
     if (!customerEmail || !customerName || !orderData) {
@@ -244,13 +376,29 @@ router.post("/request-approval", async (req: Request, res: Response) => {
       ? unavailableServices.map((service) => String(service))
       : [];
 
-    const requestPayload = {
-      ...orderData,
-      requestType: "approval_request",
-      unavailableServices: normalizedUnavailableServices,
-      requestNotes: String(requestNotes || "").trim() || undefined,
-      requestSubmittedAt: new Date().toISOString(),
-    };
+    const paymentMethodRequested = normalizeRequestedPaymentMethod(
+      requestedPaymentMethod || orderData?.paymentMethod,
+    );
+
+    const requestedPaymentStatus: PaymentStatus =
+      paymentMethodRequested === "cash_on_pickup"
+        ? "cash_on_pickup_requested"
+        : "pending_offline";
+
+    const requestPayload = attachPaymentWorkflowToOrderData(
+      {
+        ...(orderData as Record<string, unknown>),
+        requestType: "approval_request",
+        unavailableServices: normalizedUnavailableServices,
+        requestNotes: String(requestNotes || "").trim() || undefined,
+        requestSubmittedAt: new Date().toISOString(),
+      },
+      requestedPaymentStatus,
+      paymentMethodRequested,
+      {
+        collectedOnSite: false,
+      },
+    );
 
     await pool.query(
       `INSERT INTO orders (
@@ -273,61 +421,90 @@ router.post("/request-approval", async (req: Request, res: Response) => {
 
     let emailSent = false;
     let emailMessage = "Sales request saved. Email was not sent.";
+    let deliveredTo: string[] = [];
+    const failedRecipients: Array<{ recipient: string; message: string }> = [];
 
     try {
-      const salesEmail = await readSalesEmail();
-      if (salesEmail) {
-        const emailResult = await sendContactFormEmail(
-          salesEmail,
-          customerEmail,
-          customerName,
-          `Order Approval Request ${requestNumber}`,
-          [
-            {
-              id: "requestNumber",
-              type: "text",
-              label: "Request Number",
-              required: true,
-              value: requestNumber,
-            },
-            {
-              id: "customerEmail",
-              type: "email",
-              label: "Customer Email",
-              required: true,
-              value: customerEmail,
-            },
-            {
-              id: "services",
-              type: "text",
-              label: "Unavailable Services",
-              required: false,
-              value:
-                normalizedUnavailableServices.length > 0
-                  ? normalizedUnavailableServices.join(", ")
-                  : "Not provided",
-            },
-            {
-              id: "orderTotal",
-              type: "text",
-              label: "Requested Order Total",
-              required: true,
-              value: `$${total.toFixed(2)}`,
-            },
-            {
-              id: "message",
-              type: "textarea",
-              label: "Customer Notes",
-              required: false,
-              value:
-                String(requestNotes || "").trim() ||
-                "No additional notes provided.",
-            },
-          ],
-        );
+      const salesRecipients = await readSalesRecipients();
+      if (salesRecipients.length > 0) {
+        for (const recipient of salesRecipients) {
+          const emailResult = await sendContactFormEmail(
+            recipient,
+            customerEmail,
+            customerName,
+            `Order Approval Request ${requestNumber}`,
+            [
+              {
+                id: "requestNumber",
+                type: "text",
+                label: "Request Number",
+                required: true,
+                value: requestNumber,
+              },
+              {
+                id: "customerEmail",
+                type: "email",
+                label: "Customer Email",
+                required: true,
+                value: customerEmail,
+              },
+              {
+                id: "services",
+                type: "text",
+                label: "Unavailable Services",
+                required: false,
+                value:
+                  normalizedUnavailableServices.length > 0
+                    ? normalizedUnavailableServices.join(", ")
+                    : "Not provided",
+              },
+              {
+                id: "requestedPaymentMethod",
+                type: "text",
+                label: "Requested Payment Method",
+                required: false,
+                value: paymentMethodRequested,
+              },
+              {
+                id: "paymentStatus",
+                type: "text",
+                label: "Payment Status",
+                required: true,
+                value: requestedPaymentStatus,
+              },
+              {
+                id: "orderTotal",
+                type: "text",
+                label: "Requested Order Total",
+                required: true,
+                value: `$${total.toFixed(2)}`,
+              },
+              {
+                id: "message",
+                type: "textarea",
+                label: "Customer Notes",
+                required: false,
+                value:
+                  String(requestNotes || "").trim() ||
+                  "No additional notes provided.",
+              },
+            ],
+          );
 
-        emailSent = Boolean(emailResult.success);
-        emailMessage = emailResult.message || emailMessage;
+          if (emailResult.success) {
+            deliveredTo.push(recipient);
+          } else {
+            failedRecipients.push({
+              recipient,
+              message: String(emailResult.message || "Delivery failed"),
+            });
+          }
+        }
+
+        emailSent = deliveredTo.length > 0;
+        emailMessage = emailSent
+          ? `Sales request emailed to ${deliveredTo.join(", ")}`
+          : "Sales request saved, but email delivery failed for all recipients.";
       } else {
         emailMessage =
           "Sales request saved but no sales email recipient is configured.";
@@ -345,12 +522,136 @@ router.post("/request-approval", async (req: Request, res: Response) => {
       requestNumber,
       emailSent,
       message: emailMessage,
+      deliveredTo,
+      failedRecipients,
     });
   } catch (error) {
     console.error("Error creating assisted checkout request:", error);
     res
       .status(500)
       .json({ error: "Failed to submit assisted checkout request" });
+  }
+});
+
+// PUT update admin workflow data for an order (payment state, approval state, status)
+router.put("/:orderNumber/workflow", async (req: Request, res: Response) => {
+  try {
+    const { orderNumber } = req.params;
+    const {
+      status,
+      paymentStatus,
+      requestedPaymentMethod,
+      paymentDeclineReason,
+      approvalNotes,
+      approvedWithoutPayment,
+      trackingNumber,
+      shipper,
+    } = req.body || {};
+
+    const [rows] = await pool.query<OrderRow[]>(
+      "SELECT * FROM orders WHERE order_number = ?",
+      [orderNumber],
+    );
+
+    if (!rows.length) {
+      res.status(404).json({ error: "Order not found" });
+      return;
+    }
+
+    const existingOrder = rows[0];
+    const existingOrderData = parseOrderData(existingOrder.order_data);
+    const existingPayment =
+      existingOrderData.payment && typeof existingOrderData.payment === "object"
+        ? (existingOrderData.payment as Record<string, unknown>)
+        : {};
+
+    const normalizedPaymentStatus =
+      normalizePaymentStatus(paymentStatus) ||
+      normalizePaymentStatus(existingPayment.status) ||
+      "unpaid";
+
+    const normalizedRequestedPaymentMethod = normalizeRequestedPaymentMethod(
+      requestedPaymentMethod || existingPayment.requestedMethod,
+    );
+
+    const normalizedStatus =
+      normalizeOrderStatus(status) || String(existingOrder.status || "pending");
+
+    const shouldApproveWithoutPayment = Boolean(approvedWithoutPayment);
+    const paymentMarkedPaid =
+      normalizedPaymentStatus === "paid" ||
+      normalizedPaymentStatus === "cash_on_pickup_paid";
+
+    const resolvedStatus =
+      normalizedStatus === "approval_requested" &&
+      (shouldApproveWithoutPayment || paymentMarkedPaid)
+        ? "processing"
+        : normalizedStatus;
+
+    const updatedOrderData = {
+      ...existingOrderData,
+      approval: {
+        ...(existingOrderData.approval &&
+        typeof existingOrderData.approval === "object"
+          ? (existingOrderData.approval as Record<string, unknown>)
+          : {}),
+        approvedWithoutPayment: shouldApproveWithoutPayment,
+        notes: hasText(approvalNotes) ? approvalNotes.trim() : undefined,
+        approvedAt:
+          shouldApproveWithoutPayment || paymentMarkedPaid
+            ? new Date().toISOString()
+            : undefined,
+      },
+      payment: {
+        ...existingPayment,
+        status: normalizedPaymentStatus,
+        requestedMethod: normalizedRequestedPaymentMethod,
+        declineReason: hasText(paymentDeclineReason)
+          ? paymentDeclineReason.trim()
+          : undefined,
+        lastUpdatedAt: new Date().toISOString(),
+      },
+    };
+
+    const nextTrackingNumber =
+      typeof trackingNumber === "string"
+        ? trackingNumber.trim() || null
+        : existingOrder.tracking_number;
+
+    const nextShipper =
+      typeof shipper === "string"
+        ? shipper.trim() || null
+        : existingOrder.shipper;
+
+    await pool.query(
+      `UPDATE orders
+       SET status = ?,
+           tracking_number = ?,
+           shipper = ?,
+           order_data = ?,
+           updated_at = NOW()
+       WHERE order_number = ?`,
+      [
+        resolvedStatus,
+        nextTrackingNumber,
+        nextShipper,
+        JSON.stringify(updatedOrderData),
+        orderNumber,
+      ],
+    );
+
+    res.json({
+      success: true,
+      orderNumber,
+      status: resolvedStatus,
+      payment: updatedOrderData.payment,
+      approval: updatedOrderData.approval,
+      trackingNumber: nextTrackingNumber,
+      shipper: nextShipper,
+    });
+  } catch (error) {
+    console.error("Error updating order workflow:", error);
+    res.status(500).json({ error: "Failed to update order workflow" });
   }
 });
 
