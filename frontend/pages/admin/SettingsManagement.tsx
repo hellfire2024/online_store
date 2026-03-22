@@ -650,6 +650,22 @@ const SettingsManagement: React.FC = () => {
     try {
       let finalSettings = { ...settings };
 
+      finalSettings.fromAddress = {
+        firstName: "",
+        lastName: "",
+        street1: "",
+        city: "",
+        state: "",
+        zip: "",
+        country: "US",
+        email: "",
+        phone: "",
+        ...finalSettings.fromAddress,
+        country:
+          String(finalSettings.fromAddress?.country || "US").trim() || "US",
+        street2: String(finalSettings.fromAddress?.street2 || "").trim(),
+      };
+
       finalSettings.paymentApiKeys = {
         stripe: String(finalSettings.paymentApiKeys?.stripe || "").trim(),
         paypal: String(finalSettings.paymentApiKeys?.paypal || "").trim(),

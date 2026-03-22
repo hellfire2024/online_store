@@ -7,6 +7,22 @@ const router = Router();
 const hasText = (value: unknown): boolean =>
   typeof value === "string" && value.trim().length > 0;
 
+const normalizeFromAddress = (fromAddress: any) => {
+  if (!fromAddress || typeof fromAddress !== "object") {
+    return fromAddress;
+  }
+
+  return {
+    ...fromAddress,
+    country: hasText(fromAddress.country)
+      ? String(fromAddress.country).trim()
+      : "US",
+    street2: hasText(fromAddress.street2)
+      ? String(fromAddress.street2).trim()
+      : "",
+  };
+};
+
 const readSettings = async (): Promise<any> => {
   const [rows] = await pool.query<RowDataPacket[]>(
     "SELECT settings FROM site_settings WHERE id = 1",
@@ -29,22 +45,25 @@ const readSettings = async (): Promise<any> => {
 };
 
 const isFromAddressComplete = (fromAddress: any): boolean => {
-  if (!fromAddress || typeof fromAddress !== "object") {
+  const normalizedFromAddress = normalizeFromAddress(fromAddress);
+
+  if (!normalizedFromAddress || typeof normalizedFromAddress !== "object") {
     return false;
   }
 
   return (
-    hasText(fromAddress.firstName) &&
-    hasText(fromAddress.lastName) &&
-    hasText(fromAddress.street1) &&
-    hasText(fromAddress.city) &&
-    hasText(fromAddress.state) &&
-    hasText(fromAddress.zip) &&
-    hasText(fromAddress.country)
+    hasText(normalizedFromAddress.firstName) &&
+    hasText(normalizedFromAddress.lastName) &&
+    hasText(normalizedFromAddress.street1) &&
+    hasText(normalizedFromAddress.city) &&
+    hasText(normalizedFromAddress.state) &&
+    hasText(normalizedFromAddress.zip) &&
+    hasText(normalizedFromAddress.country)
   );
 };
 
 const buildCommerceStatus = (settings: any) => {
+  const normalizedFromAddress = normalizeFromAddress(settings?.fromAddress);
   const paymentProvider = String(settings?.paymentProvider || "none");
   const paymentApiKeys = settings?.paymentApiKeys || {};
   const paymentKey = String(paymentApiKeys?.[paymentProvider] || "").trim();
@@ -81,7 +100,7 @@ const buildCommerceStatus = (settings: any) => {
   const hasConfiguredShippingCarrier = enabledShippingCarriers.some(
     (item) => item.configured,
   );
-  const senderAddressReady = isFromAddressComplete(settings?.fromAddress);
+  const senderAddressReady = isFromAddressComplete(normalizedFromAddress);
   const shippingAvailable = hasConfiguredShippingCarrier && senderAddressReady;
 
   const taxConfig = settings?.taxConfig || {};
@@ -158,7 +177,7 @@ const buildCommerceStatus = (settings: any) => {
         ? null
         : !hasConfiguredShippingCarrier
           ? "Enable and configure at least one shipping carrier"
-          : "Sender address is incomplete",
+          : "Sender address is incomplete. Required fields: first name, last name, street address, city, state, ZIP, and country. Street address line 2 is optional.",
     },
     tax: {
       provider: taxProvider,
@@ -198,6 +217,10 @@ router.get("/", async (_req: Request, res: Response) => {
         ? JSON.parse(rows[0].settings)
         : rows[0].settings;
 
+    if (settings?.fromAddress) {
+      settings.fromAddress = normalizeFromAddress(settings.fromAddress);
+    }
+
     return res.json(settings);
   } catch (error) {
     console.error("Error fetching settings:", error);
@@ -214,6 +237,10 @@ router.put("/", async (req: Request, res: Response) => {
       "bytes",
     );
 
+    if (req.body?.fromAddress) {
+      req.body.fromAddress = normalizeFromAddress(req.body.fromAddress);
+    }
+
     const settingsJson = JSON.stringify(req.body);
 
     const [result] = await pool.query(
@@ -229,12 +256,10 @@ router.put("/", async (req: Request, res: Response) => {
     return res.json(req.body);
   } catch (error) {
     console.error("Error updating settings:", error);
-    return res
-      .status(500)
-      .json({
-        error: "Failed to update settings",
-        details: error instanceof Error ? error.message : String(error),
-      });
+    return res.status(500).json({
+      error: "Failed to update settings",
+      details: error instanceof Error ? error.message : String(error),
+    });
   }
 });
 
