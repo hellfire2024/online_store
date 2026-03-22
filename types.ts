@@ -180,7 +180,21 @@ export interface CustomerOrder {
   shippingCost: number;
   taxAmount: number;
   total: number;
-  status: "pending" | "processing" | "shipped" | "delivered" | "cancelled";
+  status:
+    | "approval_requested"
+    | "pending"
+    | "processing"
+    | "shipped"
+    | "delivered"
+    | "cancelled";
+  paymentStatus?:
+    | "unpaid"
+    | "paid"
+    | "declined"
+    | "pending_offline"
+    | "cash_on_pickup_requested"
+    | "cash_on_pickup_paid";
+  requestedPaymentMethod?: string;
   shippingAddress: CustomerAddress;
   items: CartItem[];
   trackingNumber?: string;
