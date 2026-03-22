@@ -1,4 +1,5 @@
 import { Router, Request, Response } from "express";
+import axios from "axios";
 import { pool } from "../db/connection.js";
 import { RowDataPacket } from "mysql2";
 import { v4 as uuidv4 } from "uuid";
@@ -326,6 +327,31 @@ router.get("/:orderNumber", async (req: Request, res: Response) => {
 });
 
 // POST create order and send confirmation email
+// ─── Helper: exchange PayPal client credentials for an access token ───────────
+async function getPayPalAccessToken(
+  clientId: string,
+  clientSecret: string,
+  sandbox: boolean,
+): Promise<string> {
+  const baseUrl = sandbox
+    ? "https://api-m.sandbox.paypal.com"
+    : "https://api-m.paypal.com";
+  const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString(
+    "base64",
+  );
+  const response = await axios.post(
+    `${baseUrl}/v1/oauth2/token`,
+    "grant_type=client_credentials",
+    {
+      headers: {
+        Authorization: `Basic ${credentials}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+    },
+  );
+  return response.data.access_token;
+}
+
 // POST create Stripe PaymentIntent for direct checkout
 router.post(
   "/create-payment-intent",
@@ -349,12 +375,10 @@ router.post(
       ).trim();
 
       if (!stripeSecretKey) {
-        return res
-          .status(400)
-          .json({
-            error:
-              "Stripe is not configured. Add your secret key in Settings → Payment.",
-          });
+        return res.status(400).json({
+          error:
+            "Stripe is not configured. Add your secret key in Settings → Payment.",
+        });
       }
 
       const stripe = new Stripe(stripeSecretKey);
@@ -387,38 +411,49 @@ router.post("/", async (req: Request, res: Response) => {
       return;
     }
 
+    const [settingsRows] = await pool.query<RowDataPacket[]>(
+      "SELECT settings FROM site_settings WHERE id = 1 LIMIT 1",
+    );
+    const rawSettings = settingsRows.length
+      ? parseSettings(settingsRows[0].settings)
+      : {};
+
     const orderId = uuidv4();
     const subtotal = Number(orderData.subtotal || 0);
     const taxAmount = Number(orderData.tax || 0);
     const shippingCost = Number(orderData.shipping || 0);
     const total = Number(orderData.total || 0);
-
     const requestedMethod = normalizeRequestedPaymentMethod(
       orderData?.paymentMethod,
     );
 
-    // If a Stripe PaymentIntent ID is provided, verify it server-side before
-    // marking the order as paid.
-    let verifiedPaymentIntentId: string | null = null;
-    const incomingPaymentIntentId = String(
-      orderData?.paymentIntentId || "",
-    ).trim();
     let explicitPaymentStatus = normalizePaymentStatus(
       orderData?.paymentStatus,
     );
 
+    let verifiedPaymentIntentId: string | null = null;
+    let verifiedPaypalCaptureId: string | null = null;
+    let verifiedSquarePaymentId: string | null = null;
+    let verifiedAuthorizeNetTxId: string | null = null;
+
+    const incomingPaymentIntentId = String(
+      orderData?.paymentIntentId || "",
+    ).trim();
+    const incomingPaypalCaptureId = String(
+      orderData?.paypalCaptureId || "",
+    ).trim();
+    const incomingSquarePaymentId = String(
+      orderData?.squarePaymentId || "",
+    ).trim();
+    const incomingAuthorizeNetTxId = String(
+      orderData?.authorizeNetTransactionId || "",
+    ).trim();
+
     if (incomingPaymentIntentId && incomingPaymentIntentId.startsWith("pi_")) {
       try {
-        const [settingsRows] = await pool.query<RowDataPacket[]>(
-          "SELECT settings FROM site_settings WHERE id = 1 LIMIT 1",
-        );
-        const rawSettings = settingsRows.length
-          ? parseSettings(settingsRows[0].settings)
-          : {};
         const stripeSecretKey = String(
           rawSettings?.paymentApiKeys?.stripe || "",
         ).trim();
-
         if (stripeSecretKey) {
           const stripe = new Stripe(stripeSecretKey);
           const intent = await stripe.paymentIntents.retrieve(
@@ -427,19 +462,125 @@ router.post("/", async (req: Request, res: Response) => {
           if (intent.status === "succeeded") {
             verifiedPaymentIntentId = incomingPaymentIntentId;
             explicitPaymentStatus = "paid";
-            console.log(
-              `[Order ${orderNumber}] Payment verified via Stripe: ${verifiedPaymentIntentId}`,
-            );
-          } else {
-            console.warn(
-              `[Order ${orderNumber}] PaymentIntent ${incomingPaymentIntentId} status: ${intent.status}`,
-            );
           }
         }
       } catch (stripeErr: any) {
         console.warn(
           `[Order ${orderNumber}] Could not verify PaymentIntent:`,
           stripeErr?.message,
+        );
+      }
+    }
+
+    if (incomingPaypalCaptureId && explicitPaymentStatus !== "paid") {
+      try {
+        const clientId = String(
+          rawSettings?.paymentApiKeys?.paypal || "",
+        ).trim();
+        const clientSecret = String(
+          (rawSettings?.paymentApiKeys as any)?.paypalSecret || "",
+        ).trim();
+        if (clientId && clientSecret) {
+          const sandbox = Boolean(
+            (rawSettings as any)?.paymentConfig?.paypalSandbox,
+          );
+          const baseUrl = sandbox
+            ? "https://api-m.sandbox.paypal.com"
+            : "https://api-m.paypal.com";
+          const token = await getPayPalAccessToken(
+            clientId,
+            clientSecret,
+            sandbox,
+          );
+          const captureResp = await axios.get(
+            `${baseUrl}/v2/payments/captures/${incomingPaypalCaptureId}`,
+            { headers: { Authorization: `Bearer ${token}` } },
+          );
+          if (captureResp.data?.status === "COMPLETED") {
+            verifiedPaypalCaptureId = incomingPaypalCaptureId;
+            explicitPaymentStatus = "paid";
+          }
+        }
+      } catch (ppErr: any) {
+        console.warn(
+          `[Order ${orderNumber}] Could not verify PayPal capture:`,
+          ppErr?.message,
+        );
+      }
+    }
+
+    if (incomingSquarePaymentId && explicitPaymentStatus !== "paid") {
+      try {
+        const squareToken = String(
+          rawSettings?.paymentApiKeys?.square || "",
+        ).trim();
+        if (squareToken) {
+          const sandbox = Boolean(
+            (rawSettings as any)?.paymentConfig?.squareSandbox,
+          );
+          const baseUrl = sandbox
+            ? "https://connect.squareupsandbox.com"
+            : "https://connect.squareup.com";
+          const paymentResp = await axios.get(
+            `${baseUrl}/v2/payments/${incomingSquarePaymentId}`,
+            {
+              headers: {
+                Authorization: `Bearer ${squareToken}`,
+                "Square-Version": "2024-01-18",
+              },
+            },
+          );
+          if (paymentResp.data?.payment?.status === "COMPLETED") {
+            verifiedSquarePaymentId = incomingSquarePaymentId;
+            explicitPaymentStatus = "paid";
+          }
+        }
+      } catch (sqErr: any) {
+        console.warn(
+          `[Order ${orderNumber}] Could not verify Square payment:`,
+          sqErr?.message,
+        );
+      }
+    }
+
+    if (incomingAuthorizeNetTxId && explicitPaymentStatus !== "paid") {
+      try {
+        const authorizeNetKey = String(
+          rawSettings?.paymentApiKeys?.authorizeNet || "",
+        ).trim();
+        const [apiLoginId, transactionKey] = authorizeNetKey.split(":");
+        if (apiLoginId && transactionKey) {
+          const sandbox = Boolean(
+            (rawSettings as any)?.paymentConfig?.authorizeNetSandbox,
+          );
+          const apiUrl = sandbox
+            ? "https://apitest.authorize.net/xml/v1/request.api"
+            : "https://api.authorize.net/xml/v1/request.api";
+          const detailsResp = await axios.post(apiUrl, {
+            getTransactionDetailsRequest: {
+              merchantAuthentication: {
+                name: apiLoginId,
+                transactionKey,
+              },
+              transId: incomingAuthorizeNetTxId,
+            },
+          });
+          const txStatus = detailsResp.data?.transaction?.transactionStatus;
+          if (
+            [
+              "settledSuccessfully",
+              "capturedPendingSettlement",
+              "authorizedPendingCapture",
+            ].includes(txStatus)
+          ) {
+            verifiedAuthorizeNetTxId = incomingAuthorizeNetTxId;
+            explicitPaymentStatus = "paid";
+          }
+        }
+      } catch (anErr: any) {
+        console.warn(
+          `[Order ${orderNumber}] Could not verify Authorize.Net transaction:`,
+          anErr?.message,
         );
       }
     }
@@ -456,6 +597,18 @@ router.post("/", async (req: Request, res: Response) => {
           stripePaymentIntentId: verifiedPaymentIntentId,
           paidAt: new Date().toISOString(),
         }),
+        ...(verifiedPaypalCaptureId && {
+          paypalCaptureId: verifiedPaypalCaptureId,
+          paidAt: new Date().toISOString(),
+        }),
+        ...(verifiedSquarePaymentId && {
+          squarePaymentId: verifiedSquarePaymentId,
+          paidAt: new Date().toISOString(),
+        }),
+        ...(verifiedAuthorizeNetTxId && {
+          authorizeNetTransactionId: verifiedAuthorizeNetTxId,
+          paidAt: new Date().toISOString(),
+        }),
         invoiceIssuedAt:
           requestedMethod === "invoice" || paymentStatus === "pending_offline"
             ? new Date().toISOString()
@@ -463,7 +616,6 @@ router.post("/", async (req: Request, res: Response) => {
       },
     );
 
-    // Insert order into database
     await pool.query(
       `INSERT INTO orders (
         id, customer_id, customer_email, customer_name, order_number, order_data,
@@ -483,7 +635,6 @@ router.post("/", async (req: Request, res: Response) => {
       ],
     );
 
-    // Send order confirmation email
     const emailResult = await sendOrderConfirmationEmail(
       customerEmail,
       customerName,
@@ -523,9 +674,8 @@ router.post("/request-approval", async (req: Request, res: Response) => {
 
     const requestId = uuidv4();
     const requestNumber = `REQ-${Date.now().toString().slice(-8)}-${Math.floor(
-      Math.random() * 900 + 100,
+      1000 + Math.random() * 9000,
     )}`;
-
     const subtotal = Number(orderData.subtotal || 0);
     const taxAmount = Number(orderData.tax || 0);
     const shippingCost = Number(orderData.shipping || 0);
@@ -1113,6 +1263,323 @@ router.put(
     } catch (error) {
       console.error("Error updating order:", error);
       res.status(500).json({ error: "Failed to update order" });
+    }
+  },
+);
+
+// POST create PayPal order for checkout
+router.post(
+  "/create-paypal-order",
+  async (req: Request, res: Response): Promise<any> => {
+    try {
+      const { amount } = req.body;
+      if (!amount || Number(amount) <= 0) {
+        return res.status(400).json({ error: "Invalid payment amount" });
+      }
+
+      const [settingsRows] = await pool.query<RowDataPacket[]>(
+        "SELECT settings FROM site_settings WHERE id = 1 LIMIT 1",
+      );
+      const rawSettings = settingsRows.length
+        ? parseSettings(settingsRows[0].settings)
+        : {};
+      const clientId = String(rawSettings?.paymentApiKeys?.paypal || "").trim();
+      const clientSecret = String(
+        (rawSettings?.paymentApiKeys as any)?.paypalSecret || "",
+      ).trim();
+
+      if (!clientId || !clientSecret) {
+        return res
+          .status(400)
+          .json({
+            error: "PayPal credentials not configured in Settings → Payment.",
+          });
+      }
+
+      const sandbox = Boolean(
+        (rawSettings as any)?.paymentConfig?.paypalSandbox,
+      );
+      const baseUrl = sandbox
+        ? "https://api-m.sandbox.paypal.com"
+        : "https://api-m.paypal.com";
+
+      const accessToken = await getPayPalAccessToken(
+        clientId,
+        clientSecret,
+        sandbox,
+      );
+
+      const orderResponse = await axios.post(
+        `${baseUrl}/v2/checkout/orders`,
+        {
+          intent: "CAPTURE",
+          purchase_units: [
+            {
+              amount: {
+                currency_code: "USD",
+                value: Number(amount).toFixed(2),
+              },
+            },
+          ],
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+        },
+      );
+
+      return res.json({ orderId: orderResponse.data.id });
+    } catch (error: any) {
+      console.error(
+        "PayPal create order error:",
+        error?.response?.data || error?.message,
+      );
+      return res.status(500).json({
+        error:
+          error?.response?.data?.message || "Failed to create PayPal order",
+      });
+    }
+  },
+);
+
+// POST capture PayPal payment after user approval
+router.post(
+  "/capture-paypal-payment",
+  async (req: Request, res: Response): Promise<any> => {
+    try {
+      const { orderId } = req.body;
+      if (!orderId) {
+        return res.status(400).json({ error: "PayPal orderId is required" });
+      }
+
+      const [settingsRows] = await pool.query<RowDataPacket[]>(
+        "SELECT settings FROM site_settings WHERE id = 1 LIMIT 1",
+      );
+      const rawSettings = settingsRows.length
+        ? parseSettings(settingsRows[0].settings)
+        : {};
+      const clientId = String(rawSettings?.paymentApiKeys?.paypal || "").trim();
+      const clientSecret = String(
+        (rawSettings?.paymentApiKeys as any)?.paypalSecret || "",
+      ).trim();
+
+      if (!clientId || !clientSecret) {
+        return res
+          .status(400)
+          .json({ error: "PayPal credentials not configured." });
+      }
+
+      const sandbox = Boolean(
+        (rawSettings as any)?.paymentConfig?.paypalSandbox,
+      );
+      const baseUrl = sandbox
+        ? "https://api-m.sandbox.paypal.com"
+        : "https://api-m.paypal.com";
+
+      const accessToken = await getPayPalAccessToken(
+        clientId,
+        clientSecret,
+        sandbox,
+      );
+
+      const captureResponse = await axios.post(
+        `${baseUrl}/v2/checkout/orders/${orderId}/capture`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+        },
+      );
+
+      const captureData = captureResponse.data;
+      if (captureData.status !== "COMPLETED") {
+        return res.status(400).json({
+          error: `PayPal order not completed. Status: ${captureData.status}`,
+        });
+      }
+
+      const captureId =
+        captureData.purchase_units?.[0]?.payments?.captures?.[0]?.id;
+      return res.json({ captureId, status: captureData.status });
+    } catch (error: any) {
+      console.error(
+        "PayPal capture error:",
+        error?.response?.data || error?.message,
+      );
+      return res.status(500).json({
+        error:
+          error?.response?.data?.message || "Failed to capture PayPal payment",
+      });
+    }
+  },
+);
+
+// POST create Square payment using a card nonce from the frontend SDK
+router.post(
+  "/create-square-payment",
+  async (req: Request, res: Response): Promise<any> => {
+    try {
+      const { nonce, amount, orderNumber } = req.body;
+      if (!nonce || !amount || Number(amount) <= 0) {
+        return res.status(400).json({ error: "Invalid payment data" });
+      }
+
+      const [settingsRows] = await pool.query<RowDataPacket[]>(
+        "SELECT settings FROM site_settings WHERE id = 1 LIMIT 1",
+      );
+      const rawSettings = settingsRows.length
+        ? parseSettings(settingsRows[0].settings)
+        : {};
+      const accessToken = String(
+        rawSettings?.paymentApiKeys?.square || "",
+      ).trim();
+      const locationId = String(
+        (rawSettings?.paymentApiKeys as any)?.squareLocationId || "",
+      ).trim();
+
+      if (!accessToken || !locationId) {
+        return res.status(400).json({
+          error:
+            "Square credentials not configured. Add Access Token and Location ID in Settings → Payment.",
+        });
+      }
+
+      const sandbox = Boolean(
+        (rawSettings as any)?.paymentConfig?.squareSandbox,
+      );
+      const baseUrl = sandbox
+        ? "https://connect.squareupsandbox.com"
+        : "https://connect.squareup.com";
+
+      const idempotencyKey = uuidv4();
+      const response = await axios.post(
+        `${baseUrl}/v2/payments`,
+        {
+          source_id: nonce,
+          idempotency_key: idempotencyKey,
+          amount_money: {
+            amount: Math.round(Number(amount) * 100),
+            currency: "USD",
+          },
+          location_id: locationId,
+          reference_id: orderNumber
+            ? String(orderNumber).substring(0, 40)
+            : undefined,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+            "Square-Version": "2024-01-18",
+          },
+        },
+      );
+
+      const payment = response.data?.payment;
+      if (!payment || payment.status !== "COMPLETED") {
+        return res.status(400).json({
+          error: `Square payment not completed. Status: ${payment?.status || "unknown"}`,
+        });
+      }
+
+      return res.json({ paymentId: payment.id, status: payment.status });
+    } catch (error: any) {
+      console.error(
+        "Square payment error:",
+        error?.response?.data || error?.message,
+      );
+      const squareError =
+        error?.response?.data?.errors?.[0]?.detail || error?.message;
+      return res
+        .status(500)
+        .json({ error: squareError || "Failed to create Square payment" });
+    }
+  },
+);
+
+// POST charge via Authorize.Net using an Accept.js opaque data token
+router.post(
+  "/charge-authorize-net",
+  async (req: Request, res: Response): Promise<any> => {
+    try {
+      const { dataDescriptor, dataValue, amount, orderNumber } = req.body;
+      if (!dataDescriptor || !dataValue || !amount || Number(amount) <= 0) {
+        return res.status(400).json({ error: "Invalid payment data" });
+      }
+
+      const [settingsRows] = await pool.query<RowDataPacket[]>(
+        "SELECT settings FROM site_settings WHERE id = 1 LIMIT 1",
+      );
+      const rawSettings = settingsRows.length
+        ? parseSettings(settingsRows[0].settings)
+        : {};
+      const authorizeNetKey = String(
+        rawSettings?.paymentApiKeys?.authorizeNet || "",
+      ).trim();
+      const parts = authorizeNetKey.split(":");
+      const apiLoginId = parts[0] || "";
+      const transactionKey = parts[1] || "";
+
+      if (!apiLoginId || !transactionKey) {
+        return res.status(400).json({
+          error:
+            "Authorize.Net credentials not configured. Add API Login ID and Transaction Key in Settings → Payment.",
+        });
+      }
+
+      const sandbox = Boolean(
+        (rawSettings as any)?.paymentConfig?.authorizeNetSandbox,
+      );
+      const apiUrl = sandbox
+        ? "https://apitest.authorize.net/xml/v1/request.api"
+        : "https://api.authorize.net/xml/v1/request.api";
+
+      const response = await axios.post(apiUrl, {
+        createTransactionRequest: {
+          merchantAuthentication: { name: apiLoginId, transactionKey },
+          refId: orderNumber ? String(orderNumber).substring(0, 20) : undefined,
+          transactionRequest: {
+            transactionType: "authCaptureTransaction",
+            amount: Number(amount).toFixed(2),
+            payment: {
+              opaqueData: { dataDescriptor, dataValue },
+            },
+          },
+        },
+      });
+
+      const messages = response.data?.messages;
+      const transactionResponse = response.data?.transactionResponse;
+
+      if (messages?.resultCode === "Error") {
+        const errorMsg =
+          messages?.message?.[0]?.text || "Transaction rejected by gateway";
+        return res.status(400).json({ error: errorMsg });
+      }
+
+      if (transactionResponse?.responseCode !== "1") {
+        const errorMsg =
+          transactionResponse?.errors?.error?.[0]?.errorText ||
+          "Transaction declined";
+        return res.status(400).json({ error: errorMsg });
+      }
+
+      return res.json({
+        transactionId: transactionResponse.transId,
+        authCode: transactionResponse.authCode,
+      });
+    } catch (error: any) {
+      console.error(
+        "Authorize.Net charge error:",
+        error?.response?.data || error?.message,
+      );
+      return res
+        .status(500)
+        .json({ error: error?.message || "Failed to process payment" });
     }
   },
 );

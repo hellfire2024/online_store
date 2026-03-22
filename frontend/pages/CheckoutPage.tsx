@@ -1,7 +1,8 @@
-import React, { useState, useMemo, useRef } from "react";
+import React, { useState, useMemo, useRef, useCallback } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements } from "@stripe/react-stripe-js";
+import { PayPalScriptProvider } from "@paypal/react-paypal-js";
 import { useCart } from "../context/CartContext";
 import { useCustomerAuth } from "../context/CustomerAuthContext";
 import { useSiteSettings } from "../context/SiteSettingsContext";
@@ -12,6 +13,13 @@ import { calculateTax } from "../services/taxService";
 import StripePaymentSection, {
   StripePaymentSectionHandle,
 } from "../components/StripePaymentSection";
+import PayPalPaymentSection from "../components/PayPalPaymentSection";
+import SquarePaymentSection, {
+  SquarePaymentSectionHandle,
+} from "../components/SquarePaymentSection";
+import AuthorizeNetPaymentSection, {
+  AuthorizeNetPaymentSectionHandle,
+} from "../components/AuthorizeNetPaymentSection";
 
 const CheckoutPage: React.FC = () => {
   const { cartItems, clearCart, itemCount } = useCart();
@@ -65,6 +73,27 @@ const CheckoutPage: React.FC = () => {
   const [stripePublishableKey, setStripePublishableKey] = useState<string>("");
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const stripePaymentRef = useRef<StripePaymentSectionHandle>(null);
+  const squarePaymentRef = useRef<SquarePaymentSectionHandle>(null);
+  const authorizeNetPaymentRef = useRef<AuthorizeNetPaymentSectionHandle>(null);
+
+  // Config state for non-Stripe providers
+  const [paypalConfig, setPaypalConfig] = useState<{
+    clientId: string;
+    sandbox: boolean;
+  } | null>(null);
+  const [squareConfig, setSquareConfig] = useState<{
+    applicationId: string;
+    locationId: string;
+    sandbox: boolean;
+  } | null>(null);
+  const [authorizeNetConfig, setAuthorizeNetConfig] = useState<{
+    apiLoginId: string;
+    publicClientKey: string;
+    sandbox: boolean;
+  } | null>(null);
+
+  // Pending PayPal order details — populated when PayPal createOrder fires
+  const pendingPaypalOrderRef = useRef<any>(null);
 
   const usStateMap: Record<string, string> = {
     alabama: "AL",
@@ -302,17 +331,35 @@ const CheckoutPage: React.FC = () => {
     loadCommerceStatus();
   }, [siteSettings]);
 
-  // Load Stripe publishable key when payment provider is Stripe
+  // Load payment-provider config when the selected provider changes
   React.useEffect(() => {
-    if (
-      String(siteSettings?.paymentProvider || "").toLowerCase() === "stripe"
-    ) {
+    const provider = String(siteSettings?.paymentProvider || "").toLowerCase();
+    if (provider === "stripe") {
       fetch("/api/settings/stripe-config")
         .then((r) => r.json())
-        .then((data) => {
-          if (data?.publishableKey) {
-            setStripePublishableKey(data.publishableKey);
-          }
+        .then((d) => {
+          if (d?.publishableKey) setStripePublishableKey(d.publishableKey);
+        })
+        .catch(() => {});
+    } else if (provider === "paypal") {
+      fetch("/api/settings/paypal-config")
+        .then((r) => r.json())
+        .then((d) => {
+          if (d?.clientId) setPaypalConfig(d);
+        })
+        .catch(() => {});
+    } else if (provider === "square") {
+      fetch("/api/settings/square-config")
+        .then((r) => r.json())
+        .then((d) => {
+          if (d?.applicationId) setSquareConfig(d);
+        })
+        .catch(() => {});
+    } else if (provider === "authorizenet") {
+      fetch("/api/settings/authorizedotnet-config")
+        .then((r) => r.json())
+        .then((d) => {
+          if (d?.apiLoginId) setAuthorizeNetConfig(d);
         })
         .catch(() => {});
     }
@@ -630,6 +677,37 @@ const CheckoutPage: React.FC = () => {
     calculateTaxAsync();
   }, [cartItems, shippingState, shippingZip, siteSettings, addToast]);
 
+  const createPayPalOrder = useCallback(async (): Promise<string> => {
+    const res = await fetch("/api/orders/create-paypal-order", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ amount: taxCalculation.total }),
+    });
+    const data = await res.json();
+    if (!res.ok || !data?.orderId) {
+      throw new Error(data?.error || "Failed to create PayPal order");
+    }
+    return data.orderId;
+  }, [taxCalculation.total]);
+
+  const handlePayPalApprove = useCallback(
+    (captureId: string) => {
+      pendingPaypalOrderRef.current = { captureId };
+      addToast(
+        "PayPal payment approved. You can now place the order.",
+        "success",
+      );
+    },
+    [addToast],
+  );
+
+  const handlePayPalError = useCallback(
+    (message: string) => {
+      addToast(message, "error");
+    },
+    [addToast],
+  );
+
   const handlePlaceOrder = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -666,9 +744,23 @@ const CheckoutPage: React.FC = () => {
     }
 
     if (!isAssistedCheckoutRequired) {
-      if (!stripePaymentRef.current) {
+      const activeProvider = String(
+        siteSettings?.paymentProvider || "",
+      ).toLowerCase();
+      if (activeProvider === "stripe" && !stripePaymentRef.current) {
+        addToast("Stripe payment form is not ready. Please wait.", "error");
+        return;
+      }
+      if (activeProvider === "square" && !squarePaymentRef.current) {
+        addToast("Square payment form is not ready. Please wait.", "error");
+        return;
+      }
+      if (
+        activeProvider === "authorizenet" &&
+        !authorizeNetPaymentRef.current
+      ) {
         addToast(
-          "Payment form is not ready. Please wait and try again.",
+          "Authorize.Net payment form is not ready. Please wait.",
           "error",
         );
         return;
@@ -836,9 +928,12 @@ const CheckoutPage: React.FC = () => {
         return;
       }
 
-      // Direct checkout: charge the card via Stripe before creating the order
-      if (stripePaymentRef.current) {
-        addToast("Processing payment...", "info");
+      // Direct checkout: collect payment using the configured provider before creating the order
+      const activeProvider = String(
+        siteSettings?.paymentProvider || "none",
+      ).toLowerCase();
+      if (activeProvider === "stripe" && stripePaymentRef.current) {
+        addToast("Processing Stripe payment...", "info");
         const paymentResult = await stripePaymentRef.current.pay(
           taxCalculation.total,
           orderDetails.orderNumber,
@@ -858,8 +953,67 @@ const CheckoutPage: React.FC = () => {
           return;
         }
 
-        // Payment succeeded — attach the Stripe PaymentIntent ID so the backend can verify it
         (orderDetails as any).paymentIntentId = paymentResult.paymentIntentId;
+        (orderDetails as any).paymentStatus = "paid";
+      }
+
+      if (activeProvider === "square" && squarePaymentRef.current) {
+        addToast("Processing Square payment...", "info");
+        const paymentResult = await squarePaymentRef.current.pay(
+          taxCalculation.total,
+          orderDetails.orderNumber,
+          {
+            name: `${formData.firstName} ${formData.lastName}`,
+            email: formData.email,
+          },
+        );
+
+        if (!paymentResult.success) {
+          addToast(paymentResult.error || "Square payment failed.", "error");
+          setIsProcessingPayment(false);
+          return;
+        }
+
+        (orderDetails as any).squarePaymentId = paymentResult.transactionId;
+        (orderDetails as any).paymentStatus = "paid";
+      }
+
+      if (activeProvider === "authorizenet" && authorizeNetPaymentRef.current) {
+        addToast("Processing Authorize.Net payment...", "info");
+        const paymentResult = await authorizeNetPaymentRef.current.pay(
+          taxCalculation.total,
+          orderDetails.orderNumber,
+          {
+            name: `${formData.firstName} ${formData.lastName}`,
+            email: formData.email,
+          },
+        );
+
+        if (!paymentResult.success) {
+          addToast(
+            paymentResult.error || "Authorize.Net payment failed.",
+            "error",
+          );
+          setIsProcessingPayment(false);
+          return;
+        }
+
+        (orderDetails as any).authorizeNetTransactionId =
+          paymentResult.transactionId;
+        (orderDetails as any).paymentStatus = "paid";
+      }
+
+      if (activeProvider === "paypal") {
+        const pendingPayPalOrder = pendingPaypalOrderRef.current;
+        if (!pendingPayPalOrder?.captureId) {
+          addToast(
+            "Complete the PayPal checkout using the button before placing the order.",
+            "error",
+          );
+          setIsProcessingPayment(false);
+          return;
+        }
+        (orderDetails as any).paypalCaptureId = pendingPayPalOrder.captureId;
         (orderDetails as any).paymentStatus = "paid";
       }
 
@@ -1273,15 +1427,77 @@ const CheckoutPage: React.FC = () => {
                   <h2 className="text-2xl font-semibold text-white mt-8 mb-6">
                     Payment Details
                   </h2>
-                  {stripePromise ? (
-                    <Elements stripe={stripePromise}>
-                      <StripePaymentSection ref={stripePaymentRef} />
-                    </Elements>
+                  {String(siteSettings?.paymentProvider || "").toLowerCase() ===
+                  "stripe" ? (
+                    stripePromise ? (
+                      <Elements stripe={stripePromise}>
+                        <StripePaymentSection ref={stripePaymentRef} />
+                      </Elements>
+                    ) : (
+                      <div className="p-3 bg-amber-900/30 border border-amber-500/50 rounded-md text-amber-200 text-sm">
+                        {stripePublishableKey
+                          ? "Loading payment form..."
+                          : "Stripe publishable key is not configured. Go to Settings → Payment and enter both your Stripe Publishable Key and Secret Key."}
+                      </div>
+                    )
+                  ) : String(
+                      siteSettings?.paymentProvider || "",
+                    ).toLowerCase() === "paypal" ? (
+                    paypalConfig?.clientId ? (
+                      <PayPalScriptProvider
+                        options={{
+                          clientId: paypalConfig.clientId,
+                          currency: "USD",
+                          intent: "capture",
+                        }}
+                      >
+                        <PayPalPaymentSection
+                          onCreateOrder={createPayPalOrder}
+                          onApprove={handlePayPalApprove}
+                          onError={handlePayPalError}
+                          disabled={isProcessingPayment}
+                        />
+                      </PayPalScriptProvider>
+                    ) : (
+                      <div className="p-3 bg-amber-900/30 border border-amber-500/50 rounded-md text-amber-200 text-sm">
+                        PayPal Client ID is not configured. Go to Settings →
+                        Payment and enter your PayPal Client ID and Secret.
+                      </div>
+                    )
+                  ) : String(
+                      siteSettings?.paymentProvider || "",
+                    ).toLowerCase() === "square" ? (
+                    squareConfig?.applicationId && squareConfig?.locationId ? (
+                      <SquarePaymentSection
+                        ref={squarePaymentRef}
+                        config={squareConfig}
+                      />
+                    ) : (
+                      <div className="p-3 bg-amber-900/30 border border-amber-500/50 rounded-md text-amber-200 text-sm">
+                        Square Application ID or Location ID is not configured.
+                        Go to Settings → Payment and enter your Square Access
+                        Token, Application ID, and Location ID.
+                      </div>
+                    )
+                  ) : String(
+                      siteSettings?.paymentProvider || "",
+                    ).toLowerCase() === "authorizenet" ? (
+                    authorizeNetConfig?.apiLoginId &&
+                    authorizeNetConfig?.publicClientKey ? (
+                      <AuthorizeNetPaymentSection
+                        ref={authorizeNetPaymentRef}
+                        config={authorizeNetConfig}
+                      />
+                    ) : (
+                      <div className="p-3 bg-amber-900/30 border border-amber-500/50 rounded-md text-amber-200 text-sm">
+                        Authorize.Net API Login ID or Public Client Key is not
+                        configured. Go to Settings → Payment and enter your API
+                        Login ID, Transaction Key, and Public Client Key.
+                      </div>
+                    )
                   ) : (
                     <div className="p-3 bg-amber-900/30 border border-amber-500/50 rounded-md text-amber-200 text-sm">
-                      {stripePublishableKey
-                        ? "Loading payment form..."
-                        : "Stripe publishable key is not configured. Go to Settings → Payment and enter both your Stripe Publishable Key and Secret Key."}
+                      No supported payment provider is configured.
                     </div>
                   )}
                 </>

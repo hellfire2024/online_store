@@ -435,11 +435,23 @@ const SettingsManagement: React.FC = () => {
           (finalSettings.paymentApiKeys as any)?.stripePublishableKey || "",
         ).trim(),
         paypal: String(finalSettings.paymentApiKeys?.paypal || "").trim(),
+        paypalSecret: String(
+          (finalSettings.paymentApiKeys as any)?.paypalSecret || "",
+        ).trim(),
         square: String(finalSettings.paymentApiKeys?.square || "").trim(),
+        squareApplicationId: String(
+          (finalSettings.paymentApiKeys as any)?.squareApplicationId || "",
+        ).trim(),
+        squareLocationId: String(
+          (finalSettings.paymentApiKeys as any)?.squareLocationId || "",
+        ).trim(),
         authorizeNet: String(
           finalSettings.paymentApiKeys?.authorizeNet || "",
         ).trim(),
-      };
+        authorizeNetPublicKey: String(
+          (finalSettings.paymentApiKeys as any)?.authorizeNetPublicKey || "",
+        ).trim(),
+      } as any;
 
       const selectedPaymentProvider = String(
         finalSettings.paymentProvider || "none",
@@ -1125,49 +1137,115 @@ const SettingsManagement: React.FC = () => {
             )}
 
             {settings.paymentProvider === "paypal" && (
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">
-                  PayPal Client ID
-                </label>
-                <input
-                  type="password"
-                  value={settings.paymentApiKeys?.paypal || ""}
-                  onChange={(e) =>
-                    handleApiKeyChange(
-                      "paymentApiKeys",
-                      "paypal",
-                      e.target.value,
-                    )
-                  }
-                  placeholder="************************"
-                  className={inputClasses}
-                />
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">
+                    PayPal Client ID
+                  </label>
+                  <input
+                    type="text"
+                    value={settings.paymentApiKeys?.paypal || ""}
+                    onChange={(e) =>
+                      handleApiKeyChange(
+                        "paymentApiKeys",
+                        "paypal",
+                        e.target.value,
+                      )
+                    }
+                    placeholder="PayPal Client ID"
+                    className={inputClasses}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Public key used by the checkout page.
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">
+                    PayPal Client Secret
+                  </label>
+                  <input
+                    type="password"
+                    value={(settings.paymentApiKeys as any)?.paypalSecret || ""}
+                    onChange={(e) =>
+                      handleApiKeyChange(
+                        "paymentApiKeys",
+                        "paypalSecret",
+                        e.target.value,
+                      )
+                    }
+                    placeholder="PayPal Client Secret"
+                    className={inputClasses}
+                  />
+                </div>
               </div>
             )}
 
             {settings.paymentProvider === "square" && (
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">
-                  Square Access Token
-                </label>
-                <input
-                  type="password"
-                  value={settings.paymentApiKeys?.square || ""}
-                  onChange={(e) =>
-                    handleApiKeyChange(
-                      "paymentApiKeys",
-                      "square",
-                      e.target.value,
-                    )
-                  }
-                  placeholder="EAAA************************"
-                  className={inputClasses}
-                />
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">
+                    Square Access Token
+                  </label>
+                  <input
+                    type="password"
+                    value={settings.paymentApiKeys?.square || ""}
+                    onChange={(e) =>
+                      handleApiKeyChange(
+                        "paymentApiKeys",
+                        "square",
+                        e.target.value,
+                      )
+                    }
+                    placeholder="EAAA************************"
+                    className={inputClasses}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">
+                    Square Application ID
+                  </label>
+                  <input
+                    type="text"
+                    value={
+                      (settings.paymentApiKeys as any)?.squareApplicationId ||
+                      ""
+                    }
+                    onChange={(e) =>
+                      handleApiKeyChange(
+                        "paymentApiKeys",
+                        "squareApplicationId",
+                        e.target.value,
+                      )
+                    }
+                    placeholder="sandbox-sq0idb-..."
+                    className={inputClasses}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">
+                    Square Location ID
+                  </label>
+                  <input
+                    type="text"
+                    value={
+                      (settings.paymentApiKeys as any)?.squareLocationId || ""
+                    }
+                    onChange={(e) =>
+                      handleApiKeyChange(
+                        "paymentApiKeys",
+                        "squareLocationId",
+                        e.target.value,
+                      )
+                    }
+                    placeholder="Location ID"
+                    className={inputClasses}
+                  />
+                </div>
               </div>
             )}
 
             {settings.paymentProvider === "authorizeNet" && (
-              <>
+              <div className="space-y-3">
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-1">
                     API Login ID
@@ -1208,7 +1286,31 @@ const SettingsManagement: React.FC = () => {
                     className={inputClasses}
                   />
                 </div>
-              </>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">
+                    Public Client Key
+                  </label>
+                  <input
+                    type="text"
+                    value={
+                      (settings.paymentApiKeys as any)?.authorizeNetPublicKey ||
+                      ""
+                    }
+                    onChange={(e) =>
+                      handleApiKeyChange(
+                        "paymentApiKeys",
+                        "authorizeNetPublicKey",
+                        e.target.value,
+                      )
+                    }
+                    placeholder="Public Client Key"
+                    className={inputClasses}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Used by Accept.js in the browser.
+                  </p>
+                </div>
+              </div>
             )}
 
             <div className="flex justify-between items-center pt-4">

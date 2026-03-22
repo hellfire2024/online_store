@@ -203,6 +203,62 @@ router.get("/stripe-config", async (_req: Request, res: Response) => {
   }
 });
 
+// Safe: returns only the PayPal Client ID (never the Client Secret)
+router.get("/paypal-config", async (_req: Request, res: Response) => {
+  try {
+    const settings = await readSettings();
+    const clientId = String(settings?.paymentApiKeys?.paypal || "").trim();
+    const sandbox = Boolean((settings as any)?.paymentConfig?.paypalSandbox);
+    return res.json({ clientId, sandbox });
+  } catch (error) {
+    console.error("Error fetching paypal config:", error);
+    return res.status(500).json({ error: "Failed to fetch paypal config" });
+  }
+});
+
+// Safe: returns Square Application ID and Location ID (never the Access Token)
+router.get("/square-config", async (_req: Request, res: Response) => {
+  try {
+    const settings = await readSettings();
+    const applicationId = String(
+      (settings?.paymentApiKeys as any)?.squareApplicationId || "",
+    ).trim();
+    const locationId = String(
+      (settings?.paymentApiKeys as any)?.squareLocationId || "",
+    ).trim();
+    const sandbox = Boolean((settings as any)?.paymentConfig?.squareSandbox);
+    return res.json({ applicationId, locationId, sandbox });
+  } catch (error) {
+    console.error("Error fetching square config:", error);
+    return res.status(500).json({ error: "Failed to fetch square config" });
+  }
+});
+
+// Safe: returns Authorize.Net API Login ID and Public Client Key (never the Transaction Key)
+router.get("/authorizedotnet-config", async (_req: Request, res: Response) => {
+  try {
+    const settings = await readSettings();
+    const authorizeNetKey = String(
+      settings?.paymentApiKeys?.authorizeNet || "",
+    ).trim();
+    const apiLoginId = authorizeNetKey.includes(":")
+      ? authorizeNetKey.split(":")[0]
+      : authorizeNetKey;
+    const publicClientKey = String(
+      (settings?.paymentApiKeys as any)?.authorizeNetPublicKey || "",
+    ).trim();
+    const sandbox = Boolean(
+      (settings as any)?.paymentConfig?.authorizeNetSandbox,
+    );
+    return res.json({ apiLoginId, publicClientKey, sandbox });
+  } catch (error) {
+    console.error("Error fetching authorize.net config:", error);
+    return res
+      .status(500)
+      .json({ error: "Failed to fetch authorize.net config" });
+  }
+});
+
 router.get("/commerce-status", async (_req: Request, res: Response) => {
   try {
     const settings = await readSettings();
