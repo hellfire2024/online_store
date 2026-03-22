@@ -22,10 +22,12 @@ interface Order {
   customerEmail: string;
   date: string;
   total: number;
-  status: "pending" | "processing" | "shipped" | "delivered" | "cancelled";
+  status: "pending" | "processing" | "shipped" | "delivered" | "cancelled" | "approval_requested";
   items: OrderItem[];
   trackingNumber?: string;
   notes?: string;
+  paymentStatus?: string;
+  requestedPaymentMethod?: string;
 }
 
 const OrderManagement: React.FC = () => {
@@ -47,6 +49,9 @@ const OrderManagement: React.FC = () => {
     notes: "",
   });
   const { addToast } = useToast();
+  const [workflowNotes, setWorkflowNotes] = useState("");
+  const [workflowLoading, setWorkflowLoading] = useState(false);
+  const [paymentLink, setPaymentLink] = useState("");
 
   const shippers = ["UPS", "FedEx", "USPS", "DHL", "Other"];
 
@@ -85,6 +90,9 @@ const OrderManagement: React.FC = () => {
             items: orderData.items || [],
             trackingNumber: order.tracking_number || undefined,
             notes: orderData.notes || undefined,
+            paymentStatus: (orderData.payment as any)?.status || undefined,
+            requestedPaymentMethod:
+              (orderData.payment as any)?.requestedMethod || undefined,
           };
         });
 
@@ -186,6 +194,8 @@ const OrderManagement: React.FC = () => {
       shipper: "UPS",
       notes: order.notes || "",
     });
+    setWorkflowNotes("");
+    setPaymentLink("");
     setIsModalOpen(true);
   };
 
@@ -238,8 +248,96 @@ const OrderManagement: React.FC = () => {
     addToast("Order deleted", "success");
   };
 
+  const handleApprovalAction = async (
+    order: Order,
+    action:
+      | "approve_with_payment"
+      | "approve_without_payment"
+      | "cash_on_pickup_paid"
+      | "decline",
+  ) => {
+    setWorkflowLoading(true);
+    try {
+      let workflowData: Record<string, unknown> = {};
+      switch (action) {
+        case "approve_with_payment":
+          workflowData = {
+            status: "processing",
+            paymentStatus: "pending_offline",
+            approvalNotes: workflowNotes || undefined,
+          };
+          break;
+        case "approve_without_payment":
+          workflowData = {
+            approvedWithoutPayment: true,
+            approvalNotes: workflowNotes || undefined,
+          };
+          break;
+        case "cash_on_pickup_paid":
+          workflowData = {
+            paymentStatus: "cash_on_pickup_paid",
+            approvalNotes: workflowNotes || undefined,
+          };
+          break;
+        case "decline":
+          workflowData = {
+            status: "cancelled",
+            paymentStatus: "declined",
+            approvalNotes: workflowNotes || undefined,
+          };
+          break;
+      }
+
+      await apiClient.orders.updateWorkflow(order.orderNumber, workflowData);
+
+      const newStatus =
+        action === "decline"
+          ? ("cancelled" as const)
+          : ("processing" as const);
+
+      setOrders((prev) =>
+        prev.map((o) =>
+          o.id === order.id
+            ? {
+                ...o,
+                status: newStatus,
+                paymentStatus:
+                  (workflowData.paymentStatus as string | undefined) ??
+                  o.paymentStatus,
+              }
+            : o,
+        ),
+      );
+
+      if (action === "approve_with_payment") {
+        const link = `${window.location.origin}/pay/${order.orderNumber}`;
+        setPaymentLink(link);
+        addToast(
+          "Order approved. Copy the payment link and share it with the customer.",
+          "success",
+        );
+      } else if (action === "approve_without_payment") {
+        setIsModalOpen(false);
+        addToast("Order approved without payment requirement.", "success");
+      } else if (action === "cash_on_pickup_paid") {
+        setIsModalOpen(false);
+        addToast("Order marked as cash on pickup paid.", "success");
+      } else if (action === "decline") {
+        setIsModalOpen(false);
+        addToast("Order request declined.", "success");
+      }
+    } catch (err) {
+      console.error("Approval action failed:", err);
+      addToast("Failed to update order. Check your connection.", "error");
+    } finally {
+      setWorkflowLoading(false);
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
+      case "approval_requested":
+        return "bg-purple-900 text-purple-200";
       case "pending":
         return "bg-orange-900 text-orange-200";
       case "processing":
@@ -291,6 +389,7 @@ const OrderManagement: React.FC = () => {
             className="w-full px-4 py-2 rounded bg-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
           >
             <option value="all">All Status</option>
+            <option value="approval_requested">Approval Requested</option>
             <option value="pending">Pending</option>
             <option value="processing">Processing</option>
             <option value="shipped">Shipped</option>
@@ -372,8 +471,10 @@ const OrderManagement: React.FC = () => {
                   <span
                     className={`px-3 py-1 rounded text-xs font-semibold ${getStatusColor(order.status)}`}
                   >
-                    {order.status.charAt(0).toUpperCase() +
-                      order.status.slice(1)}
+                    {order.status === "approval_requested"
+                      ? "Approval Request"
+                      : order.status.charAt(0).toUpperCase() +
+                        order.status.slice(1)}
                   </span>
                 </td>
                 <td
@@ -481,6 +582,101 @@ const OrderManagement: React.FC = () => {
               Update Order {editingOrder.orderNumber}
             </h2>
             <div className="space-y-4">
+              {editingOrder.status === "approval_requested" && (
+                <div className="rounded-lg border border-amber-500/60 bg-amber-500/10 p-4 space-y-3">
+                  <p className="text-amber-200 font-semibold text-sm">⚠ Approval Request</p>
+                  {editingOrder.requestedPaymentMethod &&
+                    editingOrder.requestedPaymentMethod !== "unspecified" && (
+                      <p className="text-xs text-amber-300">
+                        Requested method:{" "}
+                        <span className="font-medium capitalize">
+                          {editingOrder.requestedPaymentMethod.replace(/_/g, " ")}
+                        </span>
+                      </p>
+                    )}
+                  <textarea
+                    value={workflowNotes}
+                    onChange={(e) => setWorkflowNotes(e.target.value)}
+                    placeholder="Admin notes for this approval (optional)..."
+                    rows={2}
+                    className="w-full px-3 py-2 rounded bg-slate-700 text-white placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+                  />
+                  {paymentLink && (
+                    <div>
+                      <p className="text-xs text-gray-400 mb-1">
+                        Payment link — copy and share with customer:
+                      </p>
+                      <div className="flex gap-2">
+                        <input
+                          readOnly
+                          value={paymentLink}
+                          className="flex-1 px-2 py-1 text-xs rounded bg-slate-900 text-sky-300 border border-slate-600 focus:outline-none"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigator.clipboard.writeText(paymentLink);
+                            addToast("Payment link copied!", "success");
+                          }}
+                          className="px-3 py-1 text-xs bg-slate-600 text-white rounded hover:bg-slate-500 whitespace-nowrap"
+                        >
+                          Copy
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      disabled={workflowLoading}
+                      onClick={() =>
+                        handleApprovalAction(editingOrder, "approve_with_payment")
+                      }
+                      className="px-3 py-2 text-xs bg-sky-600 text-white rounded-lg hover:bg-sky-700 disabled:opacity-50 transition-colors"
+                    >
+                      {workflowLoading ? "Saving…" : "Approve & Get Payment Link"}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={workflowLoading}
+                      onClick={() =>
+                        handleApprovalAction(
+                          editingOrder,
+                          "approve_without_payment",
+                        )
+                      }
+                      className="px-3 py-2 text-xs bg-green-700 text-white rounded-lg hover:bg-green-800 disabled:opacity-50 transition-colors"
+                    >
+                      {workflowLoading ? "Saving…" : "Approve (No Payment)"}
+                    </button>
+                    {editingOrder.requestedPaymentMethod === "cash_on_pickup" && (
+                      <button
+                        type="button"
+                        disabled={workflowLoading}
+                        onClick={() =>
+                          handleApprovalAction(
+                            editingOrder,
+                            "cash_on_pickup_paid",
+                          )
+                        }
+                        className="px-3 py-2 text-xs bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition-colors"
+                      >
+                        {workflowLoading ? "Saving…" : "Cash on Pickup Paid"}
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      disabled={workflowLoading}
+                      onClick={() =>
+                        handleApprovalAction(editingOrder, "decline")
+                      }
+                      className="px-3 py-2 text-xs bg-red-700 text-white rounded-lg hover:bg-red-800 disabled:opacity-50 transition-colors"
+                    >
+                      {workflowLoading ? "Saving…" : "Decline Request"}
+                    </button>
+                  </div>
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
                   Status
@@ -492,6 +688,7 @@ const OrderManagement: React.FC = () => {
                   }
                   className="w-full px-4 py-2 rounded bg-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
                 >
+                  <option value="approval_requested">Approval Requested</option>
                   <option value="pending">Pending</option>
                   <option value="processing">Processing</option>
                   <option value="shipped">Shipped</option>

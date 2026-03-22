@@ -555,6 +555,11 @@ class ApiClient {
         method: "POST",
         body: JSON.stringify(data),
       }),
+    updateWorkflow: (orderNumber: string, data: any) =>
+      this.request<any>(`/orders/${orderNumber}/workflow`, {
+        method: "PUT",
+        body: JSON.stringify(data),
+      }),
     update: (id: string, data: any) =>
       this.request<any>(`/orders/${id}`, {
         method: "PUT",

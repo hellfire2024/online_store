@@ -55,6 +55,7 @@ const CheckoutPage: React.FC = () => {
   });
   const [commerceStatus, setCommerceStatus] = useState<any>(null);
   const [requestNotes, setRequestNotes] = useState("");
+  const [preferredPaymentMethod, setPreferredPaymentMethod] = useState("unspecified");
 
   const usStateMap: Record<string, string> = {
     alabama: "AL",
@@ -772,6 +773,7 @@ const CheckoutPage: React.FC = () => {
           orderData: orderDetails,
           unavailableServices,
           requestNotes,
+          requestedPaymentMethod: preferredPaymentMethod,
         });
 
         const assistedOrderDetails = {
@@ -1167,11 +1169,43 @@ const CheckoutPage: React.FC = () => {
                   <h2 className="text-2xl font-semibold text-white">
                     Sales Team Request
                   </h2>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Preferred Payment Method
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {([
+                        { value: "unspecified", label: "Let sales team advise" },
+                        { value: "cash_on_pickup", label: "Cash on Pickup" },
+                        { value: "invoice", label: "Invoice / Bill Me" },
+                        { value: "phone_payment", label: "Pay by Phone" },
+                      ] as const).map(({ value, label }) => (
+                        <label
+                          key={value}
+                          className={`flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-colors ${
+                            preferredPaymentMethod === value
+                              ? "border-sky-500 bg-sky-500/10 text-white"
+                              : "border-slate-600 text-gray-300 hover:border-slate-500"
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name="preferredPaymentMethod"
+                            value={value}
+                            checked={preferredPaymentMethod === value}
+                            onChange={() => setPreferredPaymentMethod(value)}
+                            className="accent-sky-500"
+                          />
+                          {label}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
                   <textarea
                     value={requestNotes}
                     onChange={(e) => setRequestNotes(e.target.value)}
-                    placeholder="Add any details for the sales team (timeline, preferred payment method, shipping notes, etc.)"
-                    rows={4}
+                    placeholder="Add any additional details for the sales team (timeline, shipping notes, etc.)"
+                    rows={3}
                     className={inputClasses}
                   />
                 </div>
