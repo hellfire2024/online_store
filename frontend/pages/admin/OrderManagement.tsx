@@ -988,7 +988,7 @@ const OrderManagement: React.FC = () => {
                           {workflowLoading ? "Saving…" : "Mark Cash Received"}
                         </button>
                       )}
-                      {editingOrder.status === "processing" &&
+                      {!hasPaymentBeenReceived(editingOrder) &&
                         onlinePaymentEnabled && (
                           <button
                             type="button"
@@ -1160,9 +1160,7 @@ const OrderManagement: React.FC = () => {
                       className="w-full px-3 py-2 rounded bg-slate-700 text-white placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
                     />
                     <div className="flex gap-2">
-                      {editingOrder.requestedPaymentMethod ===
-                        "cash_on_pickup" &&
-                        !hasPaymentBeenReceived(editingOrder) &&
+                      {!hasPaymentBeenReceived(editingOrder) &&
                         onlinePaymentEnabled && (
                           <button
                             type="button"
@@ -1196,14 +1194,12 @@ const OrderManagement: React.FC = () => {
                           : "Mark Cash Payment Received"}
                       </button>
                     </div>
-                    {!onlinePaymentEnabled &&
-                      editingOrder.requestedPaymentMethod ===
-                        "cash_on_pickup" && (
-                        <p className="text-xs text-amber-300">
-                          Card payment link conversion is unavailable:{" "}
-                          {paymentUnavailableReason}.
-                        </p>
-                      )}
+                    {!onlinePaymentEnabled && (
+                      <p className="text-xs text-amber-300">
+                        Card payment link conversion is unavailable:{" "}
+                        {paymentUnavailableReason}.
+                      </p>
+                    )}
                   </div>
                 )}
               {hasPaymentBeenReceived(editingOrder) &&
