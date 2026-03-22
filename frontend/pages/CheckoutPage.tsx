@@ -1534,7 +1534,7 @@ const CheckoutPage: React.FC = () => {
                       <div className="p-3 bg-amber-900/30 border border-amber-500/50 rounded-md text-amber-200 text-sm">
                         {stripePublishableKey
                           ? "Loading payment form..."
-                          : "Stripe publishable key is not configured. Go to Settings → Payment and enter both your Stripe Publishable Key and Secret Key."}
+                          : "Payment is currently unavailable. Please contact support or try again later."}
                       </div>
                     )
                   ) : String(
