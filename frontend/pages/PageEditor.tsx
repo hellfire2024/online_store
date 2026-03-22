@@ -41,6 +41,7 @@ import TextAlign from "@tiptap/extension-text-align";
 import Highlight from "@tiptap/extension-highlight";
 import ImageUploadInput from "../../components/admin/ImageUploadInput";
 import { TrashIcon } from "../../components/Icons";
+import { apiClient } from "../../services/apiClient";
 
 // Page type templates with required fields and defaults
 const PAGE_TEMPLATES = {
@@ -611,11 +612,13 @@ const PageEditor: React.FC = () => {
           "";
 
         if (selectedImageFile) {
-          finalImageUrl = await new Promise<string>((resolve) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result as string);
-            reader.readAsDataURL(selectedImageFile);
+          const uploadResult = await apiClient.upload.image(selectedImageFile, {
+            target: "background",
           });
+          if (!uploadResult?.success || !uploadResult?.imageUrl) {
+            throw new Error("Failed to upload background image");
+          }
+          finalImageUrl = uploadResult.imageUrl;
         } else if (previewImageUrl) {
           finalImageUrl = previewImageUrl;
         }
@@ -843,6 +846,10 @@ const PageEditor: React.FC = () => {
               setPreviewImageUrl(URL.createObjectURL(file));
             }}
             onImageUrlChange={() => {}}
+            enableFocalCrop={true}
+            cropAspect={16 / 9}
+            outputWidth={1920}
+            outputHeight={1080}
           />
         </div>
 

@@ -666,10 +666,22 @@ const SettingsManagement: React.FC = () => {
       };
 
       finalSettings.defaultParcel = {
-        weight: Math.max(0.1, Number((finalSettings as any).defaultParcel?.weight) || 1),
-        length: Math.max(1, Number((finalSettings as any).defaultParcel?.length) || 12),
-        width: Math.max(1, Number((finalSettings as any).defaultParcel?.width) || 9),
-        height: Math.max(1, Number((finalSettings as any).defaultParcel?.height) || 3),
+        weight: Math.max(
+          0.1,
+          Number((finalSettings as any).defaultParcel?.weight) || 1,
+        ),
+        length: Math.max(
+          1,
+          Number((finalSettings as any).defaultParcel?.length) || 12,
+        ),
+        width: Math.max(
+          1,
+          Number((finalSettings as any).defaultParcel?.width) || 9,
+        ),
+        height: Math.max(
+          1,
+          Number((finalSettings as any).defaultParcel?.height) || 3,
+        ),
       };
 
       finalSettings.paymentApiKeys = {
@@ -1916,9 +1928,11 @@ const SettingsManagement: React.FC = () => {
                       ...prev!,
                       defaultParcel: {
                         weight: Number(e.target.value),
-                        length: Number((prev as any)?.defaultParcel?.length) || 12,
+                        length:
+                          Number((prev as any)?.defaultParcel?.length) || 12,
                         width: Number((prev as any)?.defaultParcel?.width) || 9,
-                        height: Number((prev as any)?.defaultParcel?.height) || 3,
+                        height:
+                          Number((prev as any)?.defaultParcel?.height) || 3,
                       },
                     }))
                   }
@@ -1934,10 +1948,12 @@ const SettingsManagement: React.FC = () => {
                     setSettings((prev) => ({
                       ...prev!,
                       defaultParcel: {
-                        weight: Number((prev as any)?.defaultParcel?.weight) || 1,
+                        weight:
+                          Number((prev as any)?.defaultParcel?.weight) || 1,
                         length: Number(e.target.value),
                         width: Number((prev as any)?.defaultParcel?.width) || 9,
-                        height: Number((prev as any)?.defaultParcel?.height) || 3,
+                        height:
+                          Number((prev as any)?.defaultParcel?.height) || 3,
                       },
                     }))
                   }
@@ -1953,10 +1969,13 @@ const SettingsManagement: React.FC = () => {
                     setSettings((prev) => ({
                       ...prev!,
                       defaultParcel: {
-                        weight: Number((prev as any)?.defaultParcel?.weight) || 1,
-                        length: Number((prev as any)?.defaultParcel?.length) || 12,
+                        weight:
+                          Number((prev as any)?.defaultParcel?.weight) || 1,
+                        length:
+                          Number((prev as any)?.defaultParcel?.length) || 12,
                         width: Number(e.target.value),
-                        height: Number((prev as any)?.defaultParcel?.height) || 3,
+                        height:
+                          Number((prev as any)?.defaultParcel?.height) || 3,
                       },
                     }))
                   }
@@ -1972,8 +1991,10 @@ const SettingsManagement: React.FC = () => {
                     setSettings((prev) => ({
                       ...prev!,
                       defaultParcel: {
-                        weight: Number((prev as any)?.defaultParcel?.weight) || 1,
-                        length: Number((prev as any)?.defaultParcel?.length) || 12,
+                        weight:
+                          Number((prev as any)?.defaultParcel?.weight) || 1,
+                        length:
+                          Number((prev as any)?.defaultParcel?.length) || 12,
                         width: Number((prev as any)?.defaultParcel?.width) || 9,
                         height: Number(e.target.value),
                       },

@@ -113,7 +113,9 @@ const GalleriesManagement: React.FC = () => {
           try {
             console.log(`Uploading file ${file.name} (${file.size} bytes)`);
             // First upload to the upload endpoint to get base64
-            const uploadResponse = await apiClient.upload.image(file);
+            const uploadResponse = await apiClient.upload.image(file, {
+              target: "gallery",
+            });
 
             if (!uploadResponse.success || !uploadResponse.imageUrl) {
               throw new Error("Upload endpoint failed to return image URL");

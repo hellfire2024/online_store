@@ -6,6 +6,7 @@ import { useToast } from "../../hooks/useToast";
 import Spinner from "../../components/Spinner";
 import { useUnsavedChanges } from "../../context/UnsavedChangesContext";
 import Pagination from "../../components/Pagination";
+import { apiClient } from "../../services/apiClient";
 
 const GalleriesManagement: React.FC = () => {
   const {
@@ -88,12 +89,21 @@ const GalleriesManagement: React.FC = () => {
 
     for (const file of Array.from(files)) {
       if (file.type.startsWith("image/")) {
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-          const imageUrl = e.target?.result as string;
-          await addGalleryImage(selectedGallery, { name: file.name, imageUrl });
-        };
-        reader.readAsDataURL(file);
+        try {
+          const uploadResponse = await apiClient.upload.image(file, {
+            target: "gallery",
+          });
+          if (!uploadResponse?.success || !uploadResponse?.imageUrl) {
+            throw new Error("Upload endpoint did not return an image URL");
+          }
+          await addGalleryImage(selectedGallery, {
+            name: file.name,
+            imageUrl: uploadResponse.imageUrl,
+          });
+        } catch (error) {
+          console.error("Image upload failed:", error);
+          addToast(`Failed to upload ${file.name}`, "error");
+        }
       }
     }
 

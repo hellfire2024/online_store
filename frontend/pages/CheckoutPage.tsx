@@ -683,7 +683,14 @@ const CheckoutPage: React.FC = () => {
     };
 
     calculateTaxAsync();
-  }, [cartItems, shippingState, shippingZip, siteSettings, selectedShippingRate, addToast]);
+  }, [
+    cartItems,
+    shippingState,
+    shippingZip,
+    siteSettings,
+    selectedShippingRate,
+    addToast,
+  ]);
 
   const createPayPalOrder = useCallback(async (): Promise<string> => {
     const res = await fetch("/api/orders/create-paypal-order", {
@@ -1410,22 +1417,43 @@ const CheckoutPage: React.FC = () => {
                           phone: formData.phone || "",
                         },
                         fromAddress: {
-                          firstName: (siteSettings as any)?.fromAddress?.firstName || "Store",
-                          lastName: (siteSettings as any)?.fromAddress?.lastName || "",
-                          street1: (siteSettings as any)?.fromAddress?.street1 || "",
-                          street2: (siteSettings as any)?.fromAddress?.street2 || "",
+                          firstName:
+                            (siteSettings as any)?.fromAddress?.firstName ||
+                            "Store",
+                          lastName:
+                            (siteSettings as any)?.fromAddress?.lastName || "",
+                          street1:
+                            (siteSettings as any)?.fromAddress?.street1 || "",
+                          street2:
+                            (siteSettings as any)?.fromAddress?.street2 || "",
                           city: (siteSettings as any)?.fromAddress?.city || "",
-                          state: (siteSettings as any)?.fromAddress?.state || "",
+                          state:
+                            (siteSettings as any)?.fromAddress?.state || "",
                           zip: (siteSettings as any)?.fromAddress?.zip || "",
-                          country: (siteSettings as any)?.fromAddress?.country || "US",
-                          email: (siteSettings as any)?.fromAddress?.email || "",
-                          phone: (siteSettings as any)?.fromAddress?.phone || "",
+                          country:
+                            (siteSettings as any)?.fromAddress?.country || "US",
+                          email:
+                            (siteSettings as any)?.fromAddress?.email || "",
+                          phone:
+                            (siteSettings as any)?.fromAddress?.phone || "",
                         },
                         parcel: {
-                          weight: toNumber((siteSettings as any)?.defaultParcel?.weight, 1),
-                          length: toNumber((siteSettings as any)?.defaultParcel?.length, 12),
-                          width: toNumber((siteSettings as any)?.defaultParcel?.width, 9),
-                          height: toNumber((siteSettings as any)?.defaultParcel?.height, 3),
+                          weight: toNumber(
+                            (siteSettings as any)?.defaultParcel?.weight,
+                            1,
+                          ),
+                          length: toNumber(
+                            (siteSettings as any)?.defaultParcel?.length,
+                            12,
+                          ),
+                          width: toNumber(
+                            (siteSettings as any)?.defaultParcel?.width,
+                            9,
+                          ),
+                          height: toNumber(
+                            (siteSettings as any)?.defaultParcel?.height,
+                            3,
+                          ),
                         },
                       }}
                       selectedRate={selectedShippingRate}
@@ -1434,7 +1462,8 @@ const CheckoutPage: React.FC = () => {
                     />
                     {selectedShippingRate && (
                       <p className="text-xs text-gray-400 mt-2">
-                        Selected: {selectedShippingRate.serviceName} (${(selectedShippingRate.rate / 100).toFixed(2)})
+                        Selected: {selectedShippingRate.serviceName} ($
+                        {(selectedShippingRate.rate / 100).toFixed(2)})
                       </p>
                     )}
                   </div>
@@ -1599,11 +1628,10 @@ const CheckoutPage: React.FC = () => {
               <div className="flex justify-between">
                 <span>Shipping</span>
                 <span>
-                  ${
-                    selectedShippingRate
-                      ? (selectedShippingRate.rate / 100).toFixed(2)
-                      : toNumber(siteSettings?.shippingFlatRate, 5).toFixed(2)
-                  }
+                  $
+                  {selectedShippingRate
+                    ? (selectedShippingRate.rate / 100).toFixed(2)
+                    : toNumber(siteSettings?.shippingFlatRate, 5).toFixed(2)}
                 </span>
               </div>
               {siteSettings.taxConfig.enableTaxCollection && shippingState && (

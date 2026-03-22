@@ -354,9 +354,17 @@ class ApiClient {
 
   // Upload
   upload = {
-    image: (file: File) => {
+    image: (
+      file: File,
+      options?: {
+        target?: "background" | "gallery" | "generic";
+      },
+    ) => {
       const formData = new FormData();
       formData.append("image", file);
+      if (options?.target) {
+        formData.append("target", options.target);
+      }
 
       return fetch(`${this.baseUrl}/upload/image`, {
         method: "POST",

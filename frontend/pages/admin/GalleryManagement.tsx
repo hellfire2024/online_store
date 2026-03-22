@@ -91,7 +91,9 @@ const GalleriesManagement: React.FC = () => {
 
     try {
       // Upload the image and get the base64 URL
-      const uploadResponse = await api.upload.image(newImageFile);
+      const uploadResponse = await api.upload.image(newImageFile, {
+        target: "gallery",
+      });
 
       if (!uploadResponse.success || !uploadResponse.imageUrl) {
         throw new Error("Upload failed");

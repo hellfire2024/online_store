@@ -48,6 +48,7 @@
     "mysql2": "^3.6.5",
     "nodemailer": "^7.0.13",
     "react-chartjs-2": "^5.3.1",
+    "sharp": "^0.34.5",
     "stripe": "^20.2.0",
     "tsx": "^4.7.0",
     "typescript": "^5.3.3",

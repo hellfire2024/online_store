@@ -68,7 +68,8 @@ const ShippingRateSelector: React.FC<ShippingRateSelectorProps> = ({
 
         // Auto-select cheapest when none selected or selected rate is no longer valid
         const stillValid =
-          !!selectedRate && fetchedRates.some((rate) => rate.id === selectedRate.id);
+          !!selectedRate &&
+          fetchedRates.some((rate) => rate.id === selectedRate.id);
         if (fetchedRates.length > 0 && !stillValid) {
           onSelectRate(fetchedRates[0]);
         }

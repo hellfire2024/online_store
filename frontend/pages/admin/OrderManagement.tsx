@@ -467,12 +467,12 @@ const OrderManagement: React.FC = () => {
   const getShippingRateForOrder = (order: Order) =>
     (order.orderData as any)?.shippingRate || null;
 
-  const getCarrierForOrder = (order: Order):
-    | "easypost"
-    | "shippo"
-    | "shipstation"
-    | null => {
-    const rateCarrier = String(getShippingRateForOrder(order)?.carrier || "").toLowerCase();
+  const getCarrierForOrder = (
+    order: Order,
+  ): "easypost" | "shippo" | "shipstation" | null => {
+    const rateCarrier = String(
+      getShippingRateForOrder(order)?.carrier || "",
+    ).toLowerCase();
     if (
       rateCarrier === "easypost" ||
       rateCarrier === "shippo" ||
@@ -501,7 +501,10 @@ const OrderManagement: React.FC = () => {
 
     const carrier = getCarrierForOrder(order);
     if (!carrier) {
-      addToast("Unable to determine shipping carrier for label generation.", "error");
+      addToast(
+        "Unable to determine shipping carrier for label generation.",
+        "error",
+      );
       return;
     }
 
@@ -549,7 +552,10 @@ const OrderManagement: React.FC = () => {
       }
 
       if (payload?.trackingNumber) {
-        setFormData((prev) => ({ ...prev, trackingNumber: payload.trackingNumber }));
+        setFormData((prev) => ({
+          ...prev,
+          trackingNumber: payload.trackingNumber,
+        }));
       }
 
       setLabelUrl(String(payload?.labelUrl || ""));
@@ -562,7 +568,9 @@ const OrderManagement: React.FC = () => {
   };
 
   const handleTrackShipment = async (order: Order) => {
-    const trackingNumber = String(formData.trackingNumber || order.trackingNumber || "").trim();
+    const trackingNumber = String(
+      formData.trackingNumber || order.trackingNumber || "",
+    ).trim();
     if (!trackingNumber) {
       addToast("Enter a tracking number first.", "error");
       return;
