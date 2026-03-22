@@ -291,11 +291,17 @@ const OrderManagement: React.FC = () => {
 
     setSaveLoading(true);
     try {
+      const isStatusOverride = formData.status !== editingOrder.status;
       await apiClient.orders.updateWorkflow(editingOrder.orderNumber, {
         status: formData.status,
         trackingNumber: formData.trackingNumber || undefined,
         shipper: formData.shipper || undefined,
         approvalNotes: formData.notes || undefined,
+        forceStatusOverride: isSuperAdmin && isStatusOverride,
+        statusOverrideReason:
+          isSuperAdmin && isStatusOverride
+            ? formData.notes || "Super admin corrected incorrect order status"
+            : undefined,
       });
 
       // If marking as shipped, send API call to trigger email.
@@ -337,8 +343,11 @@ const OrderManagement: React.FC = () => {
       setOrders(updated);
       setIsModalOpen(false);
 
-      if (formData.status !== editingOrder.status && isSuperAdmin) {
-        addToast("Super admin override applied: order status corrected.", "success");
+      if (isStatusOverride && isSuperAdmin) {
+        addToast(
+          "Super admin override applied: order status corrected.",
+          "success",
+        );
       } else {
         addToast("Order updated successfully", "success");
       }

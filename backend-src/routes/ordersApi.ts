@@ -7,7 +7,11 @@ import {
   sendShippingNotificationEmail,
   sendContactFormEmail,
 } from "../services/emailService.js";
-import { requireCustomer, AuthenticatedRequest } from "../middleware/auth.js";
+import {
+  requireAdmin,
+  requireCustomer,
+  AuthenticatedRequest,
+} from "../middleware/auth.js";
 
 const router = Router();
 
@@ -127,6 +131,24 @@ const normalizeOrderStatus = (value: unknown): string | null => {
   return allowed.includes(normalized) ? normalized : null;
 };
 
+const isStandardStatusTransitionAllowed = (
+  currentStatus: string,
+  nextStatus: string,
+): boolean => {
+  if (currentStatus === nextStatus) return true;
+
+  const allowedTransitions: Record<string, string[]> = {
+    approval_requested: ["processing", "cancelled"],
+    pending: ["approval_requested", "processing", "cancelled"],
+    processing: ["shipped", "delivered", "cancelled"],
+    shipped: ["delivered", "cancelled"],
+    delivered: [],
+    cancelled: [],
+  };
+
+  return (allowedTransitions[currentStatus] || []).includes(nextStatus);
+};
+
 const isLikelyEmail = (value: string): boolean =>
   /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 
@@ -180,7 +202,7 @@ const attachPaymentWorkflowToOrderData = (
 };
 
 // GET all orders (admin)
-router.get("/", async (_req: Request, res: Response) => {
+router.get("/", requireAdmin, async (_req: Request, res: Response) => {
   try {
     const [rows] = await pool.query<OrderRow[]>(
       `SELECT * FROM orders ORDER BY created_at DESC LIMIT 100`,
@@ -538,9 +560,14 @@ router.post("/request-approval", async (req: Request, res: Response) => {
 });
 
 // PUT update admin workflow data for an order (payment state, approval state, status)
-router.put("/:orderNumber/workflow", async (req: Request, res: Response) => {
+router.put(
+  "/:orderNumber/workflow",
+  requireAdmin,
+  async (req: Request, res: Response) => {
   try {
     const { orderNumber } = req.params;
+    const authUser = (req as AuthenticatedRequest).authUser;
+    const isSuperAdmin = authUser?.role === "super_admin";
     const {
       status,
       paymentStatus,
@@ -548,6 +575,8 @@ router.put("/:orderNumber/workflow", async (req: Request, res: Response) => {
       paymentDeclineReason,
       approvalNotes,
       approvedWithoutPayment,
+      forceStatusOverride,
+      statusOverrideReason,
       trackingNumber,
       shipper,
     } = req.body || {};
@@ -578,8 +607,30 @@ router.put("/:orderNumber/workflow", async (req: Request, res: Response) => {
       requestedPaymentMethod || existingPayment.requestedMethod,
     );
 
+    if (normalizedPaymentStatus === "paid" && !isSuperAdmin) {
+      res.status(400).json({
+        error:
+          "Direct paid status updates are restricted. Use payment provider integration or super-admin override.",
+      });
+      return;
+    }
+
+    if (
+      normalizedPaymentStatus === "cash_on_pickup_paid" &&
+      normalizedRequestedPaymentMethod !== "cash_on_pickup"
+    ) {
+      res.status(400).json({
+        error:
+          "cash_on_pickup_paid is only valid for cash-on-pickup orders.",
+      });
+      return;
+    }
+
     const normalizedStatus =
       normalizeOrderStatus(status) || String(existingOrder.status || "pending");
+
+    const currentStatus =
+      normalizeOrderStatus(existingOrder.status) || String(existingOrder.status);
 
     const shouldApproveWithoutPayment = Boolean(approvedWithoutPayment);
     const paymentMarkedPaid =
@@ -591,6 +642,29 @@ router.put("/:orderNumber/workflow", async (req: Request, res: Response) => {
       (shouldApproveWithoutPayment || paymentMarkedPaid)
         ? "processing"
         : normalizedStatus;
+
+    const forceOverrideRequested = Boolean(forceStatusOverride);
+
+    if (forceOverrideRequested && !isSuperAdmin) {
+      res.status(403).json({
+        error: "Only super admins can force status overrides.",
+      });
+      return;
+    }
+
+    if (
+      resolvedStatus !== currentStatus &&
+      !forceOverrideRequested &&
+      !isStandardStatusTransitionAllowed(currentStatus, resolvedStatus)
+    ) {
+      res.status(409).json({
+        error: `Invalid status transition from ${currentStatus} to ${resolvedStatus}.`,
+      });
+      return;
+    }
+
+    const statusOverrideApplied =
+      forceOverrideRequested && isSuperAdmin && resolvedStatus !== currentStatus;
 
     const updatedOrderData = {
       ...existingOrderData,
@@ -605,6 +679,20 @@ router.put("/:orderNumber/workflow", async (req: Request, res: Response) => {
           shouldApproveWithoutPayment || paymentMarkedPaid
             ? new Date().toISOString()
             : undefined,
+        statusOverride: statusOverrideApplied
+          ? {
+              fromStatus: currentStatus,
+              toStatus: resolvedStatus,
+              reason: hasText(statusOverrideReason)
+                ? statusOverrideReason.trim()
+                : hasText(approvalNotes)
+                  ? approvalNotes.trim()
+                  : undefined,
+              overriddenBy: authUser?.id || null,
+              overriddenByRole: authUser?.role || "admin",
+              overriddenAt: new Date().toISOString(),
+            }
+          : undefined,
       },
       payment: {
         ...existingPayment,
@@ -648,6 +736,7 @@ router.put("/:orderNumber/workflow", async (req: Request, res: Response) => {
       success: true,
       orderNumber,
       status: resolvedStatus,
+      statusOverrideApplied,
       payment: updatedOrderData.payment,
       approval: updatedOrderData.approval,
       trackingNumber: nextTrackingNumber,
@@ -657,10 +746,11 @@ router.put("/:orderNumber/workflow", async (req: Request, res: Response) => {
     console.error("Error updating order workflow:", error);
     res.status(500).json({ error: "Failed to update order workflow" });
   }
-});
+},
+);
 
 // PUT update order with shipping info
-router.put("/:orderNumber/ship", async (req: Request, res: Response) => {
+router.put("/:orderNumber/ship", requireAdmin, async (req: Request, res: Response) => {
   try {
     const { orderNumber } = req.params;
     const { trackingNumber, shipper, shippingUrl } = req.body;
