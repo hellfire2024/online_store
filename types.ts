@@ -184,6 +184,7 @@ export interface CustomerOrder {
     | "approval_requested"
     | "pending"
     | "processing"
+    | "ready_for_pickup"
     | "shipped"
     | "delivered"
     | "cancelled";

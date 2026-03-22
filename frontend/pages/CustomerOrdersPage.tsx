@@ -260,6 +260,8 @@ const CustomerOrdersPage: React.FC = () => {
         return "bg-yellow-900 text-yellow-200";
       case "processing":
         return "bg-blue-900 text-blue-200";
+      case "ready_for_pickup":
+        return "bg-cyan-900 text-cyan-200";
       case "shipped":
         return "bg-purple-900 text-purple-200";
       case "delivered":
@@ -270,6 +272,12 @@ const CustomerOrdersPage: React.FC = () => {
         return "bg-gray-900 text-gray-200";
     }
   };
+
+  const getStatusLabel = (status: string) =>
+    status
+      .split("_")
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(" ");
 
   const getPaymentMethodLabel = (method?: string) => {
     if (!method || method === "unspecified") return "Unspecified";
@@ -758,6 +766,8 @@ const CustomerOrdersPage: React.FC = () => {
         return "⏳";
       case "processing":
         return "⚙️";
+      case "ready_for_pickup":
+        return "📍";
       case "shipped":
         return "🚚";
       case "delivered":
@@ -775,6 +785,8 @@ const CustomerOrdersPage: React.FC = () => {
         return 25;
       case "processing":
         return 50;
+      case "ready_for_pickup":
+        return 65;
       case "shipped":
         return 75;
       case "delivered":
@@ -880,6 +892,7 @@ const CustomerOrdersPage: React.FC = () => {
                 <option value="all">All Orders</option>
                 <option value="pending">Pending</option>
                 <option value="processing">Processing</option>
+                <option value="ready_for_pickup">Ready for Pickup</option>
                 <option value="shipped">Shipped</option>
                 <option value="delivered">Delivered</option>
                 <option value="cancelled">Cancelled</option>
@@ -1505,7 +1518,7 @@ const CustomerOrdersPage: React.FC = () => {
                             <span
                               className={`px-3 py-1 rounded-full text-xs font-medium capitalize ${getStatusColor(order.status)}`}
                             >
-                              {getStatusIcon(order.status)} {order.status}
+                              {getStatusIcon(order.status)} {getStatusLabel(order.status)}
                             </span>
                           </div>
 

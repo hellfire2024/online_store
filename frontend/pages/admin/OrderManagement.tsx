@@ -26,6 +26,7 @@ interface Order {
   status:
     | "pending"
     | "processing"
+    | "ready_for_pickup"
     | "shipped"
     | "delivered"
     | "cancelled"
@@ -86,6 +87,12 @@ const formatPaymentMethodLabel = (method?: string) => {
     .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
     .join(" ");
 };
+
+const formatOrderStatusLabel = (status: string) =>
+  status
+    .split("_")
+    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+    .join(" ");
 
 const getPaymentProviderStatus = (settings: any) => {
   const provider = String(settings?.paymentProvider || "none");
@@ -451,10 +458,9 @@ const OrderManagement: React.FC = () => {
           };
           break;
         case "approve_for_pickup":
-          // Approve CoP order: move to processing but leave paymentStatus as
-          // cash_on_pickup_requested until cash is physically received.
+          // Approve CoP order into dedicated pickup-ready stage.
           workflowData = {
-            status: "processing",
+            status: "ready_for_pickup",
             paymentStatus: "cash_on_pickup_requested",
             approvalNotes: workflowNotes || undefined,
           };
@@ -510,6 +516,8 @@ const OrderManagement: React.FC = () => {
           ? ("cancelled" as const)
           : action === "mark_cash_paid"
             ? ("delivered" as const)
+            : action === "approve_for_pickup"
+              ? ("ready_for_pickup" as const)
             : action === "mark_invoice_cash_paid"
               ? order.status
               : action === "switch_to_card_and_send_link" ||
@@ -554,7 +562,7 @@ const OrderManagement: React.FC = () => {
       } else if (action === "approve_for_pickup") {
         setIsModalOpen(false);
         addToast(
-          "Order approved for cash on pickup — awaiting customer.",
+          "Order approved and marked ready for pickup.",
           "success",
         );
       } else if (action === "mark_cash_paid") {
@@ -596,6 +604,8 @@ const OrderManagement: React.FC = () => {
         return "bg-orange-900 text-orange-200";
       case "processing":
         return "bg-yellow-900 text-yellow-200";
+      case "ready_for_pickup":
+        return "bg-cyan-900 text-cyan-200";
       case "shipped":
         return "bg-blue-900 text-blue-200";
       case "delivered":
@@ -629,8 +639,13 @@ const OrderManagement: React.FC = () => {
       };
     if (order.status === "processing")
       return {
+        className: "bg-blue-900 text-blue-200",
+        label: "CoP: In Production",
+      };
+    if (order.status === "ready_for_pickup")
+      return {
         className: "bg-cyan-900 text-cyan-200",
-        label: "CoP: Awaiting Pickup",
+        label: "CoP: Ready for Pickup",
       };
     return { className: "bg-teal-900 text-teal-200", label: "Cash on Pickup" };
   };
@@ -679,6 +694,7 @@ const OrderManagement: React.FC = () => {
             <option value="invoice_outstanding">Invoice Outstanding</option>
             <option value="pending">Pending</option>
             <option value="processing">Processing</option>
+            <option value="ready_for_pickup">Ready for Pickup</option>
             <option value="shipped">Shipped</option>
             <option value="delivered">Delivered</option>
             <option value="cancelled">Cancelled</option>
@@ -775,8 +791,7 @@ const OrderManagement: React.FC = () => {
                       >
                         {order.status === "approval_requested"
                           ? "Approval Request"
-                          : order.status.charAt(0).toUpperCase() +
-                            order.status.slice(1)}
+                          : formatOrderStatusLabel(order.status)}
                       </span>
                     );
                   })()}
@@ -938,19 +953,25 @@ const OrderManagement: React.FC = () => {
                       </p>
                       <span
                         className={`px-2 py-0.5 rounded text-xs font-semibold ${
-                          editingOrder.status === "processing"
+                          editingOrder.status === "ready_for_pickup"
                             ? "bg-cyan-900 text-cyan-200"
+                            : editingOrder.status === "processing"
+                              ? "bg-blue-900 text-blue-200"
                             : "bg-teal-900 text-teal-200"
                         }`}
                       >
-                        {editingOrder.status === "processing"
-                          ? "Awaiting Pickup & Payment"
-                          : "Pending Approval"}
+                        {editingOrder.status === "ready_for_pickup"
+                          ? "Ready for Pickup"
+                          : editingOrder.status === "processing"
+                            ? "In Production"
+                            : "Pending Approval"}
                       </span>
                     </div>
                     <p className="text-xs text-teal-300">
-                      {editingOrder.status === "processing"
-                        ? "Order is approved. Mark as paid once cash is collected in person."
+                      {editingOrder.status === "ready_for_pickup"
+                        ? "Order is complete and waiting for customer pickup. Mark cash received once paid in person."
+                        : editingOrder.status === "processing"
+                          ? "Order is being prepared. Move to pickup-ready once production is complete."
                         : "Approve this order to release it for in-person cash pickup."}
                     </p>
                     <textarea
@@ -976,7 +997,8 @@ const OrderManagement: React.FC = () => {
                           {workflowLoading ? "Saving…" : "Approve for Pickup"}
                         </button>
                       )}
-                      {editingOrder.status === "processing" && (
+                      {(editingOrder.status === "ready_for_pickup" ||
+                        editingOrder.status === "processing") && (
                         <button
                           type="button"
                           disabled={workflowLoading}
@@ -1017,7 +1039,8 @@ const OrderManagement: React.FC = () => {
                         {workflowLoading ? "Saving…" : "Decline"}
                       </button>
                     </div>
-                    {editingOrder.status === "processing" &&
+                    {(editingOrder.status === "ready_for_pickup" ||
+                      editingOrder.status === "processing") &&
                       !onlinePaymentEnabled && (
                         <p className="text-xs text-amber-300">
                           Card payment link conversion is unavailable:{" "}
@@ -1246,6 +1269,7 @@ const OrderManagement: React.FC = () => {
                   <option value="approval_requested">Approval Requested</option>
                   <option value="pending">Pending</option>
                   <option value="processing">Processing</option>
+                  <option value="ready_for_pickup">Ready for Pickup</option>
                   <option value="shipped">Shipped</option>
                   <option value="delivered">Delivered</option>
                   <option value="cancelled">Cancelled</option>

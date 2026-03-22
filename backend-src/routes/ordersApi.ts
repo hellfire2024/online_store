@@ -125,6 +125,7 @@ const normalizeOrderStatus = (value: unknown): string | null => {
     "approval_requested",
     "pending",
     "processing",
+    "ready_for_pickup",
     "shipped",
     "delivered",
     "cancelled",
@@ -160,9 +161,10 @@ const isStandardStatusTransitionAllowed = (
   if (currentStatus === nextStatus) return true;
 
   const allowedTransitions: Record<string, string[]> = {
-    approval_requested: ["processing", "cancelled"],
-    pending: ["approval_requested", "processing", "cancelled"],
-    processing: ["shipped", "delivered", "cancelled"],
+    approval_requested: ["processing", "ready_for_pickup", "cancelled"],
+    pending: ["approval_requested", "processing", "ready_for_pickup", "cancelled"],
+    processing: ["ready_for_pickup", "shipped", "delivered", "cancelled"],
+    ready_for_pickup: ["processing", "delivered", "cancelled"],
     shipped: ["delivered", "cancelled"],
     delivered: [],
     cancelled: [],
@@ -733,6 +735,30 @@ router.put(
           : normalizedStatus;
 
       const forceOverrideRequested = Boolean(forceStatusOverride);
+
+      if (
+        resolvedStatus === "ready_for_pickup" &&
+        normalizedRequestedPaymentMethod !== "cash_on_pickup" &&
+        !(forceOverrideRequested && isSuperAdmin)
+      ) {
+        res.status(400).json({
+          error:
+            "ready_for_pickup is only valid for cash-on-pickup orders unless force overridden by a super admin.",
+        });
+        return;
+      }
+
+      if (
+        normalizedPaymentStatus === "cash_on_pickup_paid" &&
+        resolvedStatus !== "delivered" &&
+        !(forceOverrideRequested && isSuperAdmin)
+      ) {
+        res.status(400).json({
+          error:
+            "cash_on_pickup_paid requires the order status to be delivered unless force overridden by a super admin.",
+        });
+        return;
+      }
 
       if (forceOverrideRequested && !isSuperAdmin) {
         res.status(403).json({
