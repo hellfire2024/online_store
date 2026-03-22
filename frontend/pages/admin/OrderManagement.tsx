@@ -546,7 +546,10 @@ const OrderManagement: React.FC = () => {
           break;
       }
 
-      await apiClient.orders.updateWorkflow(order.orderNumber, workflowData);
+      const workflowResult = await apiClient.orders.updateWorkflow(
+        order.orderNumber,
+        workflowData,
+      );
 
       const newStatus =
         action === "decline"
@@ -589,10 +592,20 @@ const OrderManagement: React.FC = () => {
       if (action === "approve_with_payment") {
         const link = `${window.location.origin}/#/pay/${order.orderNumber}`;
         setPaymentLink(link);
-        addToast(
-          "Order approved. Copy the payment link and share it with the customer.",
-          "success",
-        );
+        const emailStatus = workflowResult?.paymentLinkEmail;
+        if (emailStatus?.attempted && emailStatus?.sent) {
+          addToast("Order approved. Payment link email sent to customer.", "success");
+        } else if (emailStatus?.attempted && !emailStatus?.sent) {
+          addToast(
+            `Order approved, but payment email failed: ${emailStatus.message || "Unknown error"}`,
+            "error",
+          );
+        } else {
+          addToast(
+            "Order approved. Copy the payment link and share it with the customer.",
+            "success",
+          );
+        }
       } else if (action === "approve_without_payment") {
         setIsModalOpen(false);
         addToast("Order approved without payment requirement.", "success");
@@ -611,10 +624,23 @@ const OrderManagement: React.FC = () => {
       } else if (action === "switch_to_card_and_send_link") {
         const link = `${window.location.origin}/#/pay/${order.orderNumber}`;
         setPaymentLink(link);
-        addToast(
-          "Payment method changed to card. Share the payment link with the customer.",
-          "success",
-        );
+        const emailStatus = workflowResult?.paymentLinkEmail;
+        if (emailStatus?.attempted && emailStatus?.sent) {
+          addToast(
+            "Payment method changed to card and payment link email sent.",
+            "success",
+          );
+        } else if (emailStatus?.attempted && !emailStatus?.sent) {
+          addToast(
+            `Payment method changed, but email failed: ${emailStatus.message || "Unknown error"}`,
+            "error",
+          );
+        } else {
+          addToast(
+            "Payment method changed to card. Share the payment link with the customer.",
+            "success",
+          );
+        }
       } else if (action === "mark_refund_issued") {
         setIsModalOpen(false);
         addToast("Refund has been marked as issued.", "success");

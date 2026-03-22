@@ -462,6 +462,73 @@ export async function sendShippingNotificationEmail(
   }
 }
 
+export async function sendPaymentLinkEmail(
+  customerEmail: string,
+  customerName: string,
+  orderNumber: string,
+  paymentLink: string,
+): Promise<{ success: boolean; message: string; error?: any }> {
+  try {
+    const transport = transporter || (await initializeTransporter());
+    if (!transport || !cachedConfig) {
+      console.log("Email service not available - skipping payment link email");
+      return { success: false, message: "Email service not configured" };
+    }
+
+    const html = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: #1e293b; color: #fff; padding: 20px; border-radius: 5px; margin-bottom: 20px; }
+          .payment-info { background: #eff6ff; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #0ea5e9; }
+          .button { display: inline-block; background: #0ea5e9; color: white !important; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>Payment Link</h1>
+            <p>Your order is ready for payment.</p>
+          </div>
+
+          <p>Hi ${customerName},</p>
+          <p>Your order <strong>${orderNumber}</strong> has been updated to card payment.</p>
+
+          <div class="payment-info">
+            <p>Please use the secure link below to complete payment:</p>
+            <p style="text-align: center; margin: 16px 0;">
+              <a href="${paymentLink}" class="button">Pay Now</a>
+            </p>
+            <p style="font-size: 12px; color: #666; word-break: break-all;">If the button does not work, copy this URL into your browser:<br/>${paymentLink}</p>
+          </div>
+
+          <p style="margin-top: 30px; color: #666; font-size: 12px;">
+            If you have any questions, please reply to this email.<br/>
+            Custom Threads Online Store
+          </p>
+        </div>
+      </body>
+    </html>
+    `;
+
+    const result = await transport.sendMail({
+      from: `${cachedConfig.from_name} <${cachedConfig.from_email}>`,
+      to: customerEmail,
+      subject: `Payment Link for Order ${orderNumber}`,
+      html,
+    });
+
+    console.log("Payment link email sent:", result);
+    return { success: true, message: "Payment link email sent" };
+  } catch (error) {
+    console.error("Error sending payment link email:", error);
+    return { success: false, message: "Failed to send payment link email", error };
+  }
+}
+
 export async function sendTicketEmail(
   supportEmail: string,
   subject: string,

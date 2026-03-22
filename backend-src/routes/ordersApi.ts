@@ -5,6 +5,7 @@ import { v4 as uuidv4 } from "uuid";
 import {
   sendOrderConfirmationEmail,
   sendShippingNotificationEmail,
+  sendPaymentLinkEmail,
   sendContactFormEmail,
 } from "../services/emailService.js";
 import {
@@ -647,6 +648,10 @@ router.put(
       const existingNormalizedPaymentStatus =
         normalizePaymentStatus(existingPayment.status) || "unpaid";
 
+      const existingRequestedPaymentMethod = normalizeRequestedPaymentMethod(
+        existingPayment.requestedMethod,
+      );
+
       const normalizedRequestedPaymentMethod = normalizeRequestedPaymentMethod(
         requestedPaymentMethod || existingPayment.requestedMethod,
       );
@@ -894,6 +899,41 @@ router.put(
         ],
       );
 
+      const shouldSendPaymentLinkEmail =
+        normalizedRequestedPaymentMethod === "online_card" &&
+        normalizedPaymentStatus === "pending_offline" &&
+        (existingRequestedPaymentMethod !== "online_card" ||
+          existingNormalizedPaymentStatus !== "pending_offline") &&
+        hasText(existingOrder.customer_email);
+
+      let paymentLinkEmail: {
+        attempted: boolean;
+        sent: boolean;
+        message: string;
+        paymentLink?: string;
+      } | null = null;
+
+      if (shouldSendPaymentLinkEmail) {
+        const frontendBaseUrl =
+          String(process.env.FRONTEND_URL || "").trim() ||
+          "https://customthreadsonline.com";
+        const paymentLink = `${frontendBaseUrl.replace(/\/$/, "")}/#/pay/${orderNumber}`;
+
+        const emailResult = await sendPaymentLinkEmail(
+          String(existingOrder.customer_email),
+          String(existingOrder.customer_name || "Customer"),
+          orderNumber,
+          paymentLink,
+        );
+
+        paymentLinkEmail = {
+          attempted: true,
+          sent: Boolean(emailResult.success),
+          message: String(emailResult.message || "Payment link email processed."),
+          paymentLink,
+        };
+      }
+
       res.json({
         success: true,
         orderNumber,
@@ -903,6 +943,7 @@ router.put(
         approval: updatedOrderData.approval,
         trackingNumber: nextTrackingNumber,
         shipper: nextShipper,
+        paymentLinkEmail,
       });
     } catch (error) {
       console.error("Error updating order workflow:", error);
