@@ -172,7 +172,18 @@ const OrderManagement: React.FC = () => {
         o.customerEmail.toLowerCase().includes(searchTerm.toLowerCase()),
     );
 
-    if (filterStatus !== "all") {
+    if (filterStatus === "cash_on_pickup") {
+      filtered = filtered.filter(
+        (o) => o.requestedPaymentMethod === "cash_on_pickup",
+      );
+    } else if (filterStatus === "cop_awaiting_payment") {
+      filtered = filtered.filter(
+        (o) =>
+          o.requestedPaymentMethod === "cash_on_pickup" &&
+          o.paymentStatus !== "cash_on_pickup_paid" &&
+          o.status !== "cancelled",
+      );
+    } else if (filterStatus !== "all") {
       filtered = filtered.filter((o) => o.status === filterStatus);
     }
 
@@ -259,7 +270,8 @@ const OrderManagement: React.FC = () => {
     action:
       | "approve_with_payment"
       | "approve_without_payment"
-      | "cash_on_pickup_paid"
+      | "approve_for_pickup"
+      | "mark_cash_paid"
       | "decline",
   ) => {
     setWorkflowLoading(true);
@@ -279,8 +291,19 @@ const OrderManagement: React.FC = () => {
             approvalNotes: workflowNotes || undefined,
           };
           break;
-        case "cash_on_pickup_paid":
+        case "approve_for_pickup":
+          // Approve CoP order: move to processing but leave paymentStatus as
+          // cash_on_pickup_requested until cash is physically received.
           workflowData = {
+            status: "processing",
+            paymentStatus: "cash_on_pickup_requested",
+            approvalNotes: workflowNotes || undefined,
+          };
+          break;
+        case "mark_cash_paid":
+          // Admin confirms cash was received in person.
+          workflowData = {
+            status: "delivered",
             paymentStatus: "cash_on_pickup_paid",
             approvalNotes: workflowNotes || undefined,
           };
@@ -297,7 +320,11 @@ const OrderManagement: React.FC = () => {
       await apiClient.orders.updateWorkflow(order.orderNumber, workflowData);
 
       const newStatus =
-        action === "decline" ? ("cancelled" as const) : ("processing" as const);
+        action === "decline"
+          ? ("cancelled" as const)
+          : action === "mark_cash_paid"
+            ? ("delivered" as const)
+            : ("processing" as const);
 
       setOrders((prev) =>
         prev.map((o) =>
@@ -323,9 +350,12 @@ const OrderManagement: React.FC = () => {
       } else if (action === "approve_without_payment") {
         setIsModalOpen(false);
         addToast("Order approved without payment requirement.", "success");
-      } else if (action === "cash_on_pickup_paid") {
+      } else if (action === "approve_for_pickup") {
         setIsModalOpen(false);
-        addToast("Order marked as cash on pickup paid.", "success");
+        addToast("Order approved for cash on pickup — awaiting customer.", "success");
+      } else if (action === "mark_cash_paid") {
+        setIsModalOpen(false);
+        addToast("Cash received — order marked as paid and delivered.", "success");
       } else if (action === "decline") {
         setIsModalOpen(false);
         addToast("Order request declined.", "success");
@@ -355,6 +385,24 @@ const OrderManagement: React.FC = () => {
       default:
         return "bg-gray-900 text-gray-200";
     }
+  };
+
+  // Returns badge info for cash-on-pickup orders based on their payment sub-state.
+  const getCopBadge = (
+    order: Order,
+  ): { className: string; label: string } | null => {
+    if (order.requestedPaymentMethod !== "cash_on_pickup") return null;
+    if (order.paymentStatus === "cash_on_pickup_paid")
+      return {
+        className: "bg-emerald-900 text-emerald-200",
+        label: "CoP: Paid ✓",
+      };
+    if (order.status === "processing")
+      return {
+        className: "bg-cyan-900 text-cyan-200",
+        label: "CoP: Awaiting Pickup",
+      };
+    return { className: "bg-teal-900 text-teal-200", label: "Cash on Pickup" };
   };
 
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -394,6 +442,8 @@ const OrderManagement: React.FC = () => {
           >
             <option value="all">All Status</option>
             <option value="approval_requested">Approval Requested</option>
+            <option value="cash_on_pickup">Cash on Pickup (All)</option>
+            <option value="cop_awaiting_payment">Cash on Pickup – Unpaid</option>
             <option value="pending">Pending</option>
             <option value="processing">Processing</option>
             <option value="shipped">Shipped</option>
@@ -472,14 +522,28 @@ const OrderManagement: React.FC = () => {
                   ${Number(order.total).toFixed(2)}
                 </td>
                 <td className="px-6 py-4">
-                  <span
-                    className={`px-3 py-1 rounded text-xs font-semibold ${getStatusColor(order.status)}`}
-                  >
-                    {order.status === "approval_requested"
-                      ? "Approval Request"
-                      : order.status.charAt(0).toUpperCase() +
-                        order.status.slice(1)}
-                  </span>
+                  {(() => {
+                    const copBadge = getCopBadge(order);
+                    if (copBadge) {
+                      return (
+                        <span
+                          className={`px-3 py-1 rounded text-xs font-semibold ${copBadge.className}`}
+                        >
+                          {copBadge.label}
+                        </span>
+                      );
+                    }
+                    return (
+                      <span
+                        className={`px-3 py-1 rounded text-xs font-semibold ${getStatusColor(order.status)}`}
+                      >
+                        {order.status === "approval_requested"
+                          ? "Approval Request"
+                          : order.status.charAt(0).toUpperCase() +
+                            order.status.slice(1)}
+                      </span>
+                    );
+                  })()}
                 </td>
                 <td
                   className="px-6 py-4 space-x-2"
@@ -586,112 +650,179 @@ const OrderManagement: React.FC = () => {
               Update Order {editingOrder.orderNumber}
             </h2>
             <div className="space-y-4">
-              {editingOrder.status === "approval_requested" && (
-                <div className="rounded-lg border border-amber-500/60 bg-amber-500/10 p-4 space-y-3">
-                  <p className="text-amber-200 font-semibold text-sm">
-                    ⚠ Approval Request
-                  </p>
-                  {editingOrder.requestedPaymentMethod &&
-                    editingOrder.requestedPaymentMethod !== "unspecified" && (
-                      <p className="text-xs text-amber-300">
-                        Requested method:{" "}
-                        <span className="font-medium capitalize">
-                          {editingOrder.requestedPaymentMethod.replace(
-                            /_/g,
-                            " ",
-                          )}
-                        </span>
+              {/* ── Cash on Pickup dedicated panel ─────────────────────── */}
+              {editingOrder.requestedPaymentMethod === "cash_on_pickup" &&
+                editingOrder.paymentStatus !== "cash_on_pickup_paid" &&
+                editingOrder.status !== "cancelled" && (
+                  <div className="rounded-lg border border-teal-500/60 bg-teal-500/10 p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <p className="text-teal-200 font-semibold text-sm">
+                        💵 Cash on Pickup
                       </p>
-                    )}
-                  <textarea
-                    value={workflowNotes}
-                    onChange={(e) => setWorkflowNotes(e.target.value)}
-                    placeholder="Admin notes for this approval (optional)..."
-                    rows={2}
-                    className="w-full px-3 py-2 rounded bg-slate-700 text-white placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
-                  />
-                  {paymentLink && (
-                    <div>
-                      <p className="text-xs text-gray-400 mb-1">
-                        Payment link — copy and share with customer:
-                      </p>
-                      <div className="flex gap-2">
-                        <input
-                          readOnly
-                          value={paymentLink}
-                          className="flex-1 px-2 py-1 text-xs rounded bg-slate-900 text-sky-300 border border-slate-600 focus:outline-none"
-                        />
+                      <span
+                        className={`px-2 py-0.5 rounded text-xs font-semibold ${
+                          editingOrder.status === "processing"
+                            ? "bg-cyan-900 text-cyan-200"
+                            : "bg-teal-900 text-teal-200"
+                        }`}
+                      >
+                        {editingOrder.status === "processing"
+                          ? "Awaiting Pickup & Payment"
+                          : "Pending Approval"}
+                      </span>
+                    </div>
+                    <p className="text-xs text-teal-300">
+                      {editingOrder.status === "processing"
+                        ? "Order is approved. Mark as paid once cash is collected in person."
+                        : "Approve this order to release it for in-person cash pickup."}
+                    </p>
+                    <textarea
+                      value={workflowNotes}
+                      onChange={(e) => setWorkflowNotes(e.target.value)}
+                      placeholder="Admin notes (optional)..."
+                      rows={2}
+                      className="w-full px-3 py-2 rounded bg-slate-700 text-white placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    />
+                    <div className="flex gap-2">
+                      {editingOrder.status === "approval_requested" && (
                         <button
                           type="button"
-                          onClick={() => {
-                            navigator.clipboard.writeText(paymentLink);
-                            addToast("Payment link copied!", "success");
-                          }}
-                          className="px-3 py-1 text-xs bg-slate-600 text-white rounded hover:bg-slate-500 whitespace-nowrap"
+                          disabled={workflowLoading}
+                          onClick={() =>
+                            handleApprovalAction(
+                              editingOrder,
+                              "approve_for_pickup",
+                            )
+                          }
+                          className="flex-1 px-3 py-2 text-xs bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 transition-colors"
                         >
-                          Copy
+                          {workflowLoading ? "Saving…" : "Approve for Pickup"}
                         </button>
-                      </div>
+                      )}
+                      {editingOrder.status === "processing" && (
+                        <button
+                          type="button"
+                          disabled={workflowLoading}
+                          onClick={() =>
+                            handleApprovalAction(editingOrder, "mark_cash_paid")
+                          }
+                          className="flex-1 px-3 py-2 text-xs bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition-colors"
+                        >
+                          {workflowLoading ? "Saving…" : "Mark Cash Received"}
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        disabled={workflowLoading}
+                        onClick={() =>
+                          handleApprovalAction(editingOrder, "decline")
+                        }
+                        className="px-3 py-2 text-xs bg-red-700 text-white rounded-lg hover:bg-red-800 disabled:opacity-50 transition-colors"
+                      >
+                        {workflowLoading ? "Saving…" : "Decline"}
+                      </button>
                     </div>
-                  )}
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      disabled={workflowLoading}
-                      onClick={() =>
-                        handleApprovalAction(
-                          editingOrder,
-                          "approve_with_payment",
-                        )
-                      }
-                      className="px-3 py-2 text-xs bg-sky-600 text-white rounded-lg hover:bg-sky-700 disabled:opacity-50 transition-colors"
-                    >
-                      {workflowLoading
-                        ? "Saving…"
-                        : "Approve & Get Payment Link"}
-                    </button>
-                    <button
-                      type="button"
-                      disabled={workflowLoading}
-                      onClick={() =>
-                        handleApprovalAction(
-                          editingOrder,
-                          "approve_without_payment",
-                        )
-                      }
-                      className="px-3 py-2 text-xs bg-green-700 text-white rounded-lg hover:bg-green-800 disabled:opacity-50 transition-colors"
-                    >
-                      {workflowLoading ? "Saving…" : "Approve (No Payment)"}
-                    </button>
-                    {editingOrder.requestedPaymentMethod ===
-                      "cash_on_pickup" && (
+                  </div>
+                )}
+              {editingOrder.paymentStatus === "cash_on_pickup_paid" && (
+                <div className="rounded-lg border border-emerald-500/60 bg-emerald-500/10 p-3 flex items-center gap-2">
+                  <span className="text-emerald-300 text-sm font-semibold">
+                    ✓ Cash on Pickup — Payment Received
+                  </span>
+                </div>
+              )}
+              {/* ── Regular approval panel (non-CoP orders only) ──────── */}
+              {editingOrder.status === "approval_requested" &&
+                editingOrder.requestedPaymentMethod !== "cash_on_pickup" && (
+                  <div className="rounded-lg border border-amber-500/60 bg-amber-500/10 p-4 space-y-3">
+                    <p className="text-amber-200 font-semibold text-sm">
+                      ⚠ Approval Request
+                    </p>
+                    {editingOrder.requestedPaymentMethod &&
+                      editingOrder.requestedPaymentMethod !== "unspecified" && (
+                        <p className="text-xs text-amber-300">
+                          Requested method:{" "}
+                          <span className="font-medium capitalize">
+                            {editingOrder.requestedPaymentMethod.replace(
+                              /_/g,
+                              " ",
+                            )}
+                          </span>
+                        </p>
+                      )}
+                    <textarea
+                      value={workflowNotes}
+                      onChange={(e) => setWorkflowNotes(e.target.value)}
+                      placeholder="Admin notes for this approval (optional)..."
+                      rows={2}
+                      className="w-full px-3 py-2 rounded bg-slate-700 text-white placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+                    />
+                    {paymentLink && (
+                      <div>
+                        <p className="text-xs text-gray-400 mb-1">
+                          Payment link — copy and share with customer:
+                        </p>
+                        <div className="flex gap-2">
+                          <input
+                            readOnly
+                            value={paymentLink}
+                            className="flex-1 px-2 py-1 text-xs rounded bg-slate-900 text-sky-300 border border-slate-600 focus:outline-none"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard.writeText(paymentLink);
+                              addToast("Payment link copied!", "success");
+                            }}
+                            className="px-3 py-1 text-xs bg-slate-600 text-white rounded hover:bg-slate-500 whitespace-nowrap"
+                          >
+                            Copy
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                    <div className="grid grid-cols-2 gap-2">
                       <button
                         type="button"
                         disabled={workflowLoading}
                         onClick={() =>
                           handleApprovalAction(
                             editingOrder,
-                            "cash_on_pickup_paid",
+                            "approve_with_payment",
                           )
                         }
-                        className="px-3 py-2 text-xs bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition-colors"
+                        className="px-3 py-2 text-xs bg-sky-600 text-white rounded-lg hover:bg-sky-700 disabled:opacity-50 transition-colors"
                       >
-                        {workflowLoading ? "Saving…" : "Cash on Pickup Paid"}
+                        {workflowLoading
+                          ? "Saving…"
+                          : "Approve & Get Payment Link"}
                       </button>
-                    )}
-                    <button
-                      type="button"
-                      disabled={workflowLoading}
-                      onClick={() =>
-                        handleApprovalAction(editingOrder, "decline")
-                      }
-                      className="px-3 py-2 text-xs bg-red-700 text-white rounded-lg hover:bg-red-800 disabled:opacity-50 transition-colors"
-                    >
-                      {workflowLoading ? "Saving…" : "Decline Request"}
-                    </button>
+                      <button
+                        type="button"
+                        disabled={workflowLoading}
+                        onClick={() =>
+                          handleApprovalAction(
+                            editingOrder,
+                            "approve_without_payment",
+                          )
+                        }
+                        className="px-3 py-2 text-xs bg-green-700 text-white rounded-lg hover:bg-green-800 disabled:opacity-50 transition-colors"
+                      >
+                        {workflowLoading ? "Saving…" : "Approve (No Payment)"}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={workflowLoading}
+                        onClick={() =>
+                          handleApprovalAction(editingOrder, "decline")
+                        }
+                        className="px-3 py-2 text-xs bg-red-700 text-white rounded-lg hover:bg-red-800 disabled:opacity-50 transition-colors"
+                      >
+                        {workflowLoading ? "Saving…" : "Decline Request"}
+                      </button>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
                   Status
