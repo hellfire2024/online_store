@@ -352,10 +352,16 @@ const OrderManagement: React.FC = () => {
         addToast("Order approved without payment requirement.", "success");
       } else if (action === "approve_for_pickup") {
         setIsModalOpen(false);
-        addToast("Order approved for cash on pickup — awaiting customer.", "success");
+        addToast(
+          "Order approved for cash on pickup — awaiting customer.",
+          "success",
+        );
       } else if (action === "mark_cash_paid") {
         setIsModalOpen(false);
-        addToast("Cash received — order marked as paid and delivered.", "success");
+        addToast(
+          "Cash received — order marked as paid and delivered.",
+          "success",
+        );
       } else if (action === "decline") {
         setIsModalOpen(false);
         addToast("Order request declined.", "success");
@@ -443,7 +449,9 @@ const OrderManagement: React.FC = () => {
             <option value="all">All Status</option>
             <option value="approval_requested">Approval Requested</option>
             <option value="cash_on_pickup">Cash on Pickup (All)</option>
-            <option value="cop_awaiting_payment">Cash on Pickup – Unpaid</option>
+            <option value="cop_awaiting_payment">
+              Cash on Pickup – Unpaid
+            </option>
             <option value="pending">Pending</option>
             <option value="processing">Processing</option>
             <option value="shipped">Shipped</option>
