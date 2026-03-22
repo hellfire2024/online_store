@@ -88,6 +88,32 @@ const formatPaymentMethodLabel = (method?: string) => {
     .join(" ");
 };
 
+const formatPaymentStatusLabel = (status?: string) => {
+  if (!status) return "Unpaid";
+  return status
+    .split("_")
+    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+    .join(" ");
+};
+
+const getPaymentStatusColor = (status?: string) => {
+  switch (status) {
+    case "paid":
+    case "cash_on_pickup_paid":
+      return "bg-emerald-900 text-emerald-200";
+    case "pending_offline":
+    case "cash_on_pickup_requested":
+      return "bg-amber-900 text-amber-200";
+    case "refund_issued":
+      return "bg-rose-900 text-rose-200";
+    case "declined":
+      return "bg-red-900 text-red-200";
+    case "unpaid":
+    default:
+      return "bg-slate-700 text-slate-200";
+  }
+};
+
 const formatOrderStatusLabel = (status: string) =>
   status
     .split("_")
@@ -195,15 +221,26 @@ const OrderManagement: React.FC = () => {
             items: orderData.items || [],
             trackingNumber: order.tracking_number || undefined,
             notes: orderData.notes || undefined,
-            paymentStatus: (orderData.payment as any)?.status || undefined,
+            paymentStatus:
+              (orderData.payment as any)?.status ||
+              orderData.paymentStatus ||
+              undefined,
             requestedPaymentMethod:
-              (orderData.payment as any)?.requestedMethod || undefined,
-            invoiceIssuedAt: (orderData.payment as any)?.invoiceIssuedAt,
+              (orderData.payment as any)?.requestedMethod ||
+              orderData.paymentMethod ||
+              undefined,
+            invoiceIssuedAt:
+              (orderData.payment as any)?.invoiceIssuedAt ||
+              orderData.invoiceIssuedAt,
             paymentCollectedAt:
               (orderData.payment as any)?.collectedAt ||
-              (orderData.payment as any)?.paidAt,
+              (orderData.payment as any)?.paidAt ||
+              orderData.paymentCollectedAt ||
+              orderData.paidAt,
             paymentCollectionMethod:
-              (orderData.payment as any)?.collectionMethod || undefined,
+              (orderData.payment as any)?.collectionMethod ||
+              orderData.paymentCollectionMethod ||
+              undefined,
           };
 
           // Guard against inconsistent legacy states where CoP was marked paid
@@ -733,6 +770,9 @@ const OrderManagement: React.FC = () => {
               <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">
                 Status
               </th>
+              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">
+                Payment
+              </th>
               <th className="px-6 py-3 text-center text-sm font-semibold text-gray-300">
                 A/R Days
               </th>
@@ -793,6 +833,13 @@ const OrderManagement: React.FC = () => {
                     );
                   })()}
                 </td>
+                <td className="px-6 py-4">
+                  <span
+                    className={`px-3 py-1 rounded text-xs font-semibold ${getPaymentStatusColor(order.paymentStatus)}`}
+                  >
+                    {formatPaymentStatusLabel(order.paymentStatus)}
+                  </span>
+                </td>
                 <td className="px-6 py-4 text-center text-gray-300 text-sm">
                   {isInvoiceOutstanding(order)
                     ? (getInvoiceAgingDays(order) ?? 0)
@@ -850,9 +897,11 @@ const OrderManagement: React.FC = () => {
             </div>
             <div>
               <p className="text-gray-400 text-sm">Payment Status</p>
-              <p className="text-white capitalize">
-                {(selectedOrder.paymentStatus || "unpaid").replace(/_/g, " ")}
-              </p>
+              <span
+                className={`inline-block mt-1 px-3 py-1 rounded text-xs font-semibold ${getPaymentStatusColor(selectedOrder.paymentStatus)}`}
+              >
+                {formatPaymentStatusLabel(selectedOrder.paymentStatus)}
+              </span>
               {selectedOrder.invoiceIssuedAt &&
                 selectedOrder.paymentStatus !== "paid" && (
                   <p className="text-xs text-amber-300 mt-1">
