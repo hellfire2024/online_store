@@ -46,6 +46,8 @@ services:
       - "traefik.http.routers.frontend.entrypoints=websecure"
       - "traefik.http.routers.frontend.tls.certresolver=letsencrypt"
       - "traefik.http.services.frontend.loadbalancer.server.port=8080"
+      - "traefik.http.services.frontend.loadbalancer.healthcheck.path=/healthz"
+      - "traefik.http.services.frontend.loadbalancer.healthcheck.interval=10s"
     build:
       context: .
       dockerfile: Dockerfile
@@ -55,6 +57,12 @@ services:
       backend:
         condition: service_healthy
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8080/healthz || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
     environment:
       SERVICE_URL_BACKEND: https://devapi.adaptivegis.com
       SERVICE_URL_FRONTEND: https://dev.adaptivegis.com
