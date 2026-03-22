@@ -3,6 +3,7 @@ import { EditIcon, TrashIcon } from "../../components/Icons";
 import { useToast } from "../../hooks/useToast";
 import Pagination from "../../components/Pagination";
 import { apiClient } from "../../services/apiClient";
+import { useAdmin } from "../../context/AdminContext";
 
 interface OrderItem {
   productName: string;
@@ -83,8 +84,10 @@ const OrderManagement: React.FC = () => {
     notes: "",
   });
   const { addToast } = useToast();
+  const { adminUser } = useAdmin();
   const [workflowNotes, setWorkflowNotes] = useState("");
   const [workflowLoading, setWorkflowLoading] = useState(false);
+  const [saveLoading, setSaveLoading] = useState(false);
   const [paymentLink, setPaymentLink] = useState("");
   const [onlinePaymentEnabled, setOnlinePaymentEnabled] = useState(false);
   const [paymentUnavailableReason, setPaymentUnavailableReason] = useState(
@@ -92,6 +95,7 @@ const OrderManagement: React.FC = () => {
   );
 
   const shippers = ["UPS", "FedEx", "USPS", "DHL", "Other"];
+  const isSuperAdmin = adminUser?.role === "super_admin";
 
   useEffect(() => {
     const loadPaymentStatus = async () => {
@@ -277,45 +281,73 @@ const OrderManagement: React.FC = () => {
   const handleSave = async () => {
     if (!editingOrder) return;
 
-    // If marking as shipped, send API call to trigger email
-    if (formData.status === "shipped" && formData.trackingNumber) {
-      try {
-        const response = await fetch(
-          `/api/orders/${editingOrder.orderNumber}/ship`,
-          {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              trackingNumber: formData.trackingNumber,
-              shipper: formData.shipper,
-            }),
-          },
-        );
-
-        if (response.ok) {
-          addToast("Shipping notification sent to customer!", "success");
-        } else {
-          addToast("Order updated but email may not have been sent", "error");
-        }
-      } catch (error) {
-        console.error("Error sending shipping notification:", error);
-        addToast("Order updated (backend may be offline)", "error");
-      }
+    if (!isSuperAdmin && formData.status !== editingOrder.status) {
+      addToast(
+        "Only super admins can override order status. Your other changes were not saved.",
+        "error",
+      );
+      return;
     }
 
-    const updated = orders.map((o) =>
-      o.id === editingOrder.id
-        ? {
-            ...o,
-            status: formData.status as Order["status"],
-            trackingNumber: formData.trackingNumber,
-            notes: formData.notes,
+    setSaveLoading(true);
+    try {
+      await apiClient.orders.updateWorkflow(editingOrder.orderNumber, {
+        status: formData.status,
+        trackingNumber: formData.trackingNumber || undefined,
+        shipper: formData.shipper || undefined,
+        approvalNotes: formData.notes || undefined,
+      });
+
+      // If marking as shipped, send API call to trigger email.
+      if (formData.status === "shipped" && formData.trackingNumber) {
+        try {
+          const response = await fetch(
+            `/api/orders/${editingOrder.orderNumber}/ship`,
+            {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                trackingNumber: formData.trackingNumber,
+                shipper: formData.shipper,
+              }),
+            },
+          );
+
+          if (response.ok) {
+            addToast("Shipping notification sent to customer!", "success");
+          } else {
+            addToast("Order updated but email may not have been sent", "error");
           }
-        : o,
-    );
-    setOrders(updated);
-    setIsModalOpen(false);
-    addToast("Order updated successfully", "success");
+        } catch (error) {
+          console.error("Error sending shipping notification:", error);
+          addToast("Order updated (backend may be offline)", "error");
+        }
+      }
+
+      const updated = orders.map((o) =>
+        o.id === editingOrder.id
+          ? {
+              ...o,
+              status: formData.status as Order["status"],
+              trackingNumber: formData.trackingNumber || undefined,
+              notes: formData.notes || undefined,
+            }
+          : o,
+      );
+      setOrders(updated);
+      setIsModalOpen(false);
+
+      if (formData.status !== editingOrder.status && isSuperAdmin) {
+        addToast("Super admin override applied: order status corrected.", "success");
+      } else {
+        addToast("Order updated successfully", "success");
+      }
+    } catch (error) {
+      console.error("Failed to save order:", error);
+      addToast("Failed to save order changes.", "error");
+    } finally {
+      setSaveLoading(false);
+    }
   };
 
   const handleDelete = (orderId: string) => {
@@ -904,7 +936,8 @@ const OrderManagement: React.FC = () => {
                     </div>
                     {!onlinePaymentEnabled && (
                       <p className="text-xs text-amber-300">
-                        Online payment links are disabled: {paymentUnavailableReason}.
+                        Online payment links are disabled:{" "}
+                        {paymentUnavailableReason}.
                       </p>
                     )}
                   </div>
@@ -918,6 +951,7 @@ const OrderManagement: React.FC = () => {
                   onChange={(e) =>
                     setFormData({ ...formData, status: e.target.value })
                   }
+                  disabled={!isSuperAdmin}
                   className="w-full px-4 py-2 rounded bg-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
                 >
                   <option value="approval_requested">Approval Requested</option>
@@ -927,6 +961,11 @@ const OrderManagement: React.FC = () => {
                   <option value="delivered">Delivered</option>
                   <option value="cancelled">Cancelled</option>
                 </select>
+                {!isSuperAdmin && (
+                  <p className="mt-1 text-xs text-amber-300">
+                    Status override is restricted to super admins.
+                  </p>
+                )}
               </div>
 
               <div>
@@ -990,9 +1029,10 @@ const OrderManagement: React.FC = () => {
               </button>
               <button
                 onClick={handleSave}
-                className="flex-1 px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 transition-colors"
+                disabled={saveLoading}
+                className="flex-1 px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 transition-colors disabled:opacity-50"
               >
-                Save Changes
+                {saveLoading ? "Saving..." : "Save Changes"}
               </button>
             </div>
           </div>
