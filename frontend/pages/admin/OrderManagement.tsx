@@ -36,6 +36,16 @@ interface Order {
   requestedPaymentMethod?: string;
 }
 
+const isCashOnPickupOrder = (order: Pick<Order, "requestedPaymentMethod">) =>
+  order.requestedPaymentMethod === "cash_on_pickup";
+
+const isCashOnPickupPaid = (
+  order: Pick<Order, "requestedPaymentMethod" | "paymentStatus" | "status">,
+) =>
+  isCashOnPickupOrder(order) &&
+  order.paymentStatus === "cash_on_pickup_paid" &&
+  order.status === "delivered";
+
 const OrderManagement: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
@@ -83,7 +93,7 @@ const OrderManagement: React.FC = () => {
             orderData = {};
           }
 
-          return {
+          const normalizedOrder = {
             id: order.id?.toString() || "",
             orderNumber: order.order_number || "",
             customerName:
@@ -100,6 +110,18 @@ const OrderManagement: React.FC = () => {
             requestedPaymentMethod:
               (orderData.payment as any)?.requestedMethod || undefined,
           };
+
+          // Guard against inconsistent legacy states where CoP was marked paid
+          // before it was actually delivered.
+          if (
+            normalizedOrder.requestedPaymentMethod === "cash_on_pickup" &&
+            normalizedOrder.paymentStatus === "cash_on_pickup_paid" &&
+            normalizedOrder.status !== "delivered"
+          ) {
+            normalizedOrder.paymentStatus = "cash_on_pickup_requested";
+          }
+
+          return normalizedOrder;
         });
 
         setOrders(transformedOrders);
@@ -174,13 +196,13 @@ const OrderManagement: React.FC = () => {
 
     if (filterStatus === "cash_on_pickup") {
       filtered = filtered.filter(
-        (o) => o.requestedPaymentMethod === "cash_on_pickup",
+        (o) => isCashOnPickupOrder(o),
       );
     } else if (filterStatus === "cop_awaiting_payment") {
       filtered = filtered.filter(
         (o) =>
-          o.requestedPaymentMethod === "cash_on_pickup" &&
-          o.paymentStatus !== "cash_on_pickup_paid" &&
+          isCashOnPickupOrder(o) &&
+          !isCashOnPickupPaid(o) &&
           o.status !== "cancelled",
       );
     } else if (filterStatus !== "all") {
@@ -397,11 +419,16 @@ const OrderManagement: React.FC = () => {
   const getCopBadge = (
     order: Order,
   ): { className: string; label: string } | null => {
-    if (order.requestedPaymentMethod !== "cash_on_pickup") return null;
-    if (order.paymentStatus === "cash_on_pickup_paid")
+    if (!isCashOnPickupOrder(order)) return null;
+    if (isCashOnPickupPaid(order))
       return {
         className: "bg-emerald-900 text-emerald-200",
         label: "CoP: Paid ✓",
+      };
+    if (order.status === "delivered")
+      return {
+        className: "bg-amber-900 text-amber-200",
+        label: "CoP: Delivered - Payment Pending",
       };
     if (order.status === "processing")
       return {
@@ -659,8 +686,8 @@ const OrderManagement: React.FC = () => {
             </h2>
             <div className="space-y-4">
               {/* ── Cash on Pickup dedicated panel ─────────────────────── */}
-              {editingOrder.requestedPaymentMethod === "cash_on_pickup" &&
-                editingOrder.paymentStatus !== "cash_on_pickup_paid" &&
+              {isCashOnPickupOrder(editingOrder) &&
+                !isCashOnPickupPaid(editingOrder) &&
                 editingOrder.status !== "cancelled" && (
                   <div className="rounded-lg border border-teal-500/60 bg-teal-500/10 p-4 space-y-3">
                     <div className="flex items-center justify-between">
@@ -732,7 +759,7 @@ const OrderManagement: React.FC = () => {
                     </div>
                   </div>
                 )}
-              {editingOrder.paymentStatus === "cash_on_pickup_paid" && (
+              {isCashOnPickupPaid(editingOrder) && (
                 <div className="rounded-lg border border-emerald-500/60 bg-emerald-500/10 p-3 flex items-center gap-2">
                   <span className="text-emerald-300 text-sm font-semibold">
                     ✓ Cash on Pickup — Payment Received
