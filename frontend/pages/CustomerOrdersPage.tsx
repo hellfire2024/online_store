@@ -1518,7 +1518,8 @@ const CustomerOrdersPage: React.FC = () => {
                             <span
                               className={`px-3 py-1 rounded-full text-xs font-medium capitalize ${getStatusColor(order.status)}`}
                             >
-                              {getStatusIcon(order.status)} {getStatusLabel(order.status)}
+                              {getStatusIcon(order.status)}{" "}
+                              {getStatusLabel(order.status)}
                             </span>
                           </div>
 

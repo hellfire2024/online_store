@@ -518,12 +518,12 @@ const OrderManagement: React.FC = () => {
             ? ("delivered" as const)
             : action === "approve_for_pickup"
               ? ("ready_for_pickup" as const)
-            : action === "mark_invoice_cash_paid"
-              ? order.status
-              : action === "switch_to_card_and_send_link" ||
-                  action === "mark_refund_issued"
+              : action === "mark_invoice_cash_paid"
                 ? order.status
-                : ("processing" as const);
+                : action === "switch_to_card_and_send_link" ||
+                    action === "mark_refund_issued"
+                  ? order.status
+                  : ("processing" as const);
 
       setOrders((prev) =>
         prev.map((o) =>
@@ -561,10 +561,7 @@ const OrderManagement: React.FC = () => {
         addToast("Order approved without payment requirement.", "success");
       } else if (action === "approve_for_pickup") {
         setIsModalOpen(false);
-        addToast(
-          "Order approved and marked ready for pickup.",
-          "success",
-        );
+        addToast("Order approved and marked ready for pickup.", "success");
       } else if (action === "mark_cash_paid") {
         setIsModalOpen(false);
         addToast(
@@ -957,7 +954,7 @@ const OrderManagement: React.FC = () => {
                             ? "bg-cyan-900 text-cyan-200"
                             : editingOrder.status === "processing"
                               ? "bg-blue-900 text-blue-200"
-                            : "bg-teal-900 text-teal-200"
+                              : "bg-teal-900 text-teal-200"
                         }`}
                       >
                         {editingOrder.status === "ready_for_pickup"
@@ -972,7 +969,7 @@ const OrderManagement: React.FC = () => {
                         ? "Order is complete and waiting for customer pickup. Mark cash received once paid in person."
                         : editingOrder.status === "processing"
                           ? "Order is being prepared. Move to pickup-ready once production is complete."
-                        : "Approve this order to release it for in-person cash pickup."}
+                          : "Approve this order to release it for in-person cash pickup."}
                     </p>
                     <textarea
                       value={workflowNotes}

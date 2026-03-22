@@ -162,7 +162,12 @@ const isStandardStatusTransitionAllowed = (
 
   const allowedTransitions: Record<string, string[]> = {
     approval_requested: ["processing", "ready_for_pickup", "cancelled"],
-    pending: ["approval_requested", "processing", "ready_for_pickup", "cancelled"],
+    pending: [
+      "approval_requested",
+      "processing",
+      "ready_for_pickup",
+      "cancelled",
+    ],
     processing: ["ready_for_pickup", "shipped", "delivered", "cancelled"],
     ready_for_pickup: ["processing", "delivered", "cancelled"],
     shipped: ["delivered", "cancelled"],
