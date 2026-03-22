@@ -55,7 +55,8 @@ const CheckoutPage: React.FC = () => {
   });
   const [commerceStatus, setCommerceStatus] = useState<any>(null);
   const [requestNotes, setRequestNotes] = useState("");
-  const [preferredPaymentMethod, setPreferredPaymentMethod] = useState("unspecified");
+  const [preferredPaymentMethod, setPreferredPaymentMethod] =
+    useState("unspecified");
 
   const usStateMap: Record<string, string> = {
     alabama: "AL",
@@ -1174,12 +1175,17 @@ const CheckoutPage: React.FC = () => {
                       Preferred Payment Method
                     </label>
                     <div className="grid grid-cols-2 gap-2">
-                      {([
-                        { value: "unspecified", label: "Let sales team advise" },
-                        { value: "cash_on_pickup", label: "Cash on Pickup" },
-                        { value: "invoice", label: "Invoice / Bill Me" },
-                        { value: "phone_payment", label: "Pay by Phone" },
-                      ] as const).map(({ value, label }) => (
+                      {(
+                        [
+                          {
+                            value: "unspecified",
+                            label: "Let sales team advise",
+                          },
+                          { value: "cash_on_pickup", label: "Cash on Pickup" },
+                          { value: "invoice", label: "Invoice / Bill Me" },
+                          { value: "phone_payment", label: "Pay by Phone" },
+                        ] as const
+                      ).map(({ value, label }) => (
                         <label
                           key={value}
                           className={`flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-colors ${

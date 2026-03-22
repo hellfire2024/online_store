@@ -22,7 +22,13 @@ interface Order {
   customerEmail: string;
   date: string;
   total: number;
-  status: "pending" | "processing" | "shipped" | "delivered" | "cancelled" | "approval_requested";
+  status:
+    | "pending"
+    | "processing"
+    | "shipped"
+    | "delivered"
+    | "cancelled"
+    | "approval_requested";
   items: OrderItem[];
   trackingNumber?: string;
   notes?: string;
@@ -291,9 +297,7 @@ const OrderManagement: React.FC = () => {
       await apiClient.orders.updateWorkflow(order.orderNumber, workflowData);
 
       const newStatus =
-        action === "decline"
-          ? ("cancelled" as const)
-          : ("processing" as const);
+        action === "decline" ? ("cancelled" as const) : ("processing" as const);
 
       setOrders((prev) =>
         prev.map((o) =>
@@ -584,13 +588,18 @@ const OrderManagement: React.FC = () => {
             <div className="space-y-4">
               {editingOrder.status === "approval_requested" && (
                 <div className="rounded-lg border border-amber-500/60 bg-amber-500/10 p-4 space-y-3">
-                  <p className="text-amber-200 font-semibold text-sm">⚠ Approval Request</p>
+                  <p className="text-amber-200 font-semibold text-sm">
+                    ⚠ Approval Request
+                  </p>
                   {editingOrder.requestedPaymentMethod &&
                     editingOrder.requestedPaymentMethod !== "unspecified" && (
                       <p className="text-xs text-amber-300">
                         Requested method:{" "}
                         <span className="font-medium capitalize">
-                          {editingOrder.requestedPaymentMethod.replace(/_/g, " ")}
+                          {editingOrder.requestedPaymentMethod.replace(
+                            /_/g,
+                            " ",
+                          )}
                         </span>
                       </p>
                     )}
@@ -630,11 +639,16 @@ const OrderManagement: React.FC = () => {
                       type="button"
                       disabled={workflowLoading}
                       onClick={() =>
-                        handleApprovalAction(editingOrder, "approve_with_payment")
+                        handleApprovalAction(
+                          editingOrder,
+                          "approve_with_payment",
+                        )
                       }
                       className="px-3 py-2 text-xs bg-sky-600 text-white rounded-lg hover:bg-sky-700 disabled:opacity-50 transition-colors"
                     >
-                      {workflowLoading ? "Saving…" : "Approve & Get Payment Link"}
+                      {workflowLoading
+                        ? "Saving…"
+                        : "Approve & Get Payment Link"}
                     </button>
                     <button
                       type="button"
@@ -649,7 +663,8 @@ const OrderManagement: React.FC = () => {
                     >
                       {workflowLoading ? "Saving…" : "Approve (No Payment)"}
                     </button>
-                    {editingOrder.requestedPaymentMethod === "cash_on_pickup" && (
+                    {editingOrder.requestedPaymentMethod ===
+                      "cash_on_pickup" && (
                       <button
                         type="button"
                         disabled={workflowLoading}
