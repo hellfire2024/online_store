@@ -429,6 +429,13 @@ const SettingsManagement: React.FC = () => {
         street2: String(finalSettings.fromAddress?.street2 || "").trim(),
       };
 
+      finalSettings.defaultParcel = {
+        weight: Math.max(0.1, Number((finalSettings as any).defaultParcel?.weight) || 1),
+        length: Math.max(1, Number((finalSettings as any).defaultParcel?.length) || 12),
+        width: Math.max(1, Number((finalSettings as any).defaultParcel?.width) || 9),
+        height: Math.max(1, Number((finalSettings as any).defaultParcel?.height) || 3),
+      };
+
       finalSettings.paymentApiKeys = {
         stripe: String(finalSettings.paymentApiKeys?.stripe || "").trim(),
         stripePublishableKey: String(
@@ -1562,6 +1569,94 @@ const SettingsManagement: React.FC = () => {
                         email: "",
                         ...prev!.fromAddress,
                         phone: e.target.value,
+                      },
+                    }))
+                  }
+                  className={inputClasses}
+                />
+              </div>
+            </div>
+
+            {/* Default Parcel */}
+            <div className="bg-slate-700 p-6 rounded-lg border border-slate-600">
+              <h3 className="text-lg font-semibold text-white mb-4">
+                Default Parcel Dimensions
+              </h3>
+              <p className="text-sm text-gray-400 mb-4">
+                Used to quote live shipping rates during checkout.
+              </p>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <input
+                  type="number"
+                  min="0.1"
+                  step="0.1"
+                  placeholder="Weight (lb)"
+                  value={(settings as any).defaultParcel?.weight ?? ""}
+                  onChange={(e) =>
+                    setSettings((prev) => ({
+                      ...prev!,
+                      defaultParcel: {
+                        weight: Number(e.target.value),
+                        length: Number((prev as any)?.defaultParcel?.length) || 12,
+                        width: Number((prev as any)?.defaultParcel?.width) || 9,
+                        height: Number((prev as any)?.defaultParcel?.height) || 3,
+                      },
+                    }))
+                  }
+                  className={inputClasses}
+                />
+                <input
+                  type="number"
+                  min="1"
+                  step="1"
+                  placeholder="Length (in)"
+                  value={(settings as any).defaultParcel?.length ?? ""}
+                  onChange={(e) =>
+                    setSettings((prev) => ({
+                      ...prev!,
+                      defaultParcel: {
+                        weight: Number((prev as any)?.defaultParcel?.weight) || 1,
+                        length: Number(e.target.value),
+                        width: Number((prev as any)?.defaultParcel?.width) || 9,
+                        height: Number((prev as any)?.defaultParcel?.height) || 3,
+                      },
+                    }))
+                  }
+                  className={inputClasses}
+                />
+                <input
+                  type="number"
+                  min="1"
+                  step="1"
+                  placeholder="Width (in)"
+                  value={(settings as any).defaultParcel?.width ?? ""}
+                  onChange={(e) =>
+                    setSettings((prev) => ({
+                      ...prev!,
+                      defaultParcel: {
+                        weight: Number((prev as any)?.defaultParcel?.weight) || 1,
+                        length: Number((prev as any)?.defaultParcel?.length) || 12,
+                        width: Number(e.target.value),
+                        height: Number((prev as any)?.defaultParcel?.height) || 3,
+                      },
+                    }))
+                  }
+                  className={inputClasses}
+                />
+                <input
+                  type="number"
+                  min="1"
+                  step="1"
+                  placeholder="Height (in)"
+                  value={(settings as any).defaultParcel?.height ?? ""}
+                  onChange={(e) =>
+                    setSettings((prev) => ({
+                      ...prev!,
+                      defaultParcel: {
+                        weight: Number((prev as any)?.defaultParcel?.weight) || 1,
+                        length: Number((prev as any)?.defaultParcel?.length) || 12,
+                        width: Number((prev as any)?.defaultParcel?.width) || 9,
+                        height: Number(e.target.value),
                       },
                     }))
                   }

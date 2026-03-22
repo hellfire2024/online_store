@@ -90,6 +90,12 @@ const defaultSettings: SiteSettings = {
     phone: "",
     email: "",
   },
+  defaultParcel: {
+    weight: 1,
+    length: 12,
+    width: 9,
+    height: 3,
+  },
 };
 
 const SiteSettingsContext = createContext<any>(undefined);

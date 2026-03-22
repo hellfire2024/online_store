@@ -111,6 +111,7 @@ export async function getShippingRates(
 
         rates.push({
           id: rate.object_id,
+          shipmentId: shipment.object_id,
           carrier: "shippo",
           service: service,
           serviceName: serviceName,

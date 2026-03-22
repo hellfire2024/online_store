@@ -1,1 +1,146 @@
-// ...existing code...
+import React, { useState, useEffect, useRef } from "react";
+import { ShippingRate, ShippingRateRequest } from "../types";
+
+interface ShippingRateSelectorProps {
+  rateRequest: ShippingRateRequest;
+  selectedRate: ShippingRate | null;
+  onSelectRate: (rate: ShippingRate) => void;
+  disabled?: boolean;
+}
+
+const ShippingRateSelector: React.FC<ShippingRateSelectorProps> = ({
+  rateRequest,
+  selectedRate,
+  onSelectRate,
+  disabled,
+}) => {
+  const [rates, setRates] = useState<ShippingRate[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isUnavailable, setIsUnavailable] = useState(false);
+  // Track the last zip+state we fetched for, to avoid duplicate requests
+  const lastFetchKey = useRef<string>("");
+
+  useEffect(() => {
+    const zip = rateRequest.toAddress?.zip || "";
+    const state = rateRequest.toAddress?.state || "";
+    const street1 = rateRequest.toAddress?.street1 || "";
+    const fromZip = rateRequest.fromAddress?.zip || "";
+
+    // Need at least a complete to-address zip AND a configured from-address zip
+    if (!zip || !state || !street1 || !fromZip) return;
+
+    const fetchKey = `${zip}|${state}|${fromZip}`;
+    if (fetchKey === lastFetchKey.current) return;
+    lastFetchKey.current = fetchKey;
+
+    const fetchRates = async () => {
+      setIsLoading(true);
+      setError(null);
+      setIsUnavailable(false);
+
+      try {
+        const response = await fetch("/api/shipping/rates", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(rateRequest),
+        });
+        const raw = await response.text();
+        const data = raw.trim() ? JSON.parse(raw) : {};
+
+        if (!response.ok) {
+          throw new Error(data?.error || "Shipping rates request failed");
+        }
+
+        if (
+          data.unavailable ||
+          (Array.isArray(data.rates) && data.rates.length === 0)
+        ) {
+          setIsUnavailable(true);
+          setRates([]);
+          return;
+        }
+
+        const fetchedRates: ShippingRate[] = data.rates || [];
+        // Sort by price ascending
+        fetchedRates.sort((a, b) => a.rate - b.rate);
+        setRates(fetchedRates);
+
+        // Auto-select cheapest when none selected or selected rate is no longer valid
+        const stillValid =
+          !!selectedRate && fetchedRates.some((rate) => rate.id === selectedRate.id);
+        if (fetchedRates.length > 0 && !stillValid) {
+          onSelectRate(fetchedRates[0]);
+        }
+      } catch (err) {
+        setError("Could not load shipping rates. Flat rate will apply.");
+        setRates([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchRates();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    rateRequest.toAddress?.zip,
+    rateRequest.toAddress?.state,
+    rateRequest.toAddress?.street1,
+    rateRequest.fromAddress?.zip,
+  ]);
+
+  if (isLoading) {
+    return (
+      <div className="py-4 text-center text-gray-400 text-sm animate-pulse">
+        Getting shipping rates…
+      </div>
+    );
+  }
+
+  if (isUnavailable || rates.length === 0) {
+    // Let the parent fall back to flat-rate display — render nothing
+    return null;
+  }
+
+  return (
+    <div className="space-y-2">
+      {rates.map((rate) => (
+        <label
+          key={rate.id}
+          className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors ${
+            selectedRate?.id === rate.id
+              ? "border-sky-500 bg-sky-500/10 text-white"
+              : "border-slate-600 text-gray-300 hover:border-slate-500"
+          } ${disabled ? "opacity-60 cursor-not-allowed" : ""}`}
+        >
+          <div className="flex items-center gap-3">
+            <input
+              type="radio"
+              name="shippingRate"
+              checked={selectedRate?.id === rate.id}
+              onChange={() => !disabled && onSelectRate(rate)}
+              disabled={disabled}
+              className="accent-sky-500"
+            />
+            <div>
+              <span className="font-medium text-sm">{rate.serviceName}</span>
+              {rate.estimatedDays > 0 && (
+                <span className="text-xs text-gray-400 ml-2">
+                  {rate.estimatedDays === 1
+                    ? "1 business day"
+                    : `${rate.estimatedDays} business days`}
+                </span>
+              )}
+            </div>
+          </div>
+          <span className="font-semibold text-sm">
+            ${(rate.rate / 100).toFixed(2)}
+          </span>
+        </label>
+      ))}
+      {error && <p className="text-xs text-amber-400 mt-1">{error}</p>}
+    </div>
+  );
+};
+
+export default ShippingRateSelector;

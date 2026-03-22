@@ -20,6 +20,8 @@ import SquarePaymentSection, {
 import AuthorizeNetPaymentSection, {
   AuthorizeNetPaymentSectionHandle,
 } from "../components/AuthorizeNetPaymentSection";
+import ShippingRateSelector from "../components/ShippingRateSelector";
+import { ShippingRate } from "../types";
 
 const CheckoutPage: React.FC = () => {
   const { cartItems, clearCart, itemCount } = useCart();
@@ -94,6 +96,10 @@ const CheckoutPage: React.FC = () => {
 
   // Pending PayPal order details — populated when PayPal createOrder fires
   const pendingPaypalOrderRef = useRef<any>(null);
+
+  // Shipping rate selection
+  const [selectedShippingRate, setSelectedShippingRate] =
+    useState<ShippingRate | null>(null);
 
   const usStateMap: Record<string, string> = {
     alabama: "AL",
@@ -518,7 +524,9 @@ const CheckoutPage: React.FC = () => {
   // Calculate tax when state/zip changes
   useMemo(() => {
     const calculateTaxAsync = async () => {
-      const shippingCost = toNumber(siteSettings?.shippingFlatRate, 5);
+      const shippingCost = selectedShippingRate
+        ? selectedShippingRate.rate / 100
+        : toNumber(siteSettings?.shippingFlatRate, 5);
 
       // Calculate subtotal first
       const subtotal = cartItems.reduce((total, item) => {
@@ -675,7 +683,7 @@ const CheckoutPage: React.FC = () => {
     };
 
     calculateTaxAsync();
-  }, [cartItems, shippingState, shippingZip, siteSettings, addToast]);
+  }, [cartItems, shippingState, shippingZip, siteSettings, selectedShippingRate, addToast]);
 
   const createPayPalOrder = useCallback(async (): Promise<string> => {
     const res = await fetch("/api/orders/create-paypal-order", {
@@ -774,11 +782,15 @@ const CheckoutPage: React.FC = () => {
       const randomNum = Math.floor(Math.random() * 1000000000);
       const orderNumber = `AGIS-${String(randomNum).padStart(10, "0")}`;
 
+      const shippingCost = selectedShippingRate
+        ? selectedShippingRate.rate / 100
+        : toNumber(siteSettings?.shippingFlatRate, 5);
+
       // Prepare order details
       const orderDetails = {
         orderNumber,
         subtotal: taxCalculation.subtotal,
-        shipping: siteSettings?.shippingFlatRate || 5,
+        shipping: shippingCost,
         tax: taxCalculation.taxAmount,
         total: taxCalculation.total,
         items: cartItems.map((item) => {
@@ -880,6 +892,13 @@ const CheckoutPage: React.FC = () => {
           zip: shippingZip,
           country: "US",
           phone: formData.phone || "",
+        },
+        shippingRate: selectedShippingRate || undefined,
+        shippingParcel: {
+          weight: toNumber((siteSettings as any)?.defaultParcel?.weight, 1),
+          length: toNumber((siteSettings as any)?.defaultParcel?.length, 12),
+          width: toNumber((siteSettings as any)?.defaultParcel?.width, 9),
+          height: toNumber((siteSettings as any)?.defaultParcel?.height, 3),
         },
       };
 
@@ -1371,6 +1390,55 @@ const CheckoutPage: React.FC = () => {
                     required
                   />
                 </div>
+
+                {!isAssistedCheckoutRequired && (
+                  <div className="mt-4">
+                    <h3 className="text-lg font-semibold text-white mb-2">
+                      Shipping Options
+                    </h3>
+                    <ShippingRateSelector
+                      rateRequest={{
+                        toAddress: {
+                          firstName: formData.firstName || "Customer",
+                          lastName: formData.lastName || "",
+                          street1: formData.address || "",
+                          city: formData.city || "",
+                          state: shippingState || "",
+                          zip: shippingZip || "",
+                          country: "US",
+                          email: formData.email || "",
+                          phone: formData.phone || "",
+                        },
+                        fromAddress: {
+                          firstName: (siteSettings as any)?.fromAddress?.firstName || "Store",
+                          lastName: (siteSettings as any)?.fromAddress?.lastName || "",
+                          street1: (siteSettings as any)?.fromAddress?.street1 || "",
+                          street2: (siteSettings as any)?.fromAddress?.street2 || "",
+                          city: (siteSettings as any)?.fromAddress?.city || "",
+                          state: (siteSettings as any)?.fromAddress?.state || "",
+                          zip: (siteSettings as any)?.fromAddress?.zip || "",
+                          country: (siteSettings as any)?.fromAddress?.country || "US",
+                          email: (siteSettings as any)?.fromAddress?.email || "",
+                          phone: (siteSettings as any)?.fromAddress?.phone || "",
+                        },
+                        parcel: {
+                          weight: toNumber((siteSettings as any)?.defaultParcel?.weight, 1),
+                          length: toNumber((siteSettings as any)?.defaultParcel?.length, 12),
+                          width: toNumber((siteSettings as any)?.defaultParcel?.width, 9),
+                          height: toNumber((siteSettings as any)?.defaultParcel?.height, 3),
+                        },
+                      }}
+                      selectedRate={selectedShippingRate}
+                      onSelectRate={setSelectedShippingRate}
+                      disabled={isProcessingPayment}
+                    />
+                    {selectedShippingRate && (
+                      <p className="text-xs text-gray-400 mt-2">
+                        Selected: {selectedShippingRate.serviceName} (${(selectedShippingRate.rate / 100).toFixed(2)})
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
 
               {isAssistedCheckoutRequired ? (
@@ -1531,7 +1599,11 @@ const CheckoutPage: React.FC = () => {
               <div className="flex justify-between">
                 <span>Shipping</span>
                 <span>
-                  ${toNumber(siteSettings?.shippingFlatRate, 5).toFixed(2)}
+                  ${
+                    selectedShippingRate
+                      ? (selectedShippingRate.rate / 100).toFixed(2)
+                      : toNumber(siteSettings?.shippingFlatRate, 5).toFixed(2)
+                  }
                 </span>
               </div>
               {siteSettings.taxConfig.enableTaxCollection && shippingState && (

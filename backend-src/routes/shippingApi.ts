@@ -269,7 +269,7 @@ router.post("/rates", async (req: Request, res: Response) => {
 router.post("/label", async (req: Request, res: Response) => {
   try {
     const config = await readShippingConfig();
-    const { carrier, rateId, shipmentId, shipmentData } = req.body;
+    const { carrier, rateId, shipmentId } = req.body;
 
     if (!carrier || !rateId) {
       res.status(400).json({
@@ -298,19 +298,36 @@ router.post("/label", async (req: Request, res: Response) => {
         );
         break;
       case "shipstation":
-        if (!shipmentData) {
+        if (!req.body.carrierCode || !req.body.serviceCode) {
           res.status(400).json({
-            error: "ShipStation requires shipmentData",
+            error: "ShipStation requires carrierCode and serviceCode",
           });
           return;
         }
-        label = await shipstationService.createLabel(
-          shipmentData,
-          shipmentData.carrierCode,
-          shipmentData.serviceCode,
-          config.shipstation.apiKey,
-          config.shipstation.apiSecret,
-        );
+        {
+          const toAddress = req.body.toAddress;
+          if (!toAddress) {
+            res.status(400).json({ error: "ShipStation requires toAddress" });
+            return;
+          }
+          const mergedShipmentData = {
+            toAddress,
+            fromAddress: config.fromAddress,
+            parcel: req.body.parcel || {
+              weight: 1,
+              length: 12,
+              width: 9,
+              height: 3,
+            },
+          };
+          label = await shipstationService.createLabel(
+            mergedShipmentData,
+            req.body.carrierCode,
+            req.body.serviceCode,
+            config.shipstation.apiKey,
+            config.shipstation.apiSecret,
+          );
+        }
         break;
       default:
         res.status(400).json({
@@ -319,7 +336,22 @@ router.post("/label", async (req: Request, res: Response) => {
         return;
     }
 
-    res.json(label);
+    // Normalize the label response across all carriers
+    let labelUrl: string | null = null;
+    let trackingNumber: string | null = null;
+
+    if (carrier === "easypost") {
+      labelUrl = label?.postage_label?.label_url || label?.label_url || null;
+      trackingNumber = label?.tracking_code || null;
+    } else if (carrier === "shippo") {
+      labelUrl = label?.label_url || null;
+      trackingNumber = label?.tracking_number || null;
+    } else if (carrier === "shipstation") {
+      labelUrl = label?.labelUrl || null;
+      trackingNumber = label?.trackingNumber || null;
+    }
+
+    res.json({ labelUrl, trackingNumber, rawLabel: label });
     return;
   } catch (error) {
     console.error("Label creation error:", error);

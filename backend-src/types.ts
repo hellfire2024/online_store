@@ -20,7 +20,8 @@ export interface ShippingPackage {
 
 export interface ShippingRate {
   id: string;
-  carrier: 'easypost' | 'shippo' | 'shipstation';
+  shipmentId?: string; // EasyPost/Shippo shipment ID needed for label creation
+  carrier: "easypost" | "shippo" | "shipstation";
   service: string;
   serviceName: string;
   rate: number; // in cents
@@ -32,5 +33,5 @@ export interface ShippingRateRequest {
   toAddress: ShippingAddress;
   fromAddress: ShippingAddress;
   parcel: ShippingPackage;
-  carriers?: ('easypost' | 'shippo' | 'shipstation')[];
+  carriers?: ("easypost" | "shippo" | "shipstation")[];
 }

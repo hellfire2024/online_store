@@ -96,6 +96,7 @@ export async function getShippingRates(
       shipment.rates.forEach((rate: any) => {
         rates.push({
           id: rate.id,
+          shipmentId: shipment.id,
           carrier: "easypost",
           service: rate.service,
           serviceName: SERVICE_NAME_MAP[rate.service] || rate.service,

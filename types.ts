@@ -77,6 +77,7 @@ export interface ShippingPackage {
 
 export interface ShippingRate {
   id: string;
+  shipmentId?: string; // EasyPost/Shippo shipment ID needed for label creation
   carrier: "easypost" | "shippo" | "shipstation";
   service: string;
   serviceName: string;
@@ -538,6 +539,14 @@ export interface SiteSettings {
   };
   defaultShippingCarrier: "easypost" | "shippo" | "shipstation";
   fromAddress: ShippingAddress;
+
+  // Default parcel dimensions for rate quoting
+  defaultParcel: {
+    weight: number; // pounds
+    length: number; // inches
+    width: number; // inches
+    height: number; // inches
+  };
 
   // API Configuration
   apiBaseUrl?: string;

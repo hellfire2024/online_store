@@ -39,6 +39,7 @@ interface Order {
   invoiceIssuedAt?: string;
   paymentCollectedAt?: string;
   paymentCollectionMethod?: string;
+  orderData?: any;
 }
 
 const isCashOnPickupOrder = (order: Pick<Order, "requestedPaymentMethod">) =>
@@ -166,6 +167,10 @@ const OrderManagement: React.FC = () => {
   const [paymentUnavailableReason, setPaymentUnavailableReason] = useState(
     "Online payment is not configured.",
   );
+  const [labelLoading, setLabelLoading] = useState(false);
+  const [labelUrl, setLabelUrl] = useState<string>("");
+  const [trackingResult, setTrackingResult] = useState<any>(null);
+  const [trackingLoading, setTrackingLoading] = useState(false);
 
   const shippers = ["UPS", "FedEx", "USPS", "DHL", "Other"];
   const isSuperAdmin = adminUser?.role === "super_admin";
@@ -241,6 +246,7 @@ const OrderManagement: React.FC = () => {
               (orderData.payment as any)?.collectionMethod ||
               orderData.paymentCollectionMethod ||
               undefined,
+            orderData,
           };
 
           // Guard against inconsistent legacy states where CoP was marked paid
@@ -367,6 +373,8 @@ const OrderManagement: React.FC = () => {
     });
     setWorkflowNotes("");
     setPaymentLink("");
+    setLabelUrl("");
+    setTrackingResult(null);
     setIsModalOpen(true);
   };
 
@@ -454,6 +462,141 @@ const OrderManagement: React.FC = () => {
   const handleDelete = (orderId: string) => {
     setOrders(orders.filter((o) => o.id !== orderId));
     addToast("Order deleted", "success");
+  };
+
+  const getShippingRateForOrder = (order: Order) =>
+    (order.orderData as any)?.shippingRate || null;
+
+  const getCarrierForOrder = (order: Order):
+    | "easypost"
+    | "shippo"
+    | "shipstation"
+    | null => {
+    const rateCarrier = String(getShippingRateForOrder(order)?.carrier || "").toLowerCase();
+    if (
+      rateCarrier === "easypost" ||
+      rateCarrier === "shippo" ||
+      rateCarrier === "shipstation"
+    ) {
+      return rateCarrier;
+    }
+
+    const shipper = String(formData.shipper || "").toLowerCase();
+    if (["ups", "fedex", "usps", "dhl"].includes(shipper)) {
+      return "shipstation";
+    }
+
+    return null;
+  };
+
+  const handleGenerateLabel = async (order: Order) => {
+    const rate = getShippingRateForOrder(order);
+    if (!rate?.id) {
+      addToast(
+        "No shipping rate is attached to this order. Labels can be generated for new orders after selecting a live shipping option.",
+        "error",
+      );
+      return;
+    }
+
+    const carrier = getCarrierForOrder(order);
+    if (!carrier) {
+      addToast("Unable to determine shipping carrier for label generation.", "error");
+      return;
+    }
+
+    setLabelLoading(true);
+    try {
+      const parcel = (order.orderData as any)?.shippingParcel || {
+        weight: 1,
+        length: 12,
+        width: 9,
+        height: 3,
+      };
+
+      const body: any = {
+        carrier,
+        rateId: rate.id,
+      };
+
+      if (carrier === "easypost" || carrier === "shippo") {
+        if (!rate.shipmentId) {
+          throw new Error("Missing shipment ID for selected shipping rate");
+        }
+        body.shipmentId = rate.shipmentId;
+      }
+
+      if (carrier === "shipstation") {
+        const splitIndex = String(rate.id).indexOf("-");
+        if (splitIndex <= 0) {
+          throw new Error("Invalid ShipStation rate format");
+        }
+        body.carrierCode = String(rate.id).slice(0, splitIndex);
+        body.serviceCode = String(rate.id).slice(splitIndex + 1);
+        body.toAddress = (order.orderData as any)?.shippingAddress;
+        body.parcel = parcel;
+      }
+
+      const response = await fetch("/api/shipping/label", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload?.error || "Failed to generate shipping label");
+      }
+
+      if (payload?.trackingNumber) {
+        setFormData((prev) => ({ ...prev, trackingNumber: payload.trackingNumber }));
+      }
+
+      setLabelUrl(String(payload?.labelUrl || ""));
+      addToast("Shipping label generated successfully.", "success");
+    } catch (error: any) {
+      addToast(error?.message || "Failed to generate shipping label", "error");
+    } finally {
+      setLabelLoading(false);
+    }
+  };
+
+  const handleTrackShipment = async (order: Order) => {
+    const trackingNumber = String(formData.trackingNumber || order.trackingNumber || "").trim();
+    if (!trackingNumber) {
+      addToast("Enter a tracking number first.", "error");
+      return;
+    }
+
+    const carrier = getCarrierForOrder(order);
+    if (!carrier) {
+      addToast("Unable to determine carrier for tracking.", "error");
+      return;
+    }
+
+    setTrackingLoading(true);
+    try {
+      const carrierCode = String(formData.shipper || "").toLowerCase();
+      const query =
+        carrierCode && carrierCode !== "other"
+          ? `?carrier=${carrier}&carrierCode=${encodeURIComponent(carrierCode)}`
+          : `?carrier=${carrier}`;
+
+      const response = await fetch(
+        `/api/shipping/track/${encodeURIComponent(trackingNumber)}${query}`,
+      );
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload?.error || "Tracking lookup failed");
+      }
+
+      setTrackingResult(payload);
+      addToast("Tracking updated.", "success");
+    } catch (error: any) {
+      addToast(error?.message || "Failed to track shipment", "error");
+    } finally {
+      setTrackingLoading(false);
+    }
   };
 
   const handleApprovalAction = async (
@@ -1391,6 +1534,47 @@ const OrderManagement: React.FC = () => {
                   </select>
                 </div>
               )}
+
+              <div className="rounded-lg border border-slate-600 bg-slate-700/40 p-3 space-y-3">
+                <p className="text-sm font-medium text-gray-200">
+                  Shipping Label & Tracking
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleGenerateLabel(editingOrder)}
+                    disabled={labelLoading}
+                    className="px-3 py-2 text-xs bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+                  >
+                    {labelLoading ? "Generating..." : "Generate Label"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleTrackShipment(editingOrder)}
+                    disabled={trackingLoading}
+                    className="px-3 py-2 text-xs bg-slate-600 text-white rounded-lg hover:bg-slate-500 disabled:opacity-50 transition-colors"
+                  >
+                    {trackingLoading ? "Tracking..." : "Track Shipment"}
+                  </button>
+                </div>
+
+                {labelUrl && (
+                  <a
+                    href={labelUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 rounded-md border border-slate-500 bg-slate-800 px-2 py-1 text-xs text-sky-300 hover:bg-slate-700"
+                  >
+                    Open Shipping Label
+                  </a>
+                )}
+
+                {trackingResult && (
+                  <pre className="max-h-40 overflow-auto rounded bg-slate-900 p-2 text-xs text-gray-300">
+                    {JSON.stringify(trackingResult, null, 2)}
+                  </pre>
+                )}
+              </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
