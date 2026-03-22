@@ -421,7 +421,6 @@ const SettingsManagement: React.FC = () => {
         city: "",
         state: "",
         zip: "",
-        country: "US",
         email: "",
         phone: "",
         ...finalSettings.fromAddress,
@@ -432,6 +431,9 @@ const SettingsManagement: React.FC = () => {
 
       finalSettings.paymentApiKeys = {
         stripe: String(finalSettings.paymentApiKeys?.stripe || "").trim(),
+        stripePublishableKey: String(
+          (finalSettings.paymentApiKeys as any)?.stripePublishableKey || "",
+        ).trim(),
         paypal: String(finalSettings.paymentApiKeys?.paypal || "").trim(),
         square: String(finalSettings.paymentApiKeys?.square || "").trim(),
         authorizeNet: String(
@@ -1072,23 +1074,53 @@ const SettingsManagement: React.FC = () => {
             </div>
 
             {settings.paymentProvider === "stripe" && (
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">
-                  Stripe Secret Key
-                </label>
-                <input
-                  type="password"
-                  value={settings.paymentApiKeys?.stripe || ""}
-                  onChange={(e) =>
-                    handleApiKeyChange(
-                      "paymentApiKeys",
-                      "stripe",
-                      e.target.value,
-                    )
-                  }
-                  placeholder="sk_test_************************"
-                  className={inputClasses}
-                />
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">
+                    Stripe Publishable Key
+                  </label>
+                  <input
+                    type="text"
+                    value={
+                      (settings.paymentApiKeys as any)?.stripePublishableKey ||
+                      ""
+                    }
+                    onChange={(e) =>
+                      handleApiKeyChange(
+                        "paymentApiKeys",
+                        "stripePublishableKey",
+                        e.target.value,
+                      )
+                    }
+                    placeholder="pk_test_************************"
+                    className={inputClasses}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Used by the checkout page. Starts with pk_test_ or pk_live_.
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">
+                    Stripe Secret Key
+                  </label>
+                  <input
+                    type="password"
+                    value={settings.paymentApiKeys?.stripe || ""}
+                    onChange={(e) =>
+                      handleApiKeyChange(
+                        "paymentApiKeys",
+                        "stripe",
+                        e.target.value,
+                      )
+                    }
+                    placeholder="sk_test_************************"
+                    className={inputClasses}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Server-side only. Never exposed to the browser. Starts with
+                    sk_test_ or sk_live_.
+                  </p>
+                </div>
               </div>
             )}
 

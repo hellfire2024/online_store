@@ -1,5 +1,7 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { loadStripe } from "@stripe/stripe-js";
+import { Elements } from "@stripe/react-stripe-js";
 import { useCart } from "../context/CartContext";
 import { useCustomerAuth } from "../context/CustomerAuthContext";
 import { useSiteSettings } from "../context/SiteSettingsContext";
@@ -7,6 +9,9 @@ import apiClient from "../services/apiClient";
 import { getCurrentProductPrice } from "../utils/productPricing";
 import { useToast } from "../hooks/useToast";
 import { calculateTax } from "../services/taxService";
+import StripePaymentSection, {
+  StripePaymentSectionHandle,
+} from "../components/StripePaymentSection";
 
 const CheckoutPage: React.FC = () => {
   const { cartItems, clearCart, itemCount } = useCart();
@@ -57,6 +62,9 @@ const CheckoutPage: React.FC = () => {
   const [requestNotes, setRequestNotes] = useState("");
   const [preferredPaymentMethod, setPreferredPaymentMethod] =
     useState("unspecified");
+  const [stripePublishableKey, setStripePublishableKey] = useState<string>("");
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const stripePaymentRef = useRef<StripePaymentSectionHandle>(null);
 
   const usStateMap: Record<string, string> = {
     alabama: "AL",
@@ -275,6 +283,13 @@ const CheckoutPage: React.FC = () => {
   ].filter(Boolean) as string[];
   const isAssistedCheckoutRequired = unavailableServices.length > 0;
 
+  // loadStripe is called lazily only when the publishable key is available
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const stripePromise = useMemo(
+    () => (stripePublishableKey ? loadStripe(stripePublishableKey) : null),
+    [stripePublishableKey],
+  );
+
   React.useEffect(() => {
     const loadCommerceStatus = async () => {
       try {
@@ -286,6 +301,22 @@ const CheckoutPage: React.FC = () => {
     };
     loadCommerceStatus();
   }, [siteSettings]);
+
+  // Load Stripe publishable key when payment provider is Stripe
+  React.useEffect(() => {
+    if (
+      String(siteSettings?.paymentProvider || "").toLowerCase() === "stripe"
+    ) {
+      fetch("/api/settings/stripe-config")
+        .then((r) => r.json())
+        .then((data) => {
+          if (data?.publishableKey) {
+            setStripePublishableKey(data.publishableKey);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [siteSettings?.paymentProvider]);
 
   // Auto-populate customer data when logged in
   React.useEffect(() => {
@@ -635,22 +666,16 @@ const CheckoutPage: React.FC = () => {
     }
 
     if (!isAssistedCheckoutRequired) {
-      if (!isValidCardNumber(paymentData.cardNumber)) {
-        addToast("Please enter a valid card number", "error");
-        return;
-      }
-
-      if (!isValidExpiry()) {
-        addToast("Please select a valid expiration date", "error");
-        return;
-      }
-
-      if (!isValidCvc(paymentData.cvc)) {
-        addToast("Please enter a valid CVC", "error");
+      if (!stripePaymentRef.current) {
+        addToast(
+          "Payment form is not ready. Please wait and try again.",
+          "error",
+        );
         return;
       }
     }
 
+    setIsProcessingPayment(true);
     try {
       // Generate order number in the same format as backend: AGIS-XXXXXXXXXX
       // Use a combination of timestamp and random number to ensure uniqueness
@@ -811,6 +836,33 @@ const CheckoutPage: React.FC = () => {
         return;
       }
 
+      // Direct checkout: charge the card via Stripe before creating the order
+      if (stripePaymentRef.current) {
+        addToast("Processing payment...", "info");
+        const paymentResult = await stripePaymentRef.current.pay(
+          taxCalculation.total,
+          orderDetails.orderNumber,
+          {
+            name: `${formData.firstName} ${formData.lastName}`,
+            email: formData.email,
+          },
+        );
+
+        if (!paymentResult.success) {
+          addToast(
+            paymentResult.error ||
+              "Payment failed. Please check your card details.",
+            "error",
+          );
+          setIsProcessingPayment(false);
+          return;
+        }
+
+        // Payment succeeded — attach the Stripe PaymentIntent ID so the backend can verify it
+        (orderDetails as any).paymentIntentId = paymentResult.paymentIntentId;
+        (orderDetails as any).paymentStatus = "paid";
+      }
+
       // Store in both sessionStorage and localStorage for HashRouter compatibility
       sessionStorage.setItem("orderDetails", JSON.stringify(orderDetails));
       localStorage.setItem("orderDetails", JSON.stringify(orderDetails));
@@ -859,6 +911,8 @@ const CheckoutPage: React.FC = () => {
         "An error occurred while processing your order. Please try again.",
         "error",
       );
+    } finally {
+      setIsProcessingPayment(false);
     }
   };
 
@@ -1219,94 +1273,30 @@ const CheckoutPage: React.FC = () => {
                   <h2 className="text-2xl font-semibold text-white mt-8 mb-6">
                     Payment Details
                   </h2>
-                  <div className="space-y-4">
-                    <input
-                      type="text"
-                      placeholder="Card Number"
-                      value={paymentData.cardNumber}
-                      onChange={(e) =>
-                        setPaymentData({
-                          ...paymentData,
-                          cardNumber: formatCardNumber(e.target.value),
-                        })
-                      }
-                      inputMode="numeric"
-                      autoComplete="cc-number"
-                      maxLength={19}
-                      className={inputClasses}
-                      required
-                    />
-                    <div className="grid grid-cols-3 gap-4">
-                      <select
-                        value={paymentData.expiryMonth}
-                        onChange={(e) =>
-                          setPaymentData({
-                            ...paymentData,
-                            expiryMonth: e.target.value,
-                          })
-                        }
-                        autoComplete="cc-exp-month"
-                        className={inputClasses}
-                        required
-                      >
-                        <option value="">Month</option>
-                        {Array.from({ length: 12 }, (_, i) =>
-                          String(i + 1).padStart(2, "0"),
-                        ).map((month) => (
-                          <option key={month} value={month}>
-                            {month}
-                          </option>
-                        ))}
-                      </select>
-                      <select
-                        value={paymentData.expiryYear}
-                        onChange={(e) =>
-                          setPaymentData({
-                            ...paymentData,
-                            expiryYear: e.target.value,
-                          })
-                        }
-                        autoComplete="cc-exp-year"
-                        className={inputClasses}
-                        required
-                      >
-                        <option value="">Year</option>
-                        {Array.from(
-                          { length: 11 },
-                          (_, i) => new Date().getFullYear() + i,
-                        ).map((year) => (
-                          <option key={year} value={String(year)}>
-                            {year}
-                          </option>
-                        ))}
-                      </select>
-                      <input
-                        type="text"
-                        placeholder="CVC"
-                        value={paymentData.cvc}
-                        onChange={(e) =>
-                          setPaymentData({
-                            ...paymentData,
-                            cvc: formatCvc(e.target.value),
-                          })
-                        }
-                        inputMode="numeric"
-                        autoComplete="cc-csc"
-                        className={inputClasses}
-                        required
-                      />
+                  {stripePromise ? (
+                    <Elements stripe={stripePromise}>
+                      <StripePaymentSection ref={stripePaymentRef} />
+                    </Elements>
+                  ) : (
+                    <div className="p-3 bg-amber-900/30 border border-amber-500/50 rounded-md text-amber-200 text-sm">
+                      {stripePublishableKey
+                        ? "Loading payment form..."
+                        : "Stripe publishable key is not configured. Go to Settings → Payment and enter both your Stripe Publishable Key and Secret Key."}
                     </div>
-                  </div>
+                  )}
                 </>
               )}
               <div className="mt-8">
                 <button
                   type="submit"
-                  className="w-full bg-sky-500 text-white font-bold py-3 rounded-lg hover:bg-sky-600 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-sky-500"
+                  disabled={isProcessingPayment}
+                  className="w-full bg-sky-500 text-white font-bold py-3 rounded-lg hover:bg-sky-600 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-sky-500 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  {isAssistedCheckoutRequired
-                    ? "Submit Request to Sales Team"
-                    : "Place Order"}
+                  {isProcessingPayment
+                    ? "Processing Payment..."
+                    : isAssistedCheckoutRequired
+                      ? "Submit Request to Sales Team"
+                      : "Place Order"}
                 </button>
               </div>
             </form>

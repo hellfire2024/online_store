@@ -189,6 +189,20 @@ const buildCommerceStatus = (settings: any) => {
   };
 };
 
+// Safe: returns only the publishable key (never the secret key)
+router.get("/stripe-config", async (_req: Request, res: Response) => {
+  try {
+    const settings = await readSettings();
+    const publishableKey = String(
+      settings?.paymentApiKeys?.stripePublishableKey || "",
+    ).trim();
+    return res.json({ publishableKey });
+  } catch (error) {
+    console.error("Error fetching stripe config:", error);
+    return res.status(500).json({ error: "Failed to fetch stripe config" });
+  }
+});
+
 router.get("/commerce-status", async (_req: Request, res: Response) => {
   try {
     const settings = await readSettings();

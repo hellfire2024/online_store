@@ -2,6 +2,7 @@ import { Router, Request, Response } from "express";
 import { pool } from "../db/connection.js";
 import { RowDataPacket } from "mysql2";
 import { v4 as uuidv4 } from "uuid";
+import Stripe from "stripe";
 import {
   sendOrderConfirmationEmail,
   sendShippingNotificationEmail,
@@ -325,6 +326,57 @@ router.get("/:orderNumber", async (req: Request, res: Response) => {
 });
 
 // POST create order and send confirmation email
+// POST create Stripe PaymentIntent for direct checkout
+router.post(
+  "/create-payment-intent",
+  async (req: Request, res: Response): Promise<any> => {
+    try {
+      const { amount, orderNumber } = req.body;
+
+      if (!amount || Number(amount) <= 0) {
+        return res.status(400).json({ error: "Invalid payment amount" });
+      }
+
+      // Load Stripe secret key from settings
+      const [settingsRows] = await pool.query<RowDataPacket[]>(
+        "SELECT settings FROM site_settings WHERE id = 1 LIMIT 1",
+      );
+      const rawSettings = settingsRows.length
+        ? parseSettings(settingsRows[0].settings)
+        : {};
+      const stripeSecretKey = String(
+        rawSettings?.paymentApiKeys?.stripe || "",
+      ).trim();
+
+      if (!stripeSecretKey) {
+        return res
+          .status(400)
+          .json({
+            error:
+              "Stripe is not configured. Add your secret key in Settings → Payment.",
+          });
+      }
+
+      const stripe = new Stripe(stripeSecretKey);
+
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: Math.round(Number(amount) * 100), // cents
+        currency: "usd",
+        metadata: { orderNumber: String(orderNumber || "") },
+        automatic_payment_methods: { enabled: true, allow_redirects: "never" },
+      });
+
+      return res.json({ clientSecret: paymentIntent.client_secret });
+    } catch (error: any) {
+      console.error("Error creating payment intent:", error);
+      const stripeMessage = error?.raw?.message || error?.message;
+      return res.status(500).json({
+        error: stripeMessage || "Failed to create payment intent",
+      });
+    }
+  },
+);
+
 router.post("/", async (req: Request, res: Response) => {
   try {
     const { orderNumber, customerId, customerEmail, customerName, orderData } =
@@ -344,9 +396,54 @@ router.post("/", async (req: Request, res: Response) => {
     const requestedMethod = normalizeRequestedPaymentMethod(
       orderData?.paymentMethod,
     );
-    const explicitPaymentStatus = normalizePaymentStatus(
+
+    // If a Stripe PaymentIntent ID is provided, verify it server-side before
+    // marking the order as paid.
+    let verifiedPaymentIntentId: string | null = null;
+    const incomingPaymentIntentId = String(
+      orderData?.paymentIntentId || "",
+    ).trim();
+    let explicitPaymentStatus = normalizePaymentStatus(
       orderData?.paymentStatus,
     );
+
+    if (incomingPaymentIntentId && incomingPaymentIntentId.startsWith("pi_")) {
+      try {
+        const [settingsRows] = await pool.query<RowDataPacket[]>(
+          "SELECT settings FROM site_settings WHERE id = 1 LIMIT 1",
+        );
+        const rawSettings = settingsRows.length
+          ? parseSettings(settingsRows[0].settings)
+          : {};
+        const stripeSecretKey = String(
+          rawSettings?.paymentApiKeys?.stripe || "",
+        ).trim();
+
+        if (stripeSecretKey) {
+          const stripe = new Stripe(stripeSecretKey);
+          const intent = await stripe.paymentIntents.retrieve(
+            incomingPaymentIntentId,
+          );
+          if (intent.status === "succeeded") {
+            verifiedPaymentIntentId = incomingPaymentIntentId;
+            explicitPaymentStatus = "paid";
+            console.log(
+              `[Order ${orderNumber}] Payment verified via Stripe: ${verifiedPaymentIntentId}`,
+            );
+          } else {
+            console.warn(
+              `[Order ${orderNumber}] PaymentIntent ${incomingPaymentIntentId} status: ${intent.status}`,
+            );
+          }
+        }
+      } catch (stripeErr: any) {
+        console.warn(
+          `[Order ${orderNumber}] Could not verify PaymentIntent:`,
+          stripeErr?.message,
+        );
+      }
+    }
+
     const paymentStatus = explicitPaymentStatus || "unpaid";
 
     const normalizedOrderData = attachPaymentWorkflowToOrderData(
@@ -355,6 +452,10 @@ router.post("/", async (req: Request, res: Response) => {
       requestedMethod,
       {
         collectedOnSite: false,
+        ...(verifiedPaymentIntentId && {
+          stripePaymentIntentId: verifiedPaymentIntentId,
+          paidAt: new Date().toISOString(),
+        }),
         invoiceIssuedAt:
           requestedMethod === "invoice" || paymentStatus === "pending_offline"
             ? new Date().toISOString()
