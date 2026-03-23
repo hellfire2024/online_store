@@ -1,3 +1,4 @@
+import Stripe from "stripe";
 import { Router, Request, Response } from "express";
 import { pool } from "../db/connection.js";
 import { RowDataPacket } from "mysql2";
@@ -334,3 +335,60 @@ router.put("/", async (req: Request, res: Response) => {
 });
 
 export default router;
+
+// POST: Test Stripe configuration (publishable and secret key)
+router.post("/stripe-config-test", async (_req: Request, res: Response) => {
+  try {
+    const settings = await readSettings();
+    const publishableKey = String(
+      settings?.paymentApiKeys?.stripePublishableKey || "",
+    ).trim();
+    const secretKey = String(settings?.paymentApiKeys?.stripe || "").trim();
+
+    if (!publishableKey || !secretKey) {
+      return res.status(400).json({
+        success: false,
+        error:
+          !publishableKey && !secretKey
+            ? "Both Stripe publishable and secret keys are missing."
+            : !publishableKey
+              ? "Stripe publishable key is missing."
+              : "Stripe secret key is missing.",
+      });
+    }
+
+    try {
+      const stripe = new Stripe(secretKey);
+      // Try to fetch the account as a simple test
+      const account = await stripe.accounts.retrieve();
+      // Optionally, check if publishableKey looks valid (starts with 'pk_')
+      if (!publishableKey.startsWith("pk_")) {
+        return res.status(400).json({
+          success: false,
+          error: "Stripe publishable key format is invalid.",
+        });
+      }
+      return res.json({
+        success: true,
+        accountName:
+          account?.display_name || account?.business_profile?.name || null,
+        accountId: account?.id,
+        message: "Stripe connection successful. Keys are valid.",
+      });
+    } catch (stripeErr: any) {
+      return res.status(400).json({
+        success: false,
+        error:
+          stripeErr?.raw?.message ||
+          stripeErr?.message ||
+          "Failed to connect to Stripe. Check your keys.",
+      });
+    }
+  } catch (error) {
+    console.error("Error testing Stripe config:", error);
+    return res.status(500).json({
+      success: false,
+      error: "Internal server error while testing Stripe config.",
+    });
+  }
+});

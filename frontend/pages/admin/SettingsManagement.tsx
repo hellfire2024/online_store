@@ -1435,6 +1435,11 @@ const SettingsManagement: React.FC = () => {
                   <p className="text-xs text-gray-500 mt-1">
                     Used by the checkout page. Starts with pk_test_ or pk_live_.
                   </p>
+                  {!(settings.paymentApiKeys as any)?.stripePublishableKey && (
+                    <p className="text-xs text-red-400 mt-1">
+                      Publishable key is required for Stripe payments.
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-1">
@@ -1457,6 +1462,44 @@ const SettingsManagement: React.FC = () => {
                     Server-side only. Never exposed to the browser. Starts with
                     sk_test_ or sk_live_.
                   </p>
+                  {!settings.paymentApiKeys?.stripe && (
+                    <p className="text-xs text-red-400 mt-1">
+                      Secret key is required for Stripe payments.
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <button
+                    type="button"
+                    className="mt-2 px-4 py-2 bg-sky-600 text-white rounded hover:bg-sky-700"
+                    onClick={async () => {
+                      try {
+                        const res = await fetch(
+                          "/api/settings/stripe-config-test",
+                          { method: "POST" },
+                        );
+                        const data = await res.json();
+                        if (res.ok && data.success) {
+                          addToast(
+                            "Stripe connection test succeeded!",
+                            "success",
+                          );
+                        } else {
+                          addToast(
+                            data.error || "Stripe connection test failed.",
+                            "error",
+                          );
+                        }
+                      } catch (err) {
+                        addToast(
+                          "Stripe connection test failed. Check server logs.",
+                          "error",
+                        );
+                      }
+                    }}
+                  >
+                    Test Stripe Connection
+                  </button>
                 </div>
               </div>
             )}
