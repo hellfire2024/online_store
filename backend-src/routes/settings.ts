@@ -370,8 +370,7 @@ router.post("/stripe-config-test", async (_req: Request, res: Response) => {
       }
       return res.json({
         success: true,
-        accountName:
-          account?.display_name || account?.business_profile?.name || null,
+        accountName: account?.business_profile?.name || null,
         accountId: account?.id,
         message: "Stripe connection successful. Keys are valid.",
       });
