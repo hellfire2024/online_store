@@ -1002,12 +1002,29 @@ const SettingsManagement: React.FC = () => {
               onImageUrlChange={(url) =>
                 setSettings((prev) => ({ ...prev!, faviconUrl: url }))
               }
-              onFileSelect={(file) => {
+              onFileSelect={async (file) => {
                 setSelectedFaviconFile(file);
+                // Show preview immediately
+                const previewUrl = URL.createObjectURL(file);
                 setSettings((prev) => ({
                   ...prev!,
-                  faviconUrl: URL.createObjectURL(file),
+                  faviconUrl: previewUrl,
                 }));
+                try {
+                  const data = await apiClient.upload.image(file, {
+                    target: "favicon",
+                  });
+                  if (data.success && data.imageUrl) {
+                    setSettings((prev) => ({
+                      ...prev!,
+                      faviconUrl: data.imageUrl,
+                    }));
+                  }
+                } catch (err) {
+                  // Optionally show a toast or error
+                } finally {
+                  URL.revokeObjectURL(previewUrl);
+                }
               }}
             />
             <div>
@@ -1050,12 +1067,29 @@ const SettingsManagement: React.FC = () => {
               onImageUrlChange={(url) =>
                 setSettings((prev) => ({ ...prev!, headerLogoUrl: url }))
               }
-              onFileSelect={(file) => {
+              onFileSelect={async (file) => {
                 setSelectedLogoFile(file);
+                // Show preview immediately
+                const previewUrl = URL.createObjectURL(file);
                 setSettings((prev) => ({
                   ...prev!,
-                  headerLogoUrl: URL.createObjectURL(file),
+                  headerLogoUrl: previewUrl,
                 }));
+                try {
+                  const data = await apiClient.upload.image(file, {
+                    target: "generic",
+                  });
+                  if (data.success && data.imageUrl) {
+                    setSettings((prev) => ({
+                      ...prev!,
+                      headerLogoUrl: data.imageUrl,
+                    }));
+                  }
+                } catch (err) {
+                  // Optionally show a toast or error
+                } finally {
+                  URL.revokeObjectURL(previewUrl);
+                }
               }}
             />
 
