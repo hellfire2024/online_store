@@ -360,6 +360,7 @@ router.post(
       const { amount, orderNumber } = req.body;
 
       if (!amount || Number(amount) <= 0) {
+        console.warn("[Stripe] Invalid payment amount received:", req.body);
         return res.status(400).json({ error: "Invalid payment amount" });
       }
 
@@ -375,6 +376,10 @@ router.post(
       ).trim();
 
       if (!stripeSecretKey) {
+        console.warn(
+          "[Stripe] Secret key missing in settings when creating payment intent. Settings:",
+          rawSettings?.paymentApiKeys,
+        );
         return res.status(400).json({
           error:
             "Stripe is not configured. Add your secret key in Settings → Payment.",
@@ -392,7 +397,12 @@ router.post(
 
       return res.json({ clientSecret: paymentIntent.client_secret });
     } catch (error: any) {
-      console.error("Error creating payment intent:", error);
+      console.error(
+        "Error creating payment intent:",
+        error,
+        "Request body:",
+        req.body,
+      );
       const stripeMessage = error?.raw?.message || error?.message;
       return res.status(500).json({
         error: stripeMessage || "Failed to create payment intent",
@@ -1289,11 +1299,9 @@ router.post(
       ).trim();
 
       if (!clientId || !clientSecret) {
-        return res
-          .status(400)
-          .json({
-            error: "PayPal credentials not configured in Settings → Payment.",
-          });
+        return res.status(400).json({
+          error: "PayPal credentials not configured in Settings → Payment.",
+        });
       }
 
       const sandbox = Boolean(
