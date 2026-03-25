@@ -362,6 +362,9 @@ const SettingsManagement: React.FC = () => {
   );
   const [selectedLogoFile, setSelectedLogoFile] = useState<File | null>(null);
   const [activeDragItem, setActiveDragItem] = useState<FooterItem | null>(null);
+  // Stripe connection test state
+  const [stripeTested, setStripeTested] = useState<null | boolean>(null); // null = not tested, true = ok, false = failed
+  const [stripeTestMessage, setStripeTestMessage] = useState<string>("");
 
   // --- State for Email Test Modal ---
   const [showEmailTestModal, setShowEmailTestModal] = useState(false);
@@ -1534,8 +1537,23 @@ const SettingsManagement: React.FC = () => {
                 <div>
                   <button
                     type="button"
-                    className="mt-2 px-4 py-2 bg-sky-600 text-white rounded hover:bg-sky-700"
+                    className={`mt-2 px-4 py-2 rounded text-white ${hasSettingsUnsavedChanges ? "bg-slate-500 cursor-not-allowed" : "bg-sky-600 hover:bg-sky-700"}`}
+                    disabled={hasSettingsUnsavedChanges}
+                    title={
+                      hasSettingsUnsavedChanges
+                        ? "Save settings before testing connection"
+                        : "Test Stripe connection"
+                    }
                     onClick={async () => {
+                      if (hasSettingsUnsavedChanges) {
+                        addToast(
+                          "Please save your Stripe keys before testing the connection.",
+                          "warning",
+                        );
+                        setStripeTested(null);
+                        setStripeTestMessage("");
+                        return;
+                      }
                       try {
                         const res = await fetch(
                           "/api/settings/stripe-config-test",
@@ -1547,10 +1565,16 @@ const SettingsManagement: React.FC = () => {
                             "Stripe connection test succeeded!",
                             "success",
                           );
+                          setStripeTested(true);
+                          setStripeTestMessage("Stripe connection successful.");
                         } else {
                           addToast(
                             data.error || "Stripe connection test failed.",
                             "error",
+                          );
+                          setStripeTested(false);
+                          setStripeTestMessage(
+                            data.error || "Stripe connection test failed.",
                           );
                         }
                       } catch (err) {
@@ -1558,11 +1582,25 @@ const SettingsManagement: React.FC = () => {
                           "Stripe connection test failed. Check server logs.",
                           "error",
                         );
+                        setStripeTested(false);
+                        setStripeTestMessage(
+                          "Stripe connection test failed. Check server logs.",
+                        );
                       }
                     }}
                   >
                     Test Stripe Connection
                   </button>
+                  {stripeTested === true && (
+                    <div className="text-green-400 text-xs mt-1">
+                      {stripeTestMessage}
+                    </div>
+                  )}
+                  {stripeTested === false && (
+                    <div className="text-red-400 text-xs mt-1">
+                      {stripeTestMessage}
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -1747,10 +1785,22 @@ const SettingsManagement: React.FC = () => {
             <div className="flex justify-between items-center pt-4">
               <div>
                 <span className="text-gray-400">Status: </span>
-                {settings.paymentProvider !== "none" &&
-                settings.paymentApiKeys?.[
-                  settings.paymentProvider as keyof typeof settings.paymentApiKeys
-                ] ? (
+                {settings.paymentProvider === "stripe" ? (
+                  stripeTested === true ? (
+                    <span className="text-green-400 font-semibold">
+                      Connected
+                    </span>
+                  ) : stripeTested === false ? (
+                    <span className="text-red-400 font-semibold">
+                      Not Connected
+                    </span>
+                  ) : (
+                    <span className="text-yellow-400">Not Connected</span>
+                  )
+                ) : settings.paymentProvider !== "none" &&
+                  settings.paymentApiKeys?.[
+                    settings.paymentProvider as keyof typeof settings.paymentApiKeys
+                  ] ? (
                   <span className="text-green-400 font-semibold">
                     Connected
                   </span>
