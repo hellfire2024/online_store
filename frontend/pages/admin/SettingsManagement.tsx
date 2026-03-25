@@ -998,18 +998,17 @@ const SettingsManagement: React.FC = () => {
             </div>
             <ImageUploadInput
               label="Favicon (Browser Tab Icon)"
-              imageUrl={settings.faviconUrl || ""}
-              onImageUrlChange={(url) =>
-                setSettings((prev) => ({ ...prev!, faviconUrl: url }))
+              imageUrl={
+                selectedFaviconFile
+                  ? URL.createObjectURL(selectedFaviconFile)
+                  : settings.faviconUrl || ""
               }
+              onImageUrlChange={() => {
+                setSelectedFaviconFile(null);
+                setSettings((prev) => ({ ...prev!, faviconUrl: "" }));
+              }}
               onFileSelect={async (file) => {
                 setSelectedFaviconFile(file);
-                // Show preview immediately
-                const previewUrl = URL.createObjectURL(file);
-                setSettings((prev) => ({
-                  ...prev!,
-                  faviconUrl: previewUrl,
-                }));
                 try {
                   const data = await apiClient.upload.image(file, {
                     target: "favicon",
@@ -1019,11 +1018,14 @@ const SettingsManagement: React.FC = () => {
                       ...prev!,
                       faviconUrl: data.imageUrl,
                     }));
+                    setSelectedFaviconFile(null);
+                  } else {
+                    throw new Error("Upload failed");
                   }
                 } catch (err) {
-                  // Optionally show a toast or error
-                } finally {
-                  URL.revokeObjectURL(previewUrl);
+                  setSettings((prev) => ({ ...prev!, faviconUrl: "" }));
+                  setSelectedFaviconFile(null);
+                  addToast("Favicon upload failed!", "error");
                 }
               }}
             />
@@ -1063,18 +1065,17 @@ const SettingsManagement: React.FC = () => {
             </div>
             <ImageUploadInput
               label="Header Logo"
-              imageUrl={settings.headerLogoUrl || ""}
-              onImageUrlChange={(url) =>
-                setSettings((prev) => ({ ...prev!, headerLogoUrl: url }))
+              imageUrl={
+                selectedLogoFile
+                  ? URL.createObjectURL(selectedLogoFile)
+                  : settings.headerLogoUrl || ""
               }
+              onImageUrlChange={() => {
+                setSelectedLogoFile(null);
+                setSettings((prev) => ({ ...prev!, headerLogoUrl: "" }));
+              }}
               onFileSelect={async (file) => {
                 setSelectedLogoFile(file);
-                // Show preview immediately
-                const previewUrl = URL.createObjectURL(file);
-                setSettings((prev) => ({
-                  ...prev!,
-                  headerLogoUrl: previewUrl,
-                }));
                 try {
                   const data = await apiClient.upload.image(file, {
                     target: "generic",
@@ -1084,11 +1085,14 @@ const SettingsManagement: React.FC = () => {
                       ...prev!,
                       headerLogoUrl: data.imageUrl,
                     }));
+                    setSelectedLogoFile(null);
+                  } else {
+                    throw new Error("Upload failed");
                   }
                 } catch (err) {
-                  // Optionally show a toast or error
-                } finally {
-                  URL.revokeObjectURL(previewUrl);
+                  setSettings((prev) => ({ ...prev!, headerLogoUrl: "" }));
+                  setSelectedLogoFile(null);
+                  addToast("Header logo upload failed!", "error");
                 }
               }}
             />
