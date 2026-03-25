@@ -745,9 +745,13 @@ const SettingsManagement: React.FC = () => {
 
       if (selectedFaviconFile) {
         try {
-          const faviconUrl = await uploadFavicon(selectedFaviconFile);
-          finalSettings.faviconUrl = faviconUrl;
-          addToast("Favicon uploaded successfully!", "success");
+          const data = await apiClient.upload.image(selectedFaviconFile, { target: "favicon" });
+          if (data.success && data.imageUrl) {
+            finalSettings.faviconUrl = data.imageUrl;
+            addToast("Favicon uploaded successfully!", "success");
+          } else {
+            throw new Error("Upload failed");
+          }
         } catch (error) {
           addToast("Favicon upload failed!", "error");
           return;
@@ -756,10 +760,13 @@ const SettingsManagement: React.FC = () => {
 
       if (selectedLogoFile) {
         try {
-          // We can reuse the uploadFavicon logic for any image upload
-          const logoUrl = await uploadFavicon(selectedLogoFile);
-          finalSettings.headerLogoUrl = logoUrl;
-          addToast("Header logo uploaded successfully!", "success");
+          const data = await apiClient.upload.image(selectedLogoFile, { target: "generic" });
+          if (data.success && data.imageUrl) {
+            finalSettings.headerLogoUrl = data.imageUrl;
+            addToast("Header logo uploaded successfully!", "success");
+          } else {
+            throw new Error("Upload failed");
+          }
         } catch (error) {
           addToast("Header logo upload failed!", "error");
           return;
