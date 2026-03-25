@@ -308,6 +308,9 @@ router.put("/", async (req: Request, res: Response) => {
       "bytes",
     );
 
+    // Debug: print the settings being saved
+    console.log("[Settings] Saving to DB:", JSON.stringify(req.body, null, 2));
+
     if (req.body?.fromAddress) {
       req.body.fromAddress = normalizeFromAddress(req.body.fromAddress);
     }
