@@ -375,6 +375,13 @@ router.post(
         rawSettings?.paymentApiKeys?.stripe || "",
       ).trim();
 
+      // Debug logging
+      console.log("[Stripe] PaymentIntent debug:", {
+        paymentApiKeys: rawSettings?.paymentApiKeys,
+        stripeSecretKey,
+        fullSettings: rawSettings,
+      });
+
       if (!stripeSecretKey) {
         console.warn(
           "[Stripe] Secret key missing in settings when creating payment intent. Settings:",
