@@ -778,10 +778,16 @@ const SettingsManagement: React.FC = () => {
       }
 
       // Prevent saving blob: URLs to settings
-      if (finalSettings.faviconUrl && finalSettings.faviconUrl.startsWith("blob:")) {
+      if (
+        finalSettings.faviconUrl &&
+        finalSettings.faviconUrl.startsWith("blob:")
+      ) {
         finalSettings.faviconUrl = "";
       }
-      if (finalSettings.headerLogoUrl && finalSettings.headerLogoUrl.startsWith("blob:")) {
+      if (
+        finalSettings.headerLogoUrl &&
+        finalSettings.headerLogoUrl.startsWith("blob:")
+      ) {
         finalSettings.headerLogoUrl = "";
       }
 
