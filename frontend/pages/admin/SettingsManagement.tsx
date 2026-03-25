@@ -745,7 +745,9 @@ const SettingsManagement: React.FC = () => {
 
       if (selectedFaviconFile) {
         try {
-          const data = await apiClient.upload.image(selectedFaviconFile, { target: "favicon" });
+          const data = await apiClient.upload.image(selectedFaviconFile, {
+            target: "favicon",
+          });
           if (data.success && data.imageUrl) {
             finalSettings.faviconUrl = data.imageUrl;
             addToast("Favicon uploaded successfully!", "success");
@@ -760,7 +762,9 @@ const SettingsManagement: React.FC = () => {
 
       if (selectedLogoFile) {
         try {
-          const data = await apiClient.upload.image(selectedLogoFile, { target: "generic" });
+          const data = await apiClient.upload.image(selectedLogoFile, {
+            target: "generic",
+          });
           if (data.success && data.imageUrl) {
             finalSettings.headerLogoUrl = data.imageUrl;
             addToast("Header logo uploaded successfully!", "success");
