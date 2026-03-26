@@ -106,22 +106,48 @@ export const SiteSettingsProvider: React.FC<{ children: ReactNode }> = ({
   const [siteSettings, setSiteSettings] =
     useState<SiteSettings>(defaultSettings);
   const [isLoading, setIsLoading] = useState(true);
+  const [settingsError, setSettingsError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchSettings = async () => {
       setIsLoading(true);
+      setSettingsError(null);
       try {
         const loadedSettings = await apiClient.settings.get();
         if (loadedSettings && typeof loadedSettings === "object") {
+          // Check payment provider and keys
+          const paymentProvider = loadedSettings.paymentProvider || "none";
+          const paymentApiKeys = loadedSettings.paymentApiKeys || {};
+          let paymentKey = "";
+          if (paymentProvider !== "none") {
+            paymentKey = String(paymentApiKeys[paymentProvider] || "").trim();
+          }
+          if (
+            paymentProvider !== "none" &&
+            (!paymentKey || paymentKey.length === 0)
+          ) {
+            setSettingsError(
+              `Payment provider '${paymentProvider}' is selected but credentials are missing. Check backend settings.`,
+            );
+            // Still set settings, but warn
+            console.warn(
+              `[SiteSettings] Payment provider '${paymentProvider}' selected but credentials missing.`,
+              loadedSettings,
+            );
+          }
           setSiteSettings((prev) => ({ ...prev, ...loadedSettings }));
+        } else {
+          setSettingsError("No site settings returned from backend.");
         }
       } catch (error) {
+        setSettingsError(
+          `Failed to load site settings from backend: ${error instanceof Error ? error.message : String(error)}`,
+        );
         setSiteSettings(defaultSettings);
       } finally {
         setIsLoading(false);
       }
     };
-
     fetchSettings();
   }, []);
 
@@ -158,8 +184,27 @@ export const SiteSettingsProvider: React.FC<{ children: ReactNode }> = ({
 
   return (
     <SiteSettingsContext.Provider
-      value={{ siteSettings, isLoading, updateSiteSettings, uploadFavicon }}
+      value={{
+        siteSettings,
+        isLoading,
+        updateSiteSettings,
+        uploadFavicon,
+        settingsError,
+      }}
     >
+      {settingsError && (
+        <div
+          style={{
+            color: "red",
+            background: "#fff3f3",
+            padding: 8,
+            margin: 8,
+            border: "1px solid #f99",
+          }}
+        >
+          <strong>Site Settings Error:</strong> {settingsError}
+        </div>
+      )}
       {children}
     </SiteSettingsContext.Provider>
   );
