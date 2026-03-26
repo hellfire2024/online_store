@@ -401,28 +401,20 @@ router.post(
           rawSettings.paymentApiKeys.stripe || "",
         ).trim();
       }
-      // Fallback: allow env var override for emergency fix
-      if (!stripeSecretKey && process.env.STRIPE_SECRET_KEY) {
-        stripeSecretKey = process.env.STRIPE_SECRET_KEY.trim();
-        console.warn(
-          "[Stripe] Using STRIPE_SECRET_KEY from environment variable as fallback.",
-        );
-      }
       // Debug logging
       console.log("[Stripe] PaymentIntent debug:", {
         paymentApiKeys: rawSettings?.paymentApiKeys,
         stripeSecretKey,
         fullSettings: rawSettings,
-        envStripe: process.env.STRIPE_SECRET_KEY ? "[set]" : undefined,
       });
       if (!stripeSecretKey) {
         console.error(
-          "[Stripe] FATAL: Secret key missing in both DB settings and environment variable. Settings:",
+          "[Stripe] FATAL: Secret key missing in DB settings. Settings:",
           rawSettings?.paymentApiKeys,
         );
         return res.status(500).json({
           error:
-            "Stripe is not configured. Add your secret key in Settings → Payment or set STRIPE_SECRET_KEY env variable.",
+            "Stripe is not configured. Add your secret key in Settings → Payment.",
         });
       }
       const stripe = new Stripe(stripeSecretKey);

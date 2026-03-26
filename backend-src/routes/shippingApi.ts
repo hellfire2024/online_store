@@ -23,26 +23,12 @@ const readShippingConfig = async () => {
     "SELECT settings FROM site_settings WHERE id = 1 LIMIT 1",
   );
 
-  const defaults = {
-    easypost: {
-      enabled: false,
-      apiKey: process.env.EASYPOST_API_KEY || "",
-    } as CarrierCredentials,
-    shippo: {
-      enabled: false,
-      apiKey: process.env.SHIPPO_API_KEY || "",
-    } as CarrierCredentials,
-    shipstation: {
-      enabled: false,
-      apiKey: process.env.SHIPSTATION_API_KEY || "",
-      apiSecret: process.env.SHIPSTATION_API_SECRET || "",
-    } as CarrierCredentials,
-    fromAddress: {},
-  };
-
   if (!rows.length || !rows[0].settings) {
     return {
-      ...defaults,
+      easypost: { enabled: false, apiKey: "" },
+      shippo: { enabled: false, apiKey: "" },
+      shipstation: { enabled: false, apiKey: "", apiSecret: "" },
+      fromAddress: {},
       enabledCarriers: [],
     };
   }
@@ -55,26 +41,21 @@ const readShippingConfig = async () => {
   }
 
   const configuredCarriers = parsed?.shippingCarriers || {};
-  const easypostKey =
-    String(configuredCarriers?.easypost?.apiKey || "").trim() ||
-    defaults.easypost.apiKey;
-  const shippoKey =
-    String(configuredCarriers?.shippo?.apiKey || "").trim() ||
-    defaults.shippo.apiKey;
-  const shipstationKey =
-    String(configuredCarriers?.shipstation?.apiKey || "").trim() ||
-    defaults.shipstation.apiKey;
-  const shipstationSecret =
-    String(configuredCarriers?.shipstation?.apiSecret || "").trim() ||
-    defaults.shipstation.apiSecret ||
-    "";
+  const easypostKey = String(configuredCarriers?.easypost?.apiKey || "").trim();
+  const shippoKey = String(configuredCarriers?.shippo?.apiKey || "").trim();
+  const shipstationKey = String(
+    configuredCarriers?.shipstation?.apiKey || "",
+  ).trim();
+  const shipstationSecret = String(
+    configuredCarriers?.shipstation?.apiSecret || "",
+  ).trim();
 
   const easypostEnabled =
-    Boolean(configuredCarriers?.easypost?.enabled) || Boolean(easypostKey);
+    Boolean(configuredCarriers?.easypost?.enabled) && Boolean(easypostKey);
   const shippoEnabled =
-    Boolean(configuredCarriers?.shippo?.enabled) || Boolean(shippoKey);
+    Boolean(configuredCarriers?.shippo?.enabled) && Boolean(shippoKey);
   const shipstationEnabled =
-    Boolean(configuredCarriers?.shipstation?.enabled) ||
+    Boolean(configuredCarriers?.shipstation?.enabled) &&
     Boolean(shipstationKey && shipstationSecret);
 
   const enabledCarriers = [
