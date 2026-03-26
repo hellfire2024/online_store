@@ -53,9 +53,13 @@ const parseSettings = (raw: string | null) => {
   if (!raw) {
     return {};
   }
-
   try {
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+    // If settings is an array, use the first element
+    if (Array.isArray(parsed) && parsed.length > 0 && typeof parsed[0] === 'object') {
+      return parsed[0];
+    }
+    return parsed;
   } catch {
     return {};
   }
