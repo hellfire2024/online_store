@@ -368,6 +368,7 @@ router.post(
       const [settingsRows] = await pool.query<RowDataPacket[]>(
         "SELECT settings FROM site_settings WHERE id = 1 LIMIT 1",
       );
+      console.log("[Stripe] settingsRows from DB:", settingsRows);
       const rawSettings = settingsRows.length
         ? parseSettings(settingsRows[0].settings)
         : {};
