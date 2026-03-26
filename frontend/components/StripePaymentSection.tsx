@@ -37,10 +37,15 @@ const StripePaymentSection = forwardRef<StripePaymentSectionHandle>(
         // Step 1: Create PaymentIntent on the backend
         let clientSecret: string;
         try {
+          // Send full billing details for backend logging/debugging
           const response = await fetch("/api/orders/create-payment-intent", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ amount, orderNumber }),
+            body: JSON.stringify({
+              amount,
+              orderNumber,
+              billingDetails,
+            }),
           });
 
           if (!response.ok) {
