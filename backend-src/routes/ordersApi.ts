@@ -368,7 +368,27 @@ router.post(
       const [settingsRows] = await pool.query<RowDataPacket[]>(
         "SELECT settings FROM site_settings WHERE id = 1 LIMIT 1",
       );
-      console.log("[Stripe] settingsRows from DB:", settingsRows);
+      console.log(
+        "[Stripe] settingsRows from DB:",
+        JSON.stringify(settingsRows, null, 2),
+      );
+      if (settingsRows.length && settingsRows[0].settings) {
+        try {
+          const parsed =
+            typeof settingsRows[0].settings === "string"
+              ? JSON.parse(settingsRows[0].settings)
+              : settingsRows[0].settings;
+          console.log(
+            "[Stripe] paymentApiKeys from DB:",
+            JSON.stringify(parsed.paymentApiKeys, null, 2),
+          );
+        } catch (e) {
+          console.log(
+            "[Stripe] Could not parse settings for paymentApiKeys logging",
+            e,
+          );
+        }
+      }
       const rawSettings = settingsRows.length
         ? parseSettings(settingsRows[0].settings)
         : {};
