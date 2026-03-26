@@ -48,19 +48,21 @@ const StripePaymentSection = forwardRef<StripePaymentSectionHandle>(
             }),
           });
 
-          if (!response.ok) {
-            const errData = await response.json().catch(() => ({}));
+          const data = await response.json().catch(() => ({}));
+          // Debug log backend response
+          if (typeof window !== "undefined") {
+            // eslint-disable-next-line no-console
+            console.log("[Stripe] PaymentIntent backend response:", data);
+          }
+          if (!response.ok || !data.clientSecret) {
             return {
               success: false,
               error:
-                errData.error ||
-                "Failed to initialize payment. Please try again.",
+                data.error || "Failed to initialize payment. Please try again.",
             };
           }
-
-          const data = await response.json();
           clientSecret = data.clientSecret;
-        } catch {
+        } catch (err) {
           return {
             success: false,
             error: "Network error while starting payment.",

@@ -194,9 +194,21 @@ const buildCommerceStatus = (settings: any) => {
 router.get("/stripe-config", async (_req: Request, res: Response) => {
   try {
     const settings = await readSettings();
-    const publishableKey = String(
+    let publishableKey = String(
       settings?.paymentApiKeys?.stripePublishableKey || "",
     ).trim();
+    let source = "database";
+    if (!publishableKey && process.env.STRIPE_PUBLISHABLE_KEY) {
+      publishableKey = String(process.env.STRIPE_PUBLISHABLE_KEY).trim();
+      source = "env";
+    }
+    if (!publishableKey) {
+      console.error("[Stripe] No publishable key found in DB or env");
+      return res
+        .status(500)
+        .json({ error: "Stripe publishable key not configured" });
+    }
+    console.log(`[Stripe] Returning publishable key from ${source}`);
     return res.json({ publishableKey });
   } catch (error) {
     console.error("Error fetching stripe config:", error);
