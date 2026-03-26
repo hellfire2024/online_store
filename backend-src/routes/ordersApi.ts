@@ -392,37 +392,46 @@ router.post(
       const rawSettings = settingsRows.length
         ? parseSettings(settingsRows[0].settings)
         : {};
-      const stripeSecretKey = String(
-        rawSettings?.paymentApiKeys?.stripe || "",
-      ).trim();
-
+      let stripeSecretKey = "";
+      if (
+        rawSettings?.paymentApiKeys &&
+        typeof rawSettings.paymentApiKeys === "object"
+      ) {
+        stripeSecretKey = String(
+          rawSettings.paymentApiKeys.stripe || "",
+        ).trim();
+      }
+      // Fallback: allow env var override for emergency fix
+      if (!stripeSecretKey && process.env.STRIPE_SECRET_KEY) {
+        stripeSecretKey = process.env.STRIPE_SECRET_KEY.trim();
+        console.warn(
+          "[Stripe] Using STRIPE_SECRET_KEY from environment variable as fallback.",
+        );
+      }
       // Debug logging
       console.log("[Stripe] PaymentIntent debug:", {
         paymentApiKeys: rawSettings?.paymentApiKeys,
         stripeSecretKey,
         fullSettings: rawSettings,
+        envStripe: process.env.STRIPE_SECRET_KEY ? "[set]" : undefined,
       });
-
       if (!stripeSecretKey) {
-        console.warn(
-          "[Stripe] Secret key missing in settings when creating payment intent. Settings:",
+        console.error(
+          "[Stripe] FATAL: Secret key missing in both DB settings and environment variable. Settings:",
           rawSettings?.paymentApiKeys,
         );
-        return res.status(400).json({
+        return res.status(500).json({
           error:
-            "Stripe is not configured. Add your secret key in Settings → Payment.",
+            "Stripe is not configured. Add your secret key in Settings → Payment or set STRIPE_SECRET_KEY env variable.",
         });
       }
-
       const stripe = new Stripe(stripeSecretKey);
-
       const paymentIntent = await stripe.paymentIntents.create({
         amount: Math.round(Number(amount) * 100), // cents
         currency: "usd",
         metadata: { orderNumber: String(orderNumber || "") },
         automatic_payment_methods: { enabled: true, allow_redirects: "never" },
       });
-
       return res.json({ clientSecret: paymentIntent.client_secret });
     } catch (error: any) {
       console.error(
