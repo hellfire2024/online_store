@@ -12,12 +12,6 @@ interface SettingsRow extends RowDataPacket {
   settings: string | null;
 }
 
-type CarrierCredentials = {
-  enabled: boolean;
-  apiKey: string;
-  apiSecret?: string;
-};
-
 const readShippingConfig = async () => {
   const [rows] = await pool.query<SettingsRow[]>(
     "SELECT settings FROM site_settings WHERE id = 1 LIMIT 1",
