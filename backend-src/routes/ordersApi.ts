@@ -425,23 +425,6 @@ router.post(
           return res.status(500).json({ error: "Failed to create payment intent" });
         }
       }
-        currency: "usd",
-        metadata: { orderNumber: String(orderNumber || "") },
-        automatic_payment_methods: { enabled: true, allow_redirects: "never" },
-      });
-      return res.json({ clientSecret: paymentIntent.client_secret });
-    } catch (error: any) {
-      console.error(
-        "Error creating payment intent:",
-        error,
-        "Request body:",
-        req.body,
-      );
-      const stripeMessage = error?.raw?.message || error?.message;
-      return res.status(500).json({
-        error: stripeMessage || "Failed to create payment intent",
-      });
-    }
   },
 );
 
