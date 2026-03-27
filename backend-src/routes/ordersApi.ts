@@ -373,59 +373,6 @@ router.post(
         return res.status(400).json({ error: "Invalid payment amount" });
       }
 
-      // Load Stripe secret key from settings
-      const [settingsRows] = await pool.query<RowDataPacket[]>(
-        "SELECT settings FROM site_settings WHERE id = 1 LIMIT 1",
-      );
-      console.log(
-        "[Stripe] settingsRows from DB:",
-        JSON.stringify(settingsRows, null, 2),
-      );
-      if (settingsRows.length && settingsRows[0].settings) {
-        try {
-          let parsed: any = settingsRows[0].settings;
-          if (typeof parsed === "string") {
-            parsed = JSON.parse(parsed);
-          }
-          // If array, use first element
-          if (Array.isArray(parsed) && parsed.length > 0 && typeof parsed[0] === "object") {
-            parsed = parsed[0];
-          }
-          console.log(
-            "[Stripe] settings parsed (final):",
-            JSON.stringify(parsed, null, 2),
-          );
-          const paymentApiKeys = parsed?.paymentApiKeys;
-          const stripeSecretKey = paymentApiKeys?.stripe ? String(paymentApiKeys.stripe).trim() : "";
-          // Debug logging
-          console.log("[Stripe] PaymentIntent debug:", {
-            paymentApiKeys,
-            stripeSecretKey,
-            fullSettings: parsed,
-            keys: Object.keys(parsed),
-          });
-          if (!stripeSecretKey) {
-            console.error(
-              "[Stripe] FATAL: Secret key missing in DB settings. Settings:",
-              paymentApiKeys,
-            );
-            return res.status(500).json({
-              error:
-                "Stripe is not configured. Add your secret key in Settings → Payment.",
-            });
-          }
-          const stripe = new Stripe(stripeSecretKey);
-          const paymentIntent = await stripe.paymentIntents.create({
-            amount: Math.round(Number(amount) * 100), // cents
-            currency: "usd",
-            ...req.body.intentOptions,
-          });
-          return res.json({ clientSecret: paymentIntent.client_secret });
-        } catch (e) {
-          console.error("[Stripe] Error creating payment intent:", e);
-          return res.status(500).json({ error: "Failed to create payment intent" });
-        }
-      }
     } catch (e) {
       console.error("[Stripe] Unexpected error in payment intent endpoint:", e);
       return res.status(500).json({ error: "Internal server error" });
