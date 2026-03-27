@@ -56,7 +56,11 @@ const parseSettings = (raw: string | null) => {
   try {
     const parsed = JSON.parse(raw);
     // If settings is an array, use the first element
-    if (Array.isArray(parsed) && parsed.length > 0 && typeof parsed[0] === 'object') {
+    if (
+      Array.isArray(parsed) &&
+      parsed.length > 0 &&
+      typeof parsed[0] === "object"
+    ) {
       return parsed[0];
     }
     return parsed;
@@ -383,9 +387,15 @@ router.post(
               ? JSON.parse(settingsRows[0].settings)
               : settingsRows[0].settings;
           console.log(
-            "[Stripe] paymentApiKeys from DB:",
-            JSON.stringify(parsed.paymentApiKeys, null, 2),
+            "[Stripe] settings parsed (raw):",
+            JSON.stringify(parsed, null, 2),
           );
+          if (Array.isArray(parsed)) {
+            console.log("[Stripe] settings is an array. First element:", JSON.stringify(parsed[0], null, 2));
+            console.log("[Stripe] paymentApiKeys in array:", JSON.stringify(parsed[0]?.paymentApiKeys, null, 2));
+          } else {
+            console.log("[Stripe] paymentApiKeys in object:", JSON.stringify(parsed.paymentApiKeys, null, 2));
+          }
         } catch (e) {
           console.log(
             "[Stripe] Could not parse settings for paymentApiKeys logging",
@@ -396,6 +406,7 @@ router.post(
       const rawSettings = settingsRows.length
         ? parseSettings(settingsRows[0].settings)
         : {};
+      console.log("[Stripe] parseSettings() result:", JSON.stringify(rawSettings, null, 2));
       let stripeSecretKey = "";
       if (
         rawSettings?.paymentApiKeys &&
@@ -410,6 +421,7 @@ router.post(
         paymentApiKeys: rawSettings?.paymentApiKeys,
         stripeSecretKey,
         fullSettings: rawSettings,
+        keys: Object.keys(rawSettings),
       });
       if (!stripeSecretKey) {
         console.error(
