@@ -391,10 +391,19 @@ router.post(
             JSON.stringify(parsed, null, 2),
           );
           if (Array.isArray(parsed)) {
-            console.log("[Stripe] settings is an array. First element:", JSON.stringify(parsed[0], null, 2));
-            console.log("[Stripe] paymentApiKeys in array:", JSON.stringify(parsed[0]?.paymentApiKeys, null, 2));
+            console.log(
+              "[Stripe] settings is an array. First element:",
+              JSON.stringify(parsed[0], null, 2),
+            );
+            console.log(
+              "[Stripe] paymentApiKeys in array:",
+              JSON.stringify(parsed[0]?.paymentApiKeys, null, 2),
+            );
           } else {
-            console.log("[Stripe] paymentApiKeys in object:", JSON.stringify(parsed.paymentApiKeys, null, 2));
+            console.log(
+              "[Stripe] paymentApiKeys in object:",
+              JSON.stringify(parsed.paymentApiKeys, null, 2),
+            );
           }
         } catch (e) {
           console.log(
@@ -406,7 +415,10 @@ router.post(
       const rawSettings = settingsRows.length
         ? parseSettings(settingsRows[0].settings)
         : {};
-      console.log("[Stripe] parseSettings() result:", JSON.stringify(rawSettings, null, 2));
+      console.log(
+        "[Stripe] parseSettings() result:",
+        JSON.stringify(rawSettings, null, 2),
+      );
       let stripeSecretKey = "";
       if (
         rawSettings?.paymentApiKeys &&
