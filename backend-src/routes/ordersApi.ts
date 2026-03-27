@@ -433,8 +433,8 @@ router.post(
           return res.status(500).json({ error: "Failed to create payment intent" });
         }
       }
-  }
-);
+    }
+  );
 
 router.post("/", async (req: Request, res: Response) => {
   try {
