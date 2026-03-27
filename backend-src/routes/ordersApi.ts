@@ -382,72 +382,49 @@ router.post(
       );
       if (settingsRows.length && settingsRows[0].settings) {
         try {
-          const parsed =
-            typeof settingsRows[0].settings === "string"
-              ? JSON.parse(settingsRows[0].settings)
-              : settingsRows[0].settings;
+          let parsed: any = settingsRows[0].settings;
+          if (typeof parsed === "string") {
+            parsed = JSON.parse(parsed);
+          }
+          // If array, use first element
+          if (Array.isArray(parsed) && parsed.length > 0 && typeof parsed[0] === "object") {
+            parsed = parsed[0];
+          }
           console.log(
-            "[Stripe] settings parsed (raw):",
+            "[Stripe] settings parsed (final):",
             JSON.stringify(parsed, null, 2),
           );
-          if (Array.isArray(parsed)) {
-            console.log(
-              "[Stripe] settings is an array. First element:",
-              JSON.stringify(parsed[0], null, 2),
+          const paymentApiKeys = parsed?.paymentApiKeys;
+          const stripeSecretKey = paymentApiKeys?.stripe ? String(paymentApiKeys.stripe).trim() : "";
+          // Debug logging
+          console.log("[Stripe] PaymentIntent debug:", {
+            paymentApiKeys,
+            stripeSecretKey,
+            fullSettings: parsed,
+            keys: Object.keys(parsed),
+          });
+          if (!stripeSecretKey) {
+            console.error(
+              "[Stripe] FATAL: Secret key missing in DB settings. Settings:",
+              paymentApiKeys,
             );
-            console.log(
-              "[Stripe] paymentApiKeys in array:",
-              JSON.stringify(parsed[0]?.paymentApiKeys, null, 2),
-            );
-          } else {
-            console.log(
-              "[Stripe] paymentApiKeys in object:",
-              JSON.stringify(parsed.paymentApiKeys, null, 2),
-            );
+            return res.status(500).json({
+              error:
+                "Stripe is not configured. Add your secret key in Settings → Payment.",
+            });
           }
+          const stripe = new Stripe(stripeSecretKey);
+          const paymentIntent = await stripe.paymentIntents.create({
+            amount: Math.round(Number(amount) * 100), // cents
+            currency: "usd",
+            ...req.body.intentOptions,
+          });
+          return res.json({ clientSecret: paymentIntent.client_secret });
         } catch (e) {
-          console.log(
-            "[Stripe] Could not parse settings for paymentApiKeys logging",
-            e,
-          );
+          console.error("[Stripe] Error creating payment intent:", e);
+          return res.status(500).json({ error: "Failed to create payment intent" });
         }
       }
-      const rawSettings = settingsRows.length
-        ? parseSettings(settingsRows[0].settings)
-        : {};
-      console.log(
-        "[Stripe] parseSettings() result:",
-        JSON.stringify(rawSettings, null, 2),
-      );
-      let stripeSecretKey = "";
-      if (
-        rawSettings?.paymentApiKeys &&
-        typeof rawSettings.paymentApiKeys === "object"
-      ) {
-        stripeSecretKey = String(
-          rawSettings.paymentApiKeys.stripe || "",
-        ).trim();
-      }
-      // Debug logging
-      console.log("[Stripe] PaymentIntent debug:", {
-        paymentApiKeys: rawSettings?.paymentApiKeys,
-        stripeSecretKey,
-        fullSettings: rawSettings,
-        keys: Object.keys(rawSettings),
-      });
-      if (!stripeSecretKey) {
-        console.error(
-          "[Stripe] FATAL: Secret key missing in DB settings. Settings:",
-          rawSettings?.paymentApiKeys,
-        );
-        return res.status(500).json({
-          error:
-            "Stripe is not configured. Add your secret key in Settings → Payment.",
-        });
-      }
-      const stripe = new Stripe(stripeSecretKey);
-      const paymentIntent = await stripe.paymentIntents.create({
-        amount: Math.round(Number(amount) * 100), // cents
         currency: "usd",
         metadata: { orderNumber: String(orderNumber || "") },
         automatic_payment_methods: { enabled: true, allow_redirects: "never" },
