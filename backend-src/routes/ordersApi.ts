@@ -364,20 +364,12 @@ async function getPayPalAccessToken(
 router.post(
   "/create-payment-intent",
   async (req: Request, res: Response): Promise<any> => {
-      }
-    }
-  });
+    try {
+      const { amount } = req.body;
       if (!amount || Number(amount) <= 0) {
         console.warn("[Stripe] Invalid payment amount received:", req.body);
         return res.status(400).json({ error: "Invalid payment amount" });
       }
-
-    } catch (e) {
-      console.error("[Stripe] Unexpected error in payment intent endpoint:", e);
-      return res.status(500).json({ error: "Internal server error" });
-    }
-  }
-);
 
       // Load Stripe secret key from settings
       const [settingsRows] = await pool.query<RowDataPacket[]>(
@@ -431,9 +423,15 @@ router.post(
           console.error("[Stripe] Error creating payment intent:", e);
           return res.status(500).json({ error: "Failed to create payment intent" });
         }
+      } else {
+        return res.status(500).json({ error: "Stripe settings not found in DB" });
       }
+    } catch (e) {
+      console.error("[Stripe] Unexpected error in payment intent endpoint:", e);
+      return res.status(500).json({ error: "Internal server error" });
     }
-  });
+  }
+);
 
 router.post("/", async (req: Request, res: Response) => {
   try {
