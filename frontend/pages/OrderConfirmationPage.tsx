@@ -498,9 +498,6 @@ const OrderConfirmationPage: React.FC = () => {
           A confirmation email has been sent to{" "}
           {orderDetails.shippingAddress.email}
         </p>
-        <p className="text-gray-500 text-xs mt-2">
-          (This is a demo - no actual email was sent)
-        </p>
       </div>
     </div>
   );

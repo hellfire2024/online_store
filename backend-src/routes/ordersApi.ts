@@ -386,7 +386,11 @@ router.post(
             parsed = JSON.parse(parsed);
           }
           // If array, use first element
-          if (Array.isArray(parsed) && parsed.length > 0 && typeof parsed[0] === "object") {
+          if (
+            Array.isArray(parsed) &&
+            parsed.length > 0 &&
+            typeof parsed[0] === "object"
+          ) {
             parsed = parsed[0];
           }
           console.log(
@@ -394,7 +398,9 @@ router.post(
             JSON.stringify(parsed, null, 2),
           );
           const paymentApiKeys = parsed?.paymentApiKeys;
-          const stripeSecretKey = paymentApiKeys?.stripe ? String(paymentApiKeys.stripe).trim() : "";
+          const stripeSecretKey = paymentApiKeys?.stripe
+            ? String(paymentApiKeys.stripe).trim()
+            : "";
           // Debug logging
           console.log("[Stripe] PaymentIntent debug:", {
             paymentApiKeys,
@@ -421,16 +427,20 @@ router.post(
           return res.json({ clientSecret: paymentIntent.client_secret });
         } catch (e) {
           console.error("[Stripe] Error creating payment intent:", e);
-          return res.status(500).json({ error: "Failed to create payment intent" });
+          return res
+            .status(500)
+            .json({ error: "Failed to create payment intent" });
         }
       } else {
-        return res.status(500).json({ error: "Stripe settings not found in DB" });
+        return res
+          .status(500)
+          .json({ error: "Stripe settings not found in DB" });
       }
     } catch (e) {
       console.error("[Stripe] Unexpected error in payment intent endpoint:", e);
       return res.status(500).json({ error: "Internal server error" });
     }
-  }
+  },
 );
 
 router.post("/", async (req: Request, res: Response) => {
