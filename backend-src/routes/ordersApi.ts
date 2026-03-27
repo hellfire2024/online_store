@@ -364,10 +364,9 @@ async function getPayPalAccessToken(
 router.post(
   "/create-payment-intent",
   async (req: Request, res: Response): Promise<any> => {
-
-    try {
-      const { amount, orderNumber } = req.body;
-
+      }
+    }
+  });
       if (!amount || Number(amount) <= 0) {
         console.warn("[Stripe] Invalid payment amount received:", req.body);
         return res.status(400).json({ error: "Invalid payment amount" });
