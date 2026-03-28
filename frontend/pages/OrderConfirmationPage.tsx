@@ -102,6 +102,13 @@ const WatermarkedOrderImage: React.FC<{ src: string }> = ({ src }) => {
   );
 };
 
+interface BackendOrder {
+  orderNumber: string;
+  orderData?: OrderDetails;
+  emailSent?: boolean;
+  [key: string]: any;
+}
+
 const OrderConfirmationPage: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -112,6 +119,7 @@ const OrderConfirmationPage: React.FC = () => {
     null,
   );
   const [isLoaded, setIsLoaded] = React.useState(false);
+  const [emailSent, setEmailSent] = React.useState<boolean | null>(null);
 
   // Load order details on mount
   React.useEffect(() => {
@@ -134,7 +142,8 @@ const OrderConfirmationPage: React.FC = () => {
         );
         try {
           // Try to fetch the order from the backend API
-          const apiOrder = await apiClient.orders.getById(orderNumberParam);
+          const apiOrder: BackendOrder =
+            await apiClient.orders.getById(orderNumberParam);
           if (apiOrder && apiOrder.orderNumber) {
             console.log(
               "Successfully fetched order from API:",
@@ -145,6 +154,11 @@ const OrderConfirmationPage: React.FC = () => {
             // Frontend format: { orderNumber, items, ... }
             const orderToDisplay: OrderDetails = apiOrder.orderData || apiOrder;
             setOrderDetails(orderToDisplay);
+            setEmailSent(
+              typeof apiOrder.emailSent === "boolean"
+                ? apiOrder.emailSent
+                : null,
+            );
             setIsLoaded(true);
             return;
           }
@@ -493,12 +507,23 @@ const OrderConfirmationPage: React.FC = () => {
       </div>
 
       {/* Confirmation Message */}
-      <div className="mt-8 text-center">
-        <p className="text-gray-400 text-sm">
-          A confirmation email has been sent to{" "}
-          {orderDetails.shippingAddress.email}
-        </p>
-      </div>
+      {emailSent === true && (
+        <div className="mt-8 text-center">
+          <p className="text-gray-400 text-sm">
+            A confirmation email has been sent to{" "}
+            {orderDetails.shippingAddress.email}
+          </p>
+        </div>
+      )}
+      {emailSent === false && (
+        <div className="mt-8 text-center">
+          <p className="text-yellow-400 text-sm">
+            <strong>Note:</strong> We could not send a confirmation email for
+            this order. Please check your spam folder or contact support if
+            needed.
+          </p>
+        </div>
+      )}
     </div>
   );
 };
