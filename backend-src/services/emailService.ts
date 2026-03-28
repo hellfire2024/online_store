@@ -34,7 +34,9 @@ async function loadEmailConfig() {
     );
 
     if (rows.length === 0) {
-      console.log("No email config found - email sending disabled");
+      console.warn(
+        "[Email] No email config found in database (email_config table is empty or missing row with id=1). Order confirmation emails will NOT be sent.",
+      );
       return null;
     }
 

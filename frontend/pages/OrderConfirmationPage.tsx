@@ -509,18 +509,21 @@ const OrderConfirmationPage: React.FC = () => {
       {/* Confirmation Message */}
       {emailSent === true && (
         <div className="mt-8 text-center">
-          <p className="text-gray-400 text-sm">
+          <p className="text-green-400 text-sm">
             A confirmation email has been sent to{" "}
-            {orderDetails.shippingAddress.email}
+            {orderDetails.shippingAddress.email}.
           </p>
         </div>
       )}
       {emailSent === false && (
         <div className="mt-8 text-center">
-          <p className="text-yellow-400 text-sm">
-            <strong>Note:</strong> We could not send a confirmation email for
-            this order. Please check your spam folder or contact support if
-            needed.
+          <p className="text-red-400 text-sm">
+            <strong>Warning:</strong> We could not send a confirmation email for
+            this order.
+            <br />
+            This is likely due to a missing or invalid email configuration on
+            the server. Please contact support if you need a copy of your order
+            confirmation.
           </p>
         </div>
       )}
