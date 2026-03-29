@@ -1,3 +1,105 @@
+// --- Tax Test Button ---
+const TEST_CART_ITEMS = [
+  {
+    product: {
+      id: "p-1",
+      name: "Classic Cotton T-Shirt",
+      price: 25,
+      description: "Premium cotton tee",
+      imageUrl: "https://picsum.photos/seed/tshirt/400/400",
+      inventory: 42,
+      packageWeight: 1,
+      packageLength: 10,
+      packageWidth: 6,
+      packageHeight: 2,
+    },
+    quantity: 2,
+  },
+];
+const TEST_SHIPPING_COST = 10;
+const TEST_SHIPPING_STATE = "CA";
+
+const TaxTestButton = ({ provider, disabled, hasUnsaved, onResult }) => {
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState(null);
+  const { addToast } = useToast();
+
+  const handleTest = async () => {
+    if (hasUnsaved) {
+      addToast("Please save your tax settings before testing.", "warning");
+      setResult(null);
+      return;
+    }
+    setLoading(true);
+    setResult(null);
+    try {
+      const res = await fetch(`/api/tax/providers/${provider}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          cartItems: TEST_CART_ITEMS,
+          shippingCost: TEST_SHIPPING_COST,
+          shippingState: TEST_SHIPPING_STATE,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.taxAmount !== undefined) {
+        setResult({
+          success: true,
+          message: `Success: Tax calculated ($${data.taxAmount.toFixed(2)})`,
+        });
+        addToast(`Tax test for ${provider} succeeded!`, "success");
+        onResult && onResult(true, data);
+      } else {
+        setResult({
+          success: false,
+          message: data.error || "No tax calculated.",
+        });
+        addToast(`Tax test for ${provider} failed.`, "error");
+        onResult && onResult(false, data);
+      }
+    } catch (err) {
+      setResult({
+        success: false,
+        message: "Request failed. Check server logs.",
+      });
+      addToast(`Tax test for ${provider} failed.`, "error");
+      onResult && onResult(false, null);
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div className="mt-2">
+      <button
+        type="button"
+        className={`px-4 py-2 rounded text-white ${hasUnsaved || disabled ? "bg-slate-500 cursor-not-allowed" : "bg-sky-600 hover:bg-sky-700"}`}
+        disabled={hasUnsaved || disabled || loading}
+        title={
+          hasUnsaved
+            ? "Save settings before testing"
+            : `Test ${provider} connection`
+        }
+        onClick={handleTest}
+      >
+        {loading
+          ? "Testing..."
+          : `Test ${provider.charAt(0).toUpperCase() + provider.slice(1)} Connection`}
+      </button>
+      {result && (
+        <div
+          className={
+            result.success
+              ? "text-green-400 text-xs mt-1"
+              : "text-red-400 text-xs mt-1"
+          }
+        >
+          {result.message}
+        </div>
+      )}
+    </div>
+  );
+};
 import React, { useState, useEffect, useMemo } from "react";
 // --- Shipping Test Defaults ---
 const TEST_FROM_ADDRESS = {
@@ -2685,6 +2787,10 @@ const SettingsManagement: React.FC = () => {
                         Stripe Dashboard
                       </a>
                     </p>
+                    <TaxTestButton
+                      provider="stripe"
+                      hasUnsaved={hasSettingsUnsavedChanges}
+                    />
                   </div>
                 )}
 
@@ -2725,12 +2831,20 @@ const SettingsManagement: React.FC = () => {
                         TaxJar Dashboard
                       </a>
                     </p>
+                    <TaxTestButton
+                      provider="taxjar"
+                      hasUnsaved={hasSettingsUnsavedChanges}
+                    />
                   </div>
                 )}
 
                 {/* Avalara Configuration */}
                 {settings.taxConfig?.provider === "avalara" && (
                   <div className="space-y-3">
+                    <TaxTestButton
+                      provider="avalara"
+                      hasUnsaved={hasSettingsUnsavedChanges}
+                    />
                     <div>
                       <label className="block text-white mb-2">
                         Account ID
@@ -2829,6 +2943,10 @@ const SettingsManagement: React.FC = () => {
                 {/* TaxCloud Configuration */}
                 {settings.taxConfig?.provider === "taxcloud" && (
                   <div className="space-y-3">
+                    <TaxTestButton
+                      provider="taxcloud"
+                      hasUnsaved={hasSettingsUnsavedChanges}
+                    />
                     <div>
                       <label className="block text-white mb-2">API Key</label>
                       <input
@@ -2892,6 +3010,10 @@ const SettingsManagement: React.FC = () => {
                 {/* Zamp Configuration */}
                 {settings.taxConfig?.provider === "zamp" && (
                   <div>
+                    <TaxTestButton
+                      provider="zamp"
+                      hasUnsaved={hasSettingsUnsavedChanges}
+                    />
                     <label className="block text-white mb-2">
                       Zamp API Key
                     </label>
@@ -2930,6 +3052,10 @@ const SettingsManagement: React.FC = () => {
                 {/* Anrok Configuration */}
                 {settings.taxConfig?.provider === "anrok" && (
                   <div>
+                    <TaxTestButton
+                      provider="anrok"
+                      hasUnsaved={hasSettingsUnsavedChanges}
+                    />
                     <label className="block text-white mb-2">
                       Anrok API Key
                     </label>

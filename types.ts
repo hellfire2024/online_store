@@ -24,6 +24,12 @@ export interface Product {
   customTextMaxLength?: number; // Maximum characters allowed
   allowCustomImageUpload?: boolean; // Allow customers to upload a custom image
   customImageUploadPrice?: number; // Flat price for uploaded custom image
+  // Shipping/package fields
+  packageWeight?: number;
+  packageLength?: number;
+  packageWidth?: number;
+  packageHeight?: number;
+  packageVolume?: number;
 }
 
 export interface ProductOptionList {

@@ -945,7 +945,7 @@ const ProductManagement: React.FC = () => {
                   rows={3}
                 ></textarea>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div>
                   <label
                     htmlFor="price"
@@ -980,6 +980,104 @@ const ProductManagement: React.FC = () => {
                     onChange={handleChange}
                     className="w-full p-2 bg-slate-700 border border-slate-600 rounded-md text-white"
                   />
+                </div>
+                <div>
+                  <label
+                    htmlFor="packageWeight"
+                    className="block text-sm font-semibold text-gray-300 mb-1"
+                  >
+                    Package Weight (lb)
+                  </label>
+                  <input
+                    id="packageWeight"
+                    type="number"
+                    name="packageWeight"
+                    placeholder="e.g., 1.2"
+                    step="0.01"
+                    min="0"
+                    value={currentProduct.packageWeight ?? ""}
+                    onChange={handleChange}
+                    className="w-full p-2 bg-slate-700 border border-slate-600 rounded-md text-white"
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="packageLength"
+                    className="block text-sm font-semibold text-gray-300 mb-1"
+                  >
+                    Package Length (in)
+                  </label>
+                  <input
+                    id="packageLength"
+                    type="number"
+                    name="packageLength"
+                    placeholder="e.g., 12"
+                    step="0.01"
+                    min="0"
+                    value={currentProduct.packageLength ?? ""}
+                    onChange={handleChange}
+                    className="w-full p-2 bg-slate-700 border border-slate-600 rounded-md text-white"
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="packageWidth"
+                    className="block text-sm font-semibold text-gray-300 mb-1"
+                  >
+                    Package Width (in)
+                  </label>
+                  <input
+                    id="packageWidth"
+                    type="number"
+                    name="packageWidth"
+                    placeholder="e.g., 8"
+                    step="0.01"
+                    min="0"
+                    value={currentProduct.packageWidth ?? ""}
+                    onChange={handleChange}
+                    className="w-full p-2 bg-slate-700 border border-slate-600 rounded-md text-white"
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="packageHeight"
+                    className="block text-sm font-semibold text-gray-300 mb-1"
+                  >
+                    Package Height (in)
+                  </label>
+                  <input
+                    id="packageHeight"
+                    type="number"
+                    name="packageHeight"
+                    placeholder="e.g., 4"
+                    step="0.01"
+                    min="0"
+                    value={currentProduct.packageHeight ?? ""}
+                    onChange={handleChange}
+                    className="w-full p-2 bg-slate-700 border border-slate-600 rounded-md text-white"
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="packageVolume"
+                    className="block text-sm font-semibold text-gray-300 mb-1"
+                  >
+                    Package Volume (cu in)
+                  </label>
+                  <input
+                    id="packageVolume"
+                    type="number"
+                    name="packageVolume"
+                    placeholder="(optional)"
+                    step="0.01"
+                    min="0"
+                    value={currentProduct.packageVolume ?? ""}
+                    onChange={handleChange}
+                    className="w-full p-2 bg-slate-700 border border-slate-600 rounded-md text-white"
+                  />
+                  <p className="text-xs text-gray-400 mt-1">
+                    If left blank, will be calculated as L × W × H.
+                  </p>
                 </div>
               </div>
 

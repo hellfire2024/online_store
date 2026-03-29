@@ -103,9 +103,15 @@ CREATE TABLE IF NOT EXISTS products (
 ALTER TABLE products
   MODIFY COLUMN image_url LONGTEXT;
 
+
 ALTER TABLE products
   ADD COLUMN allow_custom_image_upload BOOLEAN DEFAULT FALSE,
-  ADD COLUMN custom_image_upload_price DECIMAL(10,2) DEFAULT 0.00;
+  ADD COLUMN custom_image_upload_price DECIMAL(10,2) DEFAULT 0.00,
+  ADD COLUMN package_weight DECIMAL(10,2) DEFAULT NULL,
+  ADD COLUMN package_length DECIMAL(10,2) DEFAULT NULL,
+  ADD COLUMN package_width DECIMAL(10,2) DEFAULT NULL,
+  ADD COLUMN package_height DECIMAL(10,2) DEFAULT NULL,
+  ADD COLUMN package_volume DECIMAL(10,2) DEFAULT NULL;
 
 -- Clean up: Set custom_image_upload_price to NULL for products where feature is disabled
 UPDATE products

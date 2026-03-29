@@ -28,6 +28,12 @@ interface Product {
   customTextPricePerChar?: number;
   customTextMaxLength?: number;
   optionLists?: ProductOptionList[];
+  // Shipping/package fields
+  packageWeight?: number;
+  packageLength?: number;
+  packageWidth?: number;
+  packageHeight?: number;
+  packageVolume?: number;
 }
 
 interface ProductOptionList {
@@ -127,22 +133,27 @@ function normalizeProductRow(row: RowDataPacket): Product {
 export async function findAll(includeArchived = true): Promise<Product[]> {
   const [rows] = await pool.query<RowDataPacket[]>(
     `SELECT id, name, description, price, image_url as imageUrl, inventory, 
-            low_stock_threshold as lowStockThreshold, customizable, 
-            enable_ai_ideas as enableAIIdeas, gallery_id as galleryId,
-            allow_custom_image_upload as allowCustomImageUpload,
-            custom_image_upload_price as customImageUploadPrice,
-            allow_custom_text as allowCustomText,
-            custom_text_price_per_char as customTextPricePerChar,
-            custom_text_max_length as customTextMaxLength,
-            is_archived as isArchived,
-            sale_type as saleType,
-            sale_value as saleValue,
-            sale_start_at as saleStartAt,
-            sale_end_at as saleEndAt,
-            reorder_pricing_mode as reorderPricingMode
-     FROM products
-     ${includeArchived ? "" : "WHERE is_archived = FALSE"}
-     ORDER BY name`,
+          low_stock_threshold as lowStockThreshold, customizable, 
+          enable_ai_ideas as enableAIIdeas, gallery_id as galleryId,
+          allow_custom_image_upload as allowCustomImageUpload,
+          custom_image_upload_price as customImageUploadPrice,
+          allow_custom_text as allowCustomText,
+          custom_text_price_per_char as customTextPricePerChar,
+          custom_text_max_length as customTextMaxLength,
+          is_archived as isArchived,
+          sale_type as saleType,
+          sale_value as saleValue,
+          sale_start_at as saleStartAt,
+          sale_end_at as saleEndAt,
+          reorder_pricing_mode as reorderPricingMode,
+          package_weight as packageWeight,
+          package_length as packageLength,
+          package_width as packageWidth,
+          package_height as packageHeight,
+          package_volume as packageVolume
+         FROM products
+         ${includeArchived ? "" : "WHERE is_archived = FALSE"}
+         ORDER BY name`,
   );
 
   const products = rows.map(normalizeProductRow);
@@ -169,20 +180,25 @@ export async function findAll(includeArchived = true): Promise<Product[]> {
 export async function findById(id: string): Promise<Product | null> {
   const [rows] = await pool.query<RowDataPacket[]>(
     `SELECT id, name, description, price, image_url as imageUrl, inventory,
-            low_stock_threshold as lowStockThreshold, customizable,
-            enable_ai_ideas as enableAIIdeas, gallery_id as galleryId,
-            allow_custom_image_upload as allowCustomImageUpload,
-            custom_image_upload_price as customImageUploadPrice,
-            allow_custom_text as allowCustomText,
-            custom_text_price_per_char as customTextPricePerChar,
-            custom_text_max_length as customTextMaxLength,
-            is_archived as isArchived,
-            sale_type as saleType,
-            sale_value as saleValue,
-            sale_start_at as saleStartAt,
-            sale_end_at as saleEndAt,
-            reorder_pricing_mode as reorderPricingMode
-     FROM products WHERE id = ?`,
+          low_stock_threshold as lowStockThreshold, customizable,
+          enable_ai_ideas as enableAIIdeas, gallery_id as galleryId,
+          allow_custom_image_upload as allowCustomImageUpload,
+          custom_image_upload_price as customImageUploadPrice,
+          allow_custom_text as allowCustomText,
+          custom_text_price_per_char as customTextPricePerChar,
+          custom_text_max_length as customTextMaxLength,
+          is_archived as isArchived,
+          sale_type as saleType,
+          sale_value as saleValue,
+          sale_start_at as saleStartAt,
+          sale_end_at as saleEndAt,
+          reorder_pricing_mode as reorderPricingMode,
+          package_weight as packageWeight,
+          package_length as packageLength,
+          package_width as packageWidth,
+          package_height as packageHeight,
+          package_volume as packageVolume
+         FROM products WHERE id = ?`,
     [id],
   );
 
@@ -253,8 +269,9 @@ export async function create(data: Partial<Product>): Promise<Product> {
                              low_stock_threshold, customizable, enable_ai_ideas, gallery_id,
                              allow_custom_image_upload, custom_image_upload_price,
                              allow_custom_text, custom_text_price_per_char, custom_text_max_length,
-                             is_archived, sale_type, sale_value, sale_start_at, sale_end_at, reorder_pricing_mode)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                             is_archived, sale_type, sale_value, sale_start_at, sale_end_at, reorder_pricing_mode,
+                             package_weight, package_length, package_width, package_height, package_volume)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id,
         data.name,
@@ -277,6 +294,11 @@ export async function create(data: Partial<Product>): Promise<Product> {
         normalizedSaleStartAt,
         normalizedSaleEndAt,
         data.reorderPricingMode || "current",
+        data.packageWeight ?? null,
+        data.packageLength ?? null,
+        data.packageWidth ?? null,
+        data.packageHeight ?? null,
+        data.packageVolume ?? null,
       ],
     );
 
@@ -343,7 +365,8 @@ export async function update(
                           allow_custom_image_upload = ?, custom_image_upload_price = ?,
                           allow_custom_text = ?, custom_text_price_per_char = ?, custom_text_max_length = ?,
                           is_archived = ?, sale_type = ?, sale_value = ?, sale_start_at = ?, sale_end_at = ?,
-                          reorder_pricing_mode = ?
+                          reorder_pricing_mode = ?,
+                          package_weight = ?, package_length = ?, package_width = ?, package_height = ?, package_volume = ?
        WHERE id = ?`,
       [
         data.name ?? currentProduct.name,
@@ -372,6 +395,11 @@ export async function update(
         data.reorderPricingMode ??
           currentProduct.reorderPricingMode ??
           "current",
+        data.packageWeight ?? currentProduct.packageWeight ?? null,
+        data.packageLength ?? currentProduct.packageLength ?? null,
+        data.packageWidth ?? currentProduct.packageWidth ?? null,
+        data.packageHeight ?? currentProduct.packageHeight ?? null,
+        data.packageVolume ?? currentProduct.packageVolume ?? null,
         id,
       ],
     );
