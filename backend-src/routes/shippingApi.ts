@@ -136,7 +136,6 @@ router.get("/status", async (_req: Request, res: Response) => {
  * Returns: ShippingRate[]
  */
 router.post("/rates", async (req: Request, res: Response) => {
-
   try {
     const rateRequest: ShippingRateRequest & { testMode?: boolean } = req.body;
     const config = await readShippingConfig();
@@ -154,32 +153,74 @@ router.post("/rates", async (req: Request, res: Response) => {
     }
 
     // Enable test mode if explicitly requested or if no carriers are enabled
-    const testMode = Boolean(rateRequest.testMode) || !config.enabledCarriers.length;
+    const testMode =
+      Boolean(rateRequest.testMode) || !config.enabledCarriers.length;
 
     if (testMode) {
-      // Return mock shipping rates for testing
+      // Return robust mock shipping rates for all carriers
       const mockRates = [
+        // EasyPost
         {
-          id: "mock-1",
-          carrier: "TestCarrier",
-          service: "Standard",
-          rate: 9.99,
-          currency: "USD",
-          estimatedDays: 5,
-          deliveryDate: null,
-          carrierLogo: null,
-          description: "Standard Shipping (Test Mode)",
+          id: "ep-std",
+          shipmentId: "ep-shipment-1",
+          carrier: "easypost",
+          service: "Priority",
+          serviceName: "USPS Priority Mail",
+          rate: 1299,
+          estimatedDays: 3,
+          estimatedDelivery: null,
         },
         {
-          id: "mock-2",
-          carrier: "TestCarrier",
+          id: "ep-exp",
+          shipmentId: "ep-shipment-1",
+          carrier: "easypost",
           service: "Express",
-          rate: 19.99,
-          currency: "USD",
-          estimatedDays: 2,
-          deliveryDate: null,
-          carrierLogo: null,
-          description: "Express Shipping (Test Mode)",
+          serviceName: "USPS Express Mail",
+          rate: 2499,
+          estimatedDays: 1,
+          estimatedDelivery: null,
+        },
+        // Shippo
+        {
+          id: "sp-std",
+          shipmentId: "sp-shipment-1",
+          carrier: "shippo",
+          service: "Priority",
+          serviceName: "USPS Priority Mail",
+          rate: 1399,
+          estimatedDays: 3,
+          estimatedDelivery: null,
+        },
+        {
+          id: "sp-exp",
+          shipmentId: "sp-shipment-1",
+          carrier: "shippo",
+          service: "Express",
+          serviceName: "USPS Express Mail",
+          rate: 2599,
+          estimatedDays: 1,
+          estimatedDelivery: null,
+        },
+        // ShipStation
+        {
+          id: "ss-std",
+          shipmentId: "ss-shipment-1",
+          carrier: "shipstation",
+          service: "USPS Priority Mail",
+          serviceName: "USPS Priority Mail",
+          rate: 1349,
+          estimatedDays: 3,
+          estimatedDelivery: null,
+        },
+        {
+          id: "ss-exp",
+          shipmentId: "ss-shipment-1",
+          carrier: "shipstation",
+          service: "USPS Express Mail",
+          serviceName: "USPS Express Mail",
+          rate: 2549,
+          estimatedDays: 1,
+          estimatedDelivery: null,
         },
       ];
       res.json({ rates: mockRates, unavailable: false, testMode: true });
