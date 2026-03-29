@@ -3,6 +3,7 @@ import SMTPTransport from "nodemailer/lib/smtp-transport";
 import { pool } from "../db/connection.js";
 import { RowDataPacket } from "mysql2";
 import { decryptData } from "../utils/encryption.js";
+import { addWatermarkToImage } from "../utils/watermarkImage.js";
 
 // Note: For production watermarking of images, you would need:
 // - Sharp library: npm install sharp
@@ -142,8 +143,9 @@ export async function sendOrderConfirmationEmail(
       return { success: false, message: "Email service not configured" };
     }
 
-    const itemsHtml = orderDetails.items
-      .map((item: any) => {
+    // Watermark all customization images before embedding
+    const itemsHtml = await Promise.all(
+      orderDetails.items.map(async (item: any) => {
         let itemHtml = `
       <tr>
         <td style="padding: 8px; border-bottom: 1px solid #ddd;">${item.name}</td>
@@ -151,14 +153,20 @@ export async function sendOrderConfirmationEmail(
         <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right;">$${(item.quantity * item.price).toFixed(2)}</td>
       </tr>`;
 
-        // Add customization image if present
+        // Add customization image if present, with watermark
         if (item.customization && item.customization.value) {
+          let watermarkedDataUrl = item.customization.value;
+          try {
+            watermarkedDataUrl = await addWatermarkToImage(item.customization.value, "AdaptiveGIS");
+          } catch (err) {
+            console.warn("[Email] Failed to watermark image, using original", err);
+          }
           itemHtml += `
       <tr>
         <td colspan="3" style="padding: 8px; border-bottom: 1px solid #ddd;">
           <div style="margin-top: 10px; margin-bottom: 10px;">
             <strong>Customization:</strong><br/>
-            <img src="${item.customization.value}" alt="Customization" style="max-width: 150px; height: auto; border-radius: 4px; margin-top: 8px; border: 1px solid #ddd;">
+            <img src="${watermarkedDataUrl}" alt="Customization" style="max-width: 150px; height: auto; border-radius: 4px; margin-top: 8px; border: 1px solid #ddd;" oncontextmenu="return false" draggable="false">
             <p style="font-size: 11px; color: #666; margin-top: 4px;">
               ${item.customization.fileName ? item.customization.fileName : "Custom Design"} (${item.customization.type === "gallery" ? "Gallery Design" : "Uploaded Design"})
             </p>
@@ -169,7 +177,8 @@ export async function sendOrderConfirmationEmail(
 
         return itemHtml;
       })
-      .join("");
+    );
+    const itemsHtmlStr = itemsHtml.join("");
 
     const html = `
     <!DOCTYPE html>
@@ -206,7 +215,7 @@ export async function sendOrderConfirmationEmail(
               <th>Qty</th>
               <th>Total</th>
             </tr>
-            ${itemsHtml}
+            ${itemsHtmlStr}
             <tr class="total-row">
               <td colspan="2" style="text-align: right; padding: 10px;">Subtotal:</td>
               <td style="padding: 10px; text-align: right;">$${Number(orderDetails.subtotal).toFixed(2)}</td>
