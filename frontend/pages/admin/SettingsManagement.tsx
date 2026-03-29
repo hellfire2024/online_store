@@ -1,4 +1,111 @@
 import React, { useState, useEffect, useMemo } from "react";
+// --- Shipping Test Defaults ---
+const TEST_FROM_ADDRESS = {
+  firstName: "Test",
+  lastName: "Sender",
+  street1: "417 Montgomery St",
+  city: "San Francisco",
+  state: "CA",
+  zip: "94104",
+  country: "US",
+  email: "test@example.com",
+  phone: "555-555-5555",
+};
+const TEST_TO_ADDRESS = {
+  firstName: "Test",
+  lastName: "Recipient",
+  street1: "1600 Amphitheatre Pkwy",
+  city: "Mountain View",
+  state: "CA",
+  zip: "94043",
+  country: "US",
+  email: "test2@example.com",
+  phone: "555-555-5555",
+};
+const TEST_PARCEL = { weight: 1, length: 10, width: 6, height: 2 };
+// --- Shipping Test Button ---
+const ShippingTestButton = ({ carrier, disabled, hasUnsaved, onResult }) => {
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState(null);
+  const { addToast } = useToast();
+
+  const handleTest = async () => {
+    if (hasUnsaved) {
+      addToast("Please save your shipping settings before testing.", "warning");
+      setResult(null);
+      return;
+    }
+    setLoading(true);
+    setResult(null);
+    try {
+      const res = await fetch("/api/shipping/rates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fromAddress: TEST_FROM_ADDRESS,
+          toAddress: TEST_TO_ADDRESS,
+          parcel: TEST_PARCEL,
+          carriers: [carrier],
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.rates && data.rates.length > 0) {
+        setResult({
+          success: true,
+          message: `Success: ${data.rates.length} rates returned.`,
+        });
+        addToast(`Shipping test for ${carrier} succeeded!`, "success");
+        onResult && onResult(true, data);
+      } else {
+        setResult({
+          success: false,
+          message: data.error || "No rates returned.",
+        });
+        addToast(`Shipping test for ${carrier} failed.`, "error");
+        onResult && onResult(false, data);
+      }
+    } catch (err) {
+      setResult({
+        success: false,
+        message: "Request failed. Check server logs.",
+      });
+      addToast(`Shipping test for ${carrier} failed.`, "error");
+      onResult && onResult(false, null);
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div className="mt-2">
+      <button
+        type="button"
+        className={`px-4 py-2 rounded text-white ${hasUnsaved || disabled ? "bg-slate-500 cursor-not-allowed" : "bg-sky-600 hover:bg-sky-700"}`}
+        disabled={hasUnsaved || disabled || loading}
+        title={
+          hasUnsaved
+            ? "Save settings before testing"
+            : `Test ${carrier} connection`
+        }
+        onClick={handleTest}
+      >
+        {loading
+          ? "Testing..."
+          : `Test ${carrier.charAt(0).toUpperCase() + carrier.slice(1)} Connection`}
+      </button>
+      {result && (
+        <div
+          className={
+            result.success
+              ? "text-green-400 text-xs mt-1"
+              : "text-red-400 text-xs mt-1"
+          }
+        >
+          {result.message}
+        </div>
+      )}
+    </div>
+  );
+};
 import { useSiteSettings } from "../../context/SiteSettingsContext";
 import { usePages } from "../../context/PagesContext";
 import { useToast } from "../../hooks/useToast";
@@ -2211,35 +2318,42 @@ const SettingsManagement: React.FC = () => {
                   </span>
                 </div>
                 {settings.shippingCarriers?.easypost?.enabled && (
-                  <input
-                    type="password"
-                    placeholder="EasyPost API Key"
-                    value={settings.shippingCarriers?.easypost?.apiKey || ""}
-                    onChange={(e) =>
-                      setSettings((prev) => ({
-                        ...prev!,
-                        shippingCarriers: {
-                          easypost: {
-                            ...(prev!.shippingCarriers?.easypost || {
+                  <>
+                    <input
+                      type="password"
+                      placeholder="EasyPost API Key"
+                      value={settings.shippingCarriers?.easypost?.apiKey || ""}
+                      onChange={(e) =>
+                        setSettings((prev) => ({
+                          ...prev!,
+                          shippingCarriers: {
+                            easypost: {
+                              ...(prev!.shippingCarriers?.easypost || {
+                                enabled: false,
+                                apiKey: "",
+                              }),
+                              apiKey: e.target.value,
+                            },
+                            shippo: prev!.shippingCarriers?.shippo || {
                               enabled: false,
                               apiKey: "",
-                            }),
-                            apiKey: e.target.value,
+                            },
+                            shipstation: prev!.shippingCarriers
+                              ?.shipstation || {
+                              enabled: false,
+                              apiKey: "",
+                              apiSecret: "",
+                            },
                           },
-                          shippo: prev!.shippingCarriers?.shippo || {
-                            enabled: false,
-                            apiKey: "",
-                          },
-                          shipstation: prev!.shippingCarriers?.shipstation || {
-                            enabled: false,
-                            apiKey: "",
-                            apiSecret: "",
-                          },
-                        },
-                      }))
-                    }
-                    className={inputClasses}
-                  />
+                        }))
+                      }
+                      className={inputClasses}
+                    />
+                    <ShippingTestButton
+                      carrier="easypost"
+                      hasUnsaved={hasSettingsUnsavedChanges}
+                    />
+                  </>
                 )}
               </div>
 
@@ -2287,35 +2401,42 @@ const SettingsManagement: React.FC = () => {
                   </span>
                 </div>
                 {settings.shippingCarriers?.shippo?.enabled && (
-                  <input
-                    type="password"
-                    placeholder="Shippo API Key"
-                    value={settings.shippingCarriers?.shippo?.apiKey || ""}
-                    onChange={(e) =>
-                      setSettings((prev) => ({
-                        ...prev!,
-                        shippingCarriers: {
-                          easypost: prev!.shippingCarriers?.easypost || {
-                            enabled: false,
-                            apiKey: "",
-                          },
-                          shippo: {
-                            ...(prev!.shippingCarriers?.shippo || {
+                  <>
+                    <input
+                      type="password"
+                      placeholder="Shippo API Key"
+                      value={settings.shippingCarriers?.shippo?.apiKey || ""}
+                      onChange={(e) =>
+                        setSettings((prev) => ({
+                          ...prev!,
+                          shippingCarriers: {
+                            easypost: prev!.shippingCarriers?.easypost || {
                               enabled: false,
                               apiKey: "",
-                            }),
-                            apiKey: e.target.value,
+                            },
+                            shippo: {
+                              ...(prev!.shippingCarriers?.shippo || {
+                                enabled: false,
+                                apiKey: "",
+                              }),
+                              apiKey: e.target.value,
+                            },
+                            shipstation: prev!.shippingCarriers
+                              ?.shipstation || {
+                              enabled: false,
+                              apiKey: "",
+                              apiSecret: "",
+                            },
                           },
-                          shipstation: prev!.shippingCarriers?.shipstation || {
-                            enabled: false,
-                            apiKey: "",
-                            apiSecret: "",
-                          },
-                        },
-                      }))
-                    }
-                    className={inputClasses}
-                  />
+                        }))
+                      }
+                      className={inputClasses}
+                    />
+                    <ShippingTestButton
+                      carrier="shippo"
+                      hasUnsaved={hasSettingsUnsavedChanges}
+                    />
+                  </>
                 )}
               </div>
 
@@ -2424,6 +2545,10 @@ const SettingsManagement: React.FC = () => {
                         }))
                       }
                       className={inputClasses}
+                    />
+                    <ShippingTestButton
+                      carrier="shipstation"
+                      hasUnsaved={hasSettingsUnsavedChanges}
                     />
                   </div>
                 )}
