@@ -1,3 +1,10 @@
+import Stripe from "stripe";
+import { Router, Request, Response } from "express";
+import { pool } from "../db/connection.js";
+import { RowDataPacket } from "mysql2";
+
+const router = Router();
+
 // POST: Test PayPal configuration (Client ID and Secret)
 router.post("/paypal-config-test", async (_req: Request, res: Response) => {
   try {
@@ -30,30 +37,26 @@ router.post("/paypal-config-test", async (_req: Request, res: Response) => {
         body: "grant_type=client_credentials",
       },
     );
-    const data = await resp.json();
+    const data = (await resp.json()) as any;
     if (resp.ok && data.access_token) {
       return res.json({
         success: true,
         message: "PayPal connection successful.",
       });
     } else {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          error:
-            data.error_description ||
-            "Failed to connect to PayPal. Check your credentials.",
-        });
+      return res.status(400).json({
+        success: false,
+        error:
+          data.error_description ||
+          "Failed to connect to PayPal. Check your credentials.",
+      });
     }
   } catch (error) {
     console.error("Error testing PayPal config:", error);
-    return res
-      .status(500)
-      .json({
-        success: false,
-        error: "Internal server error while testing PayPal config.",
-      });
+    return res.status(500).json({
+      success: false,
+      error: "Internal server error while testing PayPal config.",
+    });
   }
 });
 
@@ -74,7 +77,7 @@ router.post("/square-config-test", async (_req: Request, res: Response) => {
         headers: { Authorization: `Bearer ${accessToken}` },
       },
     );
-    const data = await resp.json();
+    const data = (await resp.json()) as any;
     if (resp.ok && data.merchant) {
       return res.json({
         success: true,
@@ -82,23 +85,19 @@ router.post("/square-config-test", async (_req: Request, res: Response) => {
         merchant: data.merchant,
       });
     } else {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          error:
-            data.errors?.[0]?.detail ||
-            "Failed to connect to Square. Check your access token.",
-        });
+      return res.status(400).json({
+        success: false,
+        error:
+          data.errors?.[0]?.detail ||
+          "Failed to connect to Square. Check your access token.",
+      });
     }
   } catch (error) {
     console.error("Error testing Square config:", error);
-    return res
-      .status(500)
-      .json({
-        success: false,
-        error: "Internal server error while testing Square config.",
-      });
+    return res.status(500).json({
+      success: false,
+      error: "Internal server error while testing Square config.",
+    });
   }
 });
 
@@ -129,7 +128,7 @@ router.post(
         });
       }
       // Try to authenticate with Authorize.Net (sandbox)
-      const xml = `<?xml version="1.0" encoding="utf-8"?>\n<getMerchantDetailsRequest xmlns="AnetApi/xml/v1/schema/AnetApiSchema.xsd"><merchantAuthentication><name>${apiLoginId}</name><transactionKey>${transactionKey}</transactionKey></merchantAuthentication></getMerchantDetailsRequest>`;
+      const xml = `<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<getMerchantDetailsRequest xmlns=\"AnetApi/xml/v1/schema/AnetApiSchema.xsd\"><merchantAuthentication><name>${apiLoginId}</name><transactionKey>${transactionKey}</transactionKey></merchantAuthentication></getMerchantDetailsRequest>`;
       const resp = await fetch(
         "https://apitest.authorize.net/xml/v1/request.api",
         {
@@ -145,31 +144,20 @@ router.post(
           message: "Authorize.Net connection successful.",
         });
       } else {
-        return res
-          .status(400)
-          .json({
-            success: false,
-            error:
-              "Failed to connect to Authorize.Net. Check your credentials.",
-          });
+        return res.status(400).json({
+          success: false,
+          error: "Failed to connect to Authorize.Net. Check your credentials.",
+        });
       }
     } catch (error) {
       console.error("Error testing Authorize.Net config:", error);
-      return res
-        .status(500)
-        .json({
-          success: false,
-          error: "Internal server error while testing Authorize.Net config.",
-        });
+      return res.status(500).json({
+        success: false,
+        error: "Internal server error while testing Authorize.Net config.",
+      });
     }
   },
 );
-import Stripe from "stripe";
-import { Router, Request, Response } from "express";
-import { pool } from "../db/connection.js";
-import { RowDataPacket } from "mysql2";
-
-const router = Router();
 
 const hasText = (value: unknown): boolean =>
   typeof value === "string" && value.trim().length > 0;
