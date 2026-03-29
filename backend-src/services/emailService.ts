@@ -157,9 +157,15 @@ export async function sendOrderConfirmationEmail(
         if (item.customization && item.customization.value) {
           let watermarkedDataUrl = item.customization.value;
           try {
-            watermarkedDataUrl = await addWatermarkToImage(item.customization.value, "AdaptiveGIS");
+            watermarkedDataUrl = await addWatermarkToImage(
+              item.customization.value,
+              "AdaptiveGIS",
+            );
           } catch (err) {
-            console.warn("[Email] Failed to watermark image, using original", err);
+            console.warn(
+              "[Email] Failed to watermark image, using original",
+              err,
+            );
           }
           itemHtml += `
       <tr>
@@ -176,7 +182,7 @@ export async function sendOrderConfirmationEmail(
         }
 
         return itemHtml;
-      })
+      }),
     );
     const itemsHtmlStr = itemsHtml.join("");
 

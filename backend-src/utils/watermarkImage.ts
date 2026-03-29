@@ -4,7 +4,10 @@ import sharp from "sharp";
  * Adds a semi-transparent diagonal watermark to the center of the image.
  * Returns a Promise that resolves to a data URL (webp).
  */
-export async function addWatermarkToImage(imageDataUrl: string, watermarkText = "AdaptiveGIS"): Promise<string> {
+export async function addWatermarkToImage(
+  imageDataUrl: string,
+  watermarkText = "AdaptiveGIS",
+): Promise<string> {
   // Extract base64 from data URL
   const matches = imageDataUrl.match(/^data:(image\/\w+);base64,(.+)$/);
   if (!matches) throw new Error("Invalid image data URL");
@@ -25,9 +28,7 @@ export async function addWatermarkToImage(imageDataUrl: string, watermarkText = 
 
   // Composite SVG over image
   const watermarkedBuffer = await sharp(imageBuffer)
-    .composite([
-      { input: svgBuffer, gravity: "center" }
-    ])
+    .composite([{ input: svgBuffer, gravity: "center" }])
     .webp({ quality: 90 })
     .toBuffer();
 
