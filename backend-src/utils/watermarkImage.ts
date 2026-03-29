@@ -11,7 +11,7 @@ export async function addWatermarkToImage(
   // Extract base64 from data URL
   const matches = imageDataUrl.match(/^data:(image\/\w+);base64,(.+)$/);
   if (!matches) throw new Error("Invalid image data URL");
-  const mimeType = matches[1];
+  // const mimeType = matches[1]; // Unused
   const base64 = matches[2];
   const imageBuffer = Buffer.from(base64, "base64");
 
