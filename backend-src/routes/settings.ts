@@ -1,3 +1,169 @@
+// POST: Test PayPal configuration (Client ID and Secret)
+router.post("/paypal-config-test", async (_req: Request, res: Response) => {
+  try {
+    const settings = await readSettings();
+    const clientId = String(settings?.paymentApiKeys?.paypal || "").trim();
+    const clientSecret = String(
+      (settings?.paymentApiKeys as any)?.paypalSecret || "",
+    ).trim();
+    if (!clientId || !clientSecret) {
+      return res.status(400).json({
+        success: false,
+        error:
+          !clientId && !clientSecret
+            ? "Both PayPal Client ID and Secret are missing."
+            : !clientId
+              ? "PayPal Client ID is missing."
+              : "PayPal Client Secret is missing.",
+      });
+    }
+    // Try to get an access token from PayPal
+    const auth = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
+    const resp = await fetch(
+      "https://api-m.sandbox.paypal.com/v1/oauth2/token",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Basic ${auth}`,
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: "grant_type=client_credentials",
+      },
+    );
+    const data = await resp.json();
+    if (resp.ok && data.access_token) {
+      return res.json({
+        success: true,
+        message: "PayPal connection successful.",
+      });
+    } else {
+      return res
+        .status(400)
+        .json({
+          success: false,
+          error:
+            data.error_description ||
+            "Failed to connect to PayPal. Check your credentials.",
+        });
+    }
+  } catch (error) {
+    console.error("Error testing PayPal config:", error);
+    return res
+      .status(500)
+      .json({
+        success: false,
+        error: "Internal server error while testing PayPal config.",
+      });
+  }
+});
+
+// POST: Test Square configuration (Access Token)
+router.post("/square-config-test", async (_req: Request, res: Response) => {
+  try {
+    const settings = await readSettings();
+    const accessToken = String(settings?.paymentApiKeys?.square || "").trim();
+    if (!accessToken) {
+      return res
+        .status(400)
+        .json({ success: false, error: "Square Access Token is missing." });
+    }
+    // Try to fetch merchant info from Square
+    const resp = await fetch(
+      "https://connect.squareupsandbox.com/v2/merchants/me",
+      {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      },
+    );
+    const data = await resp.json();
+    if (resp.ok && data.merchant) {
+      return res.json({
+        success: true,
+        message: "Square connection successful.",
+        merchant: data.merchant,
+      });
+    } else {
+      return res
+        .status(400)
+        .json({
+          success: false,
+          error:
+            data.errors?.[0]?.detail ||
+            "Failed to connect to Square. Check your access token.",
+        });
+    }
+  } catch (error) {
+    console.error("Error testing Square config:", error);
+    return res
+      .status(500)
+      .json({
+        success: false,
+        error: "Internal server error while testing Square config.",
+      });
+  }
+});
+
+// POST: Test Authorize.Net configuration (API Login ID and Transaction Key)
+router.post(
+  "/authorizedotnet-config-test",
+  async (_req: Request, res: Response) => {
+    try {
+      const settings = await readSettings();
+      const authorizeNetKey = String(
+        settings?.paymentApiKeys?.authorizeNet || "",
+      ).trim();
+      const apiLoginId = authorizeNetKey.includes(":")
+        ? authorizeNetKey.split(":")[0]
+        : authorizeNetKey;
+      const transactionKey = authorizeNetKey.includes(":")
+        ? authorizeNetKey.split(":")[1]
+        : "";
+      if (!apiLoginId || !transactionKey) {
+        return res.status(400).json({
+          success: false,
+          error:
+            !apiLoginId && !transactionKey
+              ? "Both API Login ID and Transaction Key are missing."
+              : !apiLoginId
+                ? "API Login ID is missing."
+                : "Transaction Key is missing.",
+        });
+      }
+      // Try to authenticate with Authorize.Net (sandbox)
+      const xml = `<?xml version="1.0" encoding="utf-8"?>\n<getMerchantDetailsRequest xmlns="AnetApi/xml/v1/schema/AnetApiSchema.xsd"><merchantAuthentication><name>${apiLoginId}</name><transactionKey>${transactionKey}</transactionKey></merchantAuthentication></getMerchantDetailsRequest>`;
+      const resp = await fetch(
+        "https://apitest.authorize.net/xml/v1/request.api",
+        {
+          method: "POST",
+          headers: { "Content-Type": "text/xml" },
+          body: xml,
+        },
+      );
+      const text = await resp.text();
+      if (resp.ok && text.includes("<messages><resultCode>Ok</resultCode>")) {
+        return res.json({
+          success: true,
+          message: "Authorize.Net connection successful.",
+        });
+      } else {
+        return res
+          .status(400)
+          .json({
+            success: false,
+            error:
+              "Failed to connect to Authorize.Net. Check your credentials.",
+          });
+      }
+    } catch (error) {
+      console.error("Error testing Authorize.Net config:", error);
+      return res
+        .status(500)
+        .json({
+          success: false,
+          error: "Internal server error while testing Authorize.Net config.",
+        });
+    }
+  },
+);
 import Stripe from "stripe";
 import { Router, Request, Response } from "express";
 import { pool } from "../db/connection.js";

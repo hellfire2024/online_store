@@ -20,6 +20,97 @@ const TEST_SHIPPING_COST = 10;
 const TEST_SHIPPING_STATE = "CA";
 
 const TaxTestButton = ({ provider, disabled, hasUnsaved, onResult }) => {
+  // --- Payment Test Button ---
+  const PaymentTestButton = ({ provider, disabled, hasUnsaved, onResult }) => {
+    const [loading, setLoading] = useState(false);
+    const [result, setResult] = useState(null);
+    const { addToast } = useToast();
+
+    const handleTest = async () => {
+      if (hasUnsaved) {
+        addToast(
+          "Please save your payment settings before testing.",
+          "warning",
+        );
+        setResult(null);
+        return;
+      }
+      setLoading(true);
+      setResult(null);
+      try {
+        const res = await fetch(`/api/settings/${provider}-config-test`, {
+          method: "POST",
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          setResult({
+            success: true,
+            message: `${provider.charAt(0).toUpperCase() + provider.slice(1)} connection successful.`,
+          });
+          addToast(
+            `${provider.charAt(0).toUpperCase() + provider.slice(1)} connection test succeeded!`,
+            "success",
+          );
+          onResult && onResult(true, data);
+        } else {
+          setResult({
+            success: false,
+            message:
+              data.error ||
+              `${provider.charAt(0).toUpperCase() + provider.slice(1)} connection test failed.`,
+          });
+          addToast(
+            data.error ||
+              `${provider.charAt(0).toUpperCase() + provider.slice(1)} connection test failed.`,
+            "error",
+          );
+          onResult && onResult(false, data);
+        }
+      } catch (err) {
+        setResult({
+          success: false,
+          message: `${provider.charAt(0).toUpperCase() + provider.slice(1)} connection test failed. Check server logs.`,
+        });
+        addToast(
+          `${provider.charAt(0).toUpperCase() + provider.slice(1)} connection test failed. Check server logs.`,
+          "error",
+        );
+        onResult && onResult(false, null);
+      }
+      setLoading(false);
+    };
+
+    return (
+      <div className="mt-2">
+        <button
+          type="button"
+          className={`px-4 py-2 rounded text-white ${hasUnsaved || disabled ? "bg-slate-500 cursor-not-allowed" : "bg-sky-600 hover:bg-sky-700"}`}
+          disabled={hasUnsaved || disabled || loading}
+          title={
+            hasUnsaved
+              ? "Save settings before testing"
+              : `Test ${provider.charAt(0).toUpperCase() + provider.slice(1)} connection`
+          }
+          onClick={handleTest}
+        >
+          {loading
+            ? "Testing..."
+            : `Test ${provider.charAt(0).toUpperCase() + provider.slice(1)} Connection`}
+        </button>
+        {result && (
+          <div
+            className={
+              result.success
+                ? "text-green-400 text-xs mt-1"
+                : "text-red-400 text-xs mt-1"
+            }
+          >
+            {result.message}
+          </div>
+        )}
+      </div>
+    );
+  };
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const { addToast } = useToast();
@@ -1743,74 +1834,10 @@ const SettingsManagement: React.FC = () => {
                     </p>
                   )}
                 </div>
-                <div>
-                  <button
-                    type="button"
-                    className={`mt-2 px-4 py-2 rounded text-white ${hasSettingsUnsavedChanges ? "bg-slate-500 cursor-not-allowed" : "bg-sky-600 hover:bg-sky-700"}`}
-                    disabled={hasSettingsUnsavedChanges}
-                    title={
-                      hasSettingsUnsavedChanges
-                        ? "Save settings before testing connection"
-                        : "Test Stripe connection"
-                    }
-                    onClick={async () => {
-                      if (hasSettingsUnsavedChanges) {
-                        addToast(
-                          "Please save your Stripe keys before testing the connection.",
-                          "warning",
-                        );
-                        setStripeTested(null);
-                        setStripeTestMessage("");
-                        return;
-                      }
-                      try {
-                        const res = await fetch(
-                          "/api/settings/stripe-config-test",
-                          { method: "POST" },
-                        );
-                        const data = await res.json();
-                        if (res.ok && data.success) {
-                          addToast(
-                            "Stripe connection test succeeded!",
-                            "success",
-                          );
-                          setStripeTested(true);
-                          setStripeTestMessage("Stripe connection successful.");
-                        } else {
-                          addToast(
-                            data.error || "Stripe connection test failed.",
-                            "error",
-                          );
-                          setStripeTested(false);
-                          setStripeTestMessage(
-                            data.error || "Stripe connection test failed.",
-                          );
-                        }
-                      } catch (err) {
-                        addToast(
-                          "Stripe connection test failed. Check server logs.",
-                          "error",
-                        );
-                        setStripeTested(false);
-                        setStripeTestMessage(
-                          "Stripe connection test failed. Check server logs.",
-                        );
-                      }
-                    }}
-                  >
-                    Test Stripe Connection
-                  </button>
-                  {stripeTested === true && (
-                    <div className="text-green-400 text-xs mt-1">
-                      {stripeTestMessage}
-                    </div>
-                  )}
-                  {stripeTested === false && (
-                    <div className="text-red-400 text-xs mt-1">
-                      {stripeTestMessage}
-                    </div>
-                  )}
-                </div>
+                <PaymentTestButton
+                  provider="stripe"
+                  hasUnsaved={hasSettingsUnsavedChanges}
+                />
               </div>
             )}
 
@@ -1855,6 +1882,10 @@ const SettingsManagement: React.FC = () => {
                     className={inputClasses}
                   />
                 </div>
+                <PaymentTestButton
+                  provider="paypal"
+                  hasUnsaved={hasSettingsUnsavedChanges}
+                />
               </div>
             )}
 
@@ -1919,6 +1950,10 @@ const SettingsManagement: React.FC = () => {
                     className={inputClasses}
                   />
                 </div>
+                <PaymentTestButton
+                  provider="square"
+                  hasUnsaved={hasSettingsUnsavedChanges}
+                />
               </div>
             )}
 
@@ -1988,6 +2023,10 @@ const SettingsManagement: React.FC = () => {
                     Used by Accept.js in the browser.
                   </p>
                 </div>
+                <PaymentTestButton
+                  provider="authorizeNet"
+                  hasUnsaved={hasSettingsUnsavedChanges}
+                />
               </div>
             )}
 
