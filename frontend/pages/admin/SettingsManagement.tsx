@@ -19,98 +19,96 @@ const TEST_CART_ITEMS = [
 const TEST_SHIPPING_COST = 10;
 const TEST_SHIPPING_STATE = "CA";
 
-const TaxTestButton = ({ provider, disabled, hasUnsaved, onResult }) => {
-  // --- Payment Test Button ---
-  const PaymentTestButton = ({ provider, disabled, hasUnsaved, onResult }) => {
-    const [loading, setLoading] = useState(false);
-    const [result, setResult] = useState(null);
-    const { addToast } = useToast();
+// --- Payment Test Button ---
+const PaymentTestButton = ({ provider, disabled, hasUnsaved, onResult }) => {
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState(null);
+  const { addToast } = useToast();
 
-    const handleTest = async () => {
-      if (hasUnsaved) {
-        addToast(
-          "Please save your payment settings before testing.",
-          "warning",
-        );
-        setResult(null);
-        return;
-      }
-      setLoading(true);
+  const handleTest = async () => {
+    if (hasUnsaved) {
+      addToast("Please save your payment settings before testing.", "warning");
       setResult(null);
-      try {
-        const res = await fetch(`/api/settings/${provider}-config-test`, {
-          method: "POST",
+      return;
+    }
+    setLoading(true);
+    setResult(null);
+    try {
+      const res = await fetch(`/api/settings/${provider}-config-test`, {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setResult({
+          success: true,
+          message: `${provider.charAt(0).toUpperCase() + provider.slice(1)} connection successful.`,
         });
-        const data = await res.json();
-        if (res.ok && data.success) {
-          setResult({
-            success: true,
-            message: `${provider.charAt(0).toUpperCase() + provider.slice(1)} connection successful.`,
-          });
-          addToast(
-            `${provider.charAt(0).toUpperCase() + provider.slice(1)} connection test succeeded!`,
-            "success",
-          );
-          onResult && onResult(true, data);
-        } else {
-          setResult({
-            success: false,
-            message:
-              data.error ||
-              `${provider.charAt(0).toUpperCase() + provider.slice(1)} connection test failed.`,
-          });
-          addToast(
-            data.error ||
-              `${provider.charAt(0).toUpperCase() + provider.slice(1)} connection test failed.`,
-            "error",
-          );
-          onResult && onResult(false, data);
-        }
-      } catch (err) {
+        addToast(
+          `${provider.charAt(0).toUpperCase() + provider.slice(1)} connection test succeeded!`,
+          "success",
+        );
+        onResult && onResult(true, data);
+      } else {
         setResult({
           success: false,
-          message: `${provider.charAt(0).toUpperCase() + provider.slice(1)} connection test failed. Check server logs.`,
+          message:
+            data.error ||
+            `${provider.charAt(0).toUpperCase() + provider.slice(1)} connection test failed.`,
         });
         addToast(
-          `${provider.charAt(0).toUpperCase() + provider.slice(1)} connection test failed. Check server logs.`,
+          data.error ||
+            `${provider.charAt(0).toUpperCase() + provider.slice(1)} connection test failed.`,
           "error",
         );
-        onResult && onResult(false, null);
+        onResult && onResult(false, data);
       }
-      setLoading(false);
-    };
-
-    return (
-      <div className="mt-2">
-        <button
-          type="button"
-          className={`px-4 py-2 rounded text-white ${hasUnsaved || disabled ? "bg-slate-500 cursor-not-allowed" : "bg-sky-600 hover:bg-sky-700"}`}
-          disabled={hasUnsaved || disabled || loading}
-          title={
-            hasUnsaved
-              ? "Save settings before testing"
-              : `Test ${provider.charAt(0).toUpperCase() + provider.slice(1)} connection`
-          }
-          onClick={handleTest}
-        >
-          {loading
-            ? "Testing..."
-            : `Test ${provider.charAt(0).toUpperCase() + provider.slice(1)} Connection`}
-        </button>
-        {result && (
-          <div
-            className={
-              result.success
-                ? "text-green-400 text-xs mt-1"
-                : "text-red-400 text-xs mt-1"
-            }
-          >
-            {result.message}
-          </div>
-        )}
-      </div>
-    );
+    } catch (err) {
+      setResult({
+        success: false,
+        message: `${provider.charAt(0).toUpperCase() + provider.slice(1)} connection test failed. Check server logs.`,
+      });
+      addToast(
+        `${provider.charAt(0).toUpperCase() + provider.slice(1)} connection test failed. Check server logs.`,
+        "error",
+      );
+      onResult && onResult(false, null);
+    }
+    setLoading(false);
   };
+
+  return (
+    <div className="mt-2">
+      <button
+        type="button"
+        className={`px-4 py-2 rounded text-white ${hasUnsaved || disabled ? "bg-slate-500 cursor-not-allowed" : "bg-sky-600 hover:bg-sky-700"}`}
+        disabled={hasUnsaved || disabled || loading}
+        title={
+          hasUnsaved
+            ? "Save settings before testing"
+            : `Test ${provider.charAt(0).toUpperCase() + provider.slice(1)} connection`
+        }
+        onClick={handleTest}
+      >
+        {loading
+          ? "Testing..."
+          : `Test ${provider.charAt(0).toUpperCase() + provider.slice(1)} Connection`}
+      </button>
+      {result && (
+        <div
+          className={
+            result.success
+              ? "text-green-400 text-xs mt-1"
+              : "text-red-400 text-xs mt-1"
+          }
+        >
+          {result.message}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const TaxTestButton = ({ provider, disabled, hasUnsaved, onResult }) => {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const { addToast } = useToast();
