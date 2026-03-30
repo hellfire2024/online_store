@@ -225,12 +225,12 @@ export async function create(data: Partial<Product>): Promise<Product> {
       saleType === "none" || !data.saleEndAt ? null : new Date(data.saleEndAt);
 
     await connection.query(
-      `INSERT INTO products (id, name, description, price, image_url, inventory,
-                             low_stock_threshold, customizable, enable_ai_ideas, gallery_id,
-                             allow_custom_image_upload, custom_image_upload_price,
-                             allow_custom_text, custom_text_price_per_char, custom_text_max_length,
-                             is_archived, sale_type, sale_value, sale_start_at, sale_end_at, reorder_pricing_mode,
-                             package_weight, package_length, package_width, package_height, package_volume)
+      `INSERT INTO products (id, name, description, price, imageUrl, inventory,
+                             lowStockThreshold, customizable, enableAIIdeas, galleryId,
+                             allowCustomImageUpload, customImageUploadPrice,
+                             allowCustomText, customTextPricePerChar, customTextMaxLength,
+                             isArchived, saleType, saleValue, saleStartAt, saleEndAt, reorderPricingMode,
+                             packageWeight, packageLength, packageWidth, packageHeight, packageVolume)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id,
@@ -319,14 +319,14 @@ export async function update(
     );
 
     const [result] = await connection.query<ResultSetHeader>(
-      `UPDATE products SET name = ?, description = ?, price = ?, image_url = ?,
-                          inventory = ?, low_stock_threshold = ?, customizable = ?,
-                          enable_ai_ideas = ?, gallery_id = ?,
-                          allow_custom_image_upload = ?, custom_image_upload_price = ?,
-                          allow_custom_text = ?, custom_text_price_per_char = ?, custom_text_max_length = ?,
-                          is_archived = ?, sale_type = ?, sale_value = ?, sale_start_at = ?, sale_end_at = ?,
-                          reorder_pricing_mode = ?,
-                          package_weight = ?, package_length = ?, package_width = ?, package_height = ?, package_volume = ?
+      `UPDATE products SET name = ?, description = ?, price = ?, imageUrl = ?,
+                          inventory = ?, lowStockThreshold = ?, customizable = ?,
+                          enableAIIdeas = ?, galleryId = ?,
+                          allowCustomImageUpload = ?, customImageUploadPrice = ?,
+                          allowCustomText = ?, customTextPricePerChar = ?, customTextMaxLength = ?,
+                          isArchived = ?, saleType = ?, saleValue = ?, saleStartAt = ?, saleEndAt = ?,
+                          reorderPricingMode = ?,
+                          packageWeight = ?, packageLength = ?, packageWidth = ?, packageHeight = ?, packageVolume = ?
        WHERE id = ?`,
       [
         data.name ?? currentProduct.name,
@@ -390,7 +390,7 @@ async function saveOptionList(
   list: ProductOptionList,
 ): Promise<void> {
   await connection.query(
-    `INSERT INTO product_option_lists (id, product_id, name, required, max_selections, list_order)
+    `INSERT INTO product_option_lists (id, productId, name, required, maxSelections, listOrder)
      VALUES (?, ?, ?, ?, ?, ?)`,
     [
       list.id,
@@ -404,7 +404,7 @@ async function saveOptionList(
 
   for (const option of list.options) {
     await connection.query(
-      `INSERT INTO product_options (id, list_id, name, price_delta, option_order)
+      `INSERT INTO product_options (id, listId, name, priceDelta, optionOrder)
        VALUES (?, ?, ?, ?, ?)`,
       [option.id, list.id, option.name, option.priceDelta, option.order],
     );

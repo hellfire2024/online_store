@@ -34,7 +34,7 @@ export async function seedDatabase(): Promise<void> {
     // Create sample product
     const productId = crypto.randomUUID();
     await pool.query(
-      `INSERT INTO products (id, name, description, price, image_url, inventory, customizable, gallery_id, allow_custom_image_upload, custom_image_upload_price)
+      `INSERT INTO products (id, name, description, price, imageUrl, inventory, customizable, galleryId, allowCustomImageUpload, customImageUploadPrice)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        ON DUPLICATE KEY UPDATE name = name`,
       [
