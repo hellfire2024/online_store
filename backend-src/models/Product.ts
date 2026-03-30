@@ -131,29 +131,9 @@ function normalizeProductRow(row: RowDataPacket): Product {
 }
 
 export async function findAll(includeArchived = true): Promise<Product[]> {
+  // Update this SELECT to include ALL columns in your current products table, including shipment and any new fields
   const [rows] = await pool.query<RowDataPacket[]>(
-    `SELECT id, name, description, price, image_url as imageUrl, inventory, 
-          low_stock_threshold as lowStockThreshold, customizable, 
-          enable_ai_ideas as enableAIIdeas, gallery_id as galleryId,
-          allow_custom_image_upload as allowCustomImageUpload,
-          custom_image_upload_price as customImageUploadPrice,
-          allow_custom_text as allowCustomText,
-          custom_text_price_per_char as customTextPricePerChar,
-          custom_text_max_length as customTextMaxLength,
-          is_archived as isArchived,
-          sale_type as saleType,
-          sale_value as saleValue,
-          sale_start_at as saleStartAt,
-          sale_end_at as saleEndAt,
-          reorder_pricing_mode as reorderPricingMode,
-          package_weight as packageWeight,
-          package_length as packageLength,
-          package_width as packageWidth,
-          package_height as packageHeight,
-          package_volume as packageVolume
-         FROM products
-         ${includeArchived ? "" : "WHERE is_archived = FALSE"}
-         ORDER BY name`,
+    `SELECT * FROM products ${includeArchived ? "" : "WHERE is_archived = FALSE"} ORDER BY name`,
   );
 
   const products = rows.map(normalizeProductRow);
@@ -178,27 +158,9 @@ export async function findAll(includeArchived = true): Promise<Product[]> {
 }
 
 export async function findById(id: string): Promise<Product | null> {
+  // Update this SELECT to include ALL columns in your current products table, including shipment and any new fields
   const [rows] = await pool.query<RowDataPacket[]>(
-    `SELECT id, name, description, price, image_url as imageUrl, inventory,
-          low_stock_threshold as lowStockThreshold, customizable,
-          enable_ai_ideas as enableAIIdeas, gallery_id as galleryId,
-          allow_custom_image_upload as allowCustomImageUpload,
-          custom_image_upload_price as customImageUploadPrice,
-          allow_custom_text as allowCustomText,
-          custom_text_price_per_char as customTextPricePerChar,
-          custom_text_max_length as customTextMaxLength,
-          is_archived as isArchived,
-          sale_type as saleType,
-          sale_value as saleValue,
-          sale_start_at as saleStartAt,
-          sale_end_at as saleEndAt,
-          reorder_pricing_mode as reorderPricingMode,
-          package_weight as packageWeight,
-          package_length as packageLength,
-          package_width as packageWidth,
-          package_height as packageHeight,
-          package_volume as packageVolume
-         FROM products WHERE id = ?`,
+    `SELECT * FROM products WHERE id = ?`,
     [id],
   );
 

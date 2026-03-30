@@ -221,7 +221,13 @@ const buildCommerceStatus = (settings: any) => {
   const normalizedFromAddress = normalizeFromAddress(settings?.fromAddress);
   const paymentProvider = String(settings?.paymentProvider || "none");
   const paymentApiKeys = settings?.paymentApiKeys || {};
-  const paymentKey = String(paymentApiKeys?.[paymentProvider] || "").trim();
+  let paymentKey = String(paymentApiKeys?.[paymentProvider] || "").trim();
+  // For Stripe, check both 'stripe' and 'stripePublishableKey'
+  if (paymentProvider === "stripe") {
+    if (!paymentKey) {
+      paymentKey = String(paymentApiKeys?.stripePublishableKey || "").trim();
+    }
+  }
   const paymentConfigured = paymentProvider !== "none";
   const paymentAvailable = paymentConfigured && paymentKey.length > 0;
 
