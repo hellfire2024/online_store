@@ -1012,17 +1012,23 @@ const SettingsManagement: React.FC = () => {
       const selectedPaymentProvider = String(
         finalSettings.paymentProvider || "none",
       );
-      if (
-        selectedPaymentProvider !== "none" &&
-        !finalSettings.paymentApiKeys?.[
-          selectedPaymentProvider as keyof typeof finalSettings.paymentApiKeys
-        ]
-      ) {
-        addToast(
-          `Please enter API credentials for ${selectedPaymentProvider} before saving.`,
-          "error",
-        );
-        return;
+      // Map provider to required key for connection
+      const requiredKeyMap: Record<string, string> = {
+        stripe: "stripePublishableKey",
+        paypal: "paypal",
+        square: "squareApplicationId",
+        authorizeNet: "authorizeNetPublicKey",
+      };
+      if (selectedPaymentProvider !== "none") {
+        const requiredKey = requiredKeyMap[selectedPaymentProvider];
+        const keyValue = (finalSettings.paymentApiKeys as any)?.[requiredKey];
+        if (!keyValue || String(keyValue).trim() === "") {
+          addToast(
+            `Please enter the required API credential (${requiredKey}) for ${selectedPaymentProvider} before saving.`,
+            "error",
+          );
+          return;
+        }
       }
 
       const footerPhone = finalSettings.footerConfig?.contactPhone?.trim();
