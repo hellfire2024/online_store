@@ -1,3 +1,4 @@
+// ...existing code...
 import { pool } from "./connection.js";
 
 export async function runMigrations(): Promise<void> {
