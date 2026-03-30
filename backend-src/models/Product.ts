@@ -131,9 +131,9 @@ function normalizeProductRow(row: RowDataPacket): Product {
 }
 
 export async function findAll(includeArchived = true): Promise<Product[]> {
-  // Update this SELECT to include ALL columns in your current products table, including shipment and any new fields
+  // Use camelCase columns directly (after migration)
   const [rows] = await pool.query<RowDataPacket[]>(
-    `SELECT * FROM products ${includeArchived ? "" : "WHERE is_archived = FALSE"} ORDER BY name`,
+    `SELECT * FROM products ${includeArchived ? "" : "WHERE isArchived = FALSE"} ORDER BY name`,
   );
 
   const products = rows.map(normalizeProductRow);
@@ -158,7 +158,7 @@ export async function findAll(includeArchived = true): Promise<Product[]> {
 }
 
 export async function findById(id: string): Promise<Product | null> {
-  // Update this SELECT to include ALL columns in your current products table, including shipment and any new fields
+  // Use camelCase columns directly (after migration)
   const [rows] = await pool.query<RowDataPacket[]>(
     `SELECT * FROM products WHERE id = ?`,
     [id],
@@ -184,8 +184,7 @@ async function findOptionLists(
   productId: string,
 ): Promise<ProductOptionList[]> {
   const [lists] = await pool.query<RowDataPacket[]>(
-    `SELECT id, name, required, max_selections as maxSelections, list_order as 'order'
-     FROM product_option_lists WHERE product_id = ? ORDER BY list_order`,
+    `SELECT * FROM product_option_lists WHERE productId = ? ORDER BY listOrder`,
     [productId],
   );
 
@@ -193,8 +192,7 @@ async function findOptionLists(
 
   for (const list of lists) {
     const [options] = await pool.query<RowDataPacket[]>(
-      `SELECT id, name, price_delta as priceDelta, option_order as 'order'
-       FROM product_options WHERE list_id = ? ORDER BY option_order`,
+      `SELECT * FROM product_options WHERE listId = ? ORDER BY optionOrder`,
       [list.id],
     );
 
@@ -204,7 +202,7 @@ async function findOptionLists(
       required: Boolean(list.required),
       maxSelections:
         list.maxSelections === null ? undefined : Number(list.maxSelections),
-      order: list.order,
+      order: list.listOrder,
       options: options as ProductOption[],
     });
   }
