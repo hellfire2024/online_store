@@ -363,19 +363,31 @@ CREATE TABLE IF NOT EXISTS ticket_replies (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 `;
     try {
-        // Split schema by semicolons and execute each statement
-        const statements = schema
-            .split(";")
-            .map((s) => s.trim())
-            .filter((s) => s.length > 0);
-        for (const statement of statements) {
-            await pool.query(statement);
-        }
-        console.log("✅ Database migrations completed successfully");
+      // Split schema by semicolons and execute each statement
+      const statements = schema
+        .split(";")
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0);
+      for (const statement of statements) {
+        await pool.query(statement);
+      }
+      // Run camelCase migration script
+      const fs = await import('fs/promises');
+      const path = await import('path');
+      const camelCasePath = path.resolve(__dirname || path.dirname(new URL(import.meta.url).pathname), 'migrate_camelCase.sql');
+      const camelCaseSql = await fs.readFile(camelCasePath, 'utf8');
+      const camelCaseStatements = camelCaseSql
+        .split(';')
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0 && !s.startsWith('--'));
+      for (const statement of camelCaseStatements) {
+        await pool.query(statement);
+      }
+      console.log("✅ Database migrations (including camelCase) completed successfully");
     }
     catch (error) {
-        console.error("❌ Migration failed:", error);
-        throw error;
+      console.error("❌ Migration failed:", error);
+      throw error;
     }
 }
 if (import.meta.url === `file://${process.argv[1]}`) {
