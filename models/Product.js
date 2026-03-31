@@ -44,8 +44,8 @@ export async function findById(id) {
     return product;
 }
 async function findOptionLists(productId) {
-    const [lists] = await pool.query(`SELECT id, name, required, max_selections as maxSelections, list_order as 'order'
-     FROM product_option_lists WHERE product_id = ? ORDER BY list_order`, [productId]);
+    const [lists] = await pool.query(`SELECT id, name, required, maxSelections, listOrder as 'order'
+     FROM product_option_lists WHERE productId = ? ORDER BY listOrder`, [productId]);
     const optionLists = [];
     for (const list of lists) {
         const [options] = await pool.query(`SELECT id, name, price_delta as priceDelta, option_order as 'order'
@@ -130,7 +130,7 @@ export async function update(id, data) {
         // Update option lists
         if (data.optionLists) {
             // Delete existing options
-            await connection.query("DELETE FROM product_option_lists WHERE product_id = ?", [id]);
+            await connection.query("DELETE FROM product_option_lists WHERE productId = ?", [id]);
             // Re-create options
             for (const list of data.optionLists) {
                 await saveOptionList(connection, id, list);
@@ -140,7 +140,7 @@ export async function update(id, data) {
     });
 }
 async function saveOptionList(connection, productId, list) {
-    await connection.query(`INSERT INTO product_option_lists (id, product_id, name, required, max_selections, list_order)
+    await connection.query(`INSERT INTO product_option_lists (id, productId, name, required, maxSelections, listOrder)
      VALUES (?, ?, ?, ?, ?, ?)`, [list.id, productId, list.name, list.required, list.maxSelections ?? null, list.order]);
     for (const option of list.options) {
         await connection.query(`INSERT INTO product_options (id, list_id, name, price_delta, option_order)
