@@ -1,5 +1,14 @@
+console.log("[MIGRATE.JS] Script started at", new Date().toISOString());
+console.log("[MIGRATE.JS] About to check import.meta.url and call runMigrations if main");
+process.stdout.write = (function(write) {
+  return function(string, encoding, fd) {
+    write.apply(process.stdout, arguments);
+    process.stdout.emit('flush');
+  };
+})(process.stdout.write);
 import { pool } from "./connection.js";
 export async function runMigrations() {
+      console.log("[MIGRATE.JS] Entered runMigrations at", new Date().toISOString());
     console.log("🔄 Running database migrations...");
     const schema = `
 -- ============================================
@@ -363,14 +372,23 @@ CREATE TABLE IF NOT EXISTS ticket_replies (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 `;
     try {
+      console.log("[MIGRATE.JS] Starting schema migration loop");
       // Split schema by semicolons and execute each statement
       const statements = schema
         .split(";")
         .map((s) => s.trim())
         .filter((s) => s.length > 0);
       for (const statement of statements) {
-        await pool.query(statement);
+        if (statement.length > 0) {
+          console.log("Running migration statement:\n", statement);
+          try {
+            await pool.query(statement);
+          } catch (err) {
+            console.error("❌ Error running statement:\n", statement, "\nError:", err);
+          }
+        }
       }
+      console.log("[MIGRATE.JS] Finished schema migration loop");
       // Run camelCase migration script
       const fs = await import('fs/promises');
       const path = await import('path');
@@ -381,8 +399,16 @@ CREATE TABLE IF NOT EXISTS ticket_replies (
         .map((s) => s.trim())
         .filter((s) => s.length > 0 && !s.startsWith('--'));
       for (const statement of camelCaseStatements) {
-        await pool.query(statement);
+        if (statement.length > 0) {
+          console.log("Running camelCase migration statement:\n", statement);
+          try {
+            await pool.query(statement);
+          } catch (err) {
+            console.error("❌ Error running camelCase statement:\n", statement, "\nError:", err);
+          }
+        }
       }
+      console.log("[MIGRATE.JS] Finished camelCase migration loop");
       console.log("✅ Database migrations (including camelCase) completed successfully");
     }
     catch (error) {
@@ -390,15 +416,15 @@ CREATE TABLE IF NOT EXISTS ticket_replies (
       throw error;
     }
 }
-if (import.meta.url === `file://${process.argv[1]}`) {
-    runMigrations()
-        .then(() => {
-        console.log("Migration complete");
-        process.exit(0);
-    })
-        .catch((error) => {
-        console.error("Migration failed:", error);
-        process.exit(1);
-    });
-}
+
+console.log("[MIGRATE.JS] Forcing runMigrations() call (bypassing import.meta.url check)");
+runMigrations()
+  .then(() => {
+    console.log("[MIGRATE.JS] Migration complete");
+    process.exit(0);
+  })
+  .catch((error) => {
+    console.error("[MIGRATE.JS] Migration failed:", error);
+    process.exit(1);
+  });
 //# sourceMappingURL=migrate.js.map
