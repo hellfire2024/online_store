@@ -985,14 +985,14 @@ const SettingsManagement: React.FC = () => {
         ),
       };
 
-      // Patch: For Stripe, always save publishable key to BOTH 'stripe' and 'stripePublishableKey'
       const stripePublishableKey = String(
         (finalSettings.paymentApiKeys as any)?.stripePublishableKey || "",
       ).trim();
+      const stripeSecretKey = String(
+        finalSettings.paymentApiKeys?.stripe || "",
+      ).trim();
       finalSettings.paymentApiKeys = {
-        stripe:
-          stripePublishableKey ||
-          String(finalSettings.paymentApiKeys?.stripe || "").trim(),
+        stripe: stripeSecretKey,
         stripePublishableKey,
         paypal: String(finalSettings.paymentApiKeys?.paypal || "").trim(),
         paypalSecret: String(
