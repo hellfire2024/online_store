@@ -34,7 +34,11 @@ RUN node verify-frontend-build.js
 RUN rm -rf ~/.npm /tmp/*
 
 # Runtime stage (nginx)
-FROM cgr.dev/chainguard/nginx:latest
+FROM nginxinc/nginx-unprivileged:stable-alpine-slim
+USER root
+RUN apk upgrade --no-cache
+USER 101
 COPY --from=build /app/dist /usr/share/nginx/html
 COPY frontend/nginx.conf /etc/nginx/nginx.conf
 EXPOSE 8080
+CMD ["nginx", "-g", "daemon off;"]
