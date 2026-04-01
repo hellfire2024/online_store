@@ -533,16 +533,23 @@ router.post("/stripe-config-test", async (_req: Request, res: Response) => {
     }
 
     try {
-      const stripe = new Stripe(secretKey);
-      // Optionally, check if publishableKey looks valid (starts with 'pk_')
+      // Validate key formats before hitting the Stripe API
       if (!publishableKey.startsWith("pk_")) {
         return res.status(400).json({
           success: false,
-          error: "Stripe publishable key format is invalid.",
+          error:
+            "Stripe publishable key format is invalid. It should start with 'pk_test_' or 'pk_live_'.",
         });
       }
+      if (!secretKey.startsWith("sk_") && !secretKey.startsWith("rk_")) {
+        return res.status(400).json({
+          success: false,
+          error:
+            "Stripe secret key format is invalid. It should start with 'sk_test_' or 'sk_live_'. Make sure you haven't entered the publishable key in the Secret Key field.",
+        });
+      }
+      const stripe = new Stripe(secretKey);
       // Use balance.retrieve() — works for any valid secret key (standard or Connect)
-      // accounts.retrieve() fails for non-Connect accounts
       await stripe.balance.retrieve();
       return res.json({
         success: true,
