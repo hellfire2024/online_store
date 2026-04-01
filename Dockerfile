@@ -34,7 +34,7 @@ RUN node verify-frontend-build.js
 RUN rm -rf ~/.npm /tmp/*
 
 # Runtime stage (nginx)
-FROM nginxinc/nginx-unprivileged:stable-alpine-slim
+FROM nginxinc/nginx-unprivileged:1.29-alpine-slim
 USER root
 RUN apk upgrade --no-cache
 USER 101

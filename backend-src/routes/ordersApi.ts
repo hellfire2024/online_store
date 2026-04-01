@@ -360,15 +360,77 @@ async function getPayPalAccessToken(
   return response.data.access_token;
 }
 
+const parseAmountToCents = (rawAmount: unknown): number | null => {
+  if (typeof rawAmount === "number" && Number.isFinite(rawAmount)) {
+    const cents = Math.round(rawAmount * 100);
+    return cents > 0 ? cents : null;
+  }
+
+  if (typeof rawAmount === "string") {
+    const normalized = rawAmount.replace(/[^0-9.-]/g, "").trim();
+    if (!normalized) {
+      return null;
+    }
+
+    const numericAmount = Number(normalized);
+    if (!Number.isFinite(numericAmount)) {
+      return null;
+    }
+
+    const cents = Math.round(numericAmount * 100);
+    return cents > 0 ? cents : null;
+  }
+
+  return null;
+};
+
+const resolvePaymentAmountCents = (
+  body: Record<string, unknown>,
+): number | null => {
+  const rawCents = body?.amountCents;
+  if (typeof rawCents === "number" && Number.isFinite(rawCents)) {
+    const sanitized = Math.round(rawCents);
+    if (sanitized > 0) {
+      return sanitized;
+    }
+  }
+
+  if (typeof rawCents === "string") {
+    const sanitizedString = rawCents.replace(/[^0-9-]/g, "").trim();
+    const parsedCents = Number(sanitizedString);
+    if (Number.isFinite(parsedCents)) {
+      const rounded = Math.round(parsedCents);
+      if (rounded > 0) {
+        return rounded;
+      }
+    }
+  }
+
+  return parseAmountToCents(body?.amount);
+};
+
 // POST create Stripe PaymentIntent for direct checkout
 router.post(
   "/create-payment-intent",
   async (req: Request, res: Response): Promise<any> => {
     try {
-      const { amount } = req.body;
-      if (!amount || Number(amount) <= 0) {
+      const amountCents = resolvePaymentAmountCents(
+        (req.body || {}) as Record<string, unknown>,
+      );
+
+      if (!amountCents) {
         console.warn("[Stripe] Invalid payment amount received:", req.body);
-        return res.status(400).json({ error: "Invalid payment amount" });
+        return res.status(400).json({
+          error: "Invalid payment amount",
+          details: "Amount must be a positive number.",
+        });
+      }
+
+      if (amountCents > 10_000_000) {
+        return res.status(400).json({
+          error: "Invalid payment amount",
+          details: "Amount exceeds the maximum allowed value.",
+        });
       }
 
       // Load Stripe secret key from settings
@@ -420,7 +482,7 @@ router.post(
           }
           const stripe = new Stripe(stripeSecretKey);
           const paymentIntent = await stripe.paymentIntents.create({
-            amount: Math.round(Number(amount) * 100), // cents
+            amount: amountCents,
             currency: "usd",
             ...req.body.intentOptions,
           });

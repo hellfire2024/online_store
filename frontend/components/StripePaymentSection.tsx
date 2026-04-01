@@ -29,6 +29,19 @@ const StripePaymentSection = forwardRef<StripePaymentSectionHandle>(
           };
         }
 
+        const normalizedAmount = Number(amount);
+        const amountCents = Number.isFinite(normalizedAmount)
+          ? Math.round(normalizedAmount * 100)
+          : 0;
+
+        if (amountCents <= 0) {
+          return {
+            success: false,
+            error:
+              "Unable to process payment because the order total is invalid.",
+          };
+        }
+
         const cardElement = elements.getElement(CardElement);
         if (!cardElement) {
           return { success: false, error: "Card input not found." };
@@ -42,7 +55,8 @@ const StripePaymentSection = forwardRef<StripePaymentSectionHandle>(
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              amount,
+              amount: normalizedAmount,
+              amountCents,
               orderNumber,
               billingDetails,
             }),
