@@ -1,16 +1,56 @@
 import { pool } from "./connection.js";
 import bcrypt from "bcryptjs";
 
+async function hasColumn(table: string, column: string): Promise<boolean> {
+  const [rows] = await pool.query(`SHOW COLUMNS FROM \`${table}\` LIKE ?`, [
+    column,
+  ]);
+  return Array.isArray(rows) && rows.length > 0;
+}
+
+async function resolveColumnName(
+  table: string,
+  camelCaseColumn: string,
+  snakeCaseColumn: string,
+): Promise<string> {
+  if (await hasColumn(table, camelCaseColumn)) {
+    return camelCaseColumn;
+  }
+  return snakeCaseColumn;
+}
+
 export async function seedDatabase(): Promise<void> {
   console.log("🌱 Seeding database...");
 
   try {
+    const [
+      adminPasswordColumn,
+      imageColumn,
+      galleryColumn,
+      customImageUploadColumn,
+      customImagePriceColumn,
+    ] = await Promise.all([
+      resolveColumnName("admins", "passwordHash", "password_hash"),
+      resolveColumnName("products", "imageUrl", "image_url"),
+      resolveColumnName("products", "galleryId", "gallery_id"),
+      resolveColumnName(
+        "products",
+        "allowCustomImageUpload",
+        "allow_custom_image_upload",
+      ),
+      resolveColumnName(
+        "products",
+        "customImageUploadPrice",
+        "custom_image_upload_price",
+      ),
+    ]);
+
     // Create default admin user
     const adminId = crypto.randomUUID();
     const adminPassword = await bcrypt.hash("admin123", 10);
 
     await pool.query(
-      `INSERT INTO admins (id, username, email, password_hash, role, permissions)
+      `INSERT INTO admins (id, username, email, ${adminPasswordColumn}, role, permissions)
        VALUES (?, ?, ?, ?, ?, ?)
        ON DUPLICATE KEY UPDATE username = username`,
       [
@@ -34,7 +74,7 @@ export async function seedDatabase(): Promise<void> {
     // Create sample product
     const productId = crypto.randomUUID();
     await pool.query(
-      `INSERT INTO products (id, name, description, price, imageUrl, inventory, customizable, galleryId, allowCustomImageUpload, customImageUploadPrice)
+      `INSERT INTO products (id, name, description, price, ${imageColumn}, inventory, customizable, ${galleryColumn}, ${customImageUploadColumn}, ${customImagePriceColumn})
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        ON DUPLICATE KEY UPDATE name = name`,
       [

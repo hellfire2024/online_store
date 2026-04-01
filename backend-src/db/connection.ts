@@ -18,14 +18,43 @@ function getDbConfigFromSettings(): any {
   }
 }
 
+function resolveConfigValue(
+  envKey: string,
+  settingsValue: any,
+  fallback: string,
+): string {
+  const envValue = process.env[envKey];
+  if (typeof envValue === "string" && envValue.trim().length > 0) {
+    return envValue.trim();
+  }
+  if (typeof settingsValue === "string" && settingsValue.trim().length > 0) {
+    return settingsValue.trim();
+  }
+  return fallback;
+}
+
 // Database connection pool configuration
 const dbConfig = getDbConfigFromSettings();
+const resolvedHost = resolveConfigValue("DB_HOST", dbConfig.host, "localhost");
+const resolvedPort = resolveConfigValue("DB_PORT", dbConfig.port, "3306");
+const resolvedUser = resolveConfigValue("DB_USER", dbConfig.user, "root");
+const resolvedPassword = resolveConfigValue(
+  "DB_PASSWORD",
+  dbConfig.password,
+  "",
+);
+const resolvedDatabase =
+  (process.env.DB_DATABASE && process.env.DB_DATABASE.trim()) ||
+  (process.env.DB_NAME && process.env.DB_NAME.trim()) ||
+  (typeof dbConfig.database === "string" && dbConfig.database.trim()) ||
+  "online_store";
+
 const poolConfig = {
-  host: dbConfig.host,
-  port: parseInt(dbConfig.port || "3306"),
-  user: dbConfig.user || "root",
-  password: dbConfig.password || "",
-  database: dbConfig.database || "online_store",
+  host: resolvedHost,
+  port: parseInt(resolvedPort, 10),
+  user: resolvedUser,
+  password: resolvedPassword,
+  database: resolvedDatabase,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
@@ -62,9 +91,9 @@ export async function testConnection(): Promise<void> {
         if ("fatal" in err) console.error("  Fatal:", err.fatal);
         // Log resolved DB config (never log password)
         console.error("DB connection failed:", {
-          host: dbConfig.host,
-          dbPort: dbConfig.port,
-          user: dbConfig.user,
+          host: resolvedHost,
+          dbPort: resolvedPort,
+          user: resolvedUser,
           envHost: process.env.DB_HOST,
           envPort: process.env.DB_PORT,
           envUser: process.env.DB_USER,
@@ -79,10 +108,11 @@ export async function testConnection(): Promise<void> {
       }
       await new Promise((resolve) => setTimeout(resolve, retryDelay));
     }
-    throw new Error(
-      `❌ Could not establish database connection after ${maxRetries} attempts.`,
-    );
   }
+
+  throw new Error(
+    `❌ Could not establish database connection after ${maxRetries} attempts.`,
+  );
 }
 
 // Helper function for transactions

@@ -9,6 +9,10 @@
     "build": "node node_modules/typescript/lib/tsc.js -p tsconfig.backend.json && node verify-build.js",
     "start": "node dist/server.js",
     "db:migrate": "tsx backend-src/db/migrate.ts",
+    "db:check-schema": "tsx backend-src/db/checkProductSchema.ts",
+    "db:check-products": "tsx backend-src/db/checkProductSchema.ts",
+    "db:harden": "npm run db:migrate && npm run db:check-schema",
+    "test:full": "npm run build && npm --prefix frontend run build && npm run db:harden",
     "db:seed": "tsx backend-src/db/seed.ts",
     "db:reset": "tsx backend-src/db/reset.ts"
   },

@@ -2,6 +2,49 @@ import { pool, withTransaction } from "../db/connection.js";
 import { RowDataPacket, ResultSetHeader } from "mysql2";
 import { v4 as uuidv4 } from "uuid";
 
+type QueryableConnection = {
+  query: <T = any>(sql: string, values?: any[]) => Promise<[T, any]>;
+};
+
+type ProductColumnConfig = {
+  image: string;
+  lowStockThreshold: string;
+  enableAIIdeas: string;
+  galleryId: string;
+  allowCustomImageUpload: string;
+  customImageUploadPrice: string;
+  allowCustomText: string;
+  customTextPricePerChar: string;
+  customTextMaxLength: string;
+  isArchived: string;
+  saleType: string;
+  saleValue: string;
+  saleStartAt: string;
+  saleEndAt: string;
+  reorderPricingMode: string;
+  packageWeight: string;
+  packageLength: string;
+  packageWidth: string;
+  packageHeight: string;
+  packageVolume: string;
+};
+
+type ProductSchemaConfig = {
+  products: ProductColumnConfig;
+  optionLists: {
+    productFk: string;
+    maxSelections: string;
+    orderCol: string;
+  };
+  options: {
+    listFk: string;
+    priceDelta: string;
+    orderCol: string;
+  };
+};
+
+let productSchemaConfigPromise: Promise<ProductSchemaConfig> | null = null;
+
 interface Product {
   id: string;
   name: string;
@@ -50,6 +93,162 @@ interface ProductOption {
   name: string;
   priceDelta: number;
   order: number;
+}
+
+function getRowValue<T>(row: RowDataPacket, camel: string, snake: string): T {
+  const value = row[camel] !== undefined ? row[camel] : row[snake];
+  return value as T;
+}
+
+function numberOrUndefined(value: any): number | undefined {
+  if (value === null || value === undefined) return undefined;
+  return Number(value);
+}
+
+async function hasColumn(table: string, column: string): Promise<boolean> {
+  const [rows] = await pool.query<RowDataPacket[]>(
+    `SHOW COLUMNS FROM \`${table}\` LIKE ?`,
+    [column],
+  );
+  return rows.length > 0;
+}
+
+async function resolveColumnName(
+  table: string,
+  camelCaseColumn: string,
+  snakeCaseColumn: string,
+): Promise<string> {
+  if (await hasColumn(table, camelCaseColumn)) {
+    return camelCaseColumn;
+  }
+  return snakeCaseColumn;
+}
+
+async function resolveProductSchemaConfig(): Promise<ProductSchemaConfig> {
+  if (!productSchemaConfigPromise) {
+    productSchemaConfigPromise = (async () => {
+      const [
+        image,
+        lowStockThreshold,
+        enableAIIdeas,
+        galleryId,
+        allowCustomImageUpload,
+        customImageUploadPrice,
+        allowCustomText,
+        customTextPricePerChar,
+        customTextMaxLength,
+        isArchived,
+        saleType,
+        saleValue,
+        saleStartAt,
+        saleEndAt,
+        reorderPricingMode,
+        packageWeight,
+        packageLength,
+        packageWidth,
+        packageHeight,
+        packageVolume,
+        optionListProductFk,
+        optionListMaxSelections,
+        optionListOrder,
+        optionListFk,
+        optionPriceDelta,
+        optionOrder,
+      ] = await Promise.all([
+        resolveColumnName("products", "imageUrl", "image_url"),
+        resolveColumnName(
+          "products",
+          "lowStockThreshold",
+          "low_stock_threshold",
+        ),
+        resolveColumnName("products", "enableAIIdeas", "enable_ai_ideas"),
+        resolveColumnName("products", "galleryId", "gallery_id"),
+        resolveColumnName(
+          "products",
+          "allowCustomImageUpload",
+          "allow_custom_image_upload",
+        ),
+        resolveColumnName(
+          "products",
+          "customImageUploadPrice",
+          "custom_image_upload_price",
+        ),
+        resolveColumnName("products", "allowCustomText", "allow_custom_text"),
+        resolveColumnName(
+          "products",
+          "customTextPricePerChar",
+          "custom_text_price_per_char",
+        ),
+        resolveColumnName(
+          "products",
+          "customTextMaxLength",
+          "custom_text_max_length",
+        ),
+        resolveColumnName("products", "isArchived", "is_archived"),
+        resolveColumnName("products", "saleType", "sale_type"),
+        resolveColumnName("products", "saleValue", "sale_value"),
+        resolveColumnName("products", "saleStartAt", "sale_start_at"),
+        resolveColumnName("products", "saleEndAt", "sale_end_at"),
+        resolveColumnName(
+          "products",
+          "reorderPricingMode",
+          "reorder_pricing_mode",
+        ),
+        resolveColumnName("products", "packageWeight", "package_weight"),
+        resolveColumnName("products", "packageLength", "package_length"),
+        resolveColumnName("products", "packageWidth", "package_width"),
+        resolveColumnName("products", "packageHeight", "package_height"),
+        resolveColumnName("products", "packageVolume", "package_volume"),
+        resolveColumnName("product_option_lists", "productId", "product_id"),
+        resolveColumnName(
+          "product_option_lists",
+          "maxSelections",
+          "max_selections",
+        ),
+        resolveColumnName("product_option_lists", "listOrder", "list_order"),
+        resolveColumnName("product_options", "listId", "list_id"),
+        resolveColumnName("product_options", "priceDelta", "price_delta"),
+        resolveColumnName("product_options", "optionOrder", "option_order"),
+      ]);
+
+      return {
+        products: {
+          image,
+          lowStockThreshold,
+          enableAIIdeas,
+          galleryId,
+          allowCustomImageUpload,
+          customImageUploadPrice,
+          allowCustomText,
+          customTextPricePerChar,
+          customTextMaxLength,
+          isArchived,
+          saleType,
+          saleValue,
+          saleStartAt,
+          saleEndAt,
+          reorderPricingMode,
+          packageWeight,
+          packageLength,
+          packageWidth,
+          packageHeight,
+          packageVolume,
+        },
+        optionLists: {
+          productFk: optionListProductFk,
+          maxSelections: optionListMaxSelections,
+          orderCol: optionListOrder,
+        },
+        options: {
+          listFk: optionListFk,
+          priceDelta: optionPriceDelta,
+          orderCol: optionOrder,
+        },
+      };
+    })();
+  }
+
+  return productSchemaConfigPromise;
 }
 
 // Helper function to sanitize image URLs
@@ -105,21 +304,77 @@ function computeEffectivePricing(product: Product): {
 function normalizeProductRow(row: RowDataPacket): Product {
   const product: Product = {
     ...(row as Product),
-    isArchived: Boolean(row.isArchived),
-    saleType: (row.saleType || "none") as "none" | "percent" | "fixed",
-    saleValue:
-      row.saleValue === null || row.saleValue === undefined
-        ? undefined
-        : Number(row.saleValue),
-    saleStartAt: row.saleStartAt
-      ? new Date(row.saleStartAt).toISOString()
-      : undefined,
-    saleEndAt: row.saleEndAt
-      ? new Date(row.saleEndAt).toISOString()
-      : undefined,
-    reorderPricingMode: (row.reorderPricingMode || "current") as
-      | "current"
-      | "historical",
+    imageUrl: getRowValue<string | undefined>(row, "imageUrl", "image_url"),
+    lowStockThreshold: numberOrUndefined(
+      getRowValue<any>(row, "lowStockThreshold", "low_stock_threshold"),
+    ),
+    enableAIIdeas: Boolean(
+      getRowValue<any>(row, "enableAIIdeas", "enable_ai_ideas"),
+    ),
+    galleryId: getRowValue<string | undefined>(row, "galleryId", "gallery_id"),
+    allowCustomImageUpload: Boolean(
+      getRowValue<any>(
+        row,
+        "allowCustomImageUpload",
+        "allow_custom_image_upload",
+      ),
+    ),
+    customImageUploadPrice: numberOrUndefined(
+      getRowValue<any>(
+        row,
+        "customImageUploadPrice",
+        "custom_image_upload_price",
+      ),
+    ),
+    allowCustomText: Boolean(
+      getRowValue<any>(row, "allowCustomText", "allow_custom_text"),
+    ),
+    customTextPricePerChar: numberOrUndefined(
+      getRowValue<any>(
+        row,
+        "customTextPricePerChar",
+        "custom_text_price_per_char",
+      ),
+    ),
+    customTextMaxLength: numberOrUndefined(
+      getRowValue<any>(row, "customTextMaxLength", "custom_text_max_length"),
+    ),
+    isArchived: Boolean(getRowValue<any>(row, "isArchived", "is_archived")),
+    saleType: (getRowValue<string>(row, "saleType", "sale_type") || "none") as
+      | "none"
+      | "percent"
+      | "fixed",
+    saleValue: numberOrUndefined(
+      getRowValue<any>(row, "saleValue", "sale_value"),
+    ),
+    saleStartAt: (() => {
+      const value = getRowValue<any>(row, "saleStartAt", "sale_start_at");
+      return value ? new Date(value).toISOString() : undefined;
+    })(),
+    saleEndAt: (() => {
+      const value = getRowValue<any>(row, "saleEndAt", "sale_end_at");
+      return value ? new Date(value).toISOString() : undefined;
+    })(),
+    reorderPricingMode: (getRowValue<string>(
+      row,
+      "reorderPricingMode",
+      "reorder_pricing_mode",
+    ) || "current") as "current" | "historical",
+    packageWeight: numberOrUndefined(
+      getRowValue<any>(row, "packageWeight", "package_weight"),
+    ),
+    packageLength: numberOrUndefined(
+      getRowValue<any>(row, "packageLength", "package_length"),
+    ),
+    packageWidth: numberOrUndefined(
+      getRowValue<any>(row, "packageWidth", "package_width"),
+    ),
+    packageHeight: numberOrUndefined(
+      getRowValue<any>(row, "packageHeight", "package_height"),
+    ),
+    packageVolume: numberOrUndefined(
+      getRowValue<any>(row, "packageVolume", "package_volume"),
+    ),
   };
 
   const pricing = computeEffectivePricing(product);
@@ -131,12 +386,14 @@ function normalizeProductRow(row: RowDataPacket): Product {
 }
 
 export async function findAll(includeArchived = true): Promise<Product[]> {
-  // Use camelCase columns directly (after migration)
   const [rows] = await pool.query<RowDataPacket[]>(
-    `SELECT * FROM products ${includeArchived ? "" : "WHERE isArchived = FALSE"} ORDER BY name`,
+    "SELECT * FROM products ORDER BY name",
   );
 
-  const products = rows.map(normalizeProductRow);
+  let products = rows.map(normalizeProductRow);
+  if (!includeArchived) {
+    products = products.filter((product) => !product.isArchived);
+  }
 
   // Load option lists for each product
   for (const product of products) {
@@ -158,7 +415,6 @@ export async function findAll(includeArchived = true): Promise<Product[]> {
 }
 
 export async function findById(id: string): Promise<Product | null> {
-  // Use camelCase columns directly (after migration)
   const [rows] = await pool.query<RowDataPacket[]>(
     `SELECT * FROM products WHERE id = ?`,
     [id],
@@ -183,8 +439,9 @@ export async function findById(id: string): Promise<Product | null> {
 async function findOptionLists(
   productId: string,
 ): Promise<ProductOptionList[]> {
+  const schema = await resolveProductSchemaConfig();
   const [lists] = await pool.query<RowDataPacket[]>(
-    `SELECT * FROM product_option_lists WHERE productId = ? ORDER BY listOrder`,
+    `SELECT * FROM product_option_lists WHERE ${schema.optionLists.productFk} = ? ORDER BY ${schema.optionLists.orderCol}`,
     [productId],
   );
 
@@ -192,7 +449,7 @@ async function findOptionLists(
 
   for (const list of lists) {
     const [options] = await pool.query<RowDataPacket[]>(
-      `SELECT * FROM product_options WHERE listId = ? ORDER BY optionOrder`,
+      `SELECT * FROM product_options WHERE ${schema.options.listFk} = ? ORDER BY ${schema.options.orderCol}`,
       [list.id],
     );
 
@@ -201,9 +458,44 @@ async function findOptionLists(
       name: list.name,
       required: Boolean(list.required),
       maxSelections:
-        list.maxSelections === null ? undefined : Number(list.maxSelections),
-      order: list.listOrder,
-      options: options as ProductOption[],
+        getRowValue<any>(
+          list,
+          schema.optionLists.maxSelections,
+          schema.optionLists.maxSelections,
+        ) === null
+          ? undefined
+          : Number(
+              getRowValue<any>(
+                list,
+                schema.optionLists.maxSelections,
+                schema.optionLists.maxSelections,
+              ),
+            ),
+      order: Number(
+        getRowValue<any>(
+          list,
+          schema.optionLists.orderCol,
+          schema.optionLists.orderCol,
+        ) || 0,
+      ),
+      options: options.map((option) => ({
+        id: option.id,
+        name: option.name,
+        priceDelta: Number(
+          getRowValue<any>(
+            option,
+            schema.options.priceDelta,
+            schema.options.priceDelta,
+          ) || 0,
+        ),
+        order: Number(
+          getRowValue<any>(
+            option,
+            schema.options.orderCol,
+            schema.options.orderCol,
+          ) || 0,
+        ),
+      })),
     });
   }
 
@@ -212,6 +504,8 @@ async function findOptionLists(
 
 export async function create(data: Partial<Product>): Promise<Product> {
   return withTransaction(async (connection) => {
+    const schema = await resolveProductSchemaConfig();
+    const productColumns = schema.products;
     const id = uuidv4();
     const sanitizedImageUrl = sanitizeImageUrl(data.imageUrl);
     const saleType = data.saleType || "none";
@@ -225,12 +519,12 @@ export async function create(data: Partial<Product>): Promise<Product> {
       saleType === "none" || !data.saleEndAt ? null : new Date(data.saleEndAt);
 
     await connection.query(
-      `INSERT INTO products (id, name, description, price, imageUrl, inventory,
-                             lowStockThreshold, customizable, enableAIIdeas, galleryId,
-                             allowCustomImageUpload, customImageUploadPrice,
-                             allowCustomText, customTextPricePerChar, customTextMaxLength,
-                             isArchived, saleType, saleValue, saleStartAt, saleEndAt, reorderPricingMode,
-                             packageWeight, packageLength, packageWidth, packageHeight, packageVolume)
+      `INSERT INTO products (id, name, description, price, ${productColumns.image}, inventory,
+                             ${productColumns.lowStockThreshold}, customizable, ${productColumns.enableAIIdeas}, ${productColumns.galleryId},
+                             ${productColumns.allowCustomImageUpload}, ${productColumns.customImageUploadPrice},
+                             ${productColumns.allowCustomText}, ${productColumns.customTextPricePerChar}, ${productColumns.customTextMaxLength},
+                             ${productColumns.isArchived}, ${productColumns.saleType}, ${productColumns.saleValue}, ${productColumns.saleStartAt}, ${productColumns.saleEndAt}, ${productColumns.reorderPricingMode},
+                             ${productColumns.packageWeight}, ${productColumns.packageLength}, ${productColumns.packageWidth}, ${productColumns.packageHeight}, ${productColumns.packageVolume})
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id,
@@ -279,6 +573,8 @@ export async function update(
   data: Partial<Product>,
 ): Promise<Product | null> {
   return withTransaction(async (connection) => {
+    const schema = await resolveProductSchemaConfig();
+    const productColumns = schema.products;
     // Fetch current product to preserve imageUrl if not provided
     const currentProduct = await findById(id);
     if (!currentProduct) return null;
@@ -319,14 +615,14 @@ export async function update(
     );
 
     const [result] = await connection.query<ResultSetHeader>(
-      `UPDATE products SET name = ?, description = ?, price = ?, imageUrl = ?,
-                          inventory = ?, lowStockThreshold = ?, customizable = ?,
-                          enableAIIdeas = ?, galleryId = ?,
-                          allowCustomImageUpload = ?, customImageUploadPrice = ?,
-                          allowCustomText = ?, customTextPricePerChar = ?, customTextMaxLength = ?,
-                          isArchived = ?, saleType = ?, saleValue = ?, saleStartAt = ?, saleEndAt = ?,
-                          reorderPricingMode = ?,
-                          packageWeight = ?, packageLength = ?, packageWidth = ?, packageHeight = ?, packageVolume = ?
+      `UPDATE products SET name = ?, description = ?, price = ?, ${productColumns.image} = ?,
+                          inventory = ?, ${productColumns.lowStockThreshold} = ?, customizable = ?,
+                          ${productColumns.enableAIIdeas} = ?, ${productColumns.galleryId} = ?,
+                          ${productColumns.allowCustomImageUpload} = ?, ${productColumns.customImageUploadPrice} = ?,
+                          ${productColumns.allowCustomText} = ?, ${productColumns.customTextPricePerChar} = ?, ${productColumns.customTextMaxLength} = ?,
+                          ${productColumns.isArchived} = ?, ${productColumns.saleType} = ?, ${productColumns.saleValue} = ?, ${productColumns.saleStartAt} = ?, ${productColumns.saleEndAt} = ?,
+                          ${productColumns.reorderPricingMode} = ?,
+                          ${productColumns.packageWeight} = ?, ${productColumns.packageLength} = ?, ${productColumns.packageWidth} = ?, ${productColumns.packageHeight} = ?, ${productColumns.packageVolume} = ?
        WHERE id = ?`,
       [
         data.name ?? currentProduct.name,
@@ -370,7 +666,7 @@ export async function update(
     if (data.optionLists) {
       // Delete existing options
       await connection.query(
-        "DELETE FROM product_option_lists WHERE product_id = ?",
+        `DELETE FROM product_option_lists WHERE ${schema.optionLists.productFk} = ?`,
         [id],
       );
 
@@ -385,12 +681,13 @@ export async function update(
 }
 
 async function saveOptionList(
-  connection: any,
+  connection: QueryableConnection,
   productId: string,
   list: ProductOptionList,
 ): Promise<void> {
+  const schema = await resolveProductSchemaConfig();
   await connection.query(
-    `INSERT INTO product_option_lists (id, productId, name, required, maxSelections, listOrder)
+    `INSERT INTO product_option_lists (id, ${schema.optionLists.productFk}, name, required, ${schema.optionLists.maxSelections}, ${schema.optionLists.orderCol})
      VALUES (?, ?, ?, ?, ?, ?)`,
     [
       list.id,
@@ -404,7 +701,7 @@ async function saveOptionList(
 
   for (const option of list.options) {
     await connection.query(
-      `INSERT INTO product_options (id, listId, name, priceDelta, optionOrder)
+      `INSERT INTO product_options (id, ${schema.options.listFk}, name, ${schema.options.priceDelta}, ${schema.options.orderCol})
        VALUES (?, ?, ?, ?, ?)`,
       [option.id, list.id, option.name, option.priceDelta, option.order],
     );

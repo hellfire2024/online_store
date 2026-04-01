@@ -1,5 +1,6 @@
 // ...existing code...
 import { pool } from "./connection.js";
+import { APP_SCHEMA_RULES, CRITICAL_SCHEMA_RULES } from "./schemaRules.js";
 
 export async function runMigrations(): Promise<void> {
   // All referenced tables are now included in the migration script.
@@ -286,6 +287,79 @@ export async function runMigrations(): Promise<void> {
     return Array.isArray(rows) && rows.length > 0;
   };
 
+  const getColumnType = async (
+    table: string,
+    column: string,
+  ): Promise<string | null> => {
+    const [rows] = await pool.query<any[]>(
+      `SHOW COLUMNS FROM \`${table}\` LIKE ?`,
+      [column],
+    );
+
+    if (!Array.isArray(rows) || rows.length === 0) {
+      return null;
+    }
+
+    return String(rows[0].Type || "").trim() || null;
+  };
+
+  const ensureAliasColumn = async (
+    table: string,
+    sourceColumn: string,
+    aliasColumn: string,
+    aliasType?: string,
+  ) => {
+    const sourceExists = await hasColumn(table, sourceColumn);
+    const aliasExists = await hasColumn(table, aliasColumn);
+
+    if (!sourceExists) {
+      return;
+    }
+
+    if (!aliasExists) {
+      const inferredType =
+        aliasType || (await getColumnType(table, sourceColumn));
+
+      if (!inferredType) {
+        console.warn(
+          `Could not infer type for '${table}.${sourceColumn}', skipping alias '${aliasColumn}'`,
+        );
+        return;
+      }
+
+      // Keep aliases nullable to avoid migration failures on existing rows.
+      await alterTableAddColumn(table, aliasColumn, `${inferredType} NULL`);
+      await pool.query(
+        `UPDATE \`${table}\` SET \`${aliasColumn}\` = \`${sourceColumn}\` WHERE \`${aliasColumn}\` IS NULL`,
+      );
+      console.log(
+        `Added compatibility column '${aliasColumn}' to table '${table}' from '${sourceColumn}'`,
+      );
+      return;
+    }
+
+    await pool.query(
+      `UPDATE \`${table}\` SET \`${aliasColumn}\` = COALESCE(\`${aliasColumn}\`, \`${sourceColumn}\`)`,
+    );
+  };
+
+  const assertEitherColumnExists = async (
+    table: string,
+    camelCaseColumn: string,
+    snakeCaseColumn: string,
+  ) => {
+    const [camelExists, snakeExists] = await Promise.all([
+      hasColumn(table, camelCaseColumn),
+      hasColumn(table, snakeCaseColumn),
+    ]);
+
+    if (!camelExists && !snakeExists) {
+      throw new Error(
+        `Schema validation failed for table '${table}': missing both '${camelCaseColumn}' and '${snakeCaseColumn}' columns`,
+      );
+    }
+  };
+
   const fixStaffTableStructure = async () => {
     // Check if staff table exists first
     try {
@@ -363,6 +437,11 @@ export async function runMigrations(): Promise<void> {
     // 3. Conditionally add columns (customers)
     await alterTableAddColumn("customers", "first_name", "VARCHAR(255)");
     await alterTableAddColumn("customers", "last_name", "VARCHAR(255)");
+    await alterTableAddColumn(
+      "customers",
+      "updated_at",
+      "TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP",
+    );
 
     // 4. Conditionally add columns (customer_addresses)
     await alterTableAddColumn(
@@ -399,6 +478,11 @@ export async function runMigrations(): Promise<void> {
       "customer_addresses",
       "is_default",
       "BOOLEAN DEFAULT FALSE",
+    );
+    await alterTableAddColumn(
+      "customer_addresses",
+      "updated_at",
+      "TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP",
     );
 
     // Backfill compatibility data from legacy columns if present
@@ -558,6 +642,17 @@ export async function runMigrations(): Promise<void> {
       "ENUM('current','historical') DEFAULT 'current'",
     );
     await alterTableAddColumn("products", "gallery_id", "VARCHAR(36)");
+
+    // Add compatibility aliases for mixed camelCase/snake_case schemas across the app.
+    for (const rule of APP_SCHEMA_RULES) {
+      await ensureAliasColumn(rule.table, rule.camel, rule.snake);
+      await ensureAliasColumn(rule.table, rule.snake, rule.camel);
+    }
+
+    // Validate critical route columns after migrations.
+    for (const rule of CRITICAL_SCHEMA_RULES) {
+      await assertEitherColumnExists(rule.table, rule.camel, rule.snake);
+    }
 
     // custom_quotes: add change-request + rejected fields
     await alterTableAddColumn(
