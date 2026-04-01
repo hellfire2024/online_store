@@ -549,7 +549,10 @@ router.post("/stripe-config-test", async (_req: Request, res: Response) => {
         message: "Stripe connection successful. Keys are valid.",
       });
     } catch (stripeErr: any) {
-      console.error("[Stripe Test] Stripe error:", stripeErr?.raw?.message || stripeErr?.message);
+      console.error(
+        "[Stripe Test] Stripe error:",
+        stripeErr?.raw?.message || stripeErr?.message,
+      );
       return res.status(400).json({
         success: false,
         error:
