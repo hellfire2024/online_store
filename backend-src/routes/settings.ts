@@ -534,8 +534,6 @@ router.post("/stripe-config-test", async (_req: Request, res: Response) => {
 
     try {
       const stripe = new Stripe(secretKey);
-      // Try to fetch the account as a simple test
-      const account = await stripe.accounts.retrieve();
       // Optionally, check if publishableKey looks valid (starts with 'pk_')
       if (!publishableKey.startsWith("pk_")) {
         return res.status(400).json({
@@ -543,10 +541,11 @@ router.post("/stripe-config-test", async (_req: Request, res: Response) => {
           error: "Stripe publishable key format is invalid.",
         });
       }
+      // Use balance.retrieve() — works for any valid secret key (standard or Connect)
+      // accounts.retrieve() fails for non-Connect accounts
+      await stripe.balance.retrieve();
       return res.json({
         success: true,
-        accountName: account?.business_profile?.name || null,
-        accountId: account?.id,
         message: "Stripe connection successful. Keys are valid.",
       });
     } catch (stripeErr: any) {
