@@ -1105,6 +1105,7 @@ const SettingsManagement: React.FC = () => {
       console.log("Attempting to save settings:", finalSettings);
 
       await updateSiteSettings(finalSettings);
+      setSettings(finalSettings);
 
       const emailConfig = finalSettings.emailConfig;
       if (
