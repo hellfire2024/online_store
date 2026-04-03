@@ -119,7 +119,11 @@ class ApiClient {
       }
     }
 
-    if (this.token) {
+    const hasExplicitAuthHeader =
+      typeof headers["Authorization"] === "string" ||
+      typeof (headers as any).authorization === "string";
+
+    if (this.token && !hasExplicitAuthHeader) {
       headers["Authorization"] = `Bearer ${this.token}`;
     } else if (endpoint.includes("/customer")) {
       console.warn(
@@ -485,10 +489,15 @@ class ApiClient {
         method: "POST",
         body: JSON.stringify({ email, password }),
       }),
-    getCurrentCustomer: () =>
-      this.request<any>("/auth/customer/me", {
+    getCurrentCustomer: () => {
+      const customerToken = localStorage.getItem("auth_token");
+      return this.request<any>("/auth/customer/me", {
         method: "GET",
-      }),
+        headers: customerToken
+          ? { Authorization: `Bearer ${customerToken}` }
+          : undefined,
+      });
+    },
     customerRequestPasswordReset: (email: string) =>
       this.request<{ success: boolean; message?: string }>(
         "/auth/customer/request-password-reset",
