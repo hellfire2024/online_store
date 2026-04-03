@@ -1846,6 +1846,23 @@ const SettingsManagement: React.FC = () => {
                 <PaymentTestButton
                   provider="stripe"
                   hasUnsaved={hasSettingsUnsavedChanges}
+                  onResult={async (success: boolean, data: any) => {
+                    setStripeTested(success);
+                    setStripeTestMessage(
+                      data?.message ||
+                        (success
+                          ? "Stripe connection successful."
+                          : "Stripe connection test failed."),
+                    );
+
+                    try {
+                      const status =
+                        await apiClient.settings.getCommerceStatus();
+                      setCommerceStatus(status);
+                    } catch {
+                      // Keep existing status if refresh fails
+                    }
+                  }}
                 />
               </div>
             )}
@@ -2064,6 +2081,11 @@ const SettingsManagement: React.FC = () => {
                 ) : (
                   <span className="text-yellow-400">Not Connected</span>
                 )}
+                {settings.paymentProvider === "stripe" && stripeTestMessage ? (
+                  <div className="text-xs text-gray-400 mt-1">
+                    {stripeTestMessage}
+                  </div>
+                ) : null}
               </div>
               <button onClick={handleSaveSettings} className={buttonClasses}>
                 Save & Connect
