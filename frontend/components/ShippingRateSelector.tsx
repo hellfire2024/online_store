@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { ShippingRate, ShippingRateRequest } from "../types";
 
 interface ShippingRateSelectorProps {
@@ -20,6 +20,36 @@ const ShippingRateSelector: React.FC<ShippingRateSelectorProps> = ({
   const [isUnavailable, setIsUnavailable] = useState(false);
   // Track the last zip+state we fetched for, to avoid duplicate requests
   const lastFetchKey = useRef<string>("");
+
+  const resolveCarrierNetwork = (rate: ShippingRate): string => {
+    const haystack = `${rate.serviceName} ${rate.service}`.toLowerCase();
+
+    if (haystack.includes("usps")) return "USPS";
+    if (haystack.includes("ups")) return "UPS";
+    if (haystack.includes("fedex")) return "FedEx";
+    if (haystack.includes("dhl")) return "DHL";
+
+    return "Other";
+  };
+
+  const groupedRates = useMemo(() => {
+    const groups: Record<string, ShippingRate[]> = {
+      USPS: [],
+      UPS: [],
+      FedEx: [],
+      DHL: [],
+      Other: [],
+    };
+
+    rates.forEach((rate) => {
+      const network = resolveCarrierNetwork(rate);
+      groups[network].push(rate);
+    });
+
+    return groups;
+  }, [rates]);
+
+  const carrierOrder = ["USPS", "UPS", "FedEx", "DHL", "Other"];
 
   useEffect(() => {
     const zip = rateRequest.toAddress?.zip || "";
@@ -104,41 +134,64 @@ const ShippingRateSelector: React.FC<ShippingRateSelectorProps> = ({
   }
 
   return (
-    <div className="space-y-2">
-      {rates.map((rate) => (
-        <label
-          key={rate.id}
-          className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors ${
-            selectedRate?.id === rate.id
-              ? "border-sky-500 bg-sky-500/10 text-white"
-              : "border-slate-600 text-gray-300 hover:border-slate-500"
-          } ${disabled ? "opacity-60 cursor-not-allowed" : ""}`}
-        >
-          <div className="flex items-center gap-3">
-            <input
-              type="radio"
-              name="shippingRate"
-              checked={selectedRate?.id === rate.id}
-              onChange={() => !disabled && onSelectRate(rate)}
-              disabled={disabled}
-              className="accent-sky-500"
-            />
-            <div>
-              <span className="font-medium text-sm">{rate.serviceName}</span>
-              {rate.estimatedDays > 0 && (
-                <span className="text-xs text-gray-400 ml-2">
-                  {rate.estimatedDays === 1
-                    ? "1 business day"
-                    : `${rate.estimatedDays} business days`}
-                </span>
-              )}
+    <div className="space-y-3">
+      <div className="text-xs text-gray-400">
+        Carrier breakdown:{" "}
+        {carrierOrder
+          .map((carrier) => ({ carrier, count: groupedRates[carrier].length }))
+          .filter(({ count }) => count > 0)
+          .map(({ carrier, count }) => `${carrier} (${count})`)
+          .join(" • ")}
+      </div>
+
+      {carrierOrder.map((carrier) => {
+        const carrierRates = groupedRates[carrier];
+        if (!carrierRates.length) return null;
+
+        return (
+          <div key={carrier} className="space-y-2">
+            <div className="text-[11px] uppercase tracking-wide text-slate-400">
+              {carrier}
             </div>
+            {carrierRates.map((rate) => (
+              <label
+                key={rate.id}
+                className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors ${
+                  selectedRate?.id === rate.id
+                    ? "border-sky-500 bg-sky-500/10 text-white"
+                    : "border-slate-600 text-gray-300 hover:border-slate-500"
+                } ${disabled ? "opacity-60 cursor-not-allowed" : ""}`}
+              >
+                <div className="flex items-center gap-3">
+                  <input
+                    type="radio"
+                    name="shippingRate"
+                    checked={selectedRate?.id === rate.id}
+                    onChange={() => !disabled && onSelectRate(rate)}
+                    disabled={disabled}
+                    className="accent-sky-500"
+                  />
+                  <div>
+                    <span className="font-medium text-sm">
+                      {rate.serviceName}
+                    </span>
+                    {rate.estimatedDays > 0 && (
+                      <span className="text-xs text-gray-400 ml-2">
+                        {rate.estimatedDays === 1
+                          ? "1 business day"
+                          : `${rate.estimatedDays} business days`}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <span className="font-semibold text-sm">
+                  ${(rate.rate / 100).toFixed(2)}
+                </span>
+              </label>
+            ))}
           </div>
-          <span className="font-semibold text-sm">
-            ${(rate.rate / 100).toFixed(2)}
-          </span>
-        </label>
-      ))}
+        );
+      })}
       {error && <p className="text-xs text-amber-400 mt-1">{error}</p>}
     </div>
   );

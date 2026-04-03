@@ -157,11 +157,12 @@ router.post("/rates", async (req: Request, res: Response) => {
       Boolean(rateRequest.testMode) || !config.enabledCarriers.length;
 
     if (testMode) {
-      // Return robust mock shipping rates for all carriers
+      // Return representative mock rates across multiple carrier networks.
+      // This avoids showing USPS-only options when real carrier APIs are unavailable.
       const mockRates = [
-        // EasyPost
+        // EasyPost (mixed underlying carriers)
         {
-          id: "ep-std",
+          id: "ep-usps-priority",
           shipmentId: "ep-shipment-1",
           carrier: "easypost",
           service: "Priority",
@@ -171,18 +172,28 @@ router.post("/rates", async (req: Request, res: Response) => {
           estimatedDelivery: null,
         },
         {
-          id: "ep-exp",
+          id: "ep-ups-ground",
           shipmentId: "ep-shipment-1",
           carrier: "easypost",
-          service: "Express",
-          serviceName: "USPS Express Mail",
-          rate: 2499,
-          estimatedDays: 1,
+          service: "UPSGround",
+          serviceName: "UPS Ground",
+          rate: 1699,
+          estimatedDays: 4,
           estimatedDelivery: null,
         },
-        // Shippo
         {
-          id: "sp-std",
+          id: "ep-fedex-2day",
+          shipmentId: "ep-shipment-1",
+          carrier: "easypost",
+          service: "FedEx2Day",
+          serviceName: "FedEx 2-Day",
+          rate: 2399,
+          estimatedDays: 2,
+          estimatedDelivery: null,
+        },
+        // Shippo (mixed providers)
+        {
+          id: "sp-usps-priority",
           shipmentId: "sp-shipment-1",
           carrier: "shippo",
           service: "Priority",
@@ -192,34 +203,64 @@ router.post("/rates", async (req: Request, res: Response) => {
           estimatedDelivery: null,
         },
         {
-          id: "sp-exp",
+          id: "sp-ups-ground",
           shipmentId: "sp-shipment-1",
           carrier: "shippo",
-          service: "Express",
-          serviceName: "USPS Express Mail",
-          rate: 2599,
-          estimatedDays: 1,
+          service: "UPS_GROUND",
+          serviceName: "UPS Ground",
+          rate: 1749,
+          estimatedDays: 4,
+          estimatedDelivery: null,
+        },
+        {
+          id: "sp-fedex-2day",
+          shipmentId: "sp-shipment-1",
+          carrier: "shippo",
+          service: "FEDEX_2_DAY",
+          serviceName: "FedEx 2-Day",
+          rate: 2449,
+          estimatedDays: 2,
           estimatedDelivery: null,
         },
         // ShipStation
         {
-          id: "ss-std",
+          id: "ss-usps-priority",
           shipmentId: "ss-shipment-1",
           carrier: "shipstation",
-          service: "USPS Priority Mail",
+          service: "usps_priority_mail",
           serviceName: "USPS Priority Mail",
           rate: 1349,
           estimatedDays: 3,
           estimatedDelivery: null,
         },
         {
-          id: "ss-exp",
+          id: "ss-ups-ground",
           shipmentId: "ss-shipment-1",
           carrier: "shipstation",
-          service: "USPS Express Mail",
-          serviceName: "USPS Express Mail",
-          rate: 2549,
-          estimatedDays: 1,
+          service: "ups_ground",
+          serviceName: "UPS Ground",
+          rate: 1799,
+          estimatedDays: 4,
+          estimatedDelivery: null,
+        },
+        {
+          id: "ss-fedex-home-delivery",
+          shipmentId: "ss-shipment-1",
+          carrier: "shipstation",
+          service: "fedex_home_delivery",
+          serviceName: "FedEx Home Delivery",
+          rate: 2199,
+          estimatedDays: 2,
+          estimatedDelivery: null,
+        },
+        {
+          id: "ss-dhl-express",
+          shipmentId: "ss-shipment-1",
+          carrier: "shipstation",
+          service: "dhl_express_worldwide",
+          serviceName: "DHL Express Worldwide",
+          rate: 2899,
+          estimatedDays: 2,
           estimatedDelivery: null,
         },
       ];
