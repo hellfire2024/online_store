@@ -284,13 +284,15 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
                     Orders
                   </PromptedNavLink>
                 )}
-                <PromptedNavLink
-                  to="/admin/tickets"
-                  className={getNavLinkClass}
-                >
-                  <TicketIcon className="w-6 h-6 mr-3" />
-                  Support Tickets
-                </PromptedNavLink>
+                {can("support") && (
+                  <PromptedNavLink
+                    to="/admin/tickets"
+                    className={getNavLinkClass}
+                  >
+                    <TicketIcon className="w-6 h-6 mr-3 shrink-0" />
+                    <span className="truncate">Support Tickets</span>
+                  </PromptedNavLink>
+                )}
               </>
             )}
           </div>
