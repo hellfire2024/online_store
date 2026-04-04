@@ -321,45 +321,57 @@ router.post("/rates", async (req: Request, res: Response) => {
     // Get rates from requested carriers, or from enabled carriers when not specified.
 
     if (carriersToTry.includes("easypost")) {
-      try {
-        const easypostRates = await easypostService.getShippingRates(
-          rateRequest,
-          config.easypost.apiKey,
-        );
-        allRates.push(...easypostRates);
-      } catch (error) {
-        errors.easypost =
-          error instanceof Error ? error.message : "Unknown error";
-        console.error("EasyPost error:", error);
+      if (!config.easypost.apiKey) {
+        errors.easypost = "EasyPost API key not configured";
+      } else {
+        try {
+          const easypostRates = await easypostService.getShippingRates(
+            rateRequest,
+            config.easypost.apiKey,
+          );
+          allRates.push(...easypostRates);
+        } catch (error) {
+          errors.easypost =
+            error instanceof Error ? error.message : "Unknown error";
+          console.error("EasyPost error:", error);
+        }
       }
     }
 
     if (carriersToTry.includes("shippo")) {
-      try {
-        const shippoRates = await shippoService.getShippingRates(
-          rateRequest,
-          config.shippo.apiKey,
-        );
-        allRates.push(...shippoRates);
-      } catch (error) {
-        errors.shippo =
-          error instanceof Error ? error.message : "Unknown error";
-        console.error("Shippo error:", error);
+      if (!config.shippo.apiKey) {
+        errors.shippo = "Shippo API key not configured";
+      } else {
+        try {
+          const shippoRates = await shippoService.getShippingRates(
+            rateRequest,
+            config.shippo.apiKey,
+          );
+          allRates.push(...shippoRates);
+        } catch (error) {
+          errors.shippo =
+            error instanceof Error ? error.message : "Unknown error";
+          console.error("Shippo error:", error);
+        }
       }
     }
 
     if (carriersToTry.includes("shipstation")) {
-      try {
-        const shipstationRates = await shipstationService.getShippingRates(
-          rateRequest,
-          config.shipstation.apiKey,
-          config.shipstation.apiSecret,
-        );
-        allRates.push(...shipstationRates);
-      } catch (error) {
-        errors.shipstation =
-          error instanceof Error ? error.message : "Unknown error";
-        console.error("ShipStation error:", error);
+      if (!config.shipstation.apiKey || !config.shipstation.apiSecret) {
+        errors.shipstation = "ShipStation API credentials not configured";
+      } else {
+        try {
+          const shipstationRates = await shipstationService.getShippingRates(
+            rateRequest,
+            config.shipstation.apiKey,
+            config.shipstation.apiSecret,
+          );
+          allRates.push(...shipstationRates);
+        } catch (error) {
+          errors.shipstation =
+            error instanceof Error ? error.message : "Unknown error";
+          console.error("ShipStation error:", error);
+        }
       }
     }
 
