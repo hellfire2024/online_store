@@ -198,12 +198,13 @@ router.post("/rates", async (req: Request, res: Response) => {
     const rateRequest: ShippingRateRequest & { testMode?: boolean } = req.body;
     const config = await readShippingConfig();
 
-    const normalizedRateRequest: ShippingRateRequest & { testMode?: boolean } = {
-      ...rateRequest,
-      fromAddress: isAddressComplete(rateRequest?.fromAddress)
-        ? rateRequest.fromAddress
-        : (config.fromAddress as any),
-    };
+    const normalizedRateRequest: ShippingRateRequest & { testMode?: boolean } =
+      {
+        ...rateRequest,
+        fromAddress: isAddressComplete(rateRequest?.fromAddress)
+          ? rateRequest.fromAddress
+          : (config.fromAddress as any),
+      };
 
     // Validate required fields
     if (
