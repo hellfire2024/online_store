@@ -379,6 +379,12 @@ router.post("/rates", async (req: Request, res: Response) => {
       );
     }
 
+    if (String(config.shippo.apiKey || "").startsWith("shippo_test_")) {
+      warnings.push(
+        "Shippo test keys can return limited carrier coverage. Use a live key with connected UPS/FedEx/DHL accounts for full carrier rates.",
+      );
+    }
+
     // Get rates from requested carriers, or from enabled carriers when not specified.
 
     if (carriersToTry.includes("easypost")) {

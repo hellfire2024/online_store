@@ -10,6 +10,46 @@ const SHIPPO_API_BASE = "https://api.goshippo.com";
 const resolveApiKey = (apiKeyOverride?: string): string =>
   apiKeyOverride || process.env.SHIPPO_API_KEY || "";
 
+async function getActiveCarrierAccountIds(apiKey: string): Promise<string[]> {
+  try {
+    const response = await fetch(`${SHIPPO_API_BASE}/carrier_accounts`, {
+      headers: {
+        Authorization: `ShippoToken ${apiKey}`,
+      },
+    });
+
+    const payload = (await response.json()) as any;
+    if (!response.ok) {
+      console.warn(
+        `[Shippo] Could not fetch carrier accounts (${response.status})`,
+      );
+      return [];
+    }
+
+    const rows = Array.isArray(payload?.results)
+      ? payload.results
+      : Array.isArray(payload)
+        ? payload
+        : [];
+
+    const activeAccounts = rows.filter(
+      (row: any) => row?.object_id && row?.carrier && row?.active !== false,
+    );
+
+    const activeCarriers = Array.from(
+      new Set(activeAccounts.map((row: any) => String(row.carrier).toLowerCase())),
+    );
+    console.log(
+      `[Shippo] Active carrier accounts: ${activeCarriers.join(",") || "(none)"}`,
+    );
+
+    return activeAccounts.map((row: any) => String(row.object_id));
+  } catch (error) {
+    console.warn("[Shippo] Failed to load carrier accounts:", error);
+    return [];
+  }
+}
+
 // Helper to format address for Shippo
 function formatAddressForShippo(address: ShippingAddress) {
   return {
@@ -74,16 +114,27 @@ export async function getShippingRates(
   }
 
   try {
+    if (apiKey.startsWith("shippo_test_")) {
+      console.warn(
+        "[Shippo] Using a test API key. Carrier options may be limited (often USPS-only) unless test carrier accounts are connected.",
+      );
+    }
+
+    const activeCarrierAccounts = await getActiveCarrierAccountIds(apiKey);
+
     // Create shipment object
-    const shipmentData = {
+    const shipmentData: any = {
       address_from: formatAddressForShippo(request.fromAddress),
       address_to: formatAddressForShippo(request.toAddress),
       parcels: [formatParcelForShippo(request.parcel)],
       async: false, // Get rates synchronously
     };
+    if (activeCarrierAccounts.length > 0) {
+      shipmentData.carrier_accounts = activeCarrierAccounts;
+    }
 
     console.log(
-      `[Shippo] POST ${SHIPPO_API_BASE}/shipments (key: ${apiKey.slice(0, 12)}...)`,
+      `[Shippo] POST ${SHIPPO_API_BASE}/shipments (key: ${apiKey.slice(0, 12)}..., accounts: ${activeCarrierAccounts.length})`,
     );
     const shipmentResponse = await fetch(`${SHIPPO_API_BASE}/shipments`, {
       method: "POST",

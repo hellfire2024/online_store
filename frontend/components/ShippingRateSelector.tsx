@@ -17,6 +17,7 @@ const ShippingRateSelector: React.FC<ShippingRateSelectorProps> = ({
   const [rates, setRates] = useState<ShippingRate[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [warning, setWarning] = useState<string | null>(null);
   const [isUnavailable, setIsUnavailable] = useState(false);
   // Track the last zip+state we fetched for, to avoid duplicate requests
   const lastFetchKey = useRef<string>("");
@@ -67,6 +68,7 @@ const ShippingRateSelector: React.FC<ShippingRateSelectorProps> = ({
     const fetchRates = async () => {
       setIsLoading(true);
       setError(null);
+      setWarning(null);
       setIsUnavailable(false);
 
       try {
@@ -80,6 +82,18 @@ const ShippingRateSelector: React.FC<ShippingRateSelectorProps> = ({
 
         if (!response.ok) {
           throw new Error(data?.error || "Shipping rates request failed");
+        }
+
+        const warnings = Array.isArray(data?.warnings) ? data.warnings : [];
+        const backendErrors =
+          data?.errors && typeof data.errors === "object"
+            ? Object.values(data.errors)
+            : [];
+        const noteText = [...warnings, ...backendErrors]
+          .filter((entry) => typeof entry === "string" && entry.trim().length)
+          .join(" ");
+        if (noteText) {
+          setWarning(noteText);
         }
 
         if (
@@ -129,8 +143,11 @@ const ShippingRateSelector: React.FC<ShippingRateSelectorProps> = ({
   }
 
   if (isUnavailable || rates.length === 0) {
-    // Let the parent fall back to flat-rate display — render nothing
-    return null;
+    return (
+      <div className="text-xs text-amber-400 mt-2">
+        {warning || error || "No live shipping rates available. Flat rate will apply."}
+      </div>
+    );
   }
 
   return (
@@ -192,6 +209,7 @@ const ShippingRateSelector: React.FC<ShippingRateSelectorProps> = ({
           </div>
         );
       })}
+      {warning && <p className="text-xs text-amber-400 mt-1">{warning}</p>}
       {error && <p className="text-xs text-amber-400 mt-1">{error}</p>}
     </div>
   );
