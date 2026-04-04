@@ -716,9 +716,15 @@ const PageEditor: React.FC = () => {
         console.log("Saving page with ID, full pageToSave:", pageToSave);
         await updatePage(pageToSave);
         addToast("Page updated!", "success");
+        setPage(pageToSave);
         setOriginalPage(JSON.parse(JSON.stringify(pageToSave)));
         setSelectedImageFile(null);
-        setPreviewImageUrl(null); // Clear preview after save
+        setPreviewImageUrl(
+          pageToSave.pageType === "home"
+            ? ((pageToSave.contentData as HomePageContent)
+                ?.heroBackgroundImageUrl ?? null)
+            : null,
+        );
       } else {
         // Create new page - no restrictions on Home/About pages anymore
         const newPage = await addPage(pageToSave);
@@ -929,7 +935,24 @@ const PageEditor: React.FC = () => {
               setSelectedImageFile(file);
               setPreviewImageUrl(URL.createObjectURL(file));
             }}
-            onImageUrlChange={() => {}}
+            onImageUrlChange={(url) => {
+              setSelectedImageFile(null);
+              setPreviewImageUrl(url || null);
+
+              if (page?.pageType !== "home") {
+                return;
+              }
+
+              const currentContentData = (page.contentData ||
+                {}) as HomePageContent;
+              setPage({
+                ...page,
+                contentData: {
+                  ...currentContentData,
+                  heroBackgroundImageUrl: url,
+                },
+              });
+            }}
             enableFocalCrop={true}
             cropAspect={16 / 9}
             outputWidth={1920}

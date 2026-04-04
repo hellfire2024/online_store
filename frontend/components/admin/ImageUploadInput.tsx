@@ -114,6 +114,9 @@ const ImageUploadInput: React.FC<ImageUploadInputProps> = ({
       setFocalX(50);
       setFocalY(50);
       setZoom(100);
+      // Persist the selected file immediately so save operations do not depend
+      // on an extra crop confirmation step.
+      onFileSelect(file);
       return;
     }
 
