@@ -467,18 +467,51 @@ const OrderManagement: React.FC = () => {
   const getShippingRateForOrder = (order: Order) =>
     (order.orderData as any)?.shippingRate || null;
 
+  const getShippingAddressForOrder = (order: Order) => {
+    const orderData = (order.orderData as any) || {};
+    return (
+      orderData?.shippingAddress ||
+      orderData?.shipping?.address ||
+      orderData?.address ||
+      null
+    );
+  };
+
   const getCarrierForOrder = (
     order: Order,
   ): "easypost" | "shippo" | "shipstation" | null => {
-    const rateCarrier = String(
-      getShippingRateForOrder(order)?.carrier || "",
-    ).toLowerCase();
+    const rate = getShippingRateForOrder(order);
+    const rateCarrier = String(rate?.carrier || "").toLowerCase();
+    const rateId = String(rate?.id || "");
+    const shipmentId = String(rate?.shipmentId || "").toLowerCase();
+
     if (
       rateCarrier === "easypost" ||
       rateCarrier === "shippo" ||
       rateCarrier === "shipstation"
     ) {
       return rateCarrier;
+    }
+
+    // Legacy/compatibility mappings: some saved orders store network carriers
+    // (ups/fedex/usps/dhl) instead of provider names.
+    if (["ups", "fedex", "usps", "dhl"].includes(rateCarrier)) {
+      return "shipstation";
+    }
+
+    if (shipmentId.startsWith("ep-") || shipmentId.startsWith("shp_")) {
+      return "easypost";
+    }
+    if (shipmentId.startsWith("sp-")) {
+      return "shippo";
+    }
+    if (shipmentId.startsWith("ss-")) {
+      return "shipstation";
+    }
+
+    const shipstationPrefix = rateId.split("-")[0]?.toLowerCase();
+    if (["ups", "fedex", "usps", "dhl"].includes(shipstationPrefix)) {
+      return "shipstation";
     }
 
     const shipper = String(formData.shipper || "").toLowerCase();
@@ -532,11 +565,18 @@ const OrderManagement: React.FC = () => {
       if (carrier === "shipstation") {
         const splitIndex = String(rate.id).indexOf("-");
         if (splitIndex <= 0) {
-          throw new Error("Invalid ShipStation rate format");
+          throw new Error(
+            "Invalid ShipStation rate format. Select a fresh shipping rate before generating a label.",
+          );
         }
         body.carrierCode = String(rate.id).slice(0, splitIndex);
         body.serviceCode = String(rate.id).slice(splitIndex + 1);
-        body.toAddress = (order.orderData as any)?.shippingAddress;
+        body.toAddress = getShippingAddressForOrder(order);
+        if (!body.toAddress) {
+          throw new Error(
+            "Missing shipping address on this order. Open the order and confirm shipping details.",
+          );
+        }
         body.parcel = parcel;
       }
 

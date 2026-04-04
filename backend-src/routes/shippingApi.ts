@@ -351,8 +351,14 @@ router.post("/label", async (req: Request, res: Response) => {
   try {
     const config = await readShippingConfig();
     const { carrier, rateId, shipmentId } = req.body;
+    const normalizedCarrier = String(carrier || "").toLowerCase();
+    const resolvedCarrier = ["ups", "fedex", "usps", "dhl"].includes(
+      normalizedCarrier,
+    )
+      ? "shipstation"
+      : normalizedCarrier;
 
-    if (!carrier || !rateId) {
+    if (!resolvedCarrier || !rateId) {
       res.status(400).json({
         error: "Missing required fields: carrier, rateId",
       });
@@ -361,7 +367,7 @@ router.post("/label", async (req: Request, res: Response) => {
 
     let label;
 
-    switch (carrier) {
+    switch (resolvedCarrier) {
       case "easypost":
         label = await easypostService.createLabel(
           shipmentId,
@@ -379,6 +385,15 @@ router.post("/label", async (req: Request, res: Response) => {
         );
         break;
       case "shipstation":
+        if (!req.body.carrierCode || !req.body.serviceCode) {
+          const rateIdParts = String(rateId).split("-");
+          if (rateIdParts.length > 1) {
+            req.body.carrierCode = req.body.carrierCode || rateIdParts[0];
+            req.body.serviceCode =
+              req.body.serviceCode || rateIdParts.slice(1).join("-");
+          }
+        }
+
         if (!req.body.carrierCode || !req.body.serviceCode) {
           res.status(400).json({
             error: "ShipStation requires carrierCode and serviceCode",
@@ -421,13 +436,13 @@ router.post("/label", async (req: Request, res: Response) => {
     let labelUrl: string | null = null;
     let trackingNumber: string | null = null;
 
-    if (carrier === "easypost") {
+    if (resolvedCarrier === "easypost") {
       labelUrl = label?.postage_label?.label_url || label?.label_url || null;
       trackingNumber = label?.tracking_code || null;
-    } else if (carrier === "shippo") {
+    } else if (resolvedCarrier === "shippo") {
       labelUrl = label?.label_url || null;
       trackingNumber = label?.tracking_number || null;
-    } else if (carrier === "shipstation") {
+    } else if (resolvedCarrier === "shipstation") {
       labelUrl = label?.labelUrl || null;
       trackingNumber = label?.trackingNumber || null;
     }
