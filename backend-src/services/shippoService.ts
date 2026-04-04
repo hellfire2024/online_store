@@ -82,6 +82,9 @@ export async function getShippingRates(
       async: false, // Get rates synchronously
     };
 
+    console.log(
+      `[Shippo] POST ${SHIPPO_API_BASE}/shipments (key: ${apiKey.slice(0, 12)}...)`,
+    );
     const shipmentResponse = await fetch(`${SHIPPO_API_BASE}/shipments`, {
       method: "POST",
       headers: {
@@ -93,10 +96,17 @@ export async function getShippingRates(
 
     const shipment = (await shipmentResponse.json()) as any;
     if (!shipmentResponse.ok) {
+      console.error(
+        `[Shippo] API error ${shipmentResponse.status}:`,
+        JSON.stringify(shipment),
+      );
       throw new Error(
         shipment?.detail || `Shippo error: ${shipmentResponse.status}`,
       );
     }
+    console.log(
+      `[Shippo] Shipment created: ${shipment.object_id}, rates: ${Array.isArray(shipment.rates) ? shipment.rates.length : 0}`,
+    );
     const rates: ShippingRate[] = [];
 
     // Extract rates from shipment
