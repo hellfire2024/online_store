@@ -192,9 +192,10 @@ export const PagesProvider: React.FC<{ children: ReactNode }> = ({
       setPages((prev) => [...prev, newPage]);
       return newPage;
     } catch (error) {
-      const newPage = await mockApi.addPage(page);
-      setPages((prev) => [...prev, newPage]);
-      return newPage;
+      console.error("Failed to persist page creation", error);
+      const message = error instanceof Error ? error.message : String(error);
+      addToast(`Failed to create page: ${message}`, "error");
+      throw error;
     }
   };
 
@@ -218,8 +219,9 @@ export const PagesProvider: React.FC<{ children: ReactNode }> = ({
           console.error("Failed to create page after update 404", createError);
         }
       }
-      await mockApi.updatePage(page);
-      setPages((prev) => prev.map((p) => (p.id === page.id ? page : p)));
+      console.error("Failed to persist page update", error);
+      addToast(`Failed to save page: ${message}`, "error");
+      throw error;
     }
   };
 

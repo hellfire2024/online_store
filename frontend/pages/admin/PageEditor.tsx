@@ -437,7 +437,7 @@ const PageEditor: React.FC = () => {
   const navigate = useNavigate();
   const { pages, addPage, updatePage } = usePages();
   const { addToast } = useToast();
-  const { siteSettings } = useSiteSettings();
+  const { siteSettings, updateSiteSettings } = useSiteSettings();
   const [page, setPage] = useState<Omit<Page, "id"> | Page | null>(null);
   const [originalPage, setOriginalPage] = useState<
     Omit<Page, "id"> | Page | null
@@ -676,6 +676,15 @@ const PageEditor: React.FC = () => {
           ...(pageToSave.contentData as HomePageContent),
           heroBackgroundImageUrl: finalImageUrl,
         };
+
+        if (
+          finalImageUrl &&
+          finalImageUrl !== siteSettings?.siteBackgroundImageUrl
+        ) {
+          await updateSiteSettings({
+            siteBackgroundImageUrl: finalImageUrl,
+          });
+        }
       }
 
       // Ensure contact page has all required fields
