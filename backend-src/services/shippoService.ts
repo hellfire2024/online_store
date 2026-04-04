@@ -5,7 +5,7 @@ import {
   ShippingPackage,
 } from "../types.js";
 
-const SHIPPO_API_BASE = "https://api.goshippo.com/v1";
+const SHIPPO_API_BASE = "https://api.goshippo.com";
 
 const resolveApiKey = (apiKeyOverride?: string): string =>
   apiKeyOverride || process.env.SHIPPO_API_KEY || "";
