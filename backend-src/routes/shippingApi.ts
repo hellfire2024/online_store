@@ -54,7 +54,9 @@ const readShippingConfig = async () => {
 
   let parsed: any = {};
   try {
-    parsed = JSON.parse(rows[0].settings);
+    const raw = rows[0].settings;
+    // mysql2 returns JSON columns as already-parsed objects; only JSON.parse if it's a string
+    parsed = typeof raw === "string" ? JSON.parse(raw) : (raw ?? {});
   } catch {
     parsed = {};
   }
