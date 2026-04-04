@@ -33,16 +33,22 @@ router.post(
       );
 
       if (rows.length === 0) {
-        console.error(`[Auth] Admin login FAILED: no active admin found for username/email "${username}"`);
+        console.error(
+          `[Auth] Admin login FAILED: no active admin found for username/email "${username}"`,
+        );
         return res.status(401).json({ error: "Invalid credentials" });
       }
 
       const admin = rows[0];
       const validPassword = await bcrypt.compare(password, admin.password_hash);
-  console.log(`[Auth] Admin "${username}" found (id=${admin.id}, is_active=${admin.is_active}), hash present=${!!admin.password_hash}`);
+      console.log(
+        `[Auth] Admin "${username}" found (id=${admin.id}, is_active=${admin.is_active}), hash present=${!!admin.password_hash}`,
+      );
 
       if (!validPassword) {
-        console.error(`[Auth] Admin login FAILED: password mismatch for "${username}" (id=${admin.id})`);
+        console.error(
+          `[Auth] Admin login FAILED: password mismatch for "${username}" (id=${admin.id})`,
+        );
         return res.status(401).json({ error: "Invalid credentials" });
       }
 
