@@ -182,7 +182,20 @@ router.post("/rates", async (req: Request, res: Response) => {
     // Only allow mock rates when explicitly requested.
     const testMode = Boolean(rateRequest.testMode);
 
-    if (!testMode && !config.enabledCarriers.length) {
+    const requestedCarriers = Array.isArray(rateRequest.carriers)
+      ? rateRequest.carriers.filter((carrier) =>
+          ["easypost", "shippo", "shipstation"].includes(carrier),
+        )
+      : [];
+
+    const carriersToTry =
+      requestedCarriers.length > 0
+        ? requestedCarriers
+        : (config.enabledCarriers as Array<
+            "easypost" | "shippo" | "shipstation"
+          >);
+
+    if (!testMode && !carriersToTry.length) {
       res.status(400).json({
         error:
           "No shipping providers are enabled/configured. Configure a provider in Settings > Shipping.",
@@ -305,11 +318,7 @@ router.post("/rates", async (req: Request, res: Response) => {
     const allRates: ShippingRate[] = [];
     const errors: { [key: string]: string } = {};
 
-    // Get rates from each enabled carrier
-    const carriersToTry =
-      Array.isArray(rateRequest.carriers) && rateRequest.carriers.length > 0
-        ? rateRequest.carriers
-        : config.enabledCarriers;
+    // Get rates from requested carriers, or from enabled carriers when not specified.
 
     if (carriersToTry.includes("easypost")) {
       try {
