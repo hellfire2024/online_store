@@ -218,10 +218,22 @@ const CheckoutPage: React.FC = () => {
   };
 
   const parcelFromCart = useMemo(() => {
-    const defaultWeight = toNumber((siteSettings as any)?.defaultParcel?.weight, 1);
-    const defaultLength = toNumber((siteSettings as any)?.defaultParcel?.length, 12);
-    const defaultWidth = toNumber((siteSettings as any)?.defaultParcel?.width, 9);
-    const defaultHeight = toNumber((siteSettings as any)?.defaultParcel?.height, 3);
+    const defaultWeight = toNumber(
+      (siteSettings as any)?.defaultParcel?.weight,
+      1,
+    );
+    const defaultLength = toNumber(
+      (siteSettings as any)?.defaultParcel?.length,
+      12,
+    );
+    const defaultWidth = toNumber(
+      (siteSettings as any)?.defaultParcel?.width,
+      9,
+    );
+    const defaultHeight = toNumber(
+      (siteSettings as any)?.defaultParcel?.height,
+      3,
+    );
 
     if (!Array.isArray(cartItems) || cartItems.length === 0) {
       return {
@@ -239,10 +251,19 @@ const CheckoutPage: React.FC = () => {
 
     for (const item of cartItems) {
       const quantity = Math.max(1, toNumber(item.quantity, 1));
-      const productWeight = toNumber(item.product?.packageWeight, defaultWeight);
-      const productLength = toNumber(item.product?.packageLength, defaultLength);
+      const productWeight = toNumber(
+        item.product?.packageWeight,
+        defaultWeight,
+      );
+      const productLength = toNumber(
+        item.product?.packageLength,
+        defaultLength,
+      );
       const productWidth = toNumber(item.product?.packageWidth, defaultWidth);
-      const productHeight = toNumber(item.product?.packageHeight, defaultHeight);
+      const productHeight = toNumber(
+        item.product?.packageHeight,
+        defaultHeight,
+      );
 
       totalWeight += productWeight * quantity;
       maxLength = Math.max(maxLength, productLength);

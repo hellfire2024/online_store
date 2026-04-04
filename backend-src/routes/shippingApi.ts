@@ -369,7 +369,9 @@ router.post("/rates", async (req: Request, res: Response) => {
     const errors: { [key: string]: string } = {};
     const warnings: string[] = [];
 
-    const fromIsPOBox = isPOBoxAddress(normalizedRateRequest?.fromAddress?.street1);
+    const fromIsPOBox = isPOBoxAddress(
+      normalizedRateRequest?.fromAddress?.street1,
+    );
     const toIsPOBox = isPOBoxAddress(normalizedRateRequest?.toAddress?.street1);
     if (fromIsPOBox || toIsPOBox) {
       warnings.push(
