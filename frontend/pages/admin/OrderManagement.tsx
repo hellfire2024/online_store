@@ -121,6 +121,61 @@ const formatOrderStatusLabel = (status: string) =>
     .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
     .join(" ");
 
+const resolveConfiguredShippingProvider = (
+  settings: any,
+): {
+  provider: "easypost" | "shippo" | "shipstation" | null;
+  reason: string;
+} => {
+  const carriers = settings?.shippingCarriers || {};
+
+  const hasCredentials = (carrier: "easypost" | "shippo" | "shipstation") => {
+    const cfg = carriers?.[carrier] || {};
+    if (carrier === "shipstation") {
+      return (
+        Boolean(String(cfg.apiKey || "").trim()) &&
+        Boolean(String(cfg.apiSecret || "").trim())
+      );
+    }
+    return Boolean(String(cfg.apiKey || "").trim());
+  };
+
+  const isEnabledAndConfigured = (
+    carrier: "easypost" | "shippo" | "shipstation",
+  ) => Boolean(carriers?.[carrier]?.enabled) && hasCredentials(carrier);
+
+  const available = (["easypost", "shippo", "shipstation"] as const).filter(
+    (carrier) => isEnabledAndConfigured(carrier),
+  );
+
+  if (!available.length) {
+    return {
+      provider: null,
+      reason: "No shipping provider is fully configured in Settings.",
+    };
+  }
+
+  const preferred = String(
+    settings?.defaultShippingCarrier || "",
+  ).toLowerCase();
+  if (
+    (preferred === "easypost" ||
+      preferred === "shippo" ||
+      preferred === "shipstation") &&
+    available.includes(preferred as "easypost" | "shippo" | "shipstation")
+  ) {
+    return {
+      provider: preferred as "easypost" | "shippo" | "shipstation",
+      reason: "",
+    };
+  }
+
+  return {
+    provider: available[0],
+    reason: "",
+  };
+};
+
 const getPaymentProviderStatus = (settings: any) => {
   const provider = String(settings?.paymentProvider || "none");
   const providerKeys = (settings?.paymentApiKeys || {}) as Record<
@@ -171,6 +226,12 @@ const OrderManagement: React.FC = () => {
   const [labelUrl, setLabelUrl] = useState<string>("");
   const [trackingResult, setTrackingResult] = useState<any>(null);
   const [trackingLoading, setTrackingLoading] = useState(false);
+  const [configuredShippingProvider, setConfiguredShippingProvider] = useState<
+    "easypost" | "shippo" | "shipstation" | null
+  >(null);
+  const [shippingProviderReason, setShippingProviderReason] = useState(
+    "Shipping provider is not configured.",
+  );
 
   const shippers = ["UPS", "FedEx", "USPS", "DHL", "Other"];
   const isSuperAdmin = adminUser?.role === "super_admin";
@@ -182,9 +243,15 @@ const OrderManagement: React.FC = () => {
         const paymentStatus = getPaymentProviderStatus(settings);
         setOnlinePaymentEnabled(paymentStatus.enabled);
         setPaymentUnavailableReason(paymentStatus.reason);
+
+        const shippingStatus = resolveConfiguredShippingProvider(settings);
+        setConfiguredShippingProvider(shippingStatus.provider);
+        setShippingProviderReason(shippingStatus.reason);
       } catch {
         setOnlinePaymentEnabled(false);
         setPaymentUnavailableReason("Unable to verify payment provider setup");
+        setConfiguredShippingProvider(null);
+        setShippingProviderReason("Unable to verify shipping provider setup.");
       }
     };
 
@@ -532,10 +599,11 @@ const OrderManagement: React.FC = () => {
       return;
     }
 
-    const carrier = getCarrierForOrder(order);
+    const carrier = configuredShippingProvider;
     if (!carrier) {
       addToast(
-        "Unable to determine shipping carrier for label generation.",
+        shippingProviderReason ||
+          "Unable to determine shipping provider for label generation.",
         "error",
       );
       return;
