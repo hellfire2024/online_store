@@ -12,6 +12,31 @@ interface SettingsRow extends RowDataPacket {
   settings: string | null;
 }
 
+const normalizeEnabledFlag = (value: unknown): boolean | null => {
+  if (typeof value === "boolean") {
+    return value;
+  }
+  if (typeof value === "number") {
+    return value !== 0;
+  }
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    if (["true", "1", "yes", "on"].includes(normalized)) {
+      return true;
+    }
+    if (["false", "0", "no", "off"].includes(normalized)) {
+      return false;
+    }
+  }
+  return null;
+};
+
+const isAddressComplete = (address: any): boolean =>
+  Boolean(address?.street1) &&
+  Boolean(address?.city) &&
+  Boolean(address?.state) &&
+  Boolean(address?.zip);
+
 const readShippingConfig = async () => {
   const [rows] = await pool.query<SettingsRow[]>(
     "SELECT settings FROM site_settings WHERE id = 1 LIMIT 1",
@@ -59,23 +84,29 @@ const readShippingConfig = async () => {
   const defaultCarrier = String(parsed?.defaultShippingCarrier || "").trim();
   const shippingProvider = String(parsed?.shippingProvider || "").trim();
 
-  const easypostEnabledSetting = configuredCarriers?.easypost?.enabled;
-  const shippoEnabledSetting = configuredCarriers?.shippo?.enabled;
-  const shipstationEnabledSetting = configuredCarriers?.shipstation?.enabled;
+  const easypostEnabledSetting = normalizeEnabledFlag(
+    configuredCarriers?.easypost?.enabled,
+  );
+  const shippoEnabledSetting = normalizeEnabledFlag(
+    configuredCarriers?.shippo?.enabled,
+  );
+  const shipstationEnabledSetting = normalizeEnabledFlag(
+    configuredCarriers?.shipstation?.enabled,
+  );
 
   const easypostEnabled =
     Boolean(easypostKey) &&
-    (typeof easypostEnabledSetting === "boolean"
+    (easypostEnabledSetting !== null
       ? easypostEnabledSetting
       : defaultCarrier === "easypost" || shippingProvider === "easypost");
   const shippoEnabled =
     Boolean(shippoKey) &&
-    (typeof shippoEnabledSetting === "boolean"
+    (shippoEnabledSetting !== null
       ? shippoEnabledSetting
       : defaultCarrier === "shippo" || shippingProvider === "shippo");
   const shipstationEnabled =
     Boolean(shipstationKey && shipstationSecret) &&
-    (typeof shipstationEnabledSetting === "boolean"
+    (shipstationEnabledSetting !== null
       ? shipstationEnabledSetting
       : defaultCarrier === "shipstation" || shippingProvider === "shipstation");
 
@@ -167,11 +198,18 @@ router.post("/rates", async (req: Request, res: Response) => {
     const rateRequest: ShippingRateRequest & { testMode?: boolean } = req.body;
     const config = await readShippingConfig();
 
+    const normalizedRateRequest: ShippingRateRequest & { testMode?: boolean } = {
+      ...rateRequest,
+      fromAddress: isAddressComplete(rateRequest?.fromAddress)
+        ? rateRequest.fromAddress
+        : (config.fromAddress as any),
+    };
+
     // Validate required fields
     if (
-      !rateRequest.toAddress ||
-      !rateRequest.fromAddress ||
-      !rateRequest.parcel
+      !normalizedRateRequest.toAddress ||
+      !normalizedRateRequest.fromAddress ||
+      !normalizedRateRequest.parcel
     ) {
       res.status(400).json({
         error: "Missing required fields: toAddress, fromAddress, parcel",
@@ -180,10 +218,10 @@ router.post("/rates", async (req: Request, res: Response) => {
     }
 
     // Only allow mock rates when explicitly requested.
-    const testMode = Boolean(rateRequest.testMode);
+    const testMode = Boolean(normalizedRateRequest.testMode);
 
-    const requestedCarriers = Array.isArray(rateRequest.carriers)
-      ? rateRequest.carriers.filter((carrier) =>
+    const requestedCarriers = Array.isArray(normalizedRateRequest.carriers)
+      ? normalizedRateRequest.carriers.filter((carrier) =>
           ["easypost", "shippo", "shipstation"].includes(carrier),
         )
       : [];
@@ -194,6 +232,10 @@ router.post("/rates", async (req: Request, res: Response) => {
         : (config.enabledCarriers as Array<
             "easypost" | "shippo" | "shipstation"
           >);
+
+    console.log(
+      `[Shipping] /rates request: testMode=${testMode}, requested=${requestedCarriers.join(",") || "(none)"}, enabled=${config.enabledCarriers.join(",") || "(none)"}, trying=${carriersToTry.join(",") || "(none)"}`,
+    );
 
     if (!testMode && !carriersToTry.length) {
       res.status(400).json({
@@ -326,7 +368,7 @@ router.post("/rates", async (req: Request, res: Response) => {
       } else {
         try {
           const easypostRates = await easypostService.getShippingRates(
-            rateRequest,
+            normalizedRateRequest,
             config.easypost.apiKey,
           );
           allRates.push(...easypostRates);
@@ -344,7 +386,7 @@ router.post("/rates", async (req: Request, res: Response) => {
       } else {
         try {
           const shippoRates = await shippoService.getShippingRates(
-            rateRequest,
+            normalizedRateRequest,
             config.shippo.apiKey,
           );
           allRates.push(...shippoRates);
@@ -362,7 +404,7 @@ router.post("/rates", async (req: Request, res: Response) => {
       } else {
         try {
           const shipstationRates = await shipstationService.getShippingRates(
-            rateRequest,
+            normalizedRateRequest,
             config.shipstation.apiKey,
             config.shipstation.apiSecret,
           );
@@ -385,6 +427,9 @@ router.post("/rates", async (req: Request, res: Response) => {
           ? "Shipping options are not available at this time. Please submit an approval request for sales-team follow-up."
           : undefined,
     });
+    console.log(
+      `[Shipping] /rates result: rates=${allRates.length}, errors=${Object.keys(errors).length}`,
+    );
     return;
   } catch (error) {
     console.error("Shipping rates error:", error);
