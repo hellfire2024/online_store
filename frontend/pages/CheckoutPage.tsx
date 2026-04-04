@@ -319,9 +319,7 @@ const CheckoutPage: React.FC = () => {
     const shippingCarrierReady =
       (carriers.easypost?.enabled && Boolean(carriers.easypost?.apiKey)) ||
       (carriers.shippo?.enabled && Boolean(carriers.shippo?.apiKey)) ||
-      (carriers.shipstation?.enabled &&
-        Boolean(carriers.shipstation?.apiKey) &&
-        Boolean(carriers.shipstation?.apiSecret));
+      (carriers.shipstation?.enabled && Boolean(carriers.shipstation?.apiKey));
     const shippingAvailable = Boolean(shippingCarrierReady && senderReady);
 
     const taxConfig = siteSettings?.taxConfig;

@@ -6,17 +6,29 @@ import {
 
 const SHIPSTATION_API_BASE = "https://ssapi.shipstation.com";
 
-// Helper to create Basic Auth header
+// Helper to create auth header. Supports legacy Basic (key+secret) and current Bearer (key-only).
 function getAuthHeader(apiKeyOverride?: string, apiSecretOverride?: string) {
-  const apiKey = apiKeyOverride || process.env.SHIPSTATION_API_KEY || "";
-  const apiSecret =
-    apiSecretOverride || process.env.SHIPSTATION_API_SECRET || "";
-  if (!apiKey || !apiSecret) {
-    throw new Error("ShipStation API credentials not configured");
+  const apiKey = (
+    apiKeyOverride ||
+    process.env.SHIPSTATION_API_KEY ||
+    ""
+  ).trim();
+  const apiSecret = (
+    apiSecretOverride ||
+    process.env.SHIPSTATION_API_SECRET ||
+    ""
+  ).trim();
+  if (!apiKey) {
+    throw new Error("ShipStation API key not configured");
   }
-  const credentials = `${apiKey}:${apiSecret}`;
-  const auth = Buffer.from(credentials).toString("base64");
-  return `Basic ${auth}`;
+  // Prefer legacy Basic auth when a secret is provided.
+  if (apiSecret) {
+    const credentials = `${apiKey}:${apiSecret}`;
+    const auth = Buffer.from(credentials).toString("base64");
+    return `Basic ${auth}`;
+  }
+  // Current ShipStation keys are bearer tokens.
+  return `Bearer ${apiKey}`;
 }
 
 // Helper to format address for ShipStation

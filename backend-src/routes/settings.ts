@@ -237,20 +237,14 @@ const buildCommerceStatus = (settings: any) => {
       const carrierConfig = shippingCarriers?.[carrier] || {};
       const enabled = Boolean(carrierConfig.enabled);
       const hasApiKey = hasText(carrierConfig.apiKey);
-      const hasApiSecret =
-        carrier !== "shipstation" || hasText(carrierConfig.apiSecret);
+      const hasApiSecret = true;
       const configured = enabled && hasApiKey && hasApiSecret;
 
       return {
         carrier,
         enabled,
         configured,
-        reason:
-          enabled && !configured
-            ? carrier === "shipstation"
-              ? "ShipStation requires API key and API secret"
-              : `${carrier} requires API key`
-            : null,
+        reason: enabled && !configured ? `${carrier} requires API key` : null,
       };
     },
   );

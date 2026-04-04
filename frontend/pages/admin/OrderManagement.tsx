@@ -131,12 +131,6 @@ const resolveConfiguredShippingProvider = (
 
   const hasCredentials = (carrier: "easypost" | "shippo" | "shipstation") => {
     const cfg = carriers?.[carrier] || {};
-    if (carrier === "shipstation") {
-      return (
-        Boolean(String(cfg.apiKey || "").trim()) &&
-        Boolean(String(cfg.apiSecret || "").trim())
-      );
-    }
     return Boolean(String(cfg.apiKey || "").trim());
   };
 

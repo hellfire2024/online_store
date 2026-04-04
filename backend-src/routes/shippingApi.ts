@@ -112,7 +112,7 @@ const readShippingConfig = async () => {
       ? shippoEnabledSetting
       : defaultCarrier === "shippo" || shippingProvider === "shippo");
   const shipstationEnabled =
-    Boolean(shipstationKey && shipstationSecret) &&
+    Boolean(shipstationKey) &&
     (shipstationEnabledSetting !== null
       ? shipstationEnabledSetting
       : defaultCarrier === "shipstation" || shippingProvider === "shipstation");
@@ -165,9 +165,7 @@ router.get("/status", async (_req: Request, res: Response) => {
       {
         carrier: "shipstation",
         enabled: config.shipstation.enabled,
-        configured: Boolean(
-          config.shipstation.apiKey && config.shipstation.apiSecret,
-        ),
+        configured: Boolean(config.shipstation.apiKey),
       },
     ];
 
@@ -424,8 +422,8 @@ router.post("/rates", async (req: Request, res: Response) => {
     }
 
     if (carriersToTry.includes("shipstation")) {
-      if (!config.shipstation.apiKey || !config.shipstation.apiSecret) {
-        errors.shipstation = "ShipStation API credentials not configured";
+      if (!config.shipstation.apiKey) {
+        errors.shipstation = "ShipStation API key not configured";
       } else {
         try {
           const shipstationRates = await shipstationService.getShippingRates(
@@ -610,8 +608,8 @@ router.post("/label", async (req: Request, res: Response) => {
         }
 
         if (candidate === "shipstation") {
-          if (!config.shipstation.apiKey || !config.shipstation.apiSecret) {
-            attemptErrors.push("ShipStation API credentials not configured");
+          if (!config.shipstation.apiKey) {
+            attemptErrors.push("ShipStation API key not configured");
             continue;
           }
           if (!req.body.carrierCode || !req.body.serviceCode) {

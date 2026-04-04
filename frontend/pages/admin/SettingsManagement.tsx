@@ -2689,7 +2689,7 @@ const SettingsManagement: React.FC = () => {
                     />
                     <input
                       type="password"
-                      placeholder="ShipStation API Secret"
+                      placeholder="ShipStation API Secret (optional legacy)"
                       value={
                         settings.shippingCarriers?.shipstation?.apiSecret || ""
                       }
