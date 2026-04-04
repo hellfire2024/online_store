@@ -37,7 +37,9 @@ async function getActiveCarrierAccountIds(apiKey: string): Promise<string[]> {
     );
 
     const activeCarriers = Array.from(
-      new Set(activeAccounts.map((row: any) => String(row.carrier).toLowerCase())),
+      new Set(
+        activeAccounts.map((row: any) => String(row.carrier).toLowerCase()),
+      ),
     );
     console.log(
       `[Shippo] Active carrier accounts: ${activeCarriers.join(",") || "(none)"}`,

@@ -145,7 +145,9 @@ const ShippingRateSelector: React.FC<ShippingRateSelectorProps> = ({
   if (isUnavailable || rates.length === 0) {
     return (
       <div className="text-xs text-amber-400 mt-2">
-        {warning || error || "No live shipping rates available. Flat rate will apply."}
+        {warning ||
+          error ||
+          "No live shipping rates available. Flat rate will apply."}
       </div>
     );
   }
