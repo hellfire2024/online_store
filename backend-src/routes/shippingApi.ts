@@ -35,22 +35,49 @@ const readShippingConfig = async () => {
   }
 
   const configuredCarriers = parsed?.shippingCarriers || {};
-  const easypostKey = String(configuredCarriers?.easypost?.apiKey || "").trim();
-  const shippoKey = String(configuredCarriers?.shippo?.apiKey || "").trim();
+
+  // Backward-compatible key lookup: support both current and legacy settings shapes.
+  const easypostKey = String(
+    configuredCarriers?.easypost?.apiKey ||
+      parsed?.shippingApiKeys?.easypost ||
+      "",
+  ).trim();
+  const shippoKey = String(
+    configuredCarriers?.shippo?.apiKey || parsed?.shippingApiKeys?.shippo || "",
+  ).trim();
   const shipstationKey = String(
-    configuredCarriers?.shipstation?.apiKey || "",
+    configuredCarriers?.shipstation?.apiKey ||
+      parsed?.shippingApiKeys?.shipstation ||
+      "",
   ).trim();
   const shipstationSecret = String(
-    configuredCarriers?.shipstation?.apiSecret || "",
+    configuredCarriers?.shipstation?.apiSecret ||
+      parsed?.shippingApiKeys?.shipstationSecret ||
+      "",
   ).trim();
 
+  const defaultCarrier = String(parsed?.defaultShippingCarrier || "").trim();
+  const shippingProvider = String(parsed?.shippingProvider || "").trim();
+
+  const easypostEnabledSetting = configuredCarriers?.easypost?.enabled;
+  const shippoEnabledSetting = configuredCarriers?.shippo?.enabled;
+  const shipstationEnabledSetting = configuredCarriers?.shipstation?.enabled;
+
   const easypostEnabled =
-    Boolean(configuredCarriers?.easypost?.enabled) && Boolean(easypostKey);
+    Boolean(easypostKey) &&
+    (typeof easypostEnabledSetting === "boolean"
+      ? easypostEnabledSetting
+      : defaultCarrier === "easypost" || shippingProvider === "easypost");
   const shippoEnabled =
-    Boolean(configuredCarriers?.shippo?.enabled) && Boolean(shippoKey);
+    Boolean(shippoKey) &&
+    (typeof shippoEnabledSetting === "boolean"
+      ? shippoEnabledSetting
+      : defaultCarrier === "shippo" || shippingProvider === "shippo");
   const shipstationEnabled =
-    Boolean(configuredCarriers?.shipstation?.enabled) &&
-    Boolean(shipstationKey && shipstationSecret);
+    Boolean(shipstationKey && shipstationSecret) &&
+    (typeof shipstationEnabledSetting === "boolean"
+      ? shipstationEnabledSetting
+      : defaultCarrier === "shipstation" || shippingProvider === "shipstation");
 
   const enabledCarriers = [
     easypostEnabled ? "easypost" : null,
@@ -152,9 +179,16 @@ router.post("/rates", async (req: Request, res: Response) => {
       return;
     }
 
-    // Enable test mode if explicitly requested or if no carriers are enabled
-    const testMode =
-      Boolean(rateRequest.testMode) || !config.enabledCarriers.length;
+    // Only allow mock rates when explicitly requested.
+    const testMode = Boolean(rateRequest.testMode);
+
+    if (!testMode && !config.enabledCarriers.length) {
+      res.status(400).json({
+        error:
+          "No shipping providers are enabled/configured. Configure a provider in Settings > Shipping.",
+      });
+      return;
+    }
 
     if (testMode) {
       // Return representative mock rates across multiple carrier networks.
@@ -417,57 +451,94 @@ router.post("/label", async (req: Request, res: Response) => {
       }
     }
 
+    const attemptOrder = [
+      finalCarrier,
+      ...configuredProviders.filter((provider) => provider !== finalCarrier),
+    ] as Array<"easypost" | "shippo" | "shipstation">;
+
+    const toAddress = req.body.toAddress;
+    const parcel = req.body.parcel || {
+      weight: 1,
+      length: 12,
+      width: 9,
+      height: 3,
+    };
+
+    if (!req.body.carrierCode || !req.body.serviceCode) {
+      const rateIdParts = String(rateId).split("-");
+      if (rateIdParts.length > 1) {
+        req.body.carrierCode = req.body.carrierCode || rateIdParts[0];
+        req.body.serviceCode =
+          req.body.serviceCode || rateIdParts.slice(1).join("-");
+      }
+    }
+
     let label;
+    let usedCarrier: "easypost" | "shippo" | "shipstation" | null = null;
+    const attemptErrors: string[] = [];
 
-    switch (finalCarrier) {
-      case "easypost":
-        label = await easypostService.createLabel(
-          shipmentId,
-          rateId,
-          "PDF",
-          config.easypost.apiKey,
-        );
-        break;
-      case "shippo":
-        label = await shippoService.createLabel(
-          shipmentId,
-          rateId,
-          "PDF",
-          config.shippo.apiKey,
-        );
-        break;
-      case "shipstation":
-        if (!req.body.carrierCode || !req.body.serviceCode) {
-          const rateIdParts = String(rateId).split("-");
-          if (rateIdParts.length > 1) {
-            req.body.carrierCode = req.body.carrierCode || rateIdParts[0];
-            req.body.serviceCode =
-              req.body.serviceCode || rateIdParts.slice(1).join("-");
+    for (const candidate of attemptOrder) {
+      try {
+        if (candidate === "easypost") {
+          if (!config.easypost.apiKey) {
+            attemptErrors.push("EasyPost API key not configured");
+            continue;
           }
+          if (!shipmentId) {
+            attemptErrors.push("Missing shipmentId required for EasyPost");
+            continue;
+          }
+          label = await easypostService.createLabel(
+            shipmentId,
+            rateId,
+            "PDF",
+            config.easypost.apiKey,
+          );
+          usedCarrier = "easypost";
+          break;
         }
 
-        if (!req.body.carrierCode || !req.body.serviceCode) {
-          res.status(400).json({
-            error: "ShipStation requires carrierCode and serviceCode",
-          });
-          return;
+        if (candidate === "shippo") {
+          if (!config.shippo.apiKey) {
+            attemptErrors.push("Shippo API key not configured");
+            continue;
+          }
+          if (!shipmentId) {
+            attemptErrors.push("Missing shipmentId required for Shippo");
+            continue;
+          }
+          label = await shippoService.createLabel(
+            shipmentId,
+            rateId,
+            "PDF",
+            config.shippo.apiKey,
+          );
+          usedCarrier = "shippo";
+          break;
         }
-        {
-          const toAddress = req.body.toAddress;
+
+        if (candidate === "shipstation") {
+          if (!config.shipstation.apiKey || !config.shipstation.apiSecret) {
+            attemptErrors.push("ShipStation API credentials not configured");
+            continue;
+          }
+          if (!req.body.carrierCode || !req.body.serviceCode) {
+            attemptErrors.push(
+              "ShipStation requires carrierCode and serviceCode",
+            );
+            continue;
+          }
           if (!toAddress) {
-            res.status(400).json({ error: "ShipStation requires toAddress" });
-            return;
+            attemptErrors.push("ShipStation requires toAddress");
+            continue;
           }
+
           const mergedShipmentData = {
             toAddress,
             fromAddress: config.fromAddress,
-            parcel: req.body.parcel || {
-              weight: 1,
-              length: 12,
-              width: 9,
-              height: 3,
-            },
+            parcel,
           };
+
           label = await shipstationService.createLabel(
             mergedShipmentData,
             req.body.carrierCode,
@@ -475,26 +546,38 @@ router.post("/label", async (req: Request, res: Response) => {
             config.shipstation.apiKey,
             config.shipstation.apiSecret,
           );
+          usedCarrier = "shipstation";
+          break;
         }
-        break;
-      default:
-        res.status(400).json({
-          error: `Unknown carrier: ${carrier}`,
-        });
-        return;
+      } catch (candidateError) {
+        attemptErrors.push(
+          candidateError instanceof Error
+            ? `${candidate}: ${candidateError.message}`
+            : `${candidate}: label creation failed`,
+        );
+      }
+    }
+
+    if (!label || !usedCarrier) {
+      res.status(400).json({
+        error:
+          attemptErrors[attemptErrors.length - 1] ||
+          "Unable to create shipping label with configured providers",
+      });
+      return;
     }
 
     // Normalize the label response across all carriers
     let labelUrl: string | null = null;
     let trackingNumber: string | null = null;
 
-    if (finalCarrier === "easypost") {
+    if (usedCarrier === "easypost") {
       labelUrl = label?.postage_label?.label_url || label?.label_url || null;
       trackingNumber = label?.tracking_code || null;
-    } else if (finalCarrier === "shippo") {
+    } else if (usedCarrier === "shippo") {
       labelUrl = label?.label_url || null;
       trackingNumber = label?.tracking_number || null;
-    } else if (finalCarrier === "shipstation") {
+    } else if (usedCarrier === "shipstation") {
       labelUrl = label?.labelUrl || null;
       trackingNumber = label?.trackingNumber || null;
     }
@@ -503,7 +586,7 @@ router.post("/label", async (req: Request, res: Response) => {
       labelUrl,
       trackingNumber,
       rawLabel: label,
-      carrier: finalCarrier,
+      carrier: usedCarrier,
     });
     return;
   } catch (error) {
