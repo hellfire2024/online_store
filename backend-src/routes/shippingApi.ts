@@ -37,6 +37,11 @@ const isAddressComplete = (address: any): boolean =>
   Boolean(address?.state) &&
   Boolean(address?.zip);
 
+const isPOBoxAddress = (value: unknown): boolean => {
+  const text = String(value || "").toLowerCase();
+  return /\b(p\.?\s*o\.?\s*box|post\s+office\s+box)\b/.test(text);
+};
+
 const readShippingConfig = async () => {
   const [rows] = await pool.query<SettingsRow[]>(
     "SELECT settings FROM site_settings WHERE id = 1 LIMIT 1",
@@ -362,6 +367,15 @@ router.post("/rates", async (req: Request, res: Response) => {
 
     const allRates: ShippingRate[] = [];
     const errors: { [key: string]: string } = {};
+    const warnings: string[] = [];
+
+    const fromIsPOBox = isPOBoxAddress(normalizedRateRequest?.fromAddress?.street1);
+    const toIsPOBox = isPOBoxAddress(normalizedRateRequest?.toAddress?.street1);
+    if (fromIsPOBox || toIsPOBox) {
+      warnings.push(
+        "PO Box addresses can limit available services to USPS only. Use a physical street address to get full UPS/FedEx/DHL rates.",
+      );
+    }
 
     // Get rates from requested carriers, or from enabled carriers when not specified.
 
@@ -424,6 +438,7 @@ router.post("/rates", async (req: Request, res: Response) => {
     res.json({
       rates: allRates,
       errors: Object.keys(errors).length > 0 ? errors : undefined,
+      warnings: warnings.length > 0 ? warnings : undefined,
       unavailable: allRates.length === 0,
       message:
         allRates.length === 0

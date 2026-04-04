@@ -217,6 +217,47 @@ const CheckoutPage: React.FC = () => {
     return Number.isFinite(num) ? num : fallback;
   };
 
+  const parcelFromCart = useMemo(() => {
+    const defaultWeight = toNumber((siteSettings as any)?.defaultParcel?.weight, 1);
+    const defaultLength = toNumber((siteSettings as any)?.defaultParcel?.length, 12);
+    const defaultWidth = toNumber((siteSettings as any)?.defaultParcel?.width, 9);
+    const defaultHeight = toNumber((siteSettings as any)?.defaultParcel?.height, 3);
+
+    if (!Array.isArray(cartItems) || cartItems.length === 0) {
+      return {
+        weight: defaultWeight,
+        length: defaultLength,
+        width: defaultWidth,
+        height: defaultHeight,
+      };
+    }
+
+    let totalWeight = 0;
+    let maxLength = 0;
+    let maxWidth = 0;
+    let stackedHeight = 0;
+
+    for (const item of cartItems) {
+      const quantity = Math.max(1, toNumber(item.quantity, 1));
+      const productWeight = toNumber(item.product?.packageWeight, defaultWeight);
+      const productLength = toNumber(item.product?.packageLength, defaultLength);
+      const productWidth = toNumber(item.product?.packageWidth, defaultWidth);
+      const productHeight = toNumber(item.product?.packageHeight, defaultHeight);
+
+      totalWeight += productWeight * quantity;
+      maxLength = Math.max(maxLength, productLength);
+      maxWidth = Math.max(maxWidth, productWidth);
+      stackedHeight += productHeight * quantity;
+    }
+
+    return {
+      weight: totalWeight > 0 ? totalWeight : defaultWeight,
+      length: maxLength > 0 ? maxLength : defaultLength,
+      width: maxWidth > 0 ? maxWidth : defaultWidth,
+      height: stackedHeight > 0 ? stackedHeight : defaultHeight,
+    };
+  }, [cartItems, siteSettings]);
+
   const sanitizeTaxResult = (
     result: any,
     fallbackSubtotal: number,
@@ -1438,22 +1479,10 @@ const CheckoutPage: React.FC = () => {
                             (siteSettings as any)?.fromAddress?.phone || "",
                         },
                         parcel: {
-                          weight: toNumber(
-                            (siteSettings as any)?.defaultParcel?.weight,
-                            1,
-                          ),
-                          length: toNumber(
-                            (siteSettings as any)?.defaultParcel?.length,
-                            12,
-                          ),
-                          width: toNumber(
-                            (siteSettings as any)?.defaultParcel?.width,
-                            9,
-                          ),
-                          height: toNumber(
-                            (siteSettings as any)?.defaultParcel?.height,
-                            3,
-                          ),
+                          weight: parcelFromCart.weight,
+                          length: parcelFromCart.length,
+                          width: parcelFromCart.width,
+                          height: parcelFromCart.height,
                         },
                       }}
                       selectedRate={selectedShippingRate}
