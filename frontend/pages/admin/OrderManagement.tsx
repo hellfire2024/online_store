@@ -176,6 +176,20 @@ const resolveConfiguredShippingProvider = (
   };
 };
 
+const normalizeProvider = (
+  value: unknown,
+): "easypost" | "shippo" | "shipstation" | null => {
+  const normalized = String(value || "").toLowerCase();
+  if (
+    normalized === "easypost" ||
+    normalized === "shippo" ||
+    normalized === "shipstation"
+  ) {
+    return normalized;
+  }
+  return null;
+};
+
 const getPaymentProviderStatus = (settings: any) => {
   const provider = String(settings?.paymentProvider || "none");
   const providerKeys = (settings?.paymentApiKeys || {}) as Record<
@@ -236,6 +250,48 @@ const OrderManagement: React.FC = () => {
   const shippers = ["UPS", "FedEx", "USPS", "DHL", "Other"];
   const isSuperAdmin = adminUser?.role === "super_admin";
 
+  const resolveProviderFromBackendStatus = async (
+    settings: any,
+  ): Promise<{
+    provider: "easypost" | "shippo" | "shipstation" | null;
+    reason: string;
+  }> => {
+    try {
+      const response = await fetch("/api/shipping/status");
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(payload?.error || "Failed to fetch shipping status");
+      }
+
+      const enabledCarriers = Array.isArray(payload?.enabledCarriers)
+        ? payload.enabledCarriers
+            .map((carrier: unknown) => normalizeProvider(carrier))
+            .filter(Boolean)
+        : [];
+
+      if (!enabledCarriers.length) {
+        return {
+          provider: null,
+          reason:
+            String(payload?.reason || "") ||
+            "No shipping provider is fully configured in Settings.",
+        };
+      }
+
+      const preferred = normalizeProvider(settings?.defaultShippingCarrier);
+      if (preferred && enabledCarriers.includes(preferred)) {
+        return { provider: preferred, reason: "" };
+      }
+
+      return {
+        provider: enabledCarriers[0] as "easypost" | "shippo" | "shipstation",
+        reason: "",
+      };
+    } catch {
+      return resolveConfiguredShippingProvider(settings);
+    }
+  };
+
   useEffect(() => {
     const loadPaymentStatus = async () => {
       try {
@@ -244,7 +300,7 @@ const OrderManagement: React.FC = () => {
         setOnlinePaymentEnabled(paymentStatus.enabled);
         setPaymentUnavailableReason(paymentStatus.reason);
 
-        const shippingStatus = resolveConfiguredShippingProvider(settings);
+        const shippingStatus = await resolveProviderFromBackendStatus(settings);
         setConfiguredShippingProvider(shippingStatus.provider);
         setShippingProviderReason(shippingStatus.reason);
       } catch {
@@ -599,10 +655,15 @@ const OrderManagement: React.FC = () => {
       return;
     }
 
-    const carrier = configuredShippingProvider;
+    const settings = await apiClient.settings.get().catch(() => null);
+    const shippingStatus = await resolveProviderFromBackendStatus(settings);
+    setConfiguredShippingProvider(shippingStatus.provider);
+    setShippingProviderReason(shippingStatus.reason);
+
+    const carrier = shippingStatus.provider;
     if (!carrier) {
       addToast(
-        shippingProviderReason ||
+        shippingStatus.reason ||
           "Unable to determine shipping provider for label generation.",
         "error",
       );
@@ -611,6 +672,7 @@ const OrderManagement: React.FC = () => {
 
     setLabelLoading(true);
     try {
+      const toAddress = getShippingAddressForOrder(order);
       const parcel = (order.orderData as any)?.shippingParcel || {
         weight: 1,
         length: 12,
@@ -621,6 +683,8 @@ const OrderManagement: React.FC = () => {
       const body: any = {
         carrier,
         rateId: rate.id,
+        toAddress,
+        parcel,
       };
 
       if (carrier === "easypost" || carrier === "shippo") {
@@ -639,13 +703,11 @@ const OrderManagement: React.FC = () => {
         }
         body.carrierCode = String(rate.id).slice(0, splitIndex);
         body.serviceCode = String(rate.id).slice(splitIndex + 1);
-        body.toAddress = getShippingAddressForOrder(order);
         if (!body.toAddress) {
           throw new Error(
             "Missing shipping address on this order. Open the order and confirm shipping details.",
           );
         }
-        body.parcel = parcel;
       }
 
       const response = await fetch("/api/shipping/label", {

@@ -365,9 +365,61 @@ router.post("/label", async (req: Request, res: Response) => {
       return;
     }
 
+    const configuredProviders = [
+      config.easypost.enabled ? "easypost" : null,
+      config.shippo.enabled ? "shippo" : null,
+      config.shipstation.enabled ? "shipstation" : null,
+    ].filter(Boolean) as Array<"easypost" | "shippo" | "shipstation">;
+
+    if (!configuredProviders.length) {
+      res.status(400).json({
+        error: "No shipping provider is configured for label generation",
+      });
+      return;
+    }
+
+    const inferProviderFromPayload = ():
+      | "easypost"
+      | "shippo"
+      | "shipstation"
+      | null => {
+      const inferredShipmentId = String(shipmentId || "").toLowerCase();
+      if (
+        inferredShipmentId.startsWith("ep-") ||
+        inferredShipmentId.startsWith("shp_")
+      ) {
+        return "easypost";
+      }
+      if (inferredShipmentId.startsWith("sp-")) {
+        return "shippo";
+      }
+      if (inferredShipmentId.startsWith("ss-")) {
+        return "shipstation";
+      }
+
+      const ratePrefix = String(rateId || "")
+        .split("-")[0]
+        .toLowerCase();
+      if (["ups", "fedex", "usps", "dhl"].includes(ratePrefix)) {
+        return "shipstation";
+      }
+      return null;
+    };
+
+    let finalCarrier = resolvedCarrier as "easypost" | "shippo" | "shipstation";
+
+    if (!configuredProviders.includes(finalCarrier)) {
+      const inferred = inferProviderFromPayload();
+      if (inferred && configuredProviders.includes(inferred)) {
+        finalCarrier = inferred;
+      } else {
+        finalCarrier = configuredProviders[0];
+      }
+    }
+
     let label;
 
-    switch (resolvedCarrier) {
+    switch (finalCarrier) {
       case "easypost":
         label = await easypostService.createLabel(
           shipmentId,
@@ -436,18 +488,23 @@ router.post("/label", async (req: Request, res: Response) => {
     let labelUrl: string | null = null;
     let trackingNumber: string | null = null;
 
-    if (resolvedCarrier === "easypost") {
+    if (finalCarrier === "easypost") {
       labelUrl = label?.postage_label?.label_url || label?.label_url || null;
       trackingNumber = label?.tracking_code || null;
-    } else if (resolvedCarrier === "shippo") {
+    } else if (finalCarrier === "shippo") {
       labelUrl = label?.label_url || null;
       trackingNumber = label?.tracking_number || null;
-    } else if (resolvedCarrier === "shipstation") {
+    } else if (finalCarrier === "shipstation") {
       labelUrl = label?.labelUrl || null;
       trackingNumber = label?.trackingNumber || null;
     }
 
-    res.json({ labelUrl, trackingNumber, rawLabel: label });
+    res.json({
+      labelUrl,
+      trackingNumber,
+      rawLabel: label,
+      carrier: finalCarrier,
+    });
     return;
   } catch (error) {
     console.error("Label creation error:", error);
