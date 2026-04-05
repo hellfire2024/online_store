@@ -33,7 +33,11 @@ function getAuthHeader(apiKeyOverride?: string, apiSecretOverride?: string) {
 }
 
 function getApiKey(apiKeyOverride?: string): string {
-  const apiKey = (apiKeyOverride || process.env.SHIPSTATION_API_KEY || "").trim();
+  const apiKey = (
+    apiKeyOverride ||
+    process.env.SHIPSTATION_API_KEY ||
+    ""
+  ).trim();
   if (!apiKey) {
     throw new Error("ShipStation API key not configured");
   }
@@ -41,7 +45,9 @@ function getApiKey(apiKeyOverride?: string): string {
 }
 
 function hasLegacySecret(apiSecretOverride?: string): boolean {
-  return Boolean((apiSecretOverride || process.env.SHIPSTATION_API_SECRET || "").trim());
+  return Boolean(
+    (apiSecretOverride || process.env.SHIPSTATION_API_SECRET || "").trim(),
+  );
 }
 
 function getV2Headers(apiKeyOverride?: string): Record<string, string> {
@@ -260,7 +266,10 @@ export async function getShippingRates(
 
     // Key-only ShipStation accounts use v2 endpoints.
     const carrierCodes = ["usps", "fedex", "ups", "dhl"];
-    const carrierIds = await getCarrierIdsForCodes(carrierCodes, apiKeyOverride);
+    const carrierIds = await getCarrierIdsForCodes(
+      carrierCodes,
+      apiKeyOverride,
+    );
     if (!carrierIds.length) {
       throw new Error(
         "No matching connected ShipStation carriers found. Connect USPS/UPS/FedEx/DHL in ShipStation first.",
@@ -328,11 +337,17 @@ export async function getShippingRates(
         : 0;
 
       return {
-        id: String(rate?.rate_id || `${rate?.carrier_code || "shipstation"}-${rate?.service_code || "unknown"}`),
+        id: String(
+          rate?.rate_id ||
+            `${rate?.carrier_code || "shipstation"}-${rate?.service_code || "unknown"}`,
+        ),
         carrier: "shipstation",
         service: String(rate?.service_code || "unknown"),
         serviceName: String(
-          rate?.service_type || rate?.carrier_friendly_name || rate?.service_code || "ShipStation Service",
+          rate?.service_type ||
+            rate?.carrier_friendly_name ||
+            rate?.service_code ||
+            "ShipStation Service",
         ),
         rate: Math.round(totalAmount * 100),
         estimatedDays,
