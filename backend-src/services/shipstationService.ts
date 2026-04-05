@@ -5,6 +5,7 @@ import {
 } from "../types.js";
 
 const SHIPSTATION_API_BASE = "https://ssapi.shipstation.com";
+const SHIPSTATION_API_BASE_V2 = "https://api.shipstation.com";
 
 // Helper to create auth header. Supports legacy Basic (key+secret) and current Bearer (key-only).
 function getAuthHeader(apiKeyOverride?: string, apiSecretOverride?: string) {
@@ -29,6 +30,113 @@ function getAuthHeader(apiKeyOverride?: string, apiSecretOverride?: string) {
   }
   // Current ShipStation keys are bearer tokens.
   return `Bearer ${apiKey}`;
+}
+
+function getApiKey(apiKeyOverride?: string): string {
+  const apiKey = (apiKeyOverride || process.env.SHIPSTATION_API_KEY || "").trim();
+  if (!apiKey) {
+    throw new Error("ShipStation API key not configured");
+  }
+  return apiKey;
+}
+
+function hasLegacySecret(apiSecretOverride?: string): boolean {
+  return Boolean((apiSecretOverride || process.env.SHIPSTATION_API_SECRET || "").trim());
+}
+
+function getV2Headers(apiKeyOverride?: string): Record<string, string> {
+  return {
+    "API-Key": getApiKey(apiKeyOverride),
+    "Content-Type": "application/json",
+  };
+}
+
+async function readResponseBody(response: Response): Promise<{
+  payload: any;
+  rawText: string;
+}> {
+  const rawText = await response.text();
+  if (!rawText) {
+    return { payload: null, rawText: "" };
+  }
+
+  try {
+    return { payload: JSON.parse(rawText), rawText };
+  } catch {
+    return { payload: null, rawText };
+  }
+}
+
+function extractShipStationErrorMessage(
+  payload: any,
+  rawText: string,
+  fallback: string,
+): string {
+  if (payload?.message) {
+    return String(payload.message);
+  }
+  if (Array.isArray(payload?.errors) && payload.errors.length > 0) {
+    const firstError = payload.errors[0];
+    if (typeof firstError === "string") {
+      return firstError;
+    }
+    if (firstError?.message) {
+      return String(firstError.message);
+    }
+  }
+  if (rawText) {
+    const compact = rawText.replace(/\s+/g, " ").trim();
+    return compact.slice(0, 220);
+  }
+  return fallback;
+}
+
+function mapV2Address(address: ShippingAddress) {
+  return {
+    name: `${address.firstName} ${address.lastName}`.trim(),
+    phone: address.phone || "",
+    company_name: "",
+    address_line1: address.street1,
+    address_line2: address.street2 || "",
+    city_locality: address.city,
+    state_province: address.state,
+    postal_code: address.zip,
+    country_code: "US",
+    address_residential_indicator: "unknown",
+  };
+}
+
+async function getCarrierIdsForCodes(
+  carrierCodes: string[],
+  apiKeyOverride?: string,
+): Promise<string[]> {
+  const response = await fetch(`${SHIPSTATION_API_BASE_V2}/v2/carriers`, {
+    headers: {
+      "API-Key": getApiKey(apiKeyOverride),
+    },
+  });
+
+  const { payload, rawText } = await readResponseBody(response);
+  if (!response.ok) {
+    throw new Error(
+      extractShipStationErrorMessage(
+        payload,
+        rawText,
+        `ShipStation carriers error: ${response.status}`,
+      ),
+    );
+  }
+
+  const carriers = Array.isArray(payload?.carriers) ? payload.carriers : [];
+  const wanted = new Set(carrierCodes.map((code) => code.toLowerCase()));
+
+  return carriers
+    .filter((carrier: any) => {
+      const code = String(carrier?.carrier_code || "").toLowerCase();
+      return Boolean(code) && wanted.has(code);
+    })
+    .map((carrier: any) => String(carrier?.carrier_id || "").trim())
+    .filter(Boolean);
 }
 
 // Helper to format address for ShipStation
@@ -78,70 +186,158 @@ export async function getShippingRates(
   apiSecretOverride?: string,
 ): Promise<ShippingRate[]> {
   try {
-    const rates: ShippingRate[] = [];
+    // Legacy key+secret integrations keep using v1 endpoints.
+    if (hasLegacySecret(apiSecretOverride)) {
+      const rates: ShippingRate[] = [];
 
-    // Get rates from ShipStation for each enabled carrier
-    const shipstationCarriers = ["usps", "fedex", "ups", "dhl"];
+      const shipstationCarriers = ["usps", "fedex", "ups", "dhl"];
 
-    for (const shipstationCarrier of shipstationCarriers) {
-      try {
-        const url = new URL(`${SHIPSTATION_API_BASE}/shipments/getrates`);
-        url.searchParams.set("carrierCode", shipstationCarrier);
-        url.searchParams.set("fromPostalCode", request.fromAddress.zip);
-        url.searchParams.set("toPostalCode", request.toAddress.zip);
-        url.searchParams.set("toCountry", "US");
-        url.searchParams.set("weight", request.parcel.weight.toString());
-        url.searchParams.set(
-          "dimensionsLength",
-          request.parcel.length.toString(),
-        );
-        url.searchParams.set(
-          "dimensionsWidth",
-          request.parcel.width.toString(),
-        );
-        url.searchParams.set(
-          "dimensionsHeight",
-          request.parcel.height.toString(),
-        );
+      for (const shipstationCarrier of shipstationCarriers) {
+        try {
+          const url = new URL(`${SHIPSTATION_API_BASE}/shipments/getrates`);
+          url.searchParams.set("carrierCode", shipstationCarrier);
+          url.searchParams.set("fromPostalCode", request.fromAddress.zip);
+          url.searchParams.set("toPostalCode", request.toAddress.zip);
+          url.searchParams.set("toCountry", "US");
+          url.searchParams.set("weight", request.parcel.weight.toString());
+          url.searchParams.set(
+            "dimensionsLength",
+            request.parcel.length.toString(),
+          );
+          url.searchParams.set(
+            "dimensionsWidth",
+            request.parcel.width.toString(),
+          );
+          url.searchParams.set(
+            "dimensionsHeight",
+            request.parcel.height.toString(),
+          );
 
-        const response = await fetch(url.toString(), {
-          headers: {
-            Authorization: getAuthHeader(apiKeyOverride, apiSecretOverride),
-          },
-        });
+          const response = await fetch(url.toString(), {
+            headers: {
+              Authorization: getAuthHeader(apiKeyOverride, apiSecretOverride),
+            },
+          });
 
-        const payload = (await response.json()) as any;
-        if (!response.ok) {
-          throw new Error(
-            payload?.message || `ShipStation error: ${response.status}`,
+          const { payload, rawText } = await readResponseBody(response);
+          if (!response.ok) {
+            throw new Error(
+              extractShipStationErrorMessage(
+                payload,
+                rawText,
+                `ShipStation error: ${response.status}`,
+              ),
+            );
+          }
+
+          if (payload && Array.isArray(payload)) {
+            payload.forEach((rate: any) => {
+              const carrierServiceMap =
+                CARRIER_SERVICE_MAP[shipstationCarrier] || {};
+              const serviceName =
+                carrierServiceMap[rate.serviceName] || rate.serviceName;
+
+              rates.push({
+                id: `${shipstationCarrier}-${rate.serviceCode}`,
+                carrier: "shipstation",
+                service: rate.serviceCode,
+                serviceName: serviceName,
+                rate: Math.round(parseFloat(rate.shipmentCost) * 100),
+                estimatedDays: rate.deliveryDays || 0,
+              });
+            });
+          }
+        } catch (carrierError) {
+          console.warn(
+            `Failed to get rates for ${shipstationCarrier}:`,
+            carrierError,
           );
         }
-
-        if (payload && Array.isArray(payload)) {
-          payload.forEach((rate: any) => {
-            const carrierServiceMap =
-              CARRIER_SERVICE_MAP[shipstationCarrier] || {};
-            const serviceName =
-              carrierServiceMap[rate.serviceName] || rate.serviceName;
-
-            rates.push({
-              id: `${shipstationCarrier}-${rate.serviceCode}`,
-              carrier: "shipstation",
-              service: rate.serviceCode,
-              serviceName: serviceName,
-              rate: Math.round(parseFloat(rate.shipmentCost) * 100), // Convert to cents
-              estimatedDays: rate.deliveryDays || 0,
-            });
-          });
-        }
-      } catch (carrierError) {
-        console.warn(
-          `Failed to get rates for ${shipstationCarrier}:`,
-          carrierError,
-        );
-        // Continue with next carrier
       }
+
+      return rates;
     }
+
+    // Key-only ShipStation accounts use v2 endpoints.
+    const carrierCodes = ["usps", "fedex", "ups", "dhl"];
+    const carrierIds = await getCarrierIdsForCodes(carrierCodes, apiKeyOverride);
+    if (!carrierIds.length) {
+      throw new Error(
+        "No matching connected ShipStation carriers found. Connect USPS/UPS/FedEx/DHL in ShipStation first.",
+      );
+    }
+
+    const requestBody = {
+      rate_options: {
+        carrier_ids: carrierIds,
+      },
+      shipment: {
+        validate_address: "no_validation",
+        ship_to: mapV2Address(request.toAddress),
+        ship_from: mapV2Address(request.fromAddress),
+        packages: [
+          {
+            package_code: "package",
+            weight: {
+              value: request.parcel.weight,
+              unit: "pound",
+            },
+            dimensions: {
+              unit: "inch",
+              length: request.parcel.length,
+              width: request.parcel.width,
+              height: request.parcel.height,
+            },
+          },
+        ],
+      },
+    };
+
+    const response = await fetch(`${SHIPSTATION_API_BASE_V2}/v2/rates`, {
+      method: "POST",
+      headers: getV2Headers(apiKeyOverride),
+      body: JSON.stringify(requestBody),
+    });
+
+    const { payload, rawText } = await readResponseBody(response);
+    if (!response.ok) {
+      throw new Error(
+        extractShipStationErrorMessage(
+          payload,
+          rawText,
+          `ShipStation rates error: ${response.status}`,
+        ),
+      );
+    }
+
+    const v2Rates = Array.isArray(payload?.rate_response?.rates)
+      ? payload.rate_response.rates
+      : [];
+
+    const rates: ShippingRate[] = v2Rates.map((rate: any) => {
+      const shippingAmount = Number(rate?.shipping_amount?.amount || 0);
+      const insuranceAmount = Number(rate?.insurance_amount?.amount || 0);
+      const confirmationAmount = Number(rate?.confirmation_amount?.amount || 0);
+      const otherAmount = Number(rate?.other_amount?.amount || 0);
+      const totalAmount =
+        shippingAmount + insuranceAmount + confirmationAmount + otherAmount;
+
+      const rawDays = rate?.delivery_days ?? rate?.carrier_delivery_days ?? 0;
+      const estimatedDays = Number.isFinite(Number(rawDays))
+        ? Number(rawDays)
+        : 0;
+
+      return {
+        id: String(rate?.rate_id || `${rate?.carrier_code || "shipstation"}-${rate?.service_code || "unknown"}`),
+        carrier: "shipstation",
+        service: String(rate?.service_code || "unknown"),
+        serviceName: String(
+          rate?.service_type || rate?.carrier_friendly_name || rate?.service_code || "ShipStation Service",
+        ),
+        rate: Math.round(totalAmount * 100),
+        estimatedDays,
+      };
+    });
 
     return rates;
   } catch (error) {
@@ -191,10 +387,14 @@ export async function createLabel(
       },
     );
 
-    const payload = (await response.json()) as any;
+    const { payload, rawText } = await readResponseBody(response);
     if (!response.ok) {
       throw new Error(
-        payload?.message || `ShipStation error: ${response.status}`,
+        extractShipStationErrorMessage(
+          payload,
+          rawText,
+          `ShipStation error: ${response.status}`,
+        ),
       );
     }
 
@@ -226,10 +426,14 @@ export async function trackShipment(
       },
     });
 
-    const payload = (await response.json()) as any;
+    const { payload, rawText } = await readResponseBody(response);
     if (!response.ok) {
       throw new Error(
-        payload?.message || `ShipStation error: ${response.status}`,
+        extractShipStationErrorMessage(
+          payload,
+          rawText,
+          `ShipStation error: ${response.status}`,
+        ),
       );
     }
 
