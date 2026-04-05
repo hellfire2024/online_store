@@ -279,6 +279,39 @@ const CheckoutPage: React.FC = () => {
     };
   }, [cartItems, siteSettings]);
 
+  const checkoutRateCarriers = useMemo(() => {
+    const carriers = (siteSettings as any)?.shippingCarriers || {};
+    const preferredCarrier = String(
+      (siteSettings as any)?.defaultShippingCarrier ||
+        (siteSettings as any)?.shippingProvider ||
+        "",
+    )
+      .trim()
+      .toLowerCase();
+
+    const allowedCarriers = ["easypost", "shippo", "shipstation"] as const;
+    const isCarrierConfigured = (
+      carrier: "easypost" | "shippo" | "shipstation",
+    ) =>
+      Boolean(carriers?.[carrier]?.enabled) &&
+      Boolean(String(carriers?.[carrier]?.apiKey || "").trim());
+
+    if (
+      (allowedCarriers as readonly string[]).includes(preferredCarrier) &&
+      isCarrierConfigured(
+        preferredCarrier as "easypost" | "shippo" | "shipstation",
+      )
+    ) {
+      return [preferredCarrier as "easypost" | "shippo" | "shipstation"];
+    }
+
+    const fallbackCarriers = allowedCarriers.filter((carrier) =>
+      isCarrierConfigured(carrier),
+    );
+
+    return fallbackCarriers.length ? fallbackCarriers : undefined;
+  }, [siteSettings]);
+
   const sanitizeTaxResult = (
     result: any,
     fallbackSubtotal: number,
@@ -1503,6 +1536,7 @@ const CheckoutPage: React.FC = () => {
                           width: parcelFromCart.width,
                           height: parcelFromCart.height,
                         },
+                        carriers: checkoutRateCarriers,
                       }}
                       selectedRate={selectedShippingRate}
                       onSelectRate={setSelectedShippingRate}
