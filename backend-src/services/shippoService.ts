@@ -160,29 +160,60 @@ export async function getShippingRates(
     console.log(
       `[Shippo] Shipment created: ${shipment.object_id}, rates: ${Array.isArray(shipment.rates) ? shipment.rates.length : 0}`,
     );
-    const rates: ShippingRate[] = [];
-
-    // Extract rates from shipment
-    if (shipment.rates && Array.isArray(shipment.rates)) {
-      shipment.rates.forEach((rate: any) => {
-        const carrier = rate.provider?.toLowerCase() || "unknown";
-        const service =
-          rate.servicelevel?.name || rate.servicelevel?.token || "Standard";
-        const carrierServiceMap = CARRIER_SERVICE_MAP[carrier] || {};
-        const serviceName =
-          carrierServiceMap[service] || `${carrier} ${service}`;
-
-        rates.push({
-          id: rate.object_id,
-          shipmentId: shipment.object_id,
-          carrier: "shippo",
-          service: service,
-          serviceName: serviceName,
-          rate: Math.round(parseFloat(rate.amount) * 100), // Convert to cents
-          estimatedDays: rate.estimated_days || 0,
-          estimatedDelivery: rate.estimated_delivery_date,
+    const extractRates = (src: any): ShippingRate[] => {
+      const out: ShippingRate[] = [];
+      if (src.rates && Array.isArray(src.rates)) {
+        src.rates.forEach((rate: any) => {
+          const c = rate.provider?.toLowerCase() || "unknown";
+          const service =
+            rate.servicelevel?.name || rate.servicelevel?.token || "Standard";
+          const serviceName =
+            (CARRIER_SERVICE_MAP[c] || {})[service] || `${c} ${service}`;
+          out.push({
+            id: rate.object_id,
+            shipmentId: src.object_id,
+            carrier: "shippo",
+            service,
+            serviceName,
+            rate: Math.round(parseFloat(rate.amount) * 100),
+            estimatedDays: rate.estimated_days || 0,
+            estimatedDelivery: rate.estimated_delivery_date,
+          });
         });
+      }
+      return out;
+    };
+
+    let rates = extractRates(shipment);
+
+    // If the carrier-account filter returned 0 rates (e.g. all connected
+    // accounts are international but the route is domestic), retry without
+    // the restriction so Shippo can quote via its default carriers (USPS etc).
+    if (rates.length === 0 && activeCarrierAccounts.length > 0) {
+      console.log(
+        "[Shippo] 0 rates with carrier account filter; retrying without restriction",
+      );
+      const retryData: any = {
+        address_from: formatAddressForShippo(request.fromAddress),
+        address_to: formatAddressForShippo(request.toAddress),
+        parcels: [formatParcelForShippo(request.parcel)],
+        async: false,
+      };
+      const retryResponse = await fetch(`${SHIPPO_API_BASE}/shipments`, {
+        method: "POST",
+        headers: {
+          Authorization: `ShippoToken ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(retryData),
       });
+      if (retryResponse.ok) {
+        const retryShipment = (await retryResponse.json()) as any;
+        console.log(
+          `[Shippo] Retry shipment: ${retryShipment.object_id}, rates: ${Array.isArray(retryShipment.rates) ? retryShipment.rates.length : 0}`,
+        );
+        rates = extractRates(retryShipment);
+      }
     }
 
     return rates;
