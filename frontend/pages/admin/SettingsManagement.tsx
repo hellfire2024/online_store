@@ -360,42 +360,66 @@ const DraggableItem: React.FC<{
   isOverlay?: boolean;
   onDelete?: (itemId: string) => void;
   showDragHandle?: boolean;
+  subtitle?: string;
+  action?: React.ReactNode;
   dragHandleProps?: {
     attributes: any;
     listeners: any;
   };
-}> = ({ item, isOverlay, onDelete, showDragHandle, dragHandleProps }) => {
+}> = ({
+  item,
+  isOverlay,
+  onDelete,
+  showDragHandle,
+  subtitle,
+  action,
+  dragHandleProps,
+}) => {
   return (
     <div
-      className={`p-2 bg-slate-600 rounded-md text-white border border-slate-500 ${isOverlay ? "shadow-lg" : ""} flex justify-between items-center gap-2 group`}
+      className={`rounded-xl border px-3 py-3 text-white ${
+        isOverlay
+          ? "bg-slate-700/95 border-sky-500/40 shadow-2xl"
+          : "bg-slate-700/70 border-slate-600 hover:border-slate-500"
+      } flex items-start justify-between gap-3 transition-colors group`}
     >
-      <div className="flex items-center gap-2 min-w-0">
+      <div className="flex items-start gap-3 min-w-0 flex-1">
         {showDragHandle && dragHandleProps && (
           <button
             type="button"
             {...dragHandleProps.attributes}
             {...dragHandleProps.listeners}
-            className="cursor-grab active:cursor-grabbing text-gray-300 hover:text-white shrink-0"
+            className="mt-0.5 cursor-grab active:cursor-grabbing text-gray-300 hover:text-white shrink-0"
             title="Drag to reorder"
           >
             ⋮⋮
           </button>
         )}
-        <span className="truncate">{item.title}</span>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold text-white">
+            {item.title}
+          </p>
+          {subtitle && (
+            <p className="mt-1 text-xs leading-5 text-slate-300">{subtitle}</p>
+          )}
+        </div>
       </div>
-      {onDelete && !isOverlay && (
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete(item.id);
-          }}
-          className="text-gray-400 hover:text-red-500 transition-colors shrink-0 ml-2"
-          title="Delete item"
-        >
-          <TrashIcon className="w-4 h-4" />
-        </button>
-      )}
+      <div className="flex shrink-0 items-center gap-2">
+        {action}
+        {onDelete && !isOverlay && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(item.id);
+            }}
+            className="text-gray-400 hover:text-red-500 transition-colors shrink-0"
+            title="Delete item"
+          >
+            <TrashIcon className="w-4 h-4" />
+          </button>
+        )}
+      </div>
     </div>
   );
 };
@@ -404,7 +428,9 @@ const DraggableItem: React.FC<{
 const SortableItem: React.FC<{
   item: FooterItem;
   onDelete?: (itemId: string) => void;
-}> = ({ item, onDelete }) => {
+  subtitle?: string;
+  action?: React.ReactNode;
+}> = ({ item, onDelete, subtitle, action }) => {
   const {
     attributes,
     listeners,
@@ -426,6 +452,8 @@ const SortableItem: React.FC<{
         item={item}
         onDelete={onDelete}
         showDragHandle
+        subtitle={subtitle}
+        action={action}
         dragHandleProps={{ attributes, listeners }}
       />
     </div>
@@ -873,6 +901,16 @@ const SettingsManagement: React.FC = () => {
 
     return availableFooterItems.filter((item) => !assignedItemIds.has(item.id));
   }, [availableFooterItems, settings.footerConfig?.columns]);
+
+  const getFooterItemDescription = (item: FooterItem) => {
+    if (item.type === "contactInfo") {
+      return "Business email, phone, and mailing address block.";
+    }
+    if (item.type === "socialLinks") {
+      return "Social profiles pulled from the links configured above.";
+    }
+    return "Navigation links sourced from the selected menu.";
+  };
 
   // Sensors for drag-and-drop (form fields)
   const formFieldSensors = useSensors(
@@ -1753,41 +1791,50 @@ const SettingsManagement: React.FC = () => {
                 onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd}
               >
-                <div className="grid grid-cols-1 xl:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 xl:grid-cols-[360px_minmax(0,1fr)] gap-6">
                   {/* Available Items */}
-                  <div className="xl:col-span-1">
-                    <h4 className="text-md font-semibold text-white mb-2">
-                      Available Items
-                    </h4>
-                    <div className="space-y-2 p-4 bg-slate-900 rounded-lg border border-slate-700">
+                  <div className="rounded-xl border border-slate-700 bg-slate-900/70 p-4">
+                    <div className="mb-4 flex items-start justify-between gap-3">
+                      <div>
+                        <h4 className="text-md font-semibold text-white">
+                          Component Library
+                        </h4>
+                        <p className="mt-1 text-xs text-gray-400">
+                          Choose which content blocks appear in the footer.
+                        </p>
+                      </div>
+                      <span className="rounded-full border border-slate-700 bg-slate-800 px-2.5 py-1 text-[11px] font-medium text-slate-300">
+                        {unassignedFooterItems.length} available
+                      </span>
+                    </div>
+                    <div className="space-y-3">
                       <SortableContext
                         items={unassignedFooterItems.map((i) => i.id)}
                         strategy={verticalListSortingStrategy}
                       >
                         {unassignedFooterItems.length === 0 ? (
-                          <p className="text-sm text-gray-400">
+                          <p className="rounded-xl border border-dashed border-slate-700 bg-slate-800/60 p-4 text-sm text-gray-400">
                             All available items are already placed.
                           </p>
                         ) : (
                           unassignedFooterItems.map((item) => (
-                            <div
+                            <SortableItem
                               key={item.id}
-                              className="flex items-center gap-2"
-                            >
-                              <div className="flex-1">
-                                <SortableItem item={item} />
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  handleQuickAddFooterItem(item.id)
-                                }
-                                className="px-2 py-1 text-xs rounded bg-slate-700 text-white hover:bg-slate-600"
-                                title="Add to first column"
-                              >
-                                Add
-                              </button>
-                            </div>
+                              item={item}
+                              subtitle={getFooterItemDescription(item)}
+                              action={
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    handleQuickAddFooterItem(item.id)
+                                  }
+                                  className="rounded-lg bg-sky-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-sky-400"
+                                  title="Add to first column"
+                                >
+                                  Add
+                                </button>
+                              }
+                            />
                           ))
                         )}
                       </SortableContext>
@@ -1795,24 +1842,36 @@ const SettingsManagement: React.FC = () => {
                   </div>
 
                   {/* Footer Columns */}
-                  <div className="xl:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {settings.footerConfig?.columns.map((column) => (
-                      <DroppableColumn key={column.id} column={column}>
-                        {column.items.length === 0 ? (
-                          <div className="text-sm text-gray-500 border border-dashed border-slate-600 rounded-md p-3">
-                            Drop items here
-                          </div>
-                        ) : (
-                          column.items.map((item) => (
-                            <SortableItem
-                              key={item.id}
-                              item={item}
-                              onDelete={handleDeleteFooterItem}
-                            />
-                          ))
-                        )}
-                      </DroppableColumn>
-                    ))}
+                  <div>
+                    <div className="mb-4">
+                      <h4 className="text-md font-semibold text-white">
+                        Footer Preview
+                      </h4>
+                      <p className="mt-1 text-xs text-gray-400">
+                        Arrange the columns exactly how the public footer should
+                        render.
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {settings.footerConfig?.columns.map((column) => (
+                        <DroppableColumn key={column.id} column={column}>
+                          {column.items.length === 0 ? (
+                            <div className="rounded-xl border border-dashed border-slate-600 bg-slate-800/40 p-4 text-sm text-gray-500">
+                              Drop items here
+                            </div>
+                          ) : (
+                            column.items.map((item) => (
+                              <SortableItem
+                                key={item.id}
+                                item={item}
+                                subtitle={getFooterItemDescription(item)}
+                                onDelete={handleDeleteFooterItem}
+                              />
+                            ))
+                          )}
+                        </DroppableColumn>
+                      ))}
+                    </div>
                   </div>
                 </div>
                 <DragOverlay>
