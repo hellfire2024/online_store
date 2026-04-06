@@ -240,19 +240,39 @@ const ShippingTestButton = ({ carrier, disabled, hasUnsaved, onResult }) => {
         }),
       });
       const data = await res.json();
-      if (res.ok && data.rates && data.rates.length > 0) {
+      const carrierRates = Array.isArray(data?.rates)
+        ? data.rates.filter((rate) => rate?.carrier === carrier)
+        : [];
+      const carrierError = data?.errors?.[carrier];
+
+      if (res.ok && !carrierError && carrierRates.length > 0) {
         setResult({
           success: true,
-          message: `Success: ${data.rates.length} rates returned.`,
+          message: `Success: ${carrierRates.length} rates returned.`,
         });
         addToast(`Shipping test for ${carrier} succeeded!`, "success");
+        onResult && onResult(true, data);
+      } else if (res.ok && !carrierError) {
+        // A provider can be reachable but return zero rates for the test address/package.
+        setResult({
+          success: true,
+          message:
+            "Connection successful, but no rates were returned for this test shipment.",
+        });
+        addToast(
+          `Shipping test for ${carrier} connected successfully (no rates returned).`,
+          "success",
+        );
         onResult && onResult(true, data);
       } else {
         setResult({
           success: false,
-          message: data.error || "No rates returned.",
+          message: carrierError || data.error || "No rates returned.",
         });
-        addToast(`Shipping test for ${carrier} failed.`, "error");
+        addToast(
+          carrierError || `Shipping test for ${carrier} failed.`,
+          "error",
+        );
         onResult && onResult(false, data);
       }
     } catch (err) {
