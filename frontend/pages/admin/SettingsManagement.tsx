@@ -986,7 +986,10 @@ const SettingsManagement: React.FC = () => {
     setSettings((prev) => {
       if (!prev || !prev.footerConfig) return prev;
 
-      const newColumns = [...prev.footerConfig.columns];
+      const newColumns = prev.footerConfig.columns.map((column) => ({
+        ...column,
+        items: [...column.items],
+      }));
 
       const activeContainer =
         findContainer(activeId, newColumns) || "available";
@@ -1026,8 +1029,11 @@ const SettingsManagement: React.FC = () => {
         const column = newColumns.find((c) => c.id === activeContainer);
         if (column) {
           const oldIndex = column.items.findIndex((i) => i.id === activeId);
-          const newIndex = column.items.findIndex((i) => i.id === overId);
-          if (oldIndex !== -1 && newIndex !== -1) {
+          const newIndex =
+            overId === activeContainer
+              ? column.items.length - 1
+              : column.items.findIndex((i) => i.id === overId);
+          if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
             column.items = arrayMove(column.items, oldIndex, newIndex);
           }
         }
@@ -1053,7 +1059,7 @@ const SettingsManagement: React.FC = () => {
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8,
+        distance: 4,
       },
     }),
     useSensor(KeyboardSensor, {
