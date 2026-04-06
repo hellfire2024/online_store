@@ -55,13 +55,20 @@ const ShippingRateSelector: React.FC<ShippingRateSelectorProps> = ({
   useEffect(() => {
     const zip = rateRequest.toAddress?.zip || "";
     const state = rateRequest.toAddress?.state || "";
+    const city = rateRequest.toAddress?.city || "";
     const street1 = rateRequest.toAddress?.street1 || "";
+    const fromStreet1 = rateRequest.fromAddress?.street1 || "";
+    const fromCity = rateRequest.fromAddress?.city || "";
+    const fromState = rateRequest.fromAddress?.state || "";
     const fromZip = rateRequest.fromAddress?.zip || "";
+    const carriers = Array.isArray(rateRequest.carriers)
+      ? [...rateRequest.carriers].sort().join(",")
+      : "";
 
     // Need at least a complete to-address zip AND a configured from-address zip
     if (!zip || !state || !street1 || !fromZip) return;
 
-    const fetchKey = `${zip}|${state}|${fromZip}`;
+    const fetchKey = `${street1}|${city}|${state}|${zip}|${fromStreet1}|${fromCity}|${fromState}|${fromZip}|${carriers}`;
     if (fetchKey === lastFetchKey.current) return;
     lastFetchKey.current = fetchKey;
 
@@ -111,11 +118,14 @@ const ShippingRateSelector: React.FC<ShippingRateSelectorProps> = ({
         setRates(fetchedRates);
 
         // Auto-select cheapest when none selected or selected rate is no longer valid
-        const stillValid =
-          !!selectedRate &&
-          fetchedRates.some((rate) => rate.id === selectedRate.id);
-        if (fetchedRates.length > 0 && !stillValid) {
+        const selectedRateFromLatest = selectedRate
+          ? fetchedRates.find((rate) => rate.id === selectedRate.id) || null
+          : null;
+
+        if (fetchedRates.length > 0 && !selectedRateFromLatest) {
           onSelectRate(fetchedRates[0]);
+        } else if (selectedRateFromLatest) {
+          onSelectRate(selectedRateFromLatest);
         }
       } catch (err) {
         setError("Could not load shipping rates. Flat rate will apply.");
@@ -130,8 +140,15 @@ const ShippingRateSelector: React.FC<ShippingRateSelectorProps> = ({
   }, [
     rateRequest.toAddress?.zip,
     rateRequest.toAddress?.state,
+    rateRequest.toAddress?.city,
     rateRequest.toAddress?.street1,
+    rateRequest.fromAddress?.street1,
+    rateRequest.fromAddress?.city,
+    rateRequest.fromAddress?.state,
     rateRequest.fromAddress?.zip,
+    Array.isArray(rateRequest.carriers)
+      ? [...rateRequest.carriers].sort().join(",")
+      : "",
   ]);
 
   if (isLoading) {
