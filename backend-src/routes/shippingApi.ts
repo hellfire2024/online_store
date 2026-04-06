@@ -371,9 +371,17 @@ router.post("/rates", async (req: Request, res: Response) => {
       normalizedRateRequest?.fromAddress?.street1,
     );
     const toIsPOBox = isPOBoxAddress(normalizedRateRequest?.toAddress?.street1);
-    if (fromIsPOBox || toIsPOBox) {
+    if (fromIsPOBox && toIsPOBox) {
       warnings.push(
-        "PO Box addresses can limit available services to USPS only. Use a physical street address to get full UPS/FedEx/DHL rates.",
+        "Both sender and destination addresses are PO Boxes. This can limit available services to USPS only. Use physical street addresses to get full UPS/FedEx/DHL rates.",
+      );
+    } else if (fromIsPOBox) {
+      warnings.push(
+        "Sender address is a PO Box. This can limit available services to USPS only. Update your store sender address to a physical street address for full UPS/FedEx/DHL rates.",
+      );
+    } else if (toIsPOBox) {
+      warnings.push(
+        "Destination address is a PO Box. This can limit available services to USPS only. Use a physical street address to get full UPS/FedEx/DHL rates.",
       );
     }
 
