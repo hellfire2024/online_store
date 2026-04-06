@@ -21,11 +21,17 @@ import AuthorizeNetPaymentSection, {
   AuthorizeNetPaymentSectionHandle,
 } from "../components/AuthorizeNetPaymentSection";
 import ShippingRateSelector from "../components/ShippingRateSelector";
-import { ShippingRate } from "../types";
+import { CustomerAddress, ShippingRate } from "../types";
 
 const CheckoutPage: React.FC = () => {
   const { cartItems, clearCart, itemCount } = useCart();
-  const { customer, addAddress } = useCustomerAuth();
+  const {
+    customer,
+    addAddress,
+    updateAddress,
+    deleteAddress,
+    setDefaultAddress,
+  } = useCustomerAuth();
   const { siteSettings } = useSiteSettings();
   const { addToast } = useToast();
   const navigate = useNavigate();
@@ -37,6 +43,10 @@ const CheckoutPage: React.FC = () => {
   );
   const [selectedAddressId, setSelectedAddressId] = useState<string>("");
   const [showAddAddressModal, setShowAddAddressModal] = useState(false);
+  const [addressModalMode, setAddressModalMode] = useState<"add" | "edit">(
+    "add",
+  );
+  const [editingAddressId, setEditingAddressId] = useState<string | null>(null);
   const [isSavingAddress, setIsSavingAddress] = useState(false);
   const [formData, setFormData] = useState({
     firstName: "",
@@ -312,6 +322,59 @@ const CheckoutPage: React.FC = () => {
     return fallbackCarriers.length ? fallbackCarriers : undefined;
   }, [siteSettings]);
 
+  const shippingAddresses = useMemo(
+    () =>
+      (customer?.addresses || []).filter((addr) => addr.type === "shipping"),
+    [customer?.addresses],
+  );
+
+  const selectedShippingAddress = useMemo(
+    () =>
+      shippingAddresses.find((addr) => addr.id === selectedAddressId) || null,
+    [shippingAddresses, selectedAddressId],
+  );
+
+  const resetAddressForm = useCallback(() => {
+    setNewAddressForm({
+      firstName: "",
+      lastName: "",
+      streetAddress: "",
+      city: "",
+      state: "",
+      zipCode: "",
+      phone: "",
+    });
+  }, []);
+
+  const openAddAddressModal = useCallback(() => {
+    setAddressModalMode("add");
+    setEditingAddressId(null);
+    setShowAddAddressModal(true);
+    resetAddressForm();
+  }, [resetAddressForm]);
+
+  const openEditAddressModal = useCallback((address: CustomerAddress) => {
+    setAddressModalMode("edit");
+    setEditingAddressId(address.id);
+    setNewAddressForm({
+      firstName: address.firstName || "",
+      lastName: address.lastName || "",
+      streetAddress: address.street1 || "",
+      city: address.city || "",
+      state: normalizeStateCode(address.state),
+      zipCode: address.zip || "",
+      phone: address.phone || "",
+    });
+    setShowAddAddressModal(true);
+  }, []);
+
+  const closeAddressModal = useCallback(() => {
+    setShowAddAddressModal(false);
+    setAddressModalMode("add");
+    setEditingAddressId(null);
+    resetAddressForm();
+  }, [resetAddressForm]);
+
   const sanitizeTaxResult = (
     result: any,
     fallbackSubtotal: number,
@@ -505,7 +568,7 @@ const CheckoutPage: React.FC = () => {
   // Handle address selection
   const handleAddressSelect = (addressId: string) => {
     if (addressId === "new" || addressId === "") {
-      setShowAddAddressModal(true);
+      openAddAddressModal();
       setSelectedAddressId("");
       setFormData({
         firstName: customer?.firstName || "",
@@ -568,11 +631,12 @@ const CheckoutPage: React.FC = () => {
 
     setIsSavingAddress(true);
     try {
-      const result = await addAddress({
-        type: "shipping",
+      const normalizedAddress = {
+        type: "shipping" as const,
         firstName: newAddressForm.firstName,
         lastName: newAddressForm.lastName,
-        fullName: `${newAddressForm.firstName} ${newAddressForm.lastName}`,
+        fullName:
+          `${newAddressForm.firstName} ${newAddressForm.lastName}`.trim(),
         street1: newAddressForm.streetAddress,
         street2: "",
         city: newAddressForm.city,
@@ -581,30 +645,89 @@ const CheckoutPage: React.FC = () => {
         country: "US",
         phone: newAddressForm.phone,
         isDefault: false,
-      });
+      };
+
+      const result =
+        addressModalMode === "edit" && editingAddressId
+          ? await updateAddress({
+              ...normalizedAddress,
+              id: editingAddressId,
+            })
+          : await addAddress(normalizedAddress);
 
       if (result.success) {
-        addToast("Address saved successfully", "success");
-        setShowAddAddressModal(false);
-        setNewAddressForm({
-          firstName: "",
-          lastName: "",
-          streetAddress: "",
-          city: "",
-          state: "",
-          zipCode: "",
-          phone: "",
-        });
-        // The customer context will be updated automatically, so the dropdown will refresh
+        addToast(
+          addressModalMode === "edit"
+            ? "Address updated successfully"
+            : "Address saved successfully",
+          "success",
+        );
+        closeAddressModal();
       } else {
-        addToast(result.error || "Failed to save address", "error");
+        addToast(
+          result.error ||
+            (addressModalMode === "edit"
+              ? "Failed to update address"
+              : "Failed to save address"),
+          "error",
+        );
       }
     } catch (error: any) {
-      addToast(error.message || "Failed to save address", "error");
+      addToast(
+        error.message ||
+          (addressModalMode === "edit"
+            ? "Failed to update address"
+            : "Failed to save address"),
+        "error",
+      );
     } finally {
       setIsSavingAddress(false);
     }
   };
+
+  const handleSetDefaultShippingAddress = useCallback(
+    async (addressId: string) => {
+      const result = await setDefaultAddress(addressId, "shipping");
+      if (result.success) {
+        addToast("Default shipping address updated", "success");
+      } else {
+        addToast(result.error || "Failed to set default address", "error");
+      }
+    },
+    [addToast, setDefaultAddress],
+  );
+
+  const handleDeleteShippingAddress = useCallback(
+    async (address: CustomerAddress) => {
+      if (
+        !window.confirm(
+          `Delete address for ${address.fullName || "this customer"}? This cannot be undone.`,
+        )
+      ) {
+        return;
+      }
+
+      const result = await deleteAddress(address.id);
+      if (!result.success) {
+        addToast(result.error || "Failed to delete address", "error");
+        return;
+      }
+
+      if (selectedAddressId === address.id) {
+        setSelectedAddressId("");
+        setFormData((prev) => ({
+          ...prev,
+          address: "",
+          city: "",
+        }));
+        setShippingState("");
+        setShippingZip("");
+      }
+
+      addToast("Address deleted", "success");
+    },
+    [addToast, deleteAddress, selectedAddressId],
+  );
 
   // Redirect to cart if empty (must be in effect to avoid setState during render)
   // But only if we're still on the checkout page
@@ -1370,34 +1493,126 @@ const CheckoutPage: React.FC = () => {
               </h2>
 
               {/* Address Selection for Logged-in Users */}
-              {customer &&
-                customer.addresses &&
-                customer.addresses.length > 0 && (
-                  <div className="mb-6">
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Select Shipping Address
-                    </label>
-                    <select
-                      value={selectedAddressId}
-                      onChange={(e) => handleAddressSelect(e.target.value)}
-                      className={inputClasses}
+              {customer && shippingAddresses.length > 0 && (
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Select Shipping Address
+                  </label>
+                  <select
+                    value={selectedAddressId}
+                    onChange={(e) => handleAddressSelect(e.target.value)}
+                    className={inputClasses}
+                  >
+                    <option value="">Choose an address...</option>
+                    {shippingAddresses.map((addr) => (
+                      <option key={addr.id} value={addr.id}>
+                        {addr.fullName} - {addr.street1}, {addr.city},{" "}
+                        {addr.state} {addr.zip}
+                        {addr.isDefault ? " (Default)" : ""}
+                      </option>
+                    ))}
+                    <option value="new">+ Add New Address</option>
+                  </select>
+
+                  {selectedShippingAddress && (
+                    <div className="mt-3 rounded-lg border border-slate-600 bg-slate-900/40 p-3 text-sm text-gray-200">
+                      <p className="font-medium text-white">
+                        {selectedShippingAddress.fullName}
+                        {selectedShippingAddress.isDefault
+                          ? " (Default Shipping)"
+                          : ""}
+                      </p>
+                      <p>{selectedShippingAddress.street1}</p>
+                      {selectedShippingAddress.street2 && (
+                        <p>{selectedShippingAddress.street2}</p>
+                      )}
+                      <p>
+                        {selectedShippingAddress.city},{" "}
+                        {selectedShippingAddress.state}{" "}
+                        {selectedShippingAddress.zip}
+                      </p>
+                      <p>{selectedShippingAddress.country || "US"}</p>
+                      {selectedShippingAddress.phone && (
+                        <p>Phone: {selectedShippingAddress.phone}</p>
+                      )}
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            openEditAddressModal(selectedShippingAddress)
+                          }
+                          className="rounded bg-slate-700 px-3 py-1 text-xs text-white hover:bg-slate-600"
+                        >
+                          Edit
+                        </button>
+                        {!selectedShippingAddress.isDefault && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleSetDefaultShippingAddress(
+                                selectedShippingAddress.id,
+                              )
+                            }
+                            className="rounded bg-slate-700 px-3 py-1 text-xs text-white hover:bg-slate-600"
+                          >
+                            Set Default
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleDeleteShippingAddress(selectedShippingAddress)
+                          }
+                          className="rounded bg-rose-700 px-3 py-1 text-xs text-white hover:bg-rose-600"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="mt-3">
+                    <button
+                      type="button"
+                      onClick={openAddAddressModal}
+                      className="text-sm text-sky-400 hover:text-sky-300 underline"
                     >
-                      <option value="">Choose an address...</option>
-                      {customer.addresses
-                        .filter((addr) => addr.type === "shipping")
-                        .map((addr) => (
-                          <option key={addr.id} value={addr.id}>
-                            {addr.fullName} -{" "}
-                            {addr.street1 || (addr as any).streetAddress},{" "}
-                            {addr.city}, {addr.state}{" "}
-                            {addr.zip || (addr as any).zipCode}
-                            {addr.isDefault ? " (Default)" : ""}
-                          </option>
-                        ))}
-                      <option value="new">+ Add New Address</option>
-                    </select>
+                      + Add another shipping address
+                    </button>
                   </div>
-                )}
+
+                  {shippingAddresses.length > 1 && (
+                    <div className="mt-3 rounded-lg border border-slate-700 bg-slate-900/30 p-3">
+                      <p className="text-xs uppercase tracking-wide text-gray-400 mb-2">
+                        Saved addresses
+                      </p>
+                      <div className="space-y-2">
+                        {shippingAddresses.map((addr) => (
+                          <button
+                            key={`saved-${addr.id}`}
+                            type="button"
+                            onClick={() => handleAddressSelect(addr.id)}
+                            className={`w-full rounded border p-2 text-left transition-colors ${
+                              selectedAddressId === addr.id
+                                ? "border-sky-500 bg-sky-500/10"
+                                : "border-slate-700 bg-slate-800/50 hover:border-slate-500"
+                            }`}
+                          >
+                            <p className="text-sm text-white font-medium">
+                              {addr.fullName}
+                              {addr.isDefault ? " (Default)" : ""}
+                            </p>
+                            <p className="text-xs text-gray-300">
+                              {addr.street1}, {addr.city}, {addr.state}{" "}
+                              {addr.zip}
+                            </p>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1771,12 +1986,12 @@ const CheckoutPage: React.FC = () => {
         </div>
       )}
 
-      {/* Add New Address Modal */}
+      {/* Add / Edit Address Modal */}
       {showAddAddressModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-slate-800 rounded-lg shadow-2xl border border-slate-700 max-w-md w-full p-6">
             <h3 className="text-2xl font-semibold text-white mb-6">
-              Add New Address
+              {addressModalMode === "edit" ? "Edit Address" : "Add New Address"}
             </h3>
 
             <div className="space-y-4">
@@ -1882,7 +2097,7 @@ const CheckoutPage: React.FC = () => {
             <div className="flex gap-3 mt-6">
               <button
                 type="button"
-                onClick={() => setShowAddAddressModal(false)}
+                onClick={closeAddressModal}
                 disabled={isSavingAddress}
                 className="flex-1 bg-slate-700 text-white font-medium py-2 rounded-lg hover:bg-slate-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -1894,7 +2109,13 @@ const CheckoutPage: React.FC = () => {
                 disabled={isSavingAddress}
                 className="flex-1 bg-sky-500 text-white font-medium py-2 rounded-lg hover:bg-sky-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isSavingAddress ? "Saving..." : "Save Address"}
+                {isSavingAddress
+                  ? addressModalMode === "edit"
+                    ? "Saving..."
+                    : "Saving..."
+                  : addressModalMode === "edit"
+                    ? "Update Address"
+                    : "Save Address"}
               </button>
             </div>
           </div>
