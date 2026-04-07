@@ -50,6 +50,9 @@ const SquarePaymentSection = forwardRef<
   const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
+    setIsReady(false);
+    setLoadError(null);
+
     if (!config.applicationId || !config.locationId) {
       setLoadError(
         "Square Application ID and Location ID are not configured in Settings → Payment.",
@@ -57,28 +60,57 @@ const SquarePaymentSection = forwardRef<
       return;
     }
 
-    const scriptUrl = config.sandbox
-      ? "https://sandbox.web.squarecdn.com/v1/square.js"
-      : "https://web.squarecdn.com/v1/square.js";
+    const sandboxScriptUrl = "https://sandbox.web.squarecdn.com/v1/square.js";
+    const productionScriptUrl = "https://web.squarecdn.com/v1/square.js";
+    const scriptUrl = config.sandbox ? sandboxScriptUrl : productionScriptUrl;
+    const oppositeUrl = config.sandbox ? productionScriptUrl : sandboxScriptUrl;
 
-    // Avoid loading the script twice
-    if (!document.querySelector(`script[src="${scriptUrl}"]`)) {
+    let cancelled = false;
+
+    // Remove the script for the opposite environment to force a clean re-init
+    // when switching between sandbox and production.
+    const oppositeScript = document.querySelector(
+      `script[src="${oppositeUrl}"]`,
+    );
+    if (oppositeScript) {
+      oppositeScript.remove();
+      // Clear the global so initSquare always re-initialises from the right SDK.
+      delete (window as any).Square;
+    }
+
+    // Destroy any existing card to release the previous payments instance.
+    if (cardRef.current) {
+      cardRef.current.destroy?.().catch(() => {});
+      cardRef.current = null;
+    }
+    paymentsRef.current = null;
+
+    const existingScript = document.querySelector(
+      `script[src="${scriptUrl}"]`,
+    );
+
+    const loadAndInit = () => {
+      if (window.Square) {
+        initSquare();
+      } else {
+        const interval = setInterval(() => {
+          if (window.Square) {
+            clearInterval(interval);
+            if (!cancelled) initSquare();
+          }
+        }, 100);
+      }
+    };
+
+    if (!existingScript) {
       const script = document.createElement("script");
       script.src = scriptUrl;
       script.async = true;
       document.body.appendChild(script);
-      script.onload = () => initSquare();
-      script.onerror = () => setLoadError("Failed to load Square payment SDK.");
-    } else if (window.Square) {
-      initSquare();
+      script.onload = () => { if (!cancelled) initSquare(); };
+      script.onerror = () => { if (!cancelled) setLoadError("Failed to load Square payment SDK."); };
     } else {
-      // Wait for the existing script to finish loading
-      const interval = setInterval(() => {
-        if (window.Square) {
-          clearInterval(interval);
-          initSquare();
-        }
-      }, 100);
+      loadAndInit();
     }
 
     async function initSquare() {
@@ -93,15 +125,18 @@ const SquarePaymentSection = forwardRef<
         if (cardContainerRef.current) {
           await card.attach(cardContainerRef.current);
         }
-        setIsReady(true);
+        if (!cancelled) setIsReady(true);
       } catch (err: any) {
-        setLoadError(err?.message || "Failed to initialise Square card form.");
+        if (!cancelled)
+          setLoadError(err?.message || "Failed to initialise Square card form.");
       }
     }
 
     return () => {
-      // Detach card on unmount to avoid memory leaks
+      cancelled = true;
       cardRef.current?.destroy?.().catch(() => {});
+      cardRef.current = null;
+      paymentsRef.current = null;
     };
   }, [config.applicationId, config.locationId, config.sandbox]);
 

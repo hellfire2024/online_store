@@ -1689,6 +1689,10 @@ router.post(
         ? "https://connect.squareupsandbox.com"
         : "https://connect.squareup.com";
 
+      console.log(
+        `[Square] Charging via ${sandbox ? "SANDBOX" : "PRODUCTION"} API (${baseUrl}), locationId=${locationId}`,
+      );
+
       const idempotencyKey = uuidv4();
       const response = await axios.post(
         `${baseUrl}/v2/payments`,
@@ -1720,16 +1724,26 @@ router.post(
         });
       }
 
-      return res.json({ paymentId: payment.id, status: payment.status });
+      console.log(
+        `[Square] Payment ${payment.id} COMPLETED in ${sandbox ? "sandbox" : "production"} environment.`,
+      );
+      return res.json({
+        paymentId: payment.id,
+        status: payment.status,
+        sandbox,
+      });
     } catch (error: any) {
+      const squareData = error?.response?.data;
       console.error(
-        "Square payment error:",
-        error?.response?.data || error?.message,
+        "[Square] Payment error:",
+        JSON.stringify(squareData || error?.message),
       );
       const squareError =
-        error?.response?.data?.errors?.[0]?.detail || error?.message;
+        squareData?.errors?.[0]?.detail ||
+        squareData?.errors?.[0]?.code ||
+        error?.message;
       return res
-        .status(500)
+        .status(error?.response?.status || 500)
         .json({ error: squareError || "Failed to create Square payment" });
     }
   },

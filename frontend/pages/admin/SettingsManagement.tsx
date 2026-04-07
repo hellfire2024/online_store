@@ -2206,9 +2206,18 @@ const SettingsManagement: React.FC = () => {
                   <input
                     type="checkbox"
                     id="square-sandbox"
-                    checked={Boolean(
-                      (settings as any)?.paymentConfig?.squareSandbox,
-                    )}
+                    checked={(() => {
+                      const explicit = (settings as any)?.paymentConfig
+                        ?.squareSandbox;
+                      if (typeof explicit === "boolean") return explicit;
+                      // Auto-detect from application ID prefix when not explicitly set
+                      return String(
+                        (settings.paymentApiKeys as any)?.squareApplicationId ||
+                          "",
+                      )
+                        .toLowerCase()
+                        .startsWith("sandbox-");
+                    })()}
                     onChange={(e) =>
                       setSettings((prev) => ({
                         ...(prev as any),
