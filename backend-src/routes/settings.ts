@@ -70,13 +70,14 @@ router.post("/square-config-test", async (_req: Request, res: Response) => {
         .status(400)
         .json({ success: false, error: "Square Access Token is missing." });
     }
-    // Try to fetch merchant info from Square
-    const resp = await fetch(
-      "https://connect.squareupsandbox.com/v2/merchants/me",
-      {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      },
-    );
+    // Try to fetch merchant info from Square using configured or inferred environment.
+    const sandbox = resolveSquareSandbox(settings);
+    const baseUrl = sandbox
+      ? "https://connect.squareupsandbox.com"
+      : "https://connect.squareup.com";
+    const resp = await fetch(`${baseUrl}/v2/merchants/me`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
     const data = (await resp.json()) as any;
     if (resp.ok && data.merchant) {
       return res.json({
@@ -161,6 +162,26 @@ router.post(
 
 const hasText = (value: unknown): boolean =>
   typeof value === "string" && value.trim().length > 0;
+
+const resolveSquareSandbox = (settings: any): boolean => {
+  const explicit = (settings as any)?.paymentConfig?.squareSandbox;
+  if (typeof explicit === "boolean") {
+    return explicit;
+  }
+
+  const applicationId = String(
+    (settings?.paymentApiKeys as any)?.squareApplicationId || "",
+  )
+    .trim()
+    .toLowerCase();
+
+  // Square sandbox application IDs start with "sandbox-".
+  if (applicationId.startsWith("sandbox-")) {
+    return true;
+  }
+
+  return false;
+};
 
 const normalizeFromAddress = (fromAddress: any) => {
   if (!fromAddress || typeof fromAddress !== "object") {
@@ -410,7 +431,7 @@ router.get("/square-config", async (_req: Request, res: Response) => {
     const locationId = String(
       (settings?.paymentApiKeys as any)?.squareLocationId || "",
     ).trim();
-    const sandbox = Boolean((settings as any)?.paymentConfig?.squareSandbox);
+    const sandbox = resolveSquareSandbox(settings);
     return res.json({ applicationId, locationId, sandbox });
   } catch (error) {
     console.error("Error fetching square config:", error);

@@ -102,6 +102,26 @@ const parseOrderData = (raw: string | null): Record<string, unknown> => {
 const hasText = (value: unknown): value is string =>
   typeof value === "string" && value.trim().length > 0;
 
+const resolveSquareSandbox = (settings: any): boolean => {
+  const explicit = (settings as any)?.paymentConfig?.squareSandbox;
+  if (typeof explicit === "boolean") {
+    return explicit;
+  }
+
+  const applicationId = String(
+    (settings?.paymentApiKeys as any)?.squareApplicationId || "",
+  )
+    .trim()
+    .toLowerCase();
+
+  // Square sandbox application IDs start with "sandbox-".
+  if (applicationId.startsWith("sandbox-")) {
+    return true;
+  }
+
+  return false;
+};
+
 const normalizePaymentStatus = (value: unknown): PaymentStatus | null => {
   const normalized = String(value || "")
     .trim()
@@ -709,9 +729,7 @@ router.post("/", async (req: Request, res: Response) => {
           rawSettings?.paymentApiKeys?.square || "",
         ).trim();
         if (squareToken) {
-          const sandbox = Boolean(
-            (rawSettings as any)?.paymentConfig?.squareSandbox,
-          );
+          const sandbox = resolveSquareSandbox(rawSettings);
           const baseUrl = sandbox
             ? "https://connect.squareupsandbox.com"
             : "https://connect.squareup.com";
@@ -1666,9 +1684,7 @@ router.post(
         });
       }
 
-      const sandbox = Boolean(
-        (rawSettings as any)?.paymentConfig?.squareSandbox,
-      );
+      const sandbox = resolveSquareSandbox(rawSettings);
       const baseUrl = sandbox
         ? "https://connect.squareupsandbox.com"
         : "https://connect.squareup.com";
