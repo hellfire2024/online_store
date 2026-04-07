@@ -189,22 +189,45 @@ const SquarePaymentSection = forwardRef<
 
   if (loadError) {
     return (
-      <div className="p-3 bg-amber-900/30 border border-amber-500/50 rounded-md text-amber-200 text-sm">
-        {loadError}
+      <div className="space-y-2">
+        <div className="p-3 bg-amber-900/30 border border-amber-500/50 rounded-md text-amber-200 text-sm">
+          {loadError}
+        </div>
+        <div className="text-xs text-gray-500 font-mono break-all">
+          App ID: {config.applicationId || "(not set)"}<br />
+          Location ID: {config.locationId || "(not set)"}<br />
+          Environment: {config.sandbox ? "sandbox" : "production"}
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-3">
-      {!isReady && (
-        <p className="text-sm text-gray-400">Loading Square payment form…</p>
-      )}
+      <div className="flex items-center gap-2">
+        <span
+          className={`text-[10px] font-semibold uppercase px-2 py-0.5 rounded ${
+            config.sandbox
+              ? "bg-yellow-500/20 text-yellow-300 border border-yellow-500/40"
+              : "bg-green-500/20 text-green-300 border border-green-500/40"
+          }`}
+        >
+          {config.sandbox ? "Sandbox" : "Production"}
+        </span>
+        {!isReady && (
+          <p className="text-sm text-gray-400">Loading Square payment form…</p>
+        )}
+      </div>
       <div
         ref={cardContainerRef}
         className="p-3 bg-slate-900 border border-slate-600 rounded-md"
         style={{ minHeight: 56 }}
       />
+      {process.env.NODE_ENV !== "production" && (
+        <div className="text-[10px] text-gray-600 font-mono break-all">
+          App: {config.applicationId} | Loc: {config.locationId}
+        </div>
+      )}
     </div>
   );
 });
