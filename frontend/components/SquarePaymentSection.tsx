@@ -194,8 +194,10 @@ const SquarePaymentSection = forwardRef<
           {loadError}
         </div>
         <div className="text-xs text-gray-500 font-mono break-all">
-          App ID: {config.applicationId || "(not set)"}<br />
-          Location ID: {config.locationId || "(not set)"}<br />
+          App ID: {config.applicationId || "(not set)"}
+          <br />
+          Location ID: {config.locationId || "(not set)"}
+          <br />
           Environment: {config.sandbox ? "sandbox" : "production"}
         </div>
       </div>
