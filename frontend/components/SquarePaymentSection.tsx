@@ -85,9 +85,7 @@ const SquarePaymentSection = forwardRef<
     }
     paymentsRef.current = null;
 
-    const existingScript = document.querySelector(
-      `script[src="${scriptUrl}"]`,
-    );
+    const existingScript = document.querySelector(`script[src="${scriptUrl}"]`);
 
     const loadAndInit = () => {
       if (window.Square) {
@@ -107,8 +105,12 @@ const SquarePaymentSection = forwardRef<
       script.src = scriptUrl;
       script.async = true;
       document.body.appendChild(script);
-      script.onload = () => { if (!cancelled) initSquare(); };
-      script.onerror = () => { if (!cancelled) setLoadError("Failed to load Square payment SDK."); };
+      script.onload = () => {
+        if (!cancelled) initSquare();
+      };
+      script.onerror = () => {
+        if (!cancelled) setLoadError("Failed to load Square payment SDK.");
+      };
     } else {
       loadAndInit();
     }
@@ -128,7 +130,9 @@ const SquarePaymentSection = forwardRef<
         if (!cancelled) setIsReady(true);
       } catch (err: any) {
         if (!cancelled)
-          setLoadError(err?.message || "Failed to initialise Square card form.");
+          setLoadError(
+            err?.message || "Failed to initialise Square card form.",
+          );
       }
     }
 
