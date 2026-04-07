@@ -139,7 +139,7 @@ router.post("/square-config-test", async (_req: Request, res: Response) => {
 
 // POST: Test Authorize.Net configuration (API Login ID and Transaction Key)
 router.post(
-  "/authorizedotnet-config-test",
+  "/authorizeNet-config-test",
   async (_req: Request, res: Response) => {
     try {
       const settings = await readSettings();
