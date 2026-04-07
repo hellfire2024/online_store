@@ -1496,8 +1496,12 @@ router.post(
         clientSecret,
         sandbox,
       );
-      const { accessToken, baseUrl, fallbackUsed, sandbox: resolvedSandbox } =
-        authContext;
+      const {
+        accessToken,
+        baseUrl,
+        fallbackUsed,
+        sandbox: resolvedSandbox,
+      } = authContext;
 
       const orderResponse = await axios.post(
         `${baseUrl}/v2/checkout/orders`,
