@@ -107,8 +107,12 @@ const SquarePaymentSection = forwardRef<
 
   useImperativeHandle(ref, () => ({
     async pay(amount, orderNumber) {
-      if (!cardRef.current) {
-        return { success: false, error: "Square payment form is not ready." };
+      if (!cardRef.current || !isReady) {
+        return {
+          success: false,
+          error:
+            "Square payment form is not ready. Please wait for the card form to load.",
+        };
       }
       try {
         const result = await cardRef.current.tokenize();

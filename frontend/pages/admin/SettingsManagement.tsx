@@ -2109,6 +2109,31 @@ const SettingsManagement: React.FC = () => {
                     className={inputClasses}
                   />
                 </div>
+                <div className="flex items-center gap-3 pt-1">
+                  <input
+                    type="checkbox"
+                    id="paypal-sandbox"
+                    checked={Boolean(
+                      (settings as any)?.paymentConfig?.paypalSandbox,
+                    )}
+                    onChange={(e) =>
+                      setSettings((prev) => ({
+                        ...(prev as any),
+                        paymentConfig: {
+                          ...(prev as any)?.paymentConfig,
+                          paypalSandbox: e.target.checked,
+                        },
+                      }))
+                    }
+                    className="accent-sky-500 w-4 h-4 cursor-pointer"
+                  />
+                  <label
+                    htmlFor="paypal-sandbox"
+                    className="text-sm text-gray-300 cursor-pointer"
+                  >
+                    Sandbox (testing) mode
+                  </label>
+                </div>
                 <PaymentTestButton
                   provider="paypal"
                   hasUnsaved={hasSettingsUnsavedChanges}
@@ -2176,6 +2201,31 @@ const SettingsManagement: React.FC = () => {
                     placeholder="Location ID"
                     className={inputClasses}
                   />
+                </div>
+                <div className="flex items-center gap-3 pt-1">
+                  <input
+                    type="checkbox"
+                    id="square-sandbox"
+                    checked={Boolean(
+                      (settings as any)?.paymentConfig?.squareSandbox,
+                    )}
+                    onChange={(e) =>
+                      setSettings((prev) => ({
+                        ...(prev as any),
+                        paymentConfig: {
+                          ...(prev as any)?.paymentConfig,
+                          squareSandbox: e.target.checked,
+                        },
+                      }))
+                    }
+                    className="accent-sky-500 w-4 h-4 cursor-pointer"
+                  />
+                  <label
+                    htmlFor="square-sandbox"
+                    className="text-sm text-gray-300 cursor-pointer"
+                  >
+                    Sandbox (testing) mode
+                  </label>
                 </div>
                 <PaymentTestButton
                   provider="square"

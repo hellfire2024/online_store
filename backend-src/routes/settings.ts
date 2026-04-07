@@ -24,11 +24,15 @@ router.post("/paypal-config-test", async (_req: Request, res: Response) => {
               : "PayPal Client Secret is missing.",
       });
     }
-    // Try to get an access token from PayPal
+    // Try to get an access token from PayPal using the configured environment.
+    const paypalSandbox = Boolean(
+      (settings as any)?.paymentConfig?.paypalSandbox,
+    );
+    const paypalBase = paypalSandbox
+      ? "https://api-m.sandbox.paypal.com"
+      : "https://api-m.paypal.com";
     const auth = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
-    const resp = await fetch(
-      "https://api-m.sandbox.paypal.com/v1/oauth2/token",
-      {
+    const resp = await fetch(`${paypalBase}/v1/oauth2/token`, {
         method: "POST",
         headers: {
           Authorization: `Basic ${auth}`,
