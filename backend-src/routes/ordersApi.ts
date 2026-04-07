@@ -373,6 +373,83 @@ async function getPayPalAccessToken(
   return response.data.access_token;
 }
 
+const getPayPalBaseUrl = (sandbox: boolean): string =>
+  sandbox ? "https://api-m.sandbox.paypal.com" : "https://api-m.paypal.com";
+
+const buildPayPalErrorPayload = (error: any) => {
+  const status = Number(error?.response?.status) || 500;
+  const data = error?.response?.data;
+  const details = Array.isArray(data?.details)
+    ? data.details
+        .map((detail: any) => {
+          const issue = String(detail?.issue || "").trim();
+          const description = String(detail?.description || "").trim();
+          return issue && description
+            ? `${issue}: ${description}`
+            : issue || description;
+        })
+        .filter(Boolean)
+    : [];
+
+  const baseMessage =
+    String(data?.message || "").trim() ||
+    String(data?.error_description || "").trim() ||
+    String(data?.error || "").trim() ||
+    String(error?.message || "").trim() ||
+    "PayPal request failed";
+
+  const detailMessage = details.length > 0 ? ` (${details.join("; ")})` : "";
+  const configuredEnv = data?.debug_id
+    ? `${baseMessage}${detailMessage} (debug_id: ${data.debug_id})`
+    : `${baseMessage}${detailMessage}`;
+
+  return {
+    status,
+    message: configuredEnv,
+    raw: data,
+  };
+};
+
+const getPayPalAuthWithFallback = async (
+  clientId: string,
+  clientSecret: string,
+  preferredSandbox: boolean,
+) => {
+  try {
+    const accessToken = await getPayPalAccessToken(
+      clientId,
+      clientSecret,
+      preferredSandbox,
+    );
+    return {
+      accessToken,
+      sandbox: preferredSandbox,
+      baseUrl: getPayPalBaseUrl(preferredSandbox),
+      fallbackUsed: false,
+    };
+  } catch (firstError: any) {
+    const fallbackSandbox = !preferredSandbox;
+    try {
+      const accessToken = await getPayPalAccessToken(
+        clientId,
+        clientSecret,
+        fallbackSandbox,
+      );
+      console.warn(
+        `[PayPal] OAuth succeeded after switching environment from ${preferredSandbox ? "sandbox" : "live"} to ${fallbackSandbox ? "sandbox" : "live"}.`,
+      );
+      return {
+        accessToken,
+        sandbox: fallbackSandbox,
+        baseUrl: getPayPalBaseUrl(fallbackSandbox),
+        fallbackUsed: true,
+      };
+    } catch {
+      throw firstError;
+    }
+  }
+};
+
 const parseAmountToCents = (rawAmount: unknown): number | null => {
   if (typeof rawAmount === "number" && Number.isFinite(rawAmount)) {
     const cents = Math.round(rawAmount * 100);
@@ -1414,15 +1491,13 @@ router.post(
       const sandbox = Boolean(
         (rawSettings as any)?.paymentConfig?.paypalSandbox,
       );
-      const baseUrl = sandbox
-        ? "https://api-m.sandbox.paypal.com"
-        : "https://api-m.paypal.com";
-
-      const accessToken = await getPayPalAccessToken(
+      const authContext = await getPayPalAuthWithFallback(
         clientId,
         clientSecret,
         sandbox,
       );
+      const { accessToken, baseUrl, fallbackUsed, sandbox: resolvedSandbox } =
+        authContext;
 
       const orderResponse = await axios.post(
         `${baseUrl}/v2/checkout/orders`,
@@ -1445,16 +1520,15 @@ router.post(
         },
       );
 
-      return res.json({ orderId: orderResponse.data.id });
-    } catch (error: any) {
-      console.error(
-        "PayPal create order error:",
-        error?.response?.data || error?.message,
-      );
-      return res.status(500).json({
-        error:
-          error?.response?.data?.message || "Failed to create PayPal order",
+      return res.json({
+        orderId: orderResponse.data.id,
+        sandbox: resolvedSandbox,
+        environmentFallbackUsed: fallbackUsed,
       });
+    } catch (error: any) {
+      const normalized = buildPayPalErrorPayload(error);
+      console.error("PayPal create order error:", normalized.raw || error);
+      return res.status(normalized.status).json({ error: normalized.message });
     }
   },
 );
@@ -1489,26 +1563,52 @@ router.post(
       const sandbox = Boolean(
         (rawSettings as any)?.paymentConfig?.paypalSandbox,
       );
-      const baseUrl = sandbox
-        ? "https://api-m.sandbox.paypal.com"
-        : "https://api-m.paypal.com";
-
-      const accessToken = await getPayPalAccessToken(
+      const authContext = await getPayPalAuthWithFallback(
         clientId,
         clientSecret,
         sandbox,
       );
+      let { accessToken, baseUrl, sandbox: resolvedSandbox } = authContext;
 
-      const captureResponse = await axios.post(
-        `${baseUrl}/v2/checkout/orders/${orderId}/capture`,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            "Content-Type": "application/json",
+      let captureResponse;
+      try {
+        captureResponse = await axios.post(
+          `${baseUrl}/v2/checkout/orders/${orderId}/capture`,
+          {},
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              "Content-Type": "application/json",
+            },
           },
-        },
-      );
+        );
+      } catch (firstCaptureError: any) {
+        const fallbackSandbox = !resolvedSandbox;
+        try {
+          accessToken = await getPayPalAccessToken(
+            clientId,
+            clientSecret,
+            fallbackSandbox,
+          );
+          baseUrl = getPayPalBaseUrl(fallbackSandbox);
+          resolvedSandbox = fallbackSandbox;
+          console.warn(
+            `[PayPal] Capture retrying in ${fallbackSandbox ? "sandbox" : "live"} environment.`,
+          );
+          captureResponse = await axios.post(
+            `${baseUrl}/v2/checkout/orders/${orderId}/capture`,
+            {},
+            {
+              headers: {
+                Authorization: `Bearer ${accessToken}`,
+                "Content-Type": "application/json",
+              },
+            },
+          );
+        } catch {
+          throw firstCaptureError;
+        }
+      }
 
       const captureData = captureResponse.data;
       if (captureData.status !== "COMPLETED") {
@@ -1519,16 +1619,15 @@ router.post(
 
       const captureId =
         captureData.purchase_units?.[0]?.payments?.captures?.[0]?.id;
-      return res.json({ captureId, status: captureData.status });
-    } catch (error: any) {
-      console.error(
-        "PayPal capture error:",
-        error?.response?.data || error?.message,
-      );
-      return res.status(500).json({
-        error:
-          error?.response?.data?.message || "Failed to capture PayPal payment",
+      return res.json({
+        captureId,
+        status: captureData.status,
+        sandbox: resolvedSandbox,
       });
+    } catch (error: any) {
+      const normalized = buildPayPalErrorPayload(error);
+      console.error("PayPal capture error:", normalized.raw || error);
+      return res.status(normalized.status).json({ error: normalized.message });
     }
   },
 );
