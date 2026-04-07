@@ -159,6 +159,21 @@ const ShippingRateSelector: React.FC<ShippingRateSelectorProps> = ({
     );
   }
 
+  const toAddressComplete = Boolean(
+    rateRequest.toAddress?.street1 &&
+    rateRequest.toAddress?.zip &&
+    rateRequest.toAddress?.state,
+  );
+
+  if (!toAddressComplete && !isLoading) {
+    return (
+      <div className="text-xs text-gray-400 mt-2">
+        No address selected — please enter a shipping address and rates will be
+        provided.
+      </div>
+    );
+  }
+
   if (isUnavailable || rates.length === 0) {
     return (
       <div className="text-xs text-amber-400 mt-2">

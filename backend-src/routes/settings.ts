@@ -33,14 +33,13 @@ router.post("/paypal-config-test", async (_req: Request, res: Response) => {
       : "https://api-m.paypal.com";
     const auth = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
     const resp = await fetch(`${paypalBase}/v1/oauth2/token`, {
-        method: "POST",
-        headers: {
-          Authorization: `Basic ${auth}`,
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: "grant_type=client_credentials",
+      method: "POST",
+      headers: {
+        Authorization: `Basic ${auth}`,
+        "Content-Type": "application/x-www-form-urlencoded",
       },
-    );
+      body: "grant_type=client_credentials",
+    });
     const data = (await resp.json()) as any;
     if (resp.ok && data.access_token) {
       return res.json({
