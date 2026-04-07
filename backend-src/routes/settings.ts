@@ -221,15 +221,29 @@ const buildCommerceStatus = (settings: any) => {
   const normalizedFromAddress = normalizeFromAddress(settings?.fromAddress);
   const paymentProvider = String(settings?.paymentProvider || "none");
   const paymentApiKeys = settings?.paymentApiKeys || {};
-  let paymentKey = String(paymentApiKeys?.[paymentProvider] || "").trim();
-  // For Stripe, check both 'stripe' and 'stripePublishableKey'
-  if (paymentProvider === "stripe") {
-    if (!paymentKey) {
-      paymentKey = String(paymentApiKeys?.stripePublishableKey || "").trim();
+  const paymentConfigured = paymentProvider !== "none";
+  let paymentAvailable = false;
+  if (paymentConfigured) {
+    if (paymentProvider === "stripe") {
+      const stripeSecret = String(paymentApiKeys?.stripe || "").trim();
+      const stripePublishable = String(
+        paymentApiKeys?.stripePublishableKey || "",
+      ).trim();
+      paymentAvailable =
+        stripeSecret.length > 0 && stripePublishable.length > 0;
+    } else if (paymentProvider === "paypal") {
+      const paypalClientId = String(paymentApiKeys?.paypal || "").trim();
+      const paypalSecret = String(
+        (paymentApiKeys as any)?.paypalSecret || "",
+      ).trim();
+      paymentAvailable = paypalClientId.length > 0 && paypalSecret.length > 0;
+    } else {
+      const providerKey = String(
+        paymentApiKeys?.[paymentProvider] || "",
+      ).trim();
+      paymentAvailable = providerKey.length > 0;
     }
   }
-  const paymentConfigured = paymentProvider !== "none";
-  const paymentAvailable = paymentConfigured && paymentKey.length > 0;
 
   const shippingCarriers = settings?.shippingCarriers || {};
   const shippingCarrierStatuses = ["easypost", "shippo", "shipstation"].map(
@@ -375,8 +389,11 @@ router.get("/paypal-config", async (_req: Request, res: Response) => {
   try {
     const settings = await readSettings();
     const clientId = String(settings?.paymentApiKeys?.paypal || "").trim();
+    const hasSecret = Boolean(
+      String((settings?.paymentApiKeys as any)?.paypalSecret || "").trim(),
+    );
     const sandbox = Boolean((settings as any)?.paymentConfig?.paypalSandbox);
-    return res.json({ clientId, sandbox });
+    return res.json({ clientId, sandbox, hasSecret });
   } catch (error) {
     console.error("Error fetching paypal config:", error);
     return res.status(500).json({ error: "Failed to fetch paypal config" });

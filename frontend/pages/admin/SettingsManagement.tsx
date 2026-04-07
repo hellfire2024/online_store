@@ -1156,22 +1156,40 @@ const SettingsManagement: React.FC = () => {
       const selectedPaymentProvider = String(
         finalSettings.paymentProvider || "none",
       );
-      // Map provider to required key for connection
-      const requiredKeyMap: Record<string, string> = {
-        stripe: "stripePublishableKey",
-        paypal: "paypal",
-        square: "squareApplicationId",
-        authorizeNet: "authorizeNetPublicKey",
-      };
       if (selectedPaymentProvider !== "none") {
-        const requiredKey = requiredKeyMap[selectedPaymentProvider];
-        const keyValue = (finalSettings.paymentApiKeys as any)?.[requiredKey];
-        if (!keyValue || String(keyValue).trim() === "") {
+        const missingPayPalClientId =
+          selectedPaymentProvider === "paypal" &&
+          !String((finalSettings.paymentApiKeys as any)?.paypal || "").trim();
+        const missingPayPalSecret =
+          selectedPaymentProvider === "paypal" &&
+          !String(
+            (finalSettings.paymentApiKeys as any)?.paypalSecret || "",
+          ).trim();
+
+        if (missingPayPalClientId || missingPayPalSecret) {
           addToast(
-            `Please enter the required API credential (${requiredKey}) for ${selectedPaymentProvider} before saving.`,
+            "Please enter both PayPal Client ID and PayPal Client Secret before saving.",
             "error",
           );
           return;
+        }
+
+        // Map provider to required key for connection
+        const requiredKeyMap: Record<string, string> = {
+          stripe: "stripePublishableKey",
+          square: "squareApplicationId",
+          authorizeNet: "authorizeNetPublicKey",
+        };
+        const requiredKey = requiredKeyMap[selectedPaymentProvider];
+        if (requiredKey) {
+          const keyValue = (finalSettings.paymentApiKeys as any)?.[requiredKey];
+          if (!keyValue || String(keyValue).trim() === "") {
+            addToast(
+              `Please enter the required API credential (${requiredKey}) for ${selectedPaymentProvider} before saving.`,
+              "error",
+            );
+            return;
+          }
         }
       }
 

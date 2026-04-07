@@ -92,6 +92,7 @@ const CheckoutPage: React.FC = () => {
   const [paypalConfig, setPaypalConfig] = useState<{
     clientId: string;
     sandbox: boolean;
+    hasSecret: boolean;
   } | null>(null);
   const [squareConfig, setSquareConfig] = useState<{
     applicationId: string;
@@ -507,7 +508,13 @@ const CheckoutPage: React.FC = () => {
       fetch("/api/settings/paypal-config")
         .then((r) => r.json())
         .then((d) => {
-          if (d?.clientId) setPaypalConfig(d);
+          if (d?.clientId) {
+            setPaypalConfig({
+              clientId: String(d.clientId),
+              sandbox: Boolean(d.sandbox),
+              hasSecret: Boolean(d.hasSecret),
+            });
+          }
         })
         .catch(() => {});
     } else if (provider === "square") {
@@ -1837,7 +1844,7 @@ const CheckoutPage: React.FC = () => {
                   ) : String(
                       siteSettings?.paymentProvider || "",
                     ).toLowerCase() === "paypal" ? (
-                    paypalConfig?.clientId ? (
+                    paypalConfig?.clientId && paypalConfig?.hasSecret ? (
                       <PayPalScriptProvider
                         options={{
                           clientId: paypalConfig.clientId,
@@ -1854,8 +1861,9 @@ const CheckoutPage: React.FC = () => {
                       </PayPalScriptProvider>
                     ) : (
                       <div className="p-3 bg-amber-900/30 border border-amber-500/50 rounded-md text-amber-200 text-sm">
-                        PayPal Client ID is not configured. Go to Settings →
-                        Payment and enter your PayPal Client ID and Secret.
+                        PayPal credentials are incomplete. Go to Settings →
+                        Payment and enter both PayPal Client ID and PayPal
+                        Client Secret.
                       </div>
                     )
                   ) : String(
