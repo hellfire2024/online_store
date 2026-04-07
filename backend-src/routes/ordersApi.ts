@@ -46,27 +46,40 @@ interface OrderRow extends RowDataPacket {
 }
 
 interface SettingsRow extends RowDataPacket {
-  settings: string | null;
+  settings: any;
 }
 
-const parseSettings = (raw: string | null) => {
+const parseSettings = (raw: unknown) => {
   if (!raw) {
     return {};
   }
-  try {
-    const parsed = JSON.parse(raw);
-    // If settings is an array, use the first element
-    if (
-      Array.isArray(parsed) &&
-      parsed.length > 0 &&
-      typeof parsed[0] === "object"
-    ) {
-      return parsed[0];
+
+  // mysql2 can return JSON columns as already-parsed objects.
+  if (typeof raw === "object") {
+    if (Array.isArray(raw)) {
+      const first = raw[0];
+      return first && typeof first === "object" ? first : {};
     }
-    return parsed;
-  } catch {
-    return {};
+    return raw;
   }
+
+  if (typeof raw === "string") {
+    try {
+      const parsed = JSON.parse(raw);
+      if (
+        Array.isArray(parsed) &&
+        parsed.length > 0 &&
+        typeof parsed[0] === "object"
+      ) {
+        return parsed[0];
+      }
+      return parsed && typeof parsed === "object" ? parsed : {};
+    } catch {
+      return {};
+    }
+  }
+
+  return {};
 };
 
 const parseOrderData = (raw: string | null): Record<string, unknown> => {
