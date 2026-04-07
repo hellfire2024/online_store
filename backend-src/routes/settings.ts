@@ -63,39 +63,71 @@ router.post("/paypal-config-test", async (_req: Request, res: Response) => {
   }
 });
 
-// POST: Test Square configuration (Access Token)
+// POST: Test Square configuration (Access Token + Location ID)
 router.post("/square-config-test", async (_req: Request, res: Response) => {
   try {
     const settings = await readSettings();
     const accessToken = String(settings?.paymentApiKeys?.square || "").trim();
+    const locationId = String(
+      (settings?.paymentApiKeys as any)?.squareLocationId || "",
+    ).trim();
+
     if (!accessToken) {
       return res
         .status(400)
         .json({ success: false, error: "Square Access Token is missing." });
     }
-    // Try to fetch merchant info from Square using configured or inferred environment.
+
     const sandbox = resolveSquareSandbox(settings);
     const baseUrl = sandbox
       ? "https://connect.squareupsandbox.com"
       : "https://connect.squareup.com";
-    const resp = await fetch(`${baseUrl}/v2/merchants/me`, {
-      headers: { Authorization: `Bearer ${accessToken}` },
+
+    const headers = { Authorization: `Bearer ${accessToken}` };
+
+    // Step 1: validate the access token via merchant lookup
+    const merchantResp = await fetch(`${baseUrl}/v2/merchants/me`, {
+      headers,
     });
-    const data = (await resp.json()) as any;
-    if (resp.ok && data.merchant) {
-      return res.json({
-        success: true,
-        message: "Square connection successful.",
-        merchant: data.merchant,
-      });
-    } else {
+    const merchantData = (await merchantResp.json()) as any;
+    if (!merchantResp.ok) {
       return res.status(400).json({
         success: false,
         error:
-          data.errors?.[0]?.detail ||
-          "Failed to connect to Square. Check your access token.",
+          merchantData.errors?.[0]?.detail ||
+          "Invalid Square Access Token. Check your credentials.",
       });
     }
+
+    // Step 2: validate the Location ID exists in the same environment
+    if (locationId) {
+      const locResp = await fetch(`${baseUrl}/v2/locations/${locationId}`, {
+        headers,
+      });
+      const locData = (await locResp.json()) as any;
+      if (!locResp.ok) {
+        const envLabel = sandbox ? "sandbox" : "production";
+        return res.status(400).json({
+          success: false,
+          error:
+            `Location ID "${locationId}" was not found in your Square ${envLabel} account. ` +
+            `Make sure you copy the Location ID from the Square Developer Console → ` +
+            `${sandbox ? "Sandbox → Locations" : "Locations"}, not from the main Square Dashboard.`,
+        });
+      }
+      return res.json({
+        success: true,
+        message: `Square connection successful (${sandbox ? "sandbox" : "production"}). Location: ${locData.location?.name || locationId}`,
+        merchant: merchantData.merchant,
+        location: locData.location,
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: `Square access token valid (${sandbox ? "sandbox" : "production"}). Enter a Location ID and re-test to fully verify.`,
+      merchant: merchantData.merchant,
+    });
   } catch (error) {
     console.error("Error testing Square config:", error);
     return res.status(500).json({
