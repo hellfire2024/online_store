@@ -229,19 +229,25 @@ const resolveAuthorizeNetSandbox = (settings: any): boolean => {
 };
 
 const parseAuthorizeNetCredentials = (value: unknown) => {
-  const combined = String(value || "").trim();
+  const sanitize = (raw: string) =>
+    raw
+      .replace(/[\u200B\u200C\u200D\uFEFF]/g, "")
+      .replace(/\s+/g, "")
+      .trim();
+
+  const combined = sanitize(String(value || ""));
   const separatorIndex = combined.indexOf(":");
 
   if (separatorIndex < 0) {
     return {
-      apiLoginId: combined.trim(),
+      apiLoginId: sanitize(combined),
       transactionKey: "",
     };
   }
 
   return {
-    apiLoginId: combined.slice(0, separatorIndex).trim(),
-    transactionKey: combined.slice(separatorIndex + 1).trim(),
+    apiLoginId: sanitize(combined.slice(0, separatorIndex)),
+    transactionKey: sanitize(combined.slice(separatorIndex + 1)),
   };
 };
 
