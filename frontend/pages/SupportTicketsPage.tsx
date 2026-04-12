@@ -25,7 +25,11 @@ interface SupportTicket {
 }
 
 const SupportTicketsPage: React.FC = () => {
-  const { isAuthenticated, isLoading: authLoading, customer } = useCustomerAuth();
+  const {
+    isAuthenticated,
+    isLoading: authLoading,
+    customer,
+  } = useCustomerAuth();
   const { siteSettings } = useSiteSettings();
   const navigate = useNavigate();
   const location = useLocation();
@@ -219,7 +223,10 @@ const SupportTicketsPage: React.FC = () => {
         (error as any)?.response?.status === 401
       ) {
         addToast("Session expired. Please sign in again.", "error");
-        navigate("/login", { replace: true, state: { from: location.pathname } });
+        navigate("/login", {
+          replace: true,
+          state: { from: location.pathname },
+        });
       } else {
         addToast("Failed to create support ticket", "error");
       }
@@ -315,7 +322,10 @@ const SupportTicketsPage: React.FC = () => {
       const status = (error as any)?.status || (error as any)?.response?.status;
       if (status === 401 || status === 403) {
         addToast("Session expired. Please sign in again.", "error");
-        navigate("/login", { replace: true, state: { from: location.pathname } });
+        navigate("/login", {
+          replace: true,
+          state: { from: location.pathname },
+        });
       } else {
         addToast("Failed to send reply", "error");
       }
