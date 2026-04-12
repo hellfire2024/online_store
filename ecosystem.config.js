@@ -2,7 +2,8 @@ module.exports = {
   apps: [
     {
       name: 'online-store-backend',
-      script: 'dist/server.js',
+      script: 'npm',
+      args: 'run start',
       instances: 1,
       autorestart: true,
       watch: false,
