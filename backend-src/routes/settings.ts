@@ -2,6 +2,7 @@ import Stripe from "stripe";
 import { Router, Request, Response } from "express";
 import { pool } from "../db/connection.js";
 import { RowDataPacket } from "mysql2";
+import { requireAdmin } from "../middleware/auth.js";
 
 const router = Router();
 
@@ -459,6 +460,139 @@ const buildCommerceStatus = (settings: any) => {
     overallReady: paymentAvailable && shippingAvailable && taxAvailable,
   };
 };
+
+const isSafeTableName = (name: string): boolean => /^[a-zA-Z0-9_]+$/.test(name);
+
+const getAllBaseTables = async (): Promise<string[]> => {
+  const [rows] = await pool.query<RowDataPacket[]>(
+    `SELECT table_name AS tableName
+     FROM information_schema.tables
+     WHERE table_schema = DATABASE()
+       AND table_type = 'BASE TABLE'
+     ORDER BY table_name ASC`,
+  );
+
+  return rows
+    .map((row) => String((row as any).tableName || ""))
+    .filter((name) => isSafeTableName(name));
+};
+
+const getTableColumns = async (table: string): Promise<string[]> => {
+  const [rows] = await pool.query<RowDataPacket[]>(`SHOW COLUMNS FROM \`${table}\``);
+  return rows
+    .map((row) => String((row as any).Field || ""))
+    .filter((column) => column.length > 0);
+};
+
+// Admin-only full site export for backup/restore portability.
+router.get("/backup-export", requireAdmin, async (_req: Request, res: Response) => {
+  try {
+    const tableNames = await getAllBaseTables();
+    const tables: Record<string, any[]> = {};
+
+    for (const tableName of tableNames) {
+      const [rows] = await pool.query<RowDataPacket[]>(`SELECT * FROM \`${tableName}\``);
+      tables[tableName] = rows;
+    }
+
+    return res.json({
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      tableCount: tableNames.length,
+      tables,
+    });
+  } catch (error) {
+    console.error("Error exporting site backup:", error);
+    return res.status(500).json({ error: "Failed to export site backup" });
+  }
+});
+
+// Admin-only full site restore from a backup-export payload.
+router.post("/backup-import", requireAdmin, async (req: Request, res: Response) => {
+  const backup = req.body;
+  const incomingTables = backup?.tables;
+
+  if (!incomingTables || typeof incomingTables !== "object") {
+    return res.status(400).json({ error: "Invalid backup payload: missing tables object" });
+  }
+
+  const providedTableNames = Object.keys(incomingTables).filter((name) =>
+    isSafeTableName(name),
+  );
+
+  if (!providedTableNames.length) {
+    return res.status(400).json({ error: "Invalid backup payload: no valid table names" });
+  }
+
+  const dbTableSet = new Set(await getAllBaseTables());
+  const targetTables = providedTableNames.filter((name) => dbTableSet.has(name));
+
+  if (!targetTables.length) {
+    return res.status(400).json({ error: "No matching tables found in current database" });
+  }
+
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+    await conn.query("SET FOREIGN_KEY_CHECKS = 0");
+
+    for (const tableName of targetTables) {
+      await conn.query(`DELETE FROM \`${tableName}\``);
+    }
+
+    const importedRows: Record<string, number> = {};
+    for (const tableName of targetTables) {
+      const rows = Array.isArray(incomingTables[tableName])
+        ? incomingTables[tableName]
+        : [];
+      importedRows[tableName] = rows.length;
+
+      if (!rows.length) {
+        continue;
+      }
+
+      const allowedColumns = new Set(await getTableColumns(tableName));
+      for (const row of rows) {
+        const entries = Object.entries(row || {}).filter(([key]) =>
+          allowedColumns.has(key),
+        );
+
+        if (!entries.length) {
+          continue;
+        }
+
+        const columnNames = entries.map(([key]) => `\`${key}\``).join(", ");
+        const placeholders = entries.map(() => "?").join(", ");
+        const values = entries.map(([, value]) => value);
+
+        await conn.query(
+          `INSERT INTO \`${tableName}\` (${columnNames}) VALUES (${placeholders})`,
+          values,
+        );
+      }
+    }
+
+    await conn.query("SET FOREIGN_KEY_CHECKS = 1");
+    await conn.commit();
+
+    return res.json({
+      success: true,
+      importedTableCount: targetTables.length,
+      importedRows,
+    });
+  } catch (error) {
+    await conn.rollback();
+    try {
+      await conn.query("SET FOREIGN_KEY_CHECKS = 1");
+    } catch {
+      // no-op
+    }
+    console.error("Error importing site backup:", error);
+    return res.status(500).json({ error: "Failed to import site backup" });
+  } finally {
+    conn.release();
+  }
+});
 
 // Safe: returns only the publishable key (never the secret key)
 router.get("/stripe-config", async (_req: Request, res: Response) => {

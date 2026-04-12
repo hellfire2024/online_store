@@ -509,6 +509,14 @@ export interface SiteSettings {
   supportSubjectPrefix?: string; // e.g., "Support Request"
   supportTicketSuffix?: string; // e.g., "SUP-001-001"
 
+  // Values shown while site settings are still loading.
+  loadingDefaults?: {
+    siteTitle?: string;
+    logoText?: string;
+    logoTextAccent?: string;
+    supportEmail?: string;
+  };
+
   // Theme Management
   siteBackgroundColor: string;
   siteTextColor: string;

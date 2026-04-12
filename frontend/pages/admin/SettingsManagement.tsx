@@ -189,7 +189,7 @@ const TaxTestButton = ({ provider, disabled, hasUnsaved, onResult }) => {
     </div>
   );
 };
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 // --- Shipping Test Defaults ---
 const TEST_FROM_ADDRESS = {
   firstName: "Test",
@@ -772,6 +772,8 @@ const SettingsManagement: React.FC = () => {
     priority: 0,
   });
   const [commerceStatus, setCommerceStatus] = useState<any>(null);
+  const [backupBusy, setBackupBusy] = useState(false);
+  const backupFileInputRef = useRef<HTMLInputElement | null>(null);
 
   const hasSettingsUnsavedChanges =
     JSON.stringify(settings) !== JSON.stringify(siteSettings);
@@ -1125,6 +1127,29 @@ const SettingsManagement: React.FC = () => {
         ),
       };
 
+      finalSettings.loadingDefaults = {
+        siteTitle: String(
+          (finalSettings as any)?.loadingDefaults?.siteTitle ||
+            finalSettings.siteTitle ||
+            "",
+        ).trim(),
+        logoText: String(
+          (finalSettings as any)?.loadingDefaults?.logoText ||
+            finalSettings.logoText ||
+            "",
+        ).trim(),
+        logoTextAccent: String(
+          (finalSettings as any)?.loadingDefaults?.logoTextAccent ||
+            finalSettings.logoTextAccent ||
+            "",
+        ).trim(),
+        supportEmail: String(
+          (finalSettings as any)?.loadingDefaults?.supportEmail ||
+            finalSettings.supportEmail ||
+            "",
+        ).trim(),
+      } as any;
+
       const stripePublishableKey = String(
         (finalSettings.paymentApiKeys as any)?.stripePublishableKey || "",
       ).trim();
@@ -1328,6 +1353,77 @@ const SettingsManagement: React.FC = () => {
       }));
     } else {
       setSettings((prev) => ({ ...prev, [name]: parsedValue }));
+    }
+  };
+
+  const handleLoadingDefaultsChange = (
+    field: "siteTitle" | "logoText" | "logoTextAccent" | "supportEmail",
+    value: string,
+  ) => {
+    setSettings((prev: any) => ({
+      ...prev,
+      loadingDefaults: {
+        ...(prev.loadingDefaults || {}),
+        [field]: value,
+      },
+    }));
+  };
+
+  const handleExportBackup = async () => {
+    try {
+      setBackupBusy(true);
+      const payload = await apiClient.settings.exportBackup();
+      const fileName = `site-backup-${new Date().toISOString().replace(/[:.]/g, "-")}.json`;
+      const blob = new Blob([JSON.stringify(payload, null, 2)], {
+        type: "application/json",
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      addToast("Backup exported successfully.", "success");
+    } catch (error: any) {
+      addToast(error?.message || "Backup export failed.", "error");
+    } finally {
+      setBackupBusy(false);
+    }
+  };
+
+  const handleImportBackup = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    const confirmRestore = window.confirm(
+      "Restore this backup to the current site? This will overwrite existing content.",
+    );
+    if (!confirmRestore) {
+      e.target.value = "";
+      return;
+    }
+
+    try {
+      setBackupBusy(true);
+      const text = await file.text();
+      const payload = JSON.parse(text);
+      await apiClient.settings.importBackup(payload);
+
+      const refreshed = await apiClient.settings.get();
+      setSettings(refreshed);
+
+      addToast("Backup restored successfully.", "success");
+    } catch (error: any) {
+      addToast(error?.message || "Backup restore failed.", "error");
+    } finally {
+      e.target.value = "";
+      setBackupBusy(false);
     }
   };
 
@@ -1651,6 +1747,119 @@ const SettingsManagement: React.FC = () => {
                 <p className="text-xs text-gray-400 mt-1">
                   Shows the most recent approved reviews up to this limit
                 </p>
+              </div>
+            </div>
+
+            <div className="border-t border-slate-700 pt-6">
+              <h3 className="text-lg font-semibold text-white mb-4">
+                Loading Defaults
+              </h3>
+              <p className="text-xs text-gray-400 mb-4">
+                These values are shown while the site is booting and fetching
+                live settings.
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-gray-300 text-sm font-bold mb-1">
+                    Loading Site Title
+                  </label>
+                  <input
+                    type="text"
+                    value={(settings as any)?.loadingDefaults?.siteTitle || ""}
+                    onChange={(e) =>
+                      handleLoadingDefaultsChange("siteTitle", e.target.value)
+                    }
+                    className={inputClasses}
+                    placeholder="Site title shown during startup"
+                  />
+                </div>
+                <div>
+                  <label className="block text-gray-300 text-sm font-bold mb-1">
+                    Loading Support Email
+                  </label>
+                  <input
+                    type="text"
+                    value={
+                      (settings as any)?.loadingDefaults?.supportEmail || ""
+                    }
+                    onChange={(e) =>
+                      handleLoadingDefaultsChange(
+                        "supportEmail",
+                        e.target.value,
+                      )
+                    }
+                    className={inputClasses}
+                    placeholder="support@example.com"
+                  />
+                </div>
+                <div>
+                  <label className="block text-gray-300 text-sm font-bold mb-1">
+                    Loading Logo Text
+                  </label>
+                  <input
+                    type="text"
+                    value={(settings as any)?.loadingDefaults?.logoText || ""}
+                    onChange={(e) =>
+                      handleLoadingDefaultsChange("logoText", e.target.value)
+                    }
+                    className={inputClasses}
+                    placeholder="Brand text shown before live settings load"
+                  />
+                </div>
+                <div>
+                  <label className="block text-gray-300 text-sm font-bold mb-1">
+                    Loading Logo Accent
+                  </label>
+                  <input
+                    type="text"
+                    value={
+                      (settings as any)?.loadingDefaults?.logoTextAccent || ""
+                    }
+                    onChange={(e) =>
+                      handleLoadingDefaultsChange(
+                        "logoTextAccent",
+                        e.target.value,
+                      )
+                    }
+                    className={inputClasses}
+                    placeholder="Accent text shown before live settings load"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="border-t border-slate-700 pt-6">
+              <h3 className="text-lg font-semibold text-white mb-4">
+                Site Backup & Restore
+              </h3>
+              <p className="text-xs text-gray-400 mb-4">
+                Export the full site dataset as JSON, or restore it on another
+                site from a previous export.
+              </p>
+              <input
+                ref={backupFileInputRef}
+                type="file"
+                accept="application/json,.json"
+                className="hidden"
+                onChange={handleImportBackup}
+              />
+              <div className="flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={handleExportBackup}
+                  disabled={backupBusy}
+                  className={`px-4 py-2 rounded text-white ${backupBusy ? "bg-slate-500 cursor-not-allowed" : "bg-sky-600 hover:bg-sky-700"}`}
+                >
+                  {backupBusy ? "Working..." : "Export Full Site Backup"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => backupFileInputRef.current?.click()}
+                  disabled={backupBusy}
+                  className={`px-4 py-2 rounded text-white ${backupBusy ? "bg-slate-500 cursor-not-allowed" : "bg-amber-600 hover:bg-amber-700"}`}
+                >
+                  Restore Site From Backup
+                </button>
               </div>
             </div>
 

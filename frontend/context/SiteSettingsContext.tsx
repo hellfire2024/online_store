@@ -59,6 +59,12 @@ const defaultSettings: SiteSettings = {
   supportEmail: "support@adaptivegis.com",
   supportSubjectPrefix: "Support Request",
   supportTicketSuffix: "SUP-001-001",
+  loadingDefaults: {
+    siteTitle: "Custom Threads Online Store",
+    logoText: "Custom",
+    logoTextAccent: "Threads",
+    supportEmail: "support@adaptivegis.com",
+  },
   invoiceTemplate: {
     id: "default",
     name: "Professional Invoice",
@@ -98,13 +104,61 @@ const defaultSettings: SiteSettings = {
   },
 };
 
+const LOADING_DEFAULTS_STORAGE_KEY = "site_loading_defaults";
+
+const normalizeLoadingDefaults = (raw: any) => ({
+  siteTitle: String(raw?.siteTitle || defaultSettings.siteTitle),
+  logoText: String(raw?.logoText || defaultSettings.logoText),
+  logoTextAccent: String(raw?.logoTextAccent || defaultSettings.logoTextAccent),
+  supportEmail: String(raw?.supportEmail || defaultSettings.supportEmail),
+});
+
+const applyLoadingDefaults = (
+  base: SiteSettings,
+  loadingDefaults: any,
+): SiteSettings => {
+  const normalized = normalizeLoadingDefaults(loadingDefaults);
+  return {
+    ...base,
+    siteTitle: normalized.siteTitle,
+    logoText: normalized.logoText,
+    logoTextAccent: normalized.logoTextAccent,
+    supportEmail: normalized.supportEmail,
+    loadingDefaults: normalized,
+  };
+};
+
+const loadCachedLoadingDefaults = () => {
+  try {
+    const raw = localStorage.getItem(LOADING_DEFAULTS_STORAGE_KEY);
+    if (!raw) {
+      return defaultSettings.loadingDefaults;
+    }
+    return JSON.parse(raw);
+  } catch {
+    return defaultSettings.loadingDefaults;
+  }
+};
+
+const saveCachedLoadingDefaults = (loadingDefaults: any) => {
+  try {
+    localStorage.setItem(
+      LOADING_DEFAULTS_STORAGE_KEY,
+      JSON.stringify(normalizeLoadingDefaults(loadingDefaults)),
+    );
+  } catch {
+    // Ignore storage write failures (private mode/storage quota)
+  }
+};
+
 const SiteSettingsContext = createContext<any>(undefined);
 
 export const SiteSettingsProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
-  const [siteSettings, setSiteSettings] =
-    useState<SiteSettings>(defaultSettings);
+  const [siteSettings, setSiteSettings] = useState<SiteSettings>(() =>
+    applyLoadingDefaults(defaultSettings, loadCachedLoadingDefaults()),
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [settingsError, setSettingsError] = useState<string | null>(null);
 
@@ -115,6 +169,11 @@ export const SiteSettingsProvider: React.FC<{ children: ReactNode }> = ({
       try {
         const loadedSettings = await apiClient.settings.get();
         if (loadedSettings && typeof loadedSettings === "object") {
+          const loadingDefaults = normalizeLoadingDefaults(
+            loadedSettings.loadingDefaults,
+          );
+          saveCachedLoadingDefaults(loadingDefaults);
+
           // Check payment provider and keys
           const paymentProvider = loadedSettings.paymentProvider || "none";
           const paymentApiKeys = loadedSettings.paymentApiKeys || {};
@@ -135,7 +194,11 @@ export const SiteSettingsProvider: React.FC<{ children: ReactNode }> = ({
               loadedSettings,
             );
           }
-          setSiteSettings((prev) => ({ ...prev, ...loadedSettings }));
+          setSiteSettings((prev) => ({
+            ...prev,
+            ...loadedSettings,
+            loadingDefaults,
+          }));
         } else {
           setSettingsError("No site settings returned from backend.");
         }
@@ -143,7 +206,7 @@ export const SiteSettingsProvider: React.FC<{ children: ReactNode }> = ({
         setSettingsError(
           `Failed to load site settings from backend: ${error instanceof Error ? error.message : String(error)}`,
         );
-        setSiteSettings(defaultSettings);
+        setSiteSettings((prev) => applyLoadingDefaults(defaultSettings, prev.loadingDefaults));
       } finally {
         setIsLoading(false);
       }
@@ -155,7 +218,15 @@ export const SiteSettingsProvider: React.FC<{ children: ReactNode }> = ({
     setIsLoading(true);
     try {
       // Create the updated settings object
-      const updatedSettings = { ...siteSettings, ...updates };
+      const updatedSettings = {
+        ...siteSettings,
+        ...updates,
+        loadingDefaults: normalizeLoadingDefaults(
+          updates.loadingDefaults || siteSettings.loadingDefaults,
+        ),
+      };
+
+      saveCachedLoadingDefaults(updatedSettings.loadingDefaults);
 
       // Update local state
       setSiteSettings(updatedSettings);

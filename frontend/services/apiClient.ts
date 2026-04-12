@@ -390,6 +390,12 @@ class ApiClient {
         method: "PUT",
         body: JSON.stringify(data),
       }),
+    exportBackup: () => this.request<any>("/settings/backup-export"),
+    importBackup: (data: any) =>
+      this.request<any>("/settings/backup-import", {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
   };
 
   // Admin Users
