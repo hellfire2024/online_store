@@ -25,7 +25,7 @@ interface SupportTicket {
 }
 
 const SupportTicketsPage: React.FC = () => {
-  const { isAuthenticated, customer } = useCustomerAuth();
+  const { isAuthenticated, isLoading: authLoading, customer } = useCustomerAuth();
   const { siteSettings } = useSiteSettings();
   const navigate = useNavigate();
   const location = useLocation();
@@ -126,7 +126,7 @@ const SupportTicketsPage: React.FC = () => {
     // CRITICAL: Guard prevents ALL execution if not authenticated
     // This must execute BEFORE any async operations
     if (!isAuthenticated || !customer?.id) {
-      // Clear state and return - no API calls at all
+      // Clear state and return – no API calls until auth resolves
       setTickets([]);
       setIsLoading(false);
       return; // ← MUST EXIT before defining async function
@@ -154,6 +154,16 @@ const SupportTicketsPage: React.FC = () => {
 
     loadTickets();
   }, [isAuthenticated, customer?.id, addToast]);
+
+  // Redirect to login as soon as auth is resolved and user is not logged in
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      navigate("/login", {
+        replace: true,
+        state: { from: location.pathname },
+      });
+    }
+  }, [authLoading, isAuthenticated, navigate, location.pathname]);
 
   useEffect(() => {
     setTicketCurrentPage(1);
@@ -208,7 +218,8 @@ const SupportTicketsPage: React.FC = () => {
         (error as any)?.status === 401 ||
         (error as any)?.response?.status === 401
       ) {
-        addToast("Session expired. Please sign in again", "error");
+        addToast("Session expired. Please sign in again.", "error");
+        navigate("/login", { replace: true, state: { from: location.pathname } });
       } else {
         addToast("Failed to create support ticket", "error");
       }
@@ -301,7 +312,13 @@ const SupportTicketsPage: React.FC = () => {
       addToast("Reply sent", "success");
     } catch (error) {
       console.error("Failed to send reply:", error);
-      addToast("Failed to send reply", "error");
+      const status = (error as any)?.status || (error as any)?.response?.status;
+      if (status === 401 || status === 403) {
+        addToast("Session expired. Please sign in again.", "error");
+        navigate("/login", { replace: true, state: { from: location.pathname } });
+      } else {
+        addToast("Failed to send reply", "error");
+      }
     }
   };
 
@@ -334,17 +351,17 @@ const SupportTicketsPage: React.FC = () => {
   };
 
   if (!isAuthenticated) {
+  if (authLoading) {
     return (
       <div className="max-w-6xl mx-auto p-6 py-12 text-center">
-        <p className="text-gray-400 mb-4">Please log in to contact support</p>
-        <button
-          onClick={() => navigate("/login")}
-          className="px-6 py-2 bg-sky-600 text-white rounded hover:bg-sky-700"
-        >
-          Sign In
-        </button>
+        <p className="text-gray-400">Loading...</p>
       </div>
     );
+  }
+
+  if (!isAuthenticated) {
+    // Redirect effect above will fire; render nothing while it navigates
+    return null;
   }
 
   return (

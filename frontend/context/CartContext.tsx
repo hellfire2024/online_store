@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, ReactNode } from "react";
+import React, { createContext, useState, useContext, useEffect, ReactNode } from "react";
 import { CartItem } from "../types";
 import { useToast } from "../hooks/useToast";
 import {
@@ -32,8 +32,24 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 export const CartProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [cartItems, setCartItems] = useState<CartItem[]>(() => {
+    try {
+      const stored = localStorage.getItem("cart_items");
+      return stored ? (JSON.parse(stored) as CartItem[]) : [];
+    } catch {
+      return [];
+    }
+  });
   const { addToast } = useToast();
+
+  // Persist cart to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem("cart_items", JSON.stringify(cartItems));
+    } catch {
+      // storage quota exceeded or unavailable — ignore
+    }
+  }, [cartItems]);
 
   const normalizeCustomText = (text?: string) => (text || "").trim();
 
