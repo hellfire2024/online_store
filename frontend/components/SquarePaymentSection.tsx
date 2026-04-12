@@ -127,7 +127,6 @@ const SquarePaymentSection = forwardRef<
             ".input-container": {
               borderRadius: "8px",
               borderColor: "#CBD5E1",
-              backgroundColor: "#FFFFFF",
             },
             ".input-container.is-focus": {
               borderColor: "#0EA5E9",
@@ -137,14 +136,13 @@ const SquarePaymentSection = forwardRef<
             },
             input: {
               color: "#0F172A",
-              fontSize: "22px",
+              fontFamily: "'Segoe UI', sans-serif",
             },
             "input::placeholder": {
               color: "#64748B",
             },
             ".message-text": {
               color: "#FCA5A5",
-              fontSize: "14px",
             },
           },
         });
