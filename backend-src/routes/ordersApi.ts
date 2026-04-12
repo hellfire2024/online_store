@@ -122,6 +122,16 @@ const resolveSquareSandbox = (settings: any): boolean => {
   return false;
 };
 
+const resolveAuthorizeNetSandbox = (settings: any): boolean => {
+  const explicit = (settings as any)?.paymentConfig?.authorizeNetSandbox;
+  if (typeof explicit === "boolean") {
+    return explicit;
+  }
+
+  // Backward-compatible default to match historical config testing behavior.
+  return true;
+};
+
 const normalizePaymentStatus = (value: unknown): PaymentStatus | null => {
   const normalized = String(value || "")
     .trim()
@@ -762,9 +772,7 @@ router.post("/", async (req: Request, res: Response) => {
         ).trim();
         const [apiLoginId, transactionKey] = authorizeNetKey.split(":");
         if (apiLoginId && transactionKey) {
-          const sandbox = Boolean(
-            (rawSettings as any)?.paymentConfig?.authorizeNetSandbox,
-          );
+          const sandbox = resolveAuthorizeNetSandbox(rawSettings);
           const apiUrl = sandbox
             ? "https://apitest.authorize.net/xml/v1/request.api"
             : "https://api.authorize.net/xml/v1/request.api";
@@ -1779,9 +1787,7 @@ router.post(
         });
       }
 
-      const sandbox = Boolean(
-        (rawSettings as any)?.paymentConfig?.authorizeNetSandbox,
-      );
+      const sandbox = resolveAuthorizeNetSandbox(rawSettings);
       const apiUrl = sandbox
         ? "https://apitest.authorize.net/xml/v1/request.api"
         : "https://api.authorize.net/xml/v1/request.api";

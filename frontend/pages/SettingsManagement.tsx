@@ -1493,6 +1493,31 @@ const SettingsManagement: React.FC = () => {
                     Used by Accept.js in the browser.
                   </p>
                 </div>
+                <div className="flex items-center gap-2 mt-2">
+                  <input
+                    type="checkbox"
+                    id="authorizenet-sandbox"
+                    checked={Boolean(
+                      (settings as any)?.paymentConfig?.authorizeNetSandbox,
+                    )}
+                    onChange={(e) =>
+                      setSettings((prev: any) => ({
+                        ...prev,
+                        paymentConfig: {
+                          ...(prev.paymentConfig || {}),
+                          authorizeNetSandbox: e.target.checked,
+                        },
+                      }))
+                    }
+                    className="accent-sky-500 w-4 h-4 cursor-pointer"
+                  />
+                  <label
+                    htmlFor="authorizenet-sandbox"
+                    className="text-sm text-gray-300 cursor-pointer"
+                  >
+                    Sandbox (testing) mode
+                  </label>
+                </div>
               </div>
             )}
 

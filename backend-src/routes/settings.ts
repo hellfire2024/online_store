@@ -163,26 +163,28 @@ router.post(
                 : "Transaction Key is missing.",
         });
       }
-      // Try to authenticate with Authorize.Net (sandbox)
+      const sandbox = resolveAuthorizeNetSandbox(settings);
+      const apiUrl = sandbox
+        ? "https://apitest.authorize.net/xml/v1/request.api"
+        : "https://api.authorize.net/xml/v1/request.api";
+
+      // Try to authenticate with Authorize.Net in the configured environment.
       const xml = `<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<getMerchantDetailsRequest xmlns=\"AnetApi/xml/v1/schema/AnetApiSchema.xsd\"><merchantAuthentication><name>${apiLoginId}</name><transactionKey>${transactionKey}</transactionKey></merchantAuthentication></getMerchantDetailsRequest>`;
-      const resp = await fetch(
-        "https://apitest.authorize.net/xml/v1/request.api",
-        {
-          method: "POST",
-          headers: { "Content-Type": "text/xml" },
-          body: xml,
-        },
-      );
+      const resp = await fetch(apiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "text/xml" },
+        body: xml,
+      });
       const text = await resp.text();
       if (resp.ok && text.includes("<messages><resultCode>Ok</resultCode>")) {
         return res.json({
           success: true,
-          message: "Authorize.Net connection successful.",
+          message: `Authorize.Net connection successful (${sandbox ? "sandbox" : "production"}).`,
         });
       } else {
         return res.status(400).json({
           success: false,
-          error: "Failed to connect to Authorize.Net. Check your credentials.",
+          error: `Failed to connect to Authorize.Net ${sandbox ? "sandbox" : "production"}. Check your credentials and environment mode.`,
         });
       }
     } catch (error) {
@@ -216,6 +218,17 @@ const resolveSquareSandbox = (settings: any): boolean => {
   }
 
   return false;
+};
+
+const resolveAuthorizeNetSandbox = (settings: any): boolean => {
+  const explicit = (settings as any)?.paymentConfig?.authorizeNetSandbox;
+  if (typeof explicit === "boolean") {
+    return explicit;
+  }
+
+  // Keep sandbox as the backward-compatible default for legacy settings
+  // that predate an explicit Authorize.Net environment toggle.
+  return true;
 };
 
 const normalizeFromAddress = (fromAddress: any) => {
@@ -487,9 +500,7 @@ router.get("/authorizedotnet-config", async (_req: Request, res: Response) => {
     const publicClientKey = String(
       (settings?.paymentApiKeys as any)?.authorizeNetPublicKey || "",
     ).trim();
-    const sandbox = Boolean(
-      (settings as any)?.paymentConfig?.authorizeNetSandbox,
-    );
+    const sandbox = resolveAuthorizeNetSandbox(settings);
     return res.json({ apiLoginId, publicClientKey, sandbox });
   } catch (error) {
     console.error("Error fetching authorize.net config:", error);
