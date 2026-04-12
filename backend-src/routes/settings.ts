@@ -463,6 +463,14 @@ const buildCommerceStatus = (settings: any) => {
 
 const isSafeTableName = (name: string): boolean => /^[a-zA-Z0-9_]+$/.test(name);
 
+// Tables that should never be overwritten during a safe/content-only restore.
+const AUTH_PROTECTED_TABLES = new Set([
+  "admins",
+  "customers",
+  "password_reset_tokens",
+  "customer_addresses",
+]);
+
 const getAllBaseTables = async (): Promise<string[]> => {
   const [rows] = await pool.query<RowDataPacket[]>(
     `SELECT table_name AS tableName
@@ -478,121 +486,162 @@ const getAllBaseTables = async (): Promise<string[]> => {
 };
 
 const getTableColumns = async (table: string): Promise<string[]> => {
-  const [rows] = await pool.query<RowDataPacket[]>(`SHOW COLUMNS FROM \`${table}\``);
+  const [rows] = await pool.query<RowDataPacket[]>(
+    `SHOW COLUMNS FROM \`${table}\``,
+  );
   return rows
     .map((row) => String((row as any).Field || ""))
     .filter((column) => column.length > 0);
 };
 
 // Admin-only full site export for backup/restore portability.
-router.get("/backup-export", requireAdmin, async (_req: Request, res: Response) => {
-  try {
-    const tableNames = await getAllBaseTables();
-    const tables: Record<string, any[]> = {};
+router.get(
+  "/backup-export",
+  requireAdmin,
+  async (_req: Request, res: Response) => {
+    try {
+      const tableNames = await getAllBaseTables();
+      const tables: Record<string, any[]> = {};
 
-    for (const tableName of tableNames) {
-      const [rows] = await pool.query<RowDataPacket[]>(`SELECT * FROM \`${tableName}\``);
-      tables[tableName] = rows;
-    }
-
-    return res.json({
-      version: 1,
-      exportedAt: new Date().toISOString(),
-      tableCount: tableNames.length,
-      tables,
-    });
-  } catch (error) {
-    console.error("Error exporting site backup:", error);
-    return res.status(500).json({ error: "Failed to export site backup" });
-  }
-});
-
-// Admin-only full site restore from a backup-export payload.
-router.post("/backup-import", requireAdmin, async (req: Request, res: Response) => {
-  const backup = req.body;
-  const incomingTables = backup?.tables;
-
-  if (!incomingTables || typeof incomingTables !== "object") {
-    return res.status(400).json({ error: "Invalid backup payload: missing tables object" });
-  }
-
-  const providedTableNames = Object.keys(incomingTables).filter((name) =>
-    isSafeTableName(name),
-  );
-
-  if (!providedTableNames.length) {
-    return res.status(400).json({ error: "Invalid backup payload: no valid table names" });
-  }
-
-  const dbTableSet = new Set(await getAllBaseTables());
-  const targetTables = providedTableNames.filter((name) => dbTableSet.has(name));
-
-  if (!targetTables.length) {
-    return res.status(400).json({ error: "No matching tables found in current database" });
-  }
-
-  const conn = await pool.getConnection();
-  try {
-    await conn.beginTransaction();
-    await conn.query("SET FOREIGN_KEY_CHECKS = 0");
-
-    for (const tableName of targetTables) {
-      await conn.query(`DELETE FROM \`${tableName}\``);
-    }
-
-    const importedRows: Record<string, number> = {};
-    for (const tableName of targetTables) {
-      const rows = Array.isArray(incomingTables[tableName])
-        ? incomingTables[tableName]
-        : [];
-      importedRows[tableName] = rows.length;
-
-      if (!rows.length) {
-        continue;
+      for (const tableName of tableNames) {
+        const [rows] = await pool.query<RowDataPacket[]>(
+          `SELECT * FROM \`${tableName}\``,
+        );
+        tables[tableName] = rows;
       }
 
-      const allowedColumns = new Set(await getTableColumns(tableName));
-      for (const row of rows) {
-        const entries = Object.entries(row || {}).filter(([key]) =>
-          allowedColumns.has(key),
-        );
+      return res.json({
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        restoreMode: "full",
+        protectedTablesForSafeRestore: Array.from(AUTH_PROTECTED_TABLES),
+        tableCount: tableNames.length,
+        tables,
+      });
+    } catch (error) {
+      console.error("Error exporting site backup:", error);
+      return res.status(500).json({ error: "Failed to export site backup" });
+    }
+  },
+);
 
-        if (!entries.length) {
+// Admin-only full site restore from a backup-export payload.
+router.post(
+  "/backup-import",
+  requireAdmin,
+  async (req: Request, res: Response) => {
+    const restoreModeRaw = String(req.body?.mode || "safe").toLowerCase();
+    const restoreMode =
+      restoreModeRaw === "full" ? "full" : ("safe" as "safe" | "full");
+
+    // Backward-compatible payload support:
+    // 1) legacy: { tables: { ... } }
+    // 2) new:    { mode: "safe"|"full", backup: { tables: { ... } } }
+    const backup = req.body?.backup?.tables ? req.body.backup : req.body;
+    const incomingTables = backup?.tables;
+
+    if (!incomingTables || typeof incomingTables !== "object") {
+      return res
+        .status(400)
+        .json({ error: "Invalid backup payload: missing tables object" });
+    }
+
+    const providedTableNames = Object.keys(incomingTables).filter((name) =>
+      isSafeTableName(name),
+    );
+
+    if (!providedTableNames.length) {
+      return res
+        .status(400)
+        .json({ error: "Invalid backup payload: no valid table names" });
+    }
+
+    const dbTableSet = new Set(await getAllBaseTables());
+    const targetTables = providedTableNames
+      .filter((name) => dbTableSet.has(name))
+      .filter((name) =>
+        restoreMode === "full" ? true : !AUTH_PROTECTED_TABLES.has(name),
+      );
+
+    if (!targetTables.length) {
+      return res
+        .status(400)
+        .json({
+          error:
+            restoreMode === "safe"
+              ? "No non-protected matching tables found for safe restore"
+              : "No matching tables found in current database",
+        });
+    }
+
+    const conn = await pool.getConnection();
+    try {
+      await conn.beginTransaction();
+      await conn.query("SET FOREIGN_KEY_CHECKS = 0");
+
+      for (const tableName of targetTables) {
+        await conn.query(`DELETE FROM \`${tableName}\``);
+      }
+
+      const importedRows: Record<string, number> = {};
+      for (const tableName of targetTables) {
+        const rows = Array.isArray(incomingTables[tableName])
+          ? incomingTables[tableName]
+          : [];
+        importedRows[tableName] = rows.length;
+
+        if (!rows.length) {
           continue;
         }
 
-        const columnNames = entries.map(([key]) => `\`${key}\``).join(", ");
-        const placeholders = entries.map(() => "?").join(", ");
-        const values = entries.map(([, value]) => value);
+        const allowedColumns = new Set(await getTableColumns(tableName));
+        for (const row of rows) {
+          const entries = Object.entries(row || {}).filter(([key]) =>
+            allowedColumns.has(key),
+          );
 
-        await conn.query(
-          `INSERT INTO \`${tableName}\` (${columnNames}) VALUES (${placeholders})`,
-          values,
-        );
+          if (!entries.length) {
+            continue;
+          }
+
+          const columnNames = entries.map(([key]) => `\`${key}\``).join(", ");
+          const placeholders = entries.map(() => "?").join(", ");
+          const values = entries.map(([, value]) => value);
+
+          await conn.query(
+            `INSERT INTO \`${tableName}\` (${columnNames}) VALUES (${placeholders})`,
+            values,
+          );
+        }
       }
-    }
 
-    await conn.query("SET FOREIGN_KEY_CHECKS = 1");
-    await conn.commit();
-
-    return res.json({
-      success: true,
-      importedTableCount: targetTables.length,
-      importedRows,
-    });
-  } catch (error) {
-    await conn.rollback();
-    try {
       await conn.query("SET FOREIGN_KEY_CHECKS = 1");
-    } catch {
-      // no-op
+      await conn.commit();
+
+      return res.json({
+        success: true,
+        mode: restoreMode,
+        skippedProtectedTables:
+          restoreMode === "safe"
+            ? providedTableNames.filter((name) => AUTH_PROTECTED_TABLES.has(name))
+            : [],
+        importedTableCount: targetTables.length,
+        importedRows,
+      });
+    } catch (error) {
+      await conn.rollback();
+      try {
+        await conn.query("SET FOREIGN_KEY_CHECKS = 1");
+      } catch {
+        // no-op
+      }
+      console.error("Error importing site backup:", error);
+      return res.status(500).json({ error: "Failed to import site backup" });
+    } finally {
+      conn.release();
     }
-    console.error("Error importing site backup:", error);
-    return res.status(500).json({ error: "Failed to import site backup" });
-  } finally {
-    conn.release();
-  }
-});
+  },
+);
 
 // Safe: returns only the publishable key (never the secret key)
 router.get("/stripe-config", async (_req: Request, res: Response) => {

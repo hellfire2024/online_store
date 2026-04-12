@@ -391,10 +391,10 @@ class ApiClient {
         body: JSON.stringify(data),
       }),
     exportBackup: () => this.request<any>("/settings/backup-export"),
-    importBackup: (data: any) =>
+    importBackup: (data: any, mode: "safe" | "full" = "safe") =>
       this.request<any>("/settings/backup-import", {
         method: "POST",
-        body: JSON.stringify(data),
+        body: JSON.stringify({ mode, backup: data }),
       }),
   };
 

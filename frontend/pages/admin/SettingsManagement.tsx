@@ -773,6 +773,7 @@ const SettingsManagement: React.FC = () => {
   });
   const [commerceStatus, setCommerceStatus] = useState<any>(null);
   const [backupBusy, setBackupBusy] = useState(false);
+  const [safeRestoreMode, setSafeRestoreMode] = useState(true);
   const backupFileInputRef = useRef<HTMLInputElement | null>(null);
 
   const hasSettingsUnsavedChanges =
@@ -1393,16 +1394,16 @@ const SettingsManagement: React.FC = () => {
     }
   };
 
-  const handleImportBackup = async (
-    e: React.ChangeEvent<HTMLInputElement>,
-  ) => {
+  const handleImportBackup = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) {
       return;
     }
 
     const confirmRestore = window.confirm(
-      "Restore this backup to the current site? This will overwrite existing content.",
+      safeRestoreMode
+        ? "Safe restore will overwrite site content but preserve admin/customer login-related tables. Continue?"
+        : "Full restore will overwrite ALL tables, including admin/customer auth data. Continue?",
     );
     if (!confirmRestore) {
       e.target.value = "";
@@ -1413,7 +1414,10 @@ const SettingsManagement: React.FC = () => {
       setBackupBusy(true);
       const text = await file.text();
       const payload = JSON.parse(text);
-      await apiClient.settings.importBackup(payload);
+      await apiClient.settings.importBackup(
+        payload,
+        safeRestoreMode ? "safe" : "full",
+      );
 
       const refreshed = await apiClient.settings.get();
       setSettings(refreshed);
@@ -1836,6 +1840,21 @@ const SettingsManagement: React.FC = () => {
                 Export the full site dataset as JSON, or restore it on another
                 site from a previous export.
               </p>
+              <label className="flex items-center gap-2 text-sm text-gray-300 mb-4">
+                <input
+                  type="checkbox"
+                  checked={safeRestoreMode}
+                  onChange={(e) => setSafeRestoreMode(e.target.checked)}
+                />
+                Safe restore mode (recommended): keep admin/customer auth tables
+                unchanged
+              </label>
+              {!safeRestoreMode && (
+                <p className="text-xs text-amber-300 mb-4">
+                  Full restore is destructive and can replace admin users,
+                  customer accounts, and password-reset records.
+                </p>
+              )}
               <input
                 ref={backupFileInputRef}
                 type="file"
