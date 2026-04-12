@@ -118,7 +118,8 @@ const AuthorizeNetPaymentSection = forwardRef<
     script.src = scriptSrc;
     script.async = true;
     script.onload = () => setIsScriptLoaded(true);
-    script.onerror = () => setLoadError("Failed to load Authorize.Net Accept.js.");
+    script.onerror = () =>
+      setLoadError("Failed to load Authorize.Net Accept.js.");
     document.body.appendChild(script);
 
     return () => {
