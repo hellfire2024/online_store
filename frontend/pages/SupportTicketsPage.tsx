@@ -350,7 +350,6 @@ const SupportTicketsPage: React.FC = () => {
     }
   };
 
-  if (!isAuthenticated) {
   if (authLoading) {
     return (
       <div className="max-w-6xl mx-auto p-6 py-12 text-center">
