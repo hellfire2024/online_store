@@ -122,7 +122,32 @@ const SquarePaymentSection = forwardRef<
           config.locationId,
         );
         paymentsRef.current = payments;
-        const card = await payments.card();
+        const card = await payments.card({
+          style: {
+            ".input-container": {
+              borderRadius: "8px",
+              borderColor: "#CBD5E1",
+              backgroundColor: "#FFFFFF",
+            },
+            ".input-container.is-focus": {
+              borderColor: "#0EA5E9",
+            },
+            ".input-container.is-error": {
+              borderColor: "#EF4444",
+            },
+            input: {
+              color: "#0F172A",
+              fontSize: "22px",
+            },
+            "input::placeholder": {
+              color: "#64748B",
+            },
+            ".message-text": {
+              color: "#FCA5A5",
+              fontSize: "14px",
+            },
+          },
+        });
         cardRef.current = card;
         if (cardContainerRef.current) {
           await card.attach(cardContainerRef.current);
