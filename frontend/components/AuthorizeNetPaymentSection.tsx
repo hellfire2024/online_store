@@ -170,7 +170,11 @@ const AuthorizeNetPaymentSection = forwardRef<
             const texts: string[] = (response.messages.message || []).map(
               (m: any) => m.text || "",
             );
-            console.error("[Authorize.Net Accept.js error]", { codes, texts, response });
+            console.error("[Authorize.Net Accept.js error]", {
+              codes,
+              texts,
+              response,
+            });
             let msg = texts[0] || "Card tokenisation failed.";
             // E_WC_14 = authentication failed → Public Client Key mismatch
             if (

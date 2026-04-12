@@ -1490,7 +1490,13 @@ const SettingsManagement: React.FC = () => {
                     className={inputClasses}
                   />
                   <p className="text-xs text-gray-400 mt-1">
-                    Found in your Authorize.Net account: <strong>Account → Settings → General Security Settings → Manage Public Client Key</strong>. Must be a long alphanumeric string (NOT the Transaction Key).
+                    Found in your Authorize.Net account:{" "}
+                    <strong>
+                      Account → Settings → General Security Settings → Manage
+                      Public Client Key
+                    </strong>
+                    . Must be a long alphanumeric string (NOT the Transaction
+                    Key).
                   </p>
                 </div>
                 <div className="flex items-center gap-2 mt-2">
