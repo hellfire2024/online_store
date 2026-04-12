@@ -96,29 +96,35 @@ const AuthorizeNetPaymentSection = forwardRef<
       return;
     }
 
-    const scriptSrc = config.sandbox
-      ? "https://jstest.authorize.net/v1/Accept.js"
-      : "https://js.authorize.net/v1/Accept.js";
+    setLoadError(null);
+    setIsScriptLoaded(false);
 
-    if (!document.querySelector(`script[src="${scriptSrc}"]`)) {
-      const script = document.createElement("script");
-      script.src = scriptSrc;
-      script.async = true;
-      script.onload = () => setIsScriptLoaded(true);
-      script.onerror = () =>
-        setLoadError("Failed to load Authorize.Net Accept.js.");
-      document.body.appendChild(script);
-    } else if (window.Accept) {
-      setIsScriptLoaded(true);
-    } else {
-      const interval = setInterval(() => {
-        if (window.Accept) {
-          clearInterval(interval);
-          setIsScriptLoaded(true);
-        }
-      }, 100);
-      return () => clearInterval(interval);
-    }
+    const sandboxUrl = "https://jstest.authorize.net/v1/Accept.js";
+    const productionUrl = "https://js.authorize.net/v1/Accept.js";
+    const scriptSrc = config.sandbox ? sandboxUrl : productionUrl;
+    const oppositeSrc = config.sandbox ? productionUrl : sandboxUrl;
+
+    // Remove opposite env script so Accept.js matches the selected mode.
+    document
+      .querySelectorAll(`script[src="${oppositeSrc}"]`)
+      .forEach((node) => node.parentElement?.removeChild(node));
+
+    // Force reload to avoid stale global Accept instance between env switches.
+    document
+      .querySelectorAll(`script[src="${scriptSrc}"]`)
+      .forEach((node) => node.parentElement?.removeChild(node));
+
+    const script = document.createElement("script");
+    script.src = scriptSrc;
+    script.async = true;
+    script.onload = () => setIsScriptLoaded(true);
+    script.onerror = () => setLoadError("Failed to load Authorize.Net Accept.js.");
+    document.body.appendChild(script);
+
+    return () => {
+      script.onload = null;
+      script.onerror = null;
+    };
   }, [config.apiLoginId, config.publicClientKey, config.sandbox]);
 
   useImperativeHandle(ref, () => ({
