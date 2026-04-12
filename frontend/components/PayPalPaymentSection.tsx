@@ -23,8 +23,8 @@ const PayPalPaymentSection: React.FC<PayPalPaymentSectionProps> = ({
   disabled = false,
 }) => {
   return (
-    <div className="space-y-3">
-      <p className="text-sm text-gray-400">
+    <div className="space-y-3 rounded-lg bg-white p-4 border border-slate-300">
+      <p className="text-sm text-slate-700">
         Click the button below to pay via PayPal. You will be redirected to
         complete payment.
       </p>
