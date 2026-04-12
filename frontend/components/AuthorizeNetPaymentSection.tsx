@@ -164,9 +164,26 @@ const AuthorizeNetPaymentSection = forwardRef<
 
         window.Accept!.dispatchData(secureData, async (response: any) => {
           if (response.messages.resultCode === "Error") {
-            const msg =
-              response.messages.message?.[0]?.text ||
-              "Card tokenisation failed.";
+            const codes: string[] = (response.messages.message || []).map(
+              (m: any) => m.code || "",
+            );
+            const texts: string[] = (response.messages.message || []).map(
+              (m: any) => m.text || "",
+            );
+            console.error("[Authorize.Net Accept.js error]", { codes, texts, response });
+            let msg = texts[0] || "Card tokenisation failed.";
+            // E_WC_14 = authentication failed → Public Client Key mismatch
+            if (
+              codes.includes("E_WC_14") ||
+              msg.toLowerCase().includes("authentication")
+            ) {
+              msg =
+                msg +
+                " — Your Public Client Key in Settings → Payment is invalid or does not match your API Login ID. " +
+                "Log into " +
+                (config.sandbox ? "sandbox.authorize.net" : "authorize.net") +
+                " → Account → Settings → General Security Settings → Manage Public Client Key and paste the correct key.";
+            }
             resolve({ success: false, error: msg });
             return;
           }
