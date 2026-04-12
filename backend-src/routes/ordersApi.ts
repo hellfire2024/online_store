@@ -1850,12 +1850,9 @@ router.post(
         "Authorize.Net charge error:",
         error?.response?.data || error?.message,
       );
-      return res
-        .status(500)
-        .json({
-          error:
-            gatewayMessage || error?.message || "Failed to process payment",
-        });
+      return res.status(500).json({
+        error: gatewayMessage || error?.message || "Failed to process payment",
+      });
     }
   },
 );
