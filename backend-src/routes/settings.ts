@@ -143,15 +143,9 @@ router.post(
   async (_req: Request, res: Response) => {
     try {
       const settings = await readSettings();
-      const authorizeNetKey = String(
-        settings?.paymentApiKeys?.authorizeNet || "",
-      ).trim();
-      const apiLoginId = authorizeNetKey.includes(":")
-        ? authorizeNetKey.split(":")[0]
-        : authorizeNetKey;
-      const transactionKey = authorizeNetKey.includes(":")
-        ? authorizeNetKey.split(":")[1]
-        : "";
+      const { apiLoginId, transactionKey } = parseAuthorizeNetCredentials(
+        settings?.paymentApiKeys?.authorizeNet,
+      );
       if (!apiLoginId || !transactionKey) {
         return res.status(400).json({
           success: false,
@@ -182,9 +176,12 @@ router.post(
           message: `Authorize.Net connection successful (${sandbox ? "sandbox" : "production"}).`,
         });
       } else {
+        const gatewayMessage = extractAuthorizeNetXmlMessage(text);
         return res.status(400).json({
           success: false,
-          error: `Failed to connect to Authorize.Net ${sandbox ? "sandbox" : "production"}. Check your credentials and environment mode.`,
+          error:
+            gatewayMessage ||
+            `Failed to connect to Authorize.Net ${sandbox ? "sandbox" : "production"}. Check your credentials and environment mode.`,
         });
       }
     } catch (error) {
@@ -231,6 +228,36 @@ const resolveAuthorizeNetSandbox = (settings: any): boolean => {
   return true;
 };
 
+const parseAuthorizeNetCredentials = (value: unknown) => {
+  const combined = String(value || "").trim();
+  const separatorIndex = combined.indexOf(":");
+
+  if (separatorIndex < 0) {
+    return {
+      apiLoginId: combined.trim(),
+      transactionKey: "",
+    };
+  }
+
+  return {
+    apiLoginId: combined.slice(0, separatorIndex).trim(),
+    transactionKey: combined.slice(separatorIndex + 1).trim(),
+  };
+};
+
+const extractAuthorizeNetXmlMessage = (xml: string): string | null => {
+  const textMessage = xml.match(/<text>([^<]+)<\/text>/i)?.[1];
+  if (textMessage && textMessage.trim()) {
+    return textMessage.trim();
+  }
+
+  const fallback = xml.match(/<message>([^<]+)<\/message>/i)?.[1];
+  if (fallback && fallback.trim()) {
+    return fallback.trim();
+  }
+
+  return null;
+};
 const normalizeFromAddress = (fromAddress: any) => {
   if (!fromAddress || typeof fromAddress !== "object") {
     return fromAddress;
@@ -491,12 +518,9 @@ router.get("/square-config", async (_req: Request, res: Response) => {
 router.get("/authorizedotnet-config", async (_req: Request, res: Response) => {
   try {
     const settings = await readSettings();
-    const authorizeNetKey = String(
-      settings?.paymentApiKeys?.authorizeNet || "",
-    ).trim();
-    const apiLoginId = authorizeNetKey.includes(":")
-      ? authorizeNetKey.split(":")[0]
-      : authorizeNetKey;
+    const { apiLoginId } = parseAuthorizeNetCredentials(
+      settings?.paymentApiKeys?.authorizeNet,
+    );
     const publicClientKey = String(
       (settings?.paymentApiKeys as any)?.authorizeNetPublicKey || "",
     ).trim();

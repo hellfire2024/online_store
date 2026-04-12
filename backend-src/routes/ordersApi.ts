@@ -132,6 +132,23 @@ const resolveAuthorizeNetSandbox = (settings: any): boolean => {
   return true;
 };
 
+const parseAuthorizeNetCredentials = (value: unknown) => {
+  const combined = String(value || "").trim();
+  const separatorIndex = combined.indexOf(":");
+
+  if (separatorIndex < 0) {
+    return {
+      apiLoginId: combined.trim(),
+      transactionKey: "",
+    };
+  }
+
+  return {
+    apiLoginId: combined.slice(0, separatorIndex).trim(),
+    transactionKey: combined.slice(separatorIndex + 1).trim(),
+  };
+};
+
 const normalizePaymentStatus = (value: unknown): PaymentStatus | null => {
   const normalized = String(value || "")
     .trim()
@@ -767,10 +784,9 @@ router.post("/", async (req: Request, res: Response) => {
 
     if (incomingAuthorizeNetTxId && explicitPaymentStatus !== "paid") {
       try {
-        const authorizeNetKey = String(
-          rawSettings?.paymentApiKeys?.authorizeNet || "",
-        ).trim();
-        const [apiLoginId, transactionKey] = authorizeNetKey.split(":");
+        const { apiLoginId, transactionKey } = parseAuthorizeNetCredentials(
+          rawSettings?.paymentApiKeys?.authorizeNet,
+        );
         if (apiLoginId && transactionKey) {
           const sandbox = resolveAuthorizeNetSandbox(rawSettings);
           const apiUrl = sandbox
@@ -1773,12 +1789,9 @@ router.post(
       const rawSettings = settingsRows.length
         ? parseSettings(settingsRows[0].settings)
         : {};
-      const authorizeNetKey = String(
-        rawSettings?.paymentApiKeys?.authorizeNet || "",
-      ).trim();
-      const parts = authorizeNetKey.split(":");
-      const apiLoginId = parts[0] || "";
-      const transactionKey = parts[1] || "";
+      const { apiLoginId, transactionKey } = parseAuthorizeNetCredentials(
+        rawSettings?.paymentApiKeys?.authorizeNet,
+      );
 
       if (!apiLoginId || !transactionKey) {
         return res.status(400).json({
@@ -1827,13 +1840,22 @@ router.post(
         authCode: transactionResponse.authCode,
       });
     } catch (error: any) {
+      const gatewayMessage =
+        error?.response?.data?.messages?.message?.[0]?.text ||
+        error?.response?.data?.transactionResponse?.errors?.error?.[0]
+          ?.errorText ||
+        error?.response?.data?.transactionResponse?.messages?.message?.[0]
+          ?.description;
       console.error(
         "Authorize.Net charge error:",
         error?.response?.data || error?.message,
       );
       return res
         .status(500)
-        .json({ error: error?.message || "Failed to process payment" });
+        .json({
+          error:
+            gatewayMessage || error?.message || "Failed to process payment",
+        });
     }
   },
 );
