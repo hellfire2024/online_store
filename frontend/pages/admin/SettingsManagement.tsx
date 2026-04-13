@@ -1621,20 +1621,38 @@ const SettingsManagement: React.FC = () => {
   const buttonClasses =
     "bg-sky-500 text-white font-bold py-2 px-6 rounded-lg hover:bg-sky-600";
 
-  const tabOptions: Array<{ tab: SettingsTab; label: string }> = [
-    { tab: "general", label: "General" },
-    { tab: "backup", label: "Backup & Restore" },
-    { tab: "footer", label: "Footer" },
-    { tab: "menus", label: "Menus" },
-    { tab: "payment", label: "Payment" },
-    { tab: "shipping", label: "Shipping" },
-    { tab: "tax", label: "Tax Rules" },
-    { tab: "orders", label: "Orders" },
-    { tab: "email", label: "Email Configuration" },
-    { tab: "support", label: "Support" },
-    { tab: "segmentation", label: "Segmentation" },
-    { tab: "forms", label: "Form Fields" },
-    { tab: "terms", label: "Terms & Conditions" },
+  const tabGroups: Array<{
+    title: string;
+    items: Array<{ tab: SettingsTab; label: string }>;
+  }> = [
+    {
+      title: "Site Structure",
+      items: [
+        { tab: "general", label: "General" },
+        { tab: "footer", label: "Footer" },
+        { tab: "menus", label: "Menus" },
+        { tab: "forms", label: "Form Fields" },
+        { tab: "terms", label: "Terms & Conditions" },
+      ],
+    },
+    {
+      title: "Commerce",
+      items: [
+        { tab: "payment", label: "Payment" },
+        { tab: "shipping", label: "Shipping" },
+        { tab: "tax", label: "Tax Rules" },
+        { tab: "orders", label: "Orders" },
+        { tab: "backup", label: "Backup & Restore" },
+      ],
+    },
+    {
+      title: "Customer & Messaging",
+      items: [
+        { tab: "email", label: "Email Configuration" },
+        { tab: "support", label: "Support" },
+        { tab: "segmentation", label: "Segmentation" },
+      ],
+    },
   ];
 
   const TabButton: React.FC<{ tab: SettingsTab; label: string }> = ({
@@ -1664,17 +1682,33 @@ const SettingsManagement: React.FC = () => {
           onChange={(e) => setActiveTab(e.target.value as SettingsTab)}
           className="w-full p-2 bg-slate-800 border border-slate-600 rounded-md text-white"
         >
-          {tabOptions.map((item) => (
-            <option key={item.tab} value={item.tab}>
-              {item.label}
-            </option>
+          {tabGroups.map((group) => (
+            <optgroup key={group.title} label={group.title}>
+              {group.items.map((item) => (
+                <option key={item.tab} value={item.tab}>
+                  {item.label}
+                </option>
+              ))}
+            </optgroup>
           ))}
         </select>
       </div>
 
-      <div className="hidden sm:flex gap-1 border-b border-slate-700 overflow-x-auto pb-1">
-        {tabOptions.map((item) => (
-          <TabButton key={item.tab} tab={item.tab} label={item.label} />
+      <div className="hidden sm:grid grid-cols-1 lg:grid-cols-3 gap-3 border-b border-slate-700 pb-3">
+        {tabGroups.map((group) => (
+          <div
+            key={group.title}
+            className="bg-slate-900/50 border border-slate-700 rounded-md p-2"
+          >
+            <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-2 px-1">
+              {group.title}
+            </p>
+            <div className="flex flex-wrap gap-1">
+              {group.items.map((item) => (
+                <TabButton key={item.tab} tab={item.tab} label={item.label} />
+              ))}
+            </div>
+          </div>
         ))}
       </div>
 
