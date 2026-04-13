@@ -582,14 +582,19 @@ router.get(
   async (req: Request, res: Response) => {
     try {
       const mode = resolveRestoreMode(req.query.mode);
-      const requestedChunk = Number(req.query.tablesPerChunk || DEFAULT_TABLES_PER_CHUNK);
+      const requestedChunk = Number(
+        req.query.tablesPerChunk || DEFAULT_TABLES_PER_CHUNK,
+      );
       const tablesPerChunk =
         Number.isFinite(requestedChunk) && requestedChunk > 0
           ? Math.floor(requestedChunk)
           : DEFAULT_TABLES_PER_CHUNK;
 
       const tableNames = getTargetTablesForMode(await getAllBaseTables(), mode);
-      const chunkCount = Math.max(1, Math.ceil(tableNames.length / tablesPerChunk));
+      const chunkCount = Math.max(
+        1,
+        Math.ceil(tableNames.length / tablesPerChunk),
+      );
       const approxBytes = await getApproxBackupBytes(tableNames);
 
       return res.json({
@@ -606,7 +611,9 @@ router.get(
       });
     } catch (error) {
       console.error("Error building backup export manifest:", error);
-      return res.status(500).json({ error: "Failed to build backup export manifest" });
+      return res
+        .status(500)
+        .json({ error: "Failed to build backup export manifest" });
     }
   },
 );
@@ -618,7 +625,9 @@ router.get(
   async (req: Request, res: Response) => {
     try {
       const mode = resolveRestoreMode(req.query.mode);
-      const requestedChunk = Number(req.query.tablesPerChunk || DEFAULT_TABLES_PER_CHUNK);
+      const requestedChunk = Number(
+        req.query.tablesPerChunk || DEFAULT_TABLES_PER_CHUNK,
+      );
       const tablesPerChunk =
         Number.isFinite(requestedChunk) && requestedChunk > 0
           ? Math.floor(requestedChunk)
@@ -630,16 +639,23 @@ router.get(
       }
 
       const tableNames = getTargetTablesForMode(await getAllBaseTables(), mode);
-      const chunkCount = Math.max(1, Math.ceil(tableNames.length / tablesPerChunk));
+      const chunkCount = Math.max(
+        1,
+        Math.ceil(tableNames.length / tablesPerChunk),
+      );
       if (chunkIndex >= chunkCount) {
-        return res.status(400).json({ error: "chunkIndex out of range", chunkCount });
+        return res
+          .status(400)
+          .json({ error: "chunkIndex out of range", chunkCount });
       }
 
       const start = chunkIndex * tablesPerChunk;
       const chunkTableNames = tableNames.slice(start, start + tablesPerChunk);
       const tables: Record<string, any[]> = {};
       for (const tableName of chunkTableNames) {
-        const [rows] = await pool.query<RowDataPacket[]>(`SELECT * FROM \`${tableName}\``);
+        const [rows] = await pool.query<RowDataPacket[]>(
+          `SELECT * FROM \`${tableName}\``,
+        );
         tables[tableName] = rows;
       }
 

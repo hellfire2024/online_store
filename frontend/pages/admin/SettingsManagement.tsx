@@ -1408,7 +1408,9 @@ const SettingsManagement: React.FC = () => {
       );
       const chunkCount = Number(manifest?.chunkCount || 0);
       if (!chunkCount) {
-        throw new Error("Chunked backup manifest is missing chunk information.");
+        throw new Error(
+          "Chunked backup manifest is missing chunk information.",
+        );
       }
 
       for (let i = 0; i < chunkCount; i += 1) {

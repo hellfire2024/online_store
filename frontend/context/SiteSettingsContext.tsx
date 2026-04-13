@@ -206,7 +206,9 @@ export const SiteSettingsProvider: React.FC<{ children: ReactNode }> = ({
         setSettingsError(
           `Failed to load site settings from backend: ${error instanceof Error ? error.message : String(error)}`,
         );
-        setSiteSettings((prev) => applyLoadingDefaults(defaultSettings, prev.loadingDefaults));
+        setSiteSettings((prev) =>
+          applyLoadingDefaults(defaultSettings, prev.loadingDefaults),
+        );
       } finally {
         setIsLoading(false);
       }
