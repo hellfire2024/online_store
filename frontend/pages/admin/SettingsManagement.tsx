@@ -362,6 +362,7 @@ import { TrashIcon } from "../../components/Icons";
 
 type SettingsTab =
   | "general"
+  | "backup"
   | "footer"
   | "menus"
   | "payment"
@@ -1640,6 +1641,7 @@ const SettingsManagement: React.FC = () => {
 
       <div className="flex flex-wrap gap-1 border-b border-slate-700 overflow-x-auto">
         <TabButton tab="general" label="General" />
+        <TabButton tab="backup" label="Backup & Restore" />
         <TabButton tab="footer" label="Footer" />
         <TabButton tab="menus" label="Menus" />
         <TabButton tab="payment" label="Payment" />
@@ -1917,75 +1919,6 @@ const SettingsManagement: React.FC = () => {
               </div>
             </div>
 
-            <div className="border-t border-slate-700 pt-6">
-              <h3 className="text-lg font-semibold text-white mb-4">
-                Site Backup & Restore
-              </h3>
-              <p className="text-xs text-gray-400 mb-4">
-                Export the full site dataset as JSON, or restore it on another
-                site from a previous export.
-              </p>
-              <div className="mb-4 max-w-xs">
-                <label className="block text-gray-300 text-sm font-bold mb-1">
-                  Tables Per Backup Chunk
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  max="20"
-                  value={tablesPerChunk}
-                  onChange={(e) =>
-                    setTablesPerChunk(Math.max(1, Number(e.target.value) || 1))
-                  }
-                  className={inputClasses}
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Used when backup exceeds single-file size limits.
-                </p>
-              </div>
-              <label className="flex items-center gap-2 text-sm text-gray-300 mb-4">
-                <input
-                  type="checkbox"
-                  checked={safeRestoreMode}
-                  onChange={(e) => setSafeRestoreMode(e.target.checked)}
-                />
-                Safe restore mode (recommended): keep admin/customer auth tables
-                unchanged
-              </label>
-              {!safeRestoreMode && (
-                <p className="text-xs text-amber-300 mb-4">
-                  Full restore is destructive and can replace admin users,
-                  customer accounts, and password-reset records.
-                </p>
-              )}
-              <input
-                ref={backupFileInputRef}
-                type="file"
-                accept="application/json,.json"
-                multiple
-                className="hidden"
-                onChange={handleImportBackup}
-              />
-              <div className="flex flex-wrap gap-3">
-                <button
-                  type="button"
-                  onClick={handleExportBackup}
-                  disabled={backupBusy}
-                  className={`px-4 py-2 rounded text-white ${backupBusy ? "bg-slate-500 cursor-not-allowed" : "bg-sky-600 hover:bg-sky-700"}`}
-                >
-                  {backupBusy ? "Working..." : "Export Full Site Backup"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => backupFileInputRef.current?.click()}
-                  disabled={backupBusy}
-                  className={`px-4 py-2 rounded text-white ${backupBusy ? "bg-slate-500 cursor-not-allowed" : "bg-amber-600 hover:bg-amber-700"}`}
-                >
-                  Restore Site From Backup
-                </button>
-              </div>
-            </div>
-
             <div className="flex justify-end">
               <button
                 onClick={handleSaveSettings}
@@ -1993,6 +1926,77 @@ const SettingsManagement: React.FC = () => {
                 disabled={!hasSettingsUnsavedChanges}
               >
                 Save General Settings
+              </button>
+            </div>
+          </div>
+        )}
+
+        {activeTab === "backup" && (
+          <div className="space-y-6">
+            <h2 className="text-2xl font-semibold text-white mb-4">
+              Site Backup & Restore
+            </h2>
+            <p className="text-sm text-gray-400">
+              Export the full site dataset as JSON, or restore it on another
+              site from a previous export.
+            </p>
+            <div className="max-w-xs">
+              <label className="block text-gray-300 text-sm font-bold mb-1">
+                Tables Per Backup Chunk
+              </label>
+              <input
+                type="number"
+                min="1"
+                max="20"
+                value={tablesPerChunk}
+                onChange={(e) =>
+                  setTablesPerChunk(Math.max(1, Number(e.target.value) || 1))
+                }
+                className={inputClasses}
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Used when backup exceeds single-file size limits.
+              </p>
+            </div>
+            <label className="flex items-center gap-2 text-sm text-gray-300">
+              <input
+                type="checkbox"
+                checked={safeRestoreMode}
+                onChange={(e) => setSafeRestoreMode(e.target.checked)}
+              />
+              Safe restore mode (recommended): keep admin/customer auth tables
+              unchanged
+            </label>
+            {!safeRestoreMode && (
+              <p className="text-xs text-amber-300">
+                Full restore is destructive and can replace admin users,
+                customer accounts, and password-reset records.
+              </p>
+            )}
+            <input
+              ref={backupFileInputRef}
+              type="file"
+              accept="application/json,.json"
+              multiple
+              className="hidden"
+              onChange={handleImportBackup}
+            />
+            <div className="flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={handleExportBackup}
+                disabled={backupBusy}
+                className={`px-4 py-2 rounded text-white ${backupBusy ? "bg-slate-500 cursor-not-allowed" : "bg-sky-600 hover:bg-sky-700"}`}
+              >
+                {backupBusy ? "Working..." : "Export Full Site Backup"}
+              </button>
+              <button
+                type="button"
+                onClick={() => backupFileInputRef.current?.click()}
+                disabled={backupBusy}
+                className={`px-4 py-2 rounded text-white ${backupBusy ? "bg-slate-500 cursor-not-allowed" : "bg-amber-600 hover:bg-amber-700"}`}
+              >
+                Restore Site From Backup
               </button>
             </div>
           </div>
