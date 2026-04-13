@@ -1633,20 +1633,20 @@ const SettingsManagement: React.FC = () => {
         { tab: "menus", label: "Menus" },
         { tab: "forms", label: "Form Fields" },
         { tab: "terms", label: "Terms & Conditions" },
+        { tab: "backup", label: "Backup & Restore" },
       ],
     },
     {
-      title: "Commerce",
+      title: "Commerce Operations",
       items: [
         { tab: "payment", label: "Payment" },
         { tab: "shipping", label: "Shipping" },
         { tab: "tax", label: "Tax Rules" },
         { tab: "orders", label: "Orders" },
-        { tab: "backup", label: "Backup & Restore" },
       ],
     },
     {
-      title: "Customer & Messaging",
+      title: "Customer Experience",
       items: [
         { tab: "email", label: "Email Configuration" },
         { tab: "support", label: "Support" },
