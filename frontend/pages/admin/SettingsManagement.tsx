@@ -1621,6 +1621,22 @@ const SettingsManagement: React.FC = () => {
   const buttonClasses =
     "bg-sky-500 text-white font-bold py-2 px-6 rounded-lg hover:bg-sky-600";
 
+  const tabOptions: Array<{ tab: SettingsTab; label: string }> = [
+    { tab: "general", label: "General" },
+    { tab: "backup", label: "Backup & Restore" },
+    { tab: "footer", label: "Footer" },
+    { tab: "menus", label: "Menus" },
+    { tab: "payment", label: "Payment" },
+    { tab: "shipping", label: "Shipping" },
+    { tab: "tax", label: "Tax Rules" },
+    { tab: "orders", label: "Orders" },
+    { tab: "email", label: "Email Configuration" },
+    { tab: "support", label: "Support" },
+    { tab: "segmentation", label: "Segmentation" },
+    { tab: "forms", label: "Form Fields" },
+    { tab: "terms", label: "Terms & Conditions" },
+  ];
+
   const TabButton: React.FC<{ tab: SettingsTab; label: string }> = ({
     tab,
     label,
@@ -1639,23 +1655,30 @@ const SettingsManagement: React.FC = () => {
     <div>
       <h1 className="text-3xl font-bold text-white mb-8">Site Settings</h1>
 
-      <div className="flex flex-wrap gap-1 border-b border-slate-700 overflow-x-auto">
-        <TabButton tab="general" label="General" />
-        <TabButton tab="backup" label="Backup & Restore" />
-        <TabButton tab="footer" label="Footer" />
-        <TabButton tab="menus" label="Menus" />
-        <TabButton tab="payment" label="Payment" />
-        <TabButton tab="shipping" label="Shipping" />
-        <TabButton tab="tax" label="Tax Rules" />
-        <TabButton tab="orders" label="Orders" />
-        <TabButton tab="email" label="Email Configuration" />
-        <TabButton tab="support" label="Support" />
-        <TabButton tab="segmentation" label="Segmentation" />
-        <TabButton tab="forms" label="Form Fields" />
-        <TabButton tab="terms" label="Terms & Conditions" />
+      <div className="sm:hidden mb-3">
+        <label className="block text-xs uppercase tracking-wide text-gray-400 mb-1">
+          Settings Section
+        </label>
+        <select
+          value={activeTab}
+          onChange={(e) => setActiveTab(e.target.value as SettingsTab)}
+          className="w-full p-2 bg-slate-800 border border-slate-600 rounded-md text-white"
+        >
+          {tabOptions.map((item) => (
+            <option key={item.tab} value={item.tab}>
+              {item.label}
+            </option>
+          ))}
+        </select>
       </div>
 
-      <div className="bg-slate-800 p-6 rounded-b-lg border border-t-0 border-slate-700 min-h-160">
+      <div className="hidden sm:flex gap-1 border-b border-slate-700 overflow-x-auto pb-1">
+        {tabOptions.map((item) => (
+          <TabButton key={item.tab} tab={item.tab} label={item.label} />
+        ))}
+      </div>
+
+      <div className="bg-slate-800 p-4 sm:p-6 rounded-lg sm:rounded-b-lg border border-slate-700 sm:border-t-0 min-h-160">
         {activeTab === "general" && (
           <div className="space-y-6">
             <h2 className="text-2xl font-semibold text-white mb-4">
