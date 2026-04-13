@@ -164,7 +164,7 @@ router.post(
         : "https://api.authorize.net/xml/v1/request.api";
 
       // Try to authenticate with Authorize.Net in the configured environment.
-      const xml = `<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<getMerchantDetailsRequest xmlns=\"AnetApi/xml/v1/schema/AnetApiSchema.xsd\"><merchantAuthentication><name>${apiLoginId}</name><transactionKey>${transactionKey}</transactionKey></merchantAuthentication></getMerchantDetailsRequest>`;
+      const xml = `<?xml version="1.0" encoding="utf-8"?>\n<getMerchantDetailsRequest xmlns="AnetApi/xml/v1/schema/AnetApiSchema.xsd"><merchantAuthentication><name>${apiLoginId}</name><transactionKey>${transactionKey}</transactionKey></merchantAuthentication></getMerchantDetailsRequest>`;
       const resp = await fetch(apiUrl, {
         method: "POST",
         headers: { "Content-Type": "text/xml" },
@@ -471,6 +471,38 @@ const AUTH_PROTECTED_TABLES = new Set([
   "customer_addresses",
 ]);
 
+const BACKUP_SINGLE_FILE_MAX_BYTES = 8 * 1024 * 1024; // 8 MB
+const DEFAULT_TABLES_PER_CHUNK = 4;
+
+const resolveRestoreMode = (raw: unknown): "safe" | "full" =>
+  String(raw || "safe").toLowerCase() === "full" ? "full" : "safe";
+
+const getTargetTablesForMode = (
+  tableNames: string[],
+  mode: "safe" | "full",
+): string[] =>
+  tableNames.filter((name) =>
+    mode === "full" ? true : !AUTH_PROTECTED_TABLES.has(name),
+  );
+
+const getApproxBackupBytes = async (tableNames: string[]): Promise<number> => {
+  if (!tableNames.length) {
+    return 0;
+  }
+
+  const placeholders = tableNames.map(() => "?").join(", ");
+  const [rows] = await pool.query<RowDataPacket[]>(
+    `SELECT SUM(COALESCE(data_length, 0) + COALESCE(index_length, 0)) AS totalBytes
+     FROM information_schema.tables
+     WHERE table_schema = DATABASE()
+       AND table_name IN (${placeholders})`,
+    tableNames,
+  );
+
+  const value = Number((rows[0] as any)?.totalBytes || 0);
+  return Number.isFinite(value) ? value : 0;
+};
+
 const getAllBaseTables = async (): Promise<string[]> => {
   const [rows] = await pool.query<RowDataPacket[]>(
     `SELECT table_name AS tableName
@@ -498,9 +530,27 @@ const getTableColumns = async (table: string): Promise<string[]> => {
 router.get(
   "/backup-export",
   requireAdmin,
-  async (_req: Request, res: Response) => {
+  async (req: Request, res: Response) => {
     try {
-      const tableNames = await getAllBaseTables();
+      const mode = resolveRestoreMode(req.query.mode);
+      const tableNames = getTargetTablesForMode(await getAllBaseTables(), mode);
+      const approxBytes = await getApproxBackupBytes(tableNames);
+
+      if (approxBytes > BACKUP_SINGLE_FILE_MAX_BYTES) {
+        return res.status(413).json({
+          error:
+            "Backup is too large for single-file export. Use chunked export endpoints.",
+          mode,
+          approxBytes,
+          maxSingleFileBytes: BACKUP_SINGLE_FILE_MAX_BYTES,
+          chunkHint: {
+            manifestEndpoint: "/api/settings/backup-export-manifest",
+            chunkEndpoint: "/api/settings/backup-export-chunk",
+            defaultTablesPerChunk: DEFAULT_TABLES_PER_CHUNK,
+          },
+        });
+      }
+
       const tables: Record<string, any[]> = {};
 
       for (const tableName of tableNames) {
@@ -513,7 +563,7 @@ router.get(
       return res.json({
         version: 1,
         exportedAt: new Date().toISOString(),
-        restoreMode: "full",
+        restoreMode: mode,
         protectedTablesForSafeRestore: Array.from(AUTH_PROTECTED_TABLES),
         tableCount: tableNames.length,
         tables,
@@ -521,6 +571,91 @@ router.get(
     } catch (error) {
       console.error("Error exporting site backup:", error);
       return res.status(500).json({ error: "Failed to export site backup" });
+    }
+  },
+);
+
+// Admin-only export manifest for chunked backup downloads.
+router.get(
+  "/backup-export-manifest",
+  requireAdmin,
+  async (req: Request, res: Response) => {
+    try {
+      const mode = resolveRestoreMode(req.query.mode);
+      const requestedChunk = Number(req.query.tablesPerChunk || DEFAULT_TABLES_PER_CHUNK);
+      const tablesPerChunk =
+        Number.isFinite(requestedChunk) && requestedChunk > 0
+          ? Math.floor(requestedChunk)
+          : DEFAULT_TABLES_PER_CHUNK;
+
+      const tableNames = getTargetTablesForMode(await getAllBaseTables(), mode);
+      const chunkCount = Math.max(1, Math.ceil(tableNames.length / tablesPerChunk));
+      const approxBytes = await getApproxBackupBytes(tableNames);
+
+      return res.json({
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        restoreMode: mode,
+        tablesPerChunk,
+        tableCount: tableNames.length,
+        chunkCount,
+        tableNames,
+        approxBytes,
+        maxSingleFileBytes: BACKUP_SINGLE_FILE_MAX_BYTES,
+        protectedTablesForSafeRestore: Array.from(AUTH_PROTECTED_TABLES),
+      });
+    } catch (error) {
+      console.error("Error building backup export manifest:", error);
+      return res.status(500).json({ error: "Failed to build backup export manifest" });
+    }
+  },
+);
+
+// Admin-only export chunk for large backups.
+router.get(
+  "/backup-export-chunk",
+  requireAdmin,
+  async (req: Request, res: Response) => {
+    try {
+      const mode = resolveRestoreMode(req.query.mode);
+      const requestedChunk = Number(req.query.tablesPerChunk || DEFAULT_TABLES_PER_CHUNK);
+      const tablesPerChunk =
+        Number.isFinite(requestedChunk) && requestedChunk > 0
+          ? Math.floor(requestedChunk)
+          : DEFAULT_TABLES_PER_CHUNK;
+      const chunkIndex = Number(req.query.chunkIndex || 0);
+
+      if (!Number.isFinite(chunkIndex) || chunkIndex < 0) {
+        return res.status(400).json({ error: "Invalid chunkIndex" });
+      }
+
+      const tableNames = getTargetTablesForMode(await getAllBaseTables(), mode);
+      const chunkCount = Math.max(1, Math.ceil(tableNames.length / tablesPerChunk));
+      if (chunkIndex >= chunkCount) {
+        return res.status(400).json({ error: "chunkIndex out of range", chunkCount });
+      }
+
+      const start = chunkIndex * tablesPerChunk;
+      const chunkTableNames = tableNames.slice(start, start + tablesPerChunk);
+      const tables: Record<string, any[]> = {};
+      for (const tableName of chunkTableNames) {
+        const [rows] = await pool.query<RowDataPacket[]>(`SELECT * FROM \`${tableName}\``);
+        tables[tableName] = rows;
+      }
+
+      return res.json({
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        restoreMode: mode,
+        chunkIndex,
+        chunkCount,
+        tablesPerChunk,
+        tableNames: chunkTableNames,
+        tables,
+      });
+    } catch (error) {
+      console.error("Error exporting backup chunk:", error);
+      return res.status(500).json({ error: "Failed to export backup chunk" });
     }
   },
 );
@@ -564,14 +699,12 @@ router.post(
       );
 
     if (!targetTables.length) {
-      return res
-        .status(400)
-        .json({
-          error:
-            restoreMode === "safe"
-              ? "No non-protected matching tables found for safe restore"
-              : "No matching tables found in current database",
-        });
+      return res.status(400).json({
+        error:
+          restoreMode === "safe"
+            ? "No non-protected matching tables found for safe restore"
+            : "No matching tables found in current database",
+      });
     }
 
     const conn = await pool.getConnection();
@@ -623,7 +756,9 @@ router.post(
         mode: restoreMode,
         skippedProtectedTables:
           restoreMode === "safe"
-            ? providedTableNames.filter((name) => AUTH_PROTECTED_TABLES.has(name))
+            ? providedTableNames.filter((name) =>
+                AUTH_PROTECTED_TABLES.has(name),
+              )
             : [],
         importedTableCount: targetTables.length,
         importedRows,
@@ -637,6 +772,112 @@ router.post(
       }
       console.error("Error importing site backup:", error);
       return res.status(500).json({ error: "Failed to import site backup" });
+    } finally {
+      conn.release();
+    }
+  },
+);
+
+// Admin-only chunked import endpoint for large backups.
+router.post(
+  "/backup-import-chunk",
+  requireAdmin,
+  async (req: Request, res: Response) => {
+    const restoreMode = resolveRestoreMode(req.body?.mode);
+    const clearExisting = Boolean(req.body?.clearExisting);
+    const incomingTables = req.body?.tables;
+
+    if (!incomingTables || typeof incomingTables !== "object") {
+      return res
+        .status(400)
+        .json({ error: "Invalid chunk payload: missing tables object" });
+    }
+
+    const providedTableNames = Object.keys(incomingTables).filter((name) =>
+      isSafeTableName(name),
+    );
+    if (!providedTableNames.length) {
+      return res
+        .status(400)
+        .json({ error: "Invalid chunk payload: no valid table names" });
+    }
+
+    const dbTableSet = new Set(await getAllBaseTables());
+    const targetTables = getTargetTablesForMode(
+      providedTableNames.filter((name) => dbTableSet.has(name)),
+      restoreMode,
+    );
+    if (!targetTables.length) {
+      return res
+        .status(400)
+        .json({ error: "No matching tables found in this chunk" });
+    }
+
+    const conn = await pool.getConnection();
+    try {
+      await conn.beginTransaction();
+      await conn.query("SET FOREIGN_KEY_CHECKS = 0");
+
+      if (clearExisting) {
+        const allTablesForMode = getTargetTablesForMode(
+          await getAllBaseTables(),
+          restoreMode,
+        );
+        for (const tableName of allTablesForMode) {
+          await conn.query(`DELETE FROM \`${tableName}\``);
+        }
+      }
+
+      const importedRows: Record<string, number> = {};
+      for (const tableName of targetTables) {
+        const rows = Array.isArray(incomingTables[tableName])
+          ? incomingTables[tableName]
+          : [];
+        importedRows[tableName] = rows.length;
+
+        if (!rows.length) {
+          continue;
+        }
+
+        const allowedColumns = new Set(await getTableColumns(tableName));
+        for (const row of rows) {
+          const entries = Object.entries(row || {}).filter(([key]) =>
+            allowedColumns.has(key),
+          );
+          if (!entries.length) {
+            continue;
+          }
+
+          const columnNames = entries.map(([key]) => `\`${key}\``).join(", ");
+          const placeholders = entries.map(() => "?").join(", ");
+          const values = entries.map(([, value]) => value);
+
+          await conn.query(
+            `INSERT INTO \`${tableName}\` (${columnNames}) VALUES (${placeholders})`,
+            values,
+          );
+        }
+      }
+
+      await conn.query("SET FOREIGN_KEY_CHECKS = 1");
+      await conn.commit();
+
+      return res.json({
+        success: true,
+        mode: restoreMode,
+        clearExisting,
+        importedTableCount: targetTables.length,
+        importedRows,
+      });
+    } catch (error) {
+      await conn.rollback();
+      try {
+        await conn.query("SET FOREIGN_KEY_CHECKS = 1");
+      } catch {
+        // no-op
+      }
+      console.error("Error importing backup chunk:", error);
+      return res.status(500).json({ error: "Failed to import backup chunk" });
     } finally {
       conn.release();
     }

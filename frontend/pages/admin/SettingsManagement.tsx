@@ -774,6 +774,7 @@ const SettingsManagement: React.FC = () => {
   const [commerceStatus, setCommerceStatus] = useState<any>(null);
   const [backupBusy, setBackupBusy] = useState(false);
   const [safeRestoreMode, setSafeRestoreMode] = useState(true);
+  const [tablesPerChunk, setTablesPerChunk] = useState(4);
   const backupFileInputRef = useRef<HTMLInputElement | null>(null);
 
   const hasSettingsUnsavedChanges =
@@ -1370,23 +1371,68 @@ const SettingsManagement: React.FC = () => {
     }));
   };
 
+  const downloadJsonFile = (name: string, payload: any) => {
+    const blob = new Blob([JSON.stringify(payload, null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = name;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   const handleExportBackup = async () => {
     try {
       setBackupBusy(true);
-      const payload = await apiClient.settings.exportBackup();
-      const fileName = `site-backup-${new Date().toISOString().replace(/[:.]/g, "-")}.json`;
-      const blob = new Blob([JSON.stringify(payload, null, 2)], {
-        type: "application/json",
+      const mode: "safe" | "full" = safeRestoreMode ? "safe" : "full";
+      const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+
+      try {
+        const payload = await apiClient.settings.exportBackup(mode);
+        downloadJsonFile(`site-backup-${mode}-${timestamp}.json`, payload);
+        addToast("Backup exported successfully.", "success");
+        return;
+      } catch (singleError: any) {
+        if (singleError?.status !== 413) {
+          throw singleError;
+        }
+      }
+
+      const manifest = await apiClient.settings.exportBackupManifest(
+        mode,
+        tablesPerChunk,
+      );
+      const chunkCount = Number(manifest?.chunkCount || 0);
+      if (!chunkCount) {
+        throw new Error("Chunked backup manifest is missing chunk information.");
+      }
+
+      for (let i = 0; i < chunkCount; i += 1) {
+        const chunk = await apiClient.settings.exportBackupChunk(
+          i,
+          mode,
+          tablesPerChunk,
+        );
+        const fileNumber = String(i + 1).padStart(3, "0");
+        downloadJsonFile(
+          `site-backup-${mode}-${timestamp}.chunk-${fileNumber}-of-${String(chunkCount).padStart(3, "0")}.json`,
+          chunk,
+        );
+      }
+
+      downloadJsonFile(`site-backup-${mode}-${timestamp}.manifest.json`, {
+        ...manifest,
+        filePattern: `site-backup-${mode}-${timestamp}.chunk-###-of-${String(chunkCount).padStart(3, "0")}.json`,
       });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-      addToast("Backup exported successfully.", "success");
+
+      addToast(
+        `Large backup exported in ${chunkCount} chunks plus manifest file.`,
+        "success",
+      );
     } catch (error: any) {
       addToast(error?.message || "Backup export failed.", "error");
     } finally {
@@ -1395,8 +1441,8 @@ const SettingsManagement: React.FC = () => {
   };
 
   const handleImportBackup = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) {
       return;
     }
 
@@ -1412,12 +1458,49 @@ const SettingsManagement: React.FC = () => {
 
     try {
       setBackupBusy(true);
-      const text = await file.text();
-      const payload = JSON.parse(text);
-      await apiClient.settings.importBackup(
-        payload,
-        safeRestoreMode ? "safe" : "full",
+      const parsedPayloads = await Promise.all(
+        files.map(async (file) => {
+          const text = await file.text();
+          return JSON.parse(text);
+        }),
       );
+
+      const mode: "safe" | "full" = safeRestoreMode ? "safe" : "full";
+      const legacyFull =
+        parsedPayloads.length === 1 &&
+        parsedPayloads[0]?.tables &&
+        parsedPayloads[0]?.chunkIndex === undefined;
+
+      if (legacyFull) {
+        await apiClient.settings.importBackup(parsedPayloads[0], mode);
+      } else {
+        const manifest = parsedPayloads.find(
+          (p: any) => p?.chunkCount && !p?.tables,
+        ) as any;
+        const chunkPayloads = parsedPayloads
+          .filter((p: any) => p?.tables && Number.isInteger(p?.chunkIndex))
+          .sort((a: any, b: any) => a.chunkIndex - b.chunkIndex);
+
+        if (!chunkPayloads.length) {
+          throw new Error(
+            "No valid backup chunks found. Select a full backup JSON or chunk files with manifest.",
+          );
+        }
+
+        if (manifest && chunkPayloads.length !== Number(manifest.chunkCount)) {
+          throw new Error(
+            `Chunk count mismatch. Expected ${manifest.chunkCount}, received ${chunkPayloads.length}.`,
+          );
+        }
+
+        for (let i = 0; i < chunkPayloads.length; i += 1) {
+          const chunk = chunkPayloads[i];
+          await apiClient.settings.importBackupChunk(chunk.tables, {
+            mode,
+            clearExisting: i === 0,
+          });
+        }
+      }
 
       const refreshed = await apiClient.settings.get();
       setSettings(refreshed);
@@ -1840,6 +1923,24 @@ const SettingsManagement: React.FC = () => {
                 Export the full site dataset as JSON, or restore it on another
                 site from a previous export.
               </p>
+              <div className="mb-4 max-w-xs">
+                <label className="block text-gray-300 text-sm font-bold mb-1">
+                  Tables Per Backup Chunk
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  max="20"
+                  value={tablesPerChunk}
+                  onChange={(e) =>
+                    setTablesPerChunk(Math.max(1, Number(e.target.value) || 1))
+                  }
+                  className={inputClasses}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Used when backup exceeds single-file size limits.
+                </p>
+              </div>
               <label className="flex items-center gap-2 text-sm text-gray-300 mb-4">
                 <input
                   type="checkbox"
@@ -1859,6 +1960,7 @@ const SettingsManagement: React.FC = () => {
                 ref={backupFileInputRef}
                 type="file"
                 accept="application/json,.json"
+                multiple
                 className="hidden"
                 onChange={handleImportBackup}
               />

@@ -390,11 +390,39 @@ class ApiClient {
         method: "PUT",
         body: JSON.stringify(data),
       }),
-    exportBackup: () => this.request<any>("/settings/backup-export"),
+    exportBackup: (mode: "safe" | "full" = "safe") =>
+      this.request<any>(`/settings/backup-export?mode=${mode}`),
+    exportBackupManifest: (
+      mode: "safe" | "full" = "safe",
+      tablesPerChunk = 4,
+    ) =>
+      this.request<any>(
+        `/settings/backup-export-manifest?mode=${mode}&tablesPerChunk=${tablesPerChunk}`,
+      ),
+    exportBackupChunk: (
+      chunkIndex: number,
+      mode: "safe" | "full" = "safe",
+      tablesPerChunk = 4,
+    ) =>
+      this.request<any>(
+        `/settings/backup-export-chunk?mode=${mode}&tablesPerChunk=${tablesPerChunk}&chunkIndex=${chunkIndex}`,
+      ),
     importBackup: (data: any, mode: "safe" | "full" = "safe") =>
       this.request<any>("/settings/backup-import", {
         method: "POST",
         body: JSON.stringify({ mode, backup: data }),
+      }),
+    importBackupChunk: (
+      tables: Record<string, any[]>,
+      options?: { mode?: "safe" | "full"; clearExisting?: boolean },
+    ) =>
+      this.request<any>("/settings/backup-import-chunk", {
+        method: "POST",
+        body: JSON.stringify({
+          mode: options?.mode || "safe",
+          clearExisting: Boolean(options?.clearExisting),
+          tables,
+        }),
       }),
   };
 
