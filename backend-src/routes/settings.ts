@@ -6,6 +6,37 @@ import { requireAdmin } from "../middleware/auth.js";
 
 const router = Router();
 
+const normalizeUrl = (value: string): string => value.trim().replace(/\/$/, "");
+
+const getCanonicalApiBaseUrl = (): string => {
+  const serviceUrl = normalizeUrl(process.env.SERVICE_URL_BACKEND || "");
+  if (serviceUrl) {
+    return serviceUrl.endsWith("/api") ? serviceUrl : `${serviceUrl}/api`;
+  }
+
+  const prodDomain = normalizeUrl(process.env.PROD_API_DOMAIN || "");
+  if (prodDomain) {
+    const withScheme =
+      prodDomain.startsWith("http://") || prodDomain.startsWith("https://")
+        ? prodDomain
+        : `https://${prodDomain}`;
+    return withScheme.endsWith("/api") ? withScheme : `${withScheme}/api`;
+  }
+
+  return "/api";
+};
+
+const applyProductionSettingsGuard = (settings: any): any => {
+  if (process.env.NODE_ENV !== "production") {
+    return settings;
+  }
+
+  return {
+    ...settings,
+    apiBaseUrl: getCanonicalApiBaseUrl(),
+  };
+};
+
 // POST: Test PayPal configuration (Client ID and Secret)
 router.post("/paypal-config-test", async (_req: Request, res: Response) => {
   try {
@@ -1008,11 +1039,13 @@ router.get("/", async (_req: Request, res: Response) => {
         ? JSON.parse(rows[0].settings)
         : rows[0].settings;
 
-    if (settings?.fromAddress) {
-      settings.fromAddress = normalizeFromAddress(settings.fromAddress);
+    const safeSettings = applyProductionSettingsGuard(settings);
+
+    if (safeSettings?.fromAddress) {
+      safeSettings.fromAddress = normalizeFromAddress(safeSettings.fromAddress);
     }
 
-    return res.json(settings);
+    return res.json(safeSettings);
   } catch (error) {
     console.error("Error fetching settings:", error);
     return res.status(500).json({ error: "Failed to fetch settings" });
@@ -1020,22 +1053,26 @@ router.get("/", async (_req: Request, res: Response) => {
 });
 
 // Update settings
-router.put("/", async (req: Request, res: Response) => {
+router.put("/", requireAdmin, async (req: Request, res: Response) => {
   try {
+    const payload = { ...(req.body || {}) };
+
     console.log(
       "Received settings update request, body size:",
-      JSON.stringify(req.body).length,
+      JSON.stringify(payload).length,
       "bytes",
     );
 
-    // Debug: print the settings being saved
-    console.log("[Settings] Saving to DB:", JSON.stringify(req.body, null, 2));
+    // Avoid logging sensitive key values in production.
+    console.log("[Settings] Saving keys:", Object.keys(payload));
 
-    if (req.body?.fromAddress) {
-      req.body.fromAddress = normalizeFromAddress(req.body.fromAddress);
+    if (payload?.fromAddress) {
+      payload.fromAddress = normalizeFromAddress(payload.fromAddress);
     }
 
-    const settingsJson = JSON.stringify(req.body);
+    const guardedPayload = applyProductionSettingsGuard(payload);
+
+    const settingsJson = JSON.stringify(guardedPayload);
 
     const [result] = await pool.query(
       `INSERT INTO site_settings (id, settings) VALUES (1, ?)
@@ -1047,7 +1084,7 @@ router.put("/", async (req: Request, res: Response) => {
       "Settings saved successfully to database, affected rows:",
       (result as any).affectedRows,
     );
-    return res.json(req.body);
+    return res.json(guardedPayload);
   } catch (error) {
     console.error("Error updating settings:", error);
     return res.status(500).json({
