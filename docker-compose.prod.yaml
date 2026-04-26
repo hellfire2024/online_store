@@ -86,7 +86,7 @@ services:
     ports:
       - "3307:3306"
     volumes:
-      - mysql_data:/var/lib/mysql
+      - mysql_data_prod:/var/lib/mysql
 
   # Disabled by default in production.
   # Enable only if needed, and protect it with IP allow-listing or private access.
@@ -108,4 +108,4 @@ services:
     command: /bin/sh -c "echo 'ServerName ${PROD_PHPMYADMIN_DOMAIN}' >> /etc/apache2/apache2.conf && docker-php-entrypoint apache2-foreground"
 
 volumes:
-  mysql_data:
+  mysql_data_prod:
