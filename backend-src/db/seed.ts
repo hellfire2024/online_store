@@ -5,6 +5,9 @@ export async function seedDatabase(): Promise<void> {
   console.log("🌱 Seeding database...");
 
   try {
+    const configuredApiBaseUrl =
+      (process.env.SERVICE_URL_BACKEND || "").trim() || "/api";
+
     // Always use snake_case: migrations guarantee these columns exist (they match CREATE TABLE definitions).
     // resolveColumnName can pick camelCase alias columns added by ensureAliasColumn, which causes
     // NOT NULL violations on original snake_case columns excluded from INSERT statements.
@@ -80,7 +83,9 @@ export async function seedDatabase(): Promise<void> {
       maxReviewsDisplayed: 5,
       paymentApiKeys: {},
       shippingApiKeys: {},
-      apiBaseUrl: "https://devapi.adaptivegis.com/api",
+      apiBaseUrl: configuredApiBaseUrl.endsWith("/api")
+        ? configuredApiBaseUrl
+        : `${configuredApiBaseUrl.replace(/\/$/, "")}/api`,
     };
 
     await pool.query(
