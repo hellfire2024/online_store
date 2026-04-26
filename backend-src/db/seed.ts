@@ -42,27 +42,14 @@ export async function seedDatabase(): Promise<void> {
         "products",
         "customImageUploadPrice",
         "custom_image_upload_price",
-      ),
-    ]);
-
-    // Create default admin user
-    const adminId = crypto.randomUUID();
-    const adminPassword = await bcrypt.hash("admin123", 10);
-
-    await pool.query(
-      `INSERT INTO admins (id, username, email, ${adminPasswordColumn}, role, permissions)
-       VALUES (?, ?, ?, ?, ?, ?)
-       ON DUPLICATE KEY UPDATE username = username`,
-      [
-        adminId,
-        "admin",
-        "admin@customthreads.com",
-        adminPassword,
-        "super_admin",
-        JSON.stringify(["all"]),
-      ],
-    );
-
+      // Always use snake_case: migrations guarantee these columns exist (they match CREATE TABLE definitions).
+      // resolveColumnName was picking up camelCase alias columns added by ensureAliasColumn, which
+      // caused NOT NULL violations on the original snake_case column being excluded from the INSERT.
+      const adminPasswordColumn = "password_hash";
+      const imageColumn = "image_url";
+      const galleryColumn = "gallery_id";
+      const customImageUploadColumn = "allow_custom_image_upload";
+      const customImagePriceColumn = "custom_image_upload_price";
     // Create sample gallery
     const galleryId = crypto.randomUUID();
     await pool.query(
