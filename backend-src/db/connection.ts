@@ -48,7 +48,12 @@ const resolvedPort = resolveConfigValue("DB_PORT", dbConfig.port, "3306");
 const resolvedUser =
   (process.env.DB_USER && process.env.DB_USER.trim()) ||
   (process.env.MYSQL_USER && process.env.MYSQL_USER.trim()) ||
-  resolveConfigValue("DB_USER", dbConfig.user, isProduction ? "" : "root", !isProduction);
+  resolveConfigValue(
+    "DB_USER",
+    dbConfig.user,
+    isProduction ? "" : "root",
+    !isProduction,
+  );
 
 const resolvedPassword =
   (process.env.DB_PASSWORD && process.env.DB_PASSWORD.trim()) ||
@@ -66,7 +71,8 @@ if (isProduction) {
   const missingEnv: string[] = [];
   if (!resolvedUser) missingEnv.push("DB_USER or MYSQL_USER");
   if (!resolvedPassword) missingEnv.push("DB_PASSWORD or MYSQL_PASSWORD");
-  if (!resolvedDatabase) missingEnv.push("DB_NAME/DB_DATABASE or MYSQL_DATABASE");
+  if (!resolvedDatabase)
+    missingEnv.push("DB_NAME/DB_DATABASE or MYSQL_DATABASE");
 
   if (missingEnv.length > 0) {
     throw new Error(
