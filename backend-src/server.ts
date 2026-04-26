@@ -166,20 +166,69 @@ app.set("trust proxy", 1);
 app.use(helmet());
 
 // CORS configuration
-// Allow both frontend and API domains in production
-const allowedOrigins = [
+const normalizeOrigin = (value: string): string =>
+  value.trim().replace(/\/$/, "").toLowerCase();
+
+const toOriginFromDomain = (domain?: string): string | null => {
+  if (!domain) return null;
+  const trimmed = domain.trim();
+  if (!trimmed) return null;
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+    return normalizeOrigin(trimmed);
+  }
+  return normalizeOrigin(`https://${trimmed}`);
+};
+
+const corsOriginCandidates = [
+  // Explicit CORS_ORIGIN supports comma-separated list.
+  ...(process.env.CORS_ORIGIN || "")
+    .split(",")
+    .map((v) => v.trim())
+    .filter(Boolean),
+  // Production domains from compose/coolify env.
+  process.env.SERVICE_URL_FRONTEND,
+  process.env.SERVICE_URL_BACKEND,
+  toOriginFromDomain(process.env.PROD_FRONTEND_DOMAIN),
+  toOriginFromDomain(process.env.PROD_API_DOMAIN),
+  // Common production frontend variants.
+  "https://adaptivegis.com",
+  "https://www.adaptivegis.com",
+  // Existing dev hosts.
   "https://dev.adaptivegis.com",
   "https://devapi.adaptivegis.com",
-  "https://devapi.adaptivegis.com",
-];
+]
+  .filter((v): v is string => typeof v === "string" && v.trim().length > 0)
+  .map((v) => normalizeOrigin(v));
+
+const allowedOrigins = Array.from(new Set(corsOriginCandidates));
+
+const isTrustedPatternOrigin = (origin: string): boolean => {
+  try {
+    const { hostname } = new URL(origin);
+    return (
+      hostname === "adaptivegis.com" ||
+      hostname.endsWith(".adaptivegis.com") ||
+      hostname === "localhost" ||
+      hostname === "127.0.0.1"
+    );
+  } catch {
+    return false;
+  }
+};
+
+console.log("✅ Allowed CORS origins:", allowedOrigins);
 app.use(
   cors({
     origin: function (origin, callback) {
       // allow requests with no origin (like mobile apps, curl, etc.)
       if (!origin) return callback(null, true);
-      if (allowedOrigins.includes(origin)) {
+      if (
+        allowedOrigins.includes(normalizeOrigin(origin)) ||
+        isTrustedPatternOrigin(origin)
+      ) {
         return callback(null, true);
       } else {
+        console.error(`[CORS] Blocked origin: ${origin}`);
         return callback(new Error("Not allowed by CORS"));
       }
     },
