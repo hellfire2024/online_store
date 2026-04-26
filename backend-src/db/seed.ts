@@ -1,55 +1,37 @@
 import { pool } from "./connection.js";
 import bcrypt from "bcryptjs";
 
-async function hasColumn(table: string, column: string): Promise<boolean> {
-  const [rows] = await pool.query(`SHOW COLUMNS FROM \`${table}\` LIKE ?`, [
-    column,
-  ]);
-  return Array.isArray(rows) && rows.length > 0;
-}
-
-async function resolveColumnName(
-  table: string,
-  camelCaseColumn: string,
-  snakeCaseColumn: string,
-): Promise<string> {
-  if (await hasColumn(table, camelCaseColumn)) {
-    return camelCaseColumn;
-  }
-  return snakeCaseColumn;
-}
-
 export async function seedDatabase(): Promise<void> {
   console.log("🌱 Seeding database...");
 
   try {
-    const [
-      adminPasswordColumn,
-      imageColumn,
-      galleryColumn,
-      customImageUploadColumn,
-      customImagePriceColumn,
-    ] = await Promise.all([
-      resolveColumnName("admins", "passwordHash", "password_hash"),
-      resolveColumnName("products", "imageUrl", "image_url"),
-      resolveColumnName("products", "galleryId", "gallery_id"),
-      resolveColumnName(
-        "products",
-        "allowCustomImageUpload",
-        "allow_custom_image_upload",
-      ),
-      resolveColumnName(
-        "products",
-        "customImageUploadPrice",
-        "custom_image_upload_price",
-      // Always use snake_case: migrations guarantee these columns exist (they match CREATE TABLE definitions).
-      // resolveColumnName was picking up camelCase alias columns added by ensureAliasColumn, which
-      // caused NOT NULL violations on the original snake_case column being excluded from the INSERT.
-      const adminPasswordColumn = "password_hash";
-      const imageColumn = "image_url";
-      const galleryColumn = "gallery_id";
-      const customImageUploadColumn = "allow_custom_image_upload";
-      const customImagePriceColumn = "custom_image_upload_price";
+    // Always use snake_case: migrations guarantee these columns exist (they match CREATE TABLE definitions).
+    // resolveColumnName can pick camelCase alias columns added by ensureAliasColumn, which causes
+    // NOT NULL violations on original snake_case columns excluded from INSERT statements.
+    const adminPasswordColumn = "password_hash";
+    const imageColumn = "image_url";
+    const galleryColumn = "gallery_id";
+    const customImageUploadColumn = "allow_custom_image_upload";
+    const customImagePriceColumn = "custom_image_upload_price";
+
+    // Create default admin user
+    const adminId = crypto.randomUUID();
+    const adminPassword = await bcrypt.hash("admin123", 10);
+
+    await pool.query(
+      `INSERT INTO admins (id, username, email, ${adminPasswordColumn}, role, permissions)
+       VALUES (?, ?, ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE username = username`,
+      [
+        adminId,
+        "admin",
+        "admin@customthreads.com",
+        adminPassword,
+        "super_admin",
+        JSON.stringify(["all"]),
+      ],
+    );
+
     // Create sample gallery
     const galleryId = crypto.randomUUID();
     await pool.query(
