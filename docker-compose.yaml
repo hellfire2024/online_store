@@ -29,6 +29,9 @@ services:
       DB_USER: adaptivegis-dev
       DB_PASSWORD: we1r9dveIPTzjJ84HMD6
       DB_NAME: agis_dev_db
+      MYSQL_USER: adaptivegis-dev
+      MYSQL_PASSWORD: we1r9dveIPTzjJ84HMD6
+      MYSQL_DATABASE: agis_dev_db
       JWT_SECRET: 2b1e7e2e-4c6a-4e2b-8c7e-7e2e4c6a8c7e-2026-02-12
     depends_on:
       mysql:
