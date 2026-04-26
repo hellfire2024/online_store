@@ -2,6 +2,8 @@ import mysql from "mysql2/promise";
 import fs from "fs";
 import path from "path";
 
+const isProduction = process.env.NODE_ENV === "production";
+
 // Load DB config from site_settings table (runtime config)
 function getDbConfigFromSettings(): any {
   try {
@@ -22,32 +24,56 @@ function resolveConfigValue(
   envKey: string,
   settingsValue: any,
   fallback: string,
+  allowSettingsFallback = true,
 ): string {
   const envValue = process.env[envKey];
   if (typeof envValue === "string" && envValue.trim().length > 0) {
     return envValue.trim();
   }
-  if (typeof settingsValue === "string" && settingsValue.trim().length > 0) {
+  if (
+    allowSettingsFallback &&
+    typeof settingsValue === "string" &&
+    settingsValue.trim().length > 0
+  ) {
     return settingsValue.trim();
   }
   return fallback;
 }
 
 // Database connection pool configuration
-const dbConfig = getDbConfigFromSettings();
+const dbConfig = isProduction ? {} : getDbConfigFromSettings();
 const resolvedHost = resolveConfigValue("DB_HOST", dbConfig.host, "localhost");
 const resolvedPort = resolveConfigValue("DB_PORT", dbConfig.port, "3306");
-const resolvedUser = resolveConfigValue("DB_USER", dbConfig.user, "root");
-const resolvedPassword = resolveConfigValue(
-  "DB_PASSWORD",
-  dbConfig.password,
-  "",
-);
+
+const resolvedUser =
+  (process.env.DB_USER && process.env.DB_USER.trim()) ||
+  (process.env.MYSQL_USER && process.env.MYSQL_USER.trim()) ||
+  resolveConfigValue("DB_USER", dbConfig.user, "root", !isProduction);
+
+const resolvedPassword =
+  (process.env.DB_PASSWORD && process.env.DB_PASSWORD.trim()) ||
+  (process.env.MYSQL_PASSWORD && process.env.MYSQL_PASSWORD.trim()) ||
+  resolveConfigValue("DB_PASSWORD", dbConfig.password, "", !isProduction);
+
 const resolvedDatabase =
   (process.env.DB_DATABASE && process.env.DB_DATABASE.trim()) ||
   (process.env.DB_NAME && process.env.DB_NAME.trim()) ||
+  (process.env.MYSQL_DATABASE && process.env.MYSQL_DATABASE.trim()) ||
   (typeof dbConfig.database === "string" && dbConfig.database.trim()) ||
   "online_store";
+
+if (isProduction) {
+  const missingEnv: string[] = [];
+  if (!resolvedUser) missingEnv.push("DB_USER or MYSQL_USER");
+  if (!resolvedPassword) missingEnv.push("DB_PASSWORD or MYSQL_PASSWORD");
+  if (!resolvedDatabase) missingEnv.push("DB_NAME/DB_DATABASE or MYSQL_DATABASE");
+
+  if (missingEnv.length > 0) {
+    throw new Error(
+      `Missing required DB environment variables in production: ${missingEnv.join(", ")}`,
+    );
+  }
+}
 
 const poolConfig = {
   host: resolvedHost,
