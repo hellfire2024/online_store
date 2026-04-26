@@ -28,7 +28,7 @@ router.post(
       const { username, password } = req.body;
 
       const [rows] = await pool.query<RowDataPacket[]>(
-        "SELECT * FROM admins WHERE (username = ? OR email = ?) AND is_active = TRUE",
+        "SELECT * FROM admins WHERE (username = ? OR email = ?) LIMIT 1",
         [username, username],
       );
 
@@ -40,9 +40,31 @@ router.post(
       }
 
       const admin = rows[0];
-      const validPassword = await bcrypt.compare(password, admin.password_hash);
+      const adminIsActive =
+        typeof admin.is_active === "boolean"
+          ? admin.is_active
+          : typeof admin.isActive === "boolean"
+            ? admin.isActive
+            : true;
+      if (!adminIsActive) {
+        return res.status(401).json({ error: "Invalid credentials" });
+      }
+
+      const adminPasswordHash =
+        (typeof admin.password_hash === "string" && admin.password_hash) ||
+        (typeof admin.passwordHash === "string" && admin.passwordHash) ||
+        "";
+
+      if (!adminPasswordHash) {
+        console.error(
+          `[Auth] Admin login FAILED: no password hash for "${username}" (id=${admin.id})`,
+        );
+        return res.status(401).json({ error: "Invalid credentials" });
+      }
+
+      const validPassword = await bcrypt.compare(password, adminPasswordHash);
       console.log(
-        `[Auth] Admin "${username}" found (id=${admin.id}, is_active=${admin.is_active}), hash present=${!!admin.password_hash}`,
+        `[Auth] Admin "${username}" found (id=${admin.id}, is_active=${adminIsActive}), hash present=${!!adminPasswordHash}`,
       );
 
       if (!validPassword) {
@@ -188,7 +210,7 @@ router.post(
       const { email, password } = req.body;
 
       const [rows] = await pool.query<RowDataPacket[]>(
-        "SELECT * FROM customers WHERE email = ? AND is_active = TRUE",
+        "SELECT * FROM customers WHERE email = ? LIMIT 1",
         [email],
       );
 
@@ -197,10 +219,26 @@ router.post(
       }
 
       const customer = rows[0];
-      const validPassword = await bcrypt.compare(
-        password,
-        customer.password_hash,
-      );
+      const customerIsActive =
+        typeof customer.is_active === "boolean"
+          ? customer.is_active
+          : typeof customer.isActive === "boolean"
+            ? customer.isActive
+            : true;
+      if (!customerIsActive) {
+        return res.status(401).json({ error: "Invalid credentials" });
+      }
+
+      const customerPasswordHash =
+        (typeof customer.password_hash === "string" && customer.password_hash) ||
+        (typeof customer.passwordHash === "string" && customer.passwordHash) ||
+        "";
+
+      if (!customerPasswordHash) {
+        return res.status(401).json({ error: "Invalid credentials" });
+      }
+
+      const validPassword = await bcrypt.compare(password, customerPasswordHash);
 
       if (!validPassword) {
         return res.status(401).json({ error: "Invalid credentials" });
