@@ -73,11 +73,11 @@ services:
     image: mysql:8.0
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "MYSQL_PWD=\"$$MYSQL_ROOT_PASSWORD\" mysqladmin ping -u root --protocol=socket --silent || exit 1"]
+      test: ["CMD-SHELL", "mysqladmin ping --silent || exit 1"]
       interval: 10s
       timeout: 5s
-      retries: 10
-      start_period: 90s
+      retries: 20
+      start_period: 120s
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
