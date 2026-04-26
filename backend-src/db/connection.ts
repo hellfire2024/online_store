@@ -48,7 +48,7 @@ const resolvedPort = resolveConfigValue("DB_PORT", dbConfig.port, "3306");
 const resolvedUser =
   (process.env.DB_USER && process.env.DB_USER.trim()) ||
   (process.env.MYSQL_USER && process.env.MYSQL_USER.trim()) ||
-  resolveConfigValue("DB_USER", dbConfig.user, "root", !isProduction);
+  resolveConfigValue("DB_USER", dbConfig.user, isProduction ? "" : "root", !isProduction);
 
 const resolvedPassword =
   (process.env.DB_PASSWORD && process.env.DB_PASSWORD.trim()) ||
@@ -60,7 +60,7 @@ const resolvedDatabase =
   (process.env.DB_NAME && process.env.DB_NAME.trim()) ||
   (process.env.MYSQL_DATABASE && process.env.MYSQL_DATABASE.trim()) ||
   (typeof dbConfig.database === "string" && dbConfig.database.trim()) ||
-  "online_store";
+  (isProduction ? "" : "online_store");
 
 if (isProduction) {
   const missingEnv: string[] = [];
