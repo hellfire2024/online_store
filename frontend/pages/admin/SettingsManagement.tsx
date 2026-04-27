@@ -791,7 +791,7 @@ const SettingsManagement: React.FC = () => {
     if (!hasSettingsUnsavedChanges) {
       setSettings(siteSettings);
     }
-  }, [siteSettings]);
+  }, [siteSettings, hasSettingsUnsavedChanges]);
 
   useEffect(() => {
     const loadCommerceStatus = async () => {

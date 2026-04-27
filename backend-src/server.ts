@@ -55,7 +55,8 @@ process.on("unhandledRejection", (reason, promise) => {
   appendLog("Reason: " + String(reason));
   console.error("❌ UNHANDLED REJECTION at:", promise);
   console.error("Reason:", reason);
-  process.exit(1);
+  // Do not crash the server on transient async errors.
+  // Route-level handlers should surface errors via Express responses.
 });
 
 appendLog("🔧 Loading environment variables...");

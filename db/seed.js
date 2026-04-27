@@ -57,8 +57,7 @@ export async function seedDatabase() {
             paymentApiKeys: {},
             shippingApiKeys: {},
         };
-        await pool.query(`INSERT INTO site_settings (id, settings) VALUES (1, ?)
-       ON DUPLICATE KEY UPDATE settings = ?`, [JSON.stringify(defaultSettings), JSON.stringify(defaultSettings)]);
+        await pool.query(`INSERT IGNORE INTO site_settings (id, settings) VALUES (1, ?)`, [JSON.stringify(defaultSettings)]);
         console.log('✅ Database seeded successfully');
         console.log('📝 Default admin credentials:');
         console.log('   Username: admin');
