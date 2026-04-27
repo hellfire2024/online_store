@@ -96,7 +96,9 @@ export async function seedDatabase(): Promise<void> {
         console.log("[seed] Default local admin password: admin123");
       }
     } else {
-      console.log("[seed] Admin users already exist; skipping initial admin seed");
+      console.log(
+        "[seed] Admin users already exist; skipping initial admin seed",
+      );
     }
 
     if (shouldSeedSampleData) {

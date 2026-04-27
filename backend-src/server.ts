@@ -381,7 +381,9 @@ async function startServer() {
         await seedModule.seedDatabase();
         appendLog("✅ Database seeded");
       } else {
-        appendLog("🌱 Database already seeded (admin users and settings exist)");
+        appendLog(
+          "🌱 Database already seeded (admin users and settings exist)",
+        );
       }
     } else {
       appendLog("⚠️  Skipping database check (DEMO_MODE enabled)");
