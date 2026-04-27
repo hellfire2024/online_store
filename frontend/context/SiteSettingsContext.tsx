@@ -166,58 +166,77 @@ export const SiteSettingsProvider: React.FC<{ children: ReactNode }> = ({
     const fetchSettings = async () => {
       setIsLoading(true);
       setSettingsError(null);
-      try {
-        const loadedSettings = await apiClient.settings.get();
-        if (loadedSettings && typeof loadedSettings === "object") {
-          const loadingDefaults = normalizeLoadingDefaults(
-            loadedSettings.loadingDefaults,
-          );
-          saveCachedLoadingDefaults(loadingDefaults);
 
-          // Check payment provider and keys
-          const paymentProvider = loadedSettings.paymentProvider || "none";
-          const paymentApiKeys = loadedSettings.paymentApiKeys || {};
-          let paymentKey = "";
-          if (paymentProvider !== "none") {
-            paymentKey = String(paymentApiKeys[paymentProvider] || "").trim();
-          }
-          if (
-            paymentProvider !== "none" &&
-            (!paymentKey || paymentKey.length === 0)
-          ) {
-            setSettingsError(
-              `Payment provider '${paymentProvider}' is selected but credentials are missing. Check backend settings.`,
+      const MAX_RETRIES = 3;
+      let lastError: unknown = null;
+
+      for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+        try {
+          const loadedSettings = await apiClient.settings.get();
+          if (loadedSettings && typeof loadedSettings === "object") {
+            const loadingDefaults = normalizeLoadingDefaults(
+              loadedSettings.loadingDefaults,
             );
-            // Still set settings, but warn
-            console.warn(
-              `[SiteSettings] Payment provider '${paymentProvider}' selected but credentials missing.`,
-              loadedSettings,
+            saveCachedLoadingDefaults(loadingDefaults);
+
+            // Check payment provider and keys
+            const paymentProvider = loadedSettings.paymentProvider || "none";
+            const paymentApiKeys = loadedSettings.paymentApiKeys || {};
+            let paymentKey = "";
+            if (paymentProvider !== "none") {
+              paymentKey = String(paymentApiKeys[paymentProvider] || "").trim();
+            }
+            if (
+              paymentProvider !== "none" &&
+              (!paymentKey || paymentKey.length === 0)
+            ) {
+              setSettingsError(
+                `Payment provider '${paymentProvider}' is selected but credentials are missing. Check backend settings.`,
+              );
+              console.warn(
+                `[SiteSettings] Payment provider '${paymentProvider}' selected but credentials missing.`,
+                loadedSettings,
+              );
+            }
+            setSiteSettings((prev) => ({
+              ...prev,
+              ...loadedSettings,
+              loadingDefaults,
+            }));
+          } else {
+            setSettingsError("No site settings returned from backend.");
+          }
+          setIsLoading(false);
+          return; // success — stop retrying
+        } catch (error) {
+          lastError = error;
+          console.warn(
+            `[SiteSettings] fetchSettings attempt ${attempt}/${MAX_RETRIES} failed:`,
+            error,
+          );
+          if (attempt < MAX_RETRIES) {
+            // exponential backoff: 1s, 2s
+            await new Promise((resolve) =>
+              setTimeout(resolve, 1000 * attempt),
             );
           }
-          setSiteSettings((prev) => ({
-            ...prev,
-            ...loadedSettings,
-            loadingDefaults,
-          }));
-        } else {
-          setSettingsError("No site settings returned from backend.");
         }
-      } catch (error) {
-        setSettingsError(
-          `Failed to load site settings from backend: ${error instanceof Error ? error.message : String(error)}`,
-        );
-        setSiteSettings((prev) =>
-          applyLoadingDefaults(defaultSettings, prev.loadingDefaults),
-        );
-      } finally {
-        setIsLoading(false);
       }
+
+      // All retries exhausted — surface the error but keep cached state
+      setSettingsError(
+        `Failed to load site settings: ${lastError instanceof Error ? lastError.message : String(lastError)}`,
+      );
+      setIsLoading(false);
     };
     fetchSettings();
   }, []);
 
   const updateSiteSettings = async (updates: Partial<SiteSettings>) => {
     setIsLoading(true);
+    // Capture previous state so we can roll back on failure
+    const previousSettings = siteSettings;
+    const previousCachedDefaults = loadCachedLoadingDefaults();
     try {
       // Create the updated settings object
       const updatedSettings = {
@@ -230,7 +249,7 @@ export const SiteSettingsProvider: React.FC<{ children: ReactNode }> = ({
 
       saveCachedLoadingDefaults(updatedSettings.loadingDefaults);
 
-      // Update local state
+      // Optimistic update — visible immediately
       setSiteSettings(updatedSettings);
 
       // Persist to backend
@@ -239,6 +258,9 @@ export const SiteSettingsProvider: React.FC<{ children: ReactNode }> = ({
       setIsLoading(false);
       return { success: true };
     } catch (error) {
+      // Roll back optimistic update so context stays in sync with DB
+      saveCachedLoadingDefaults(previousCachedDefaults);
+      setSiteSettings(previousSettings);
       setIsLoading(false);
       throw error;
     }
