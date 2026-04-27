@@ -7,6 +7,14 @@ import { v4 as uuidv4 } from 'uuid';
 
 const router = Router();
 
+async function hasColumn(table: string, column: string): Promise<boolean> {
+  const [rows] = await pool.query<RowDataPacket[]>(
+    `SHOW COLUMNS FROM \`${table}\` LIKE ?`,
+    [column],
+  );
+  return rows.length > 0;
+}
+
 // Get all admin users
 router.get('/', async (_req: Request, res: Response) => {
   try {
@@ -78,20 +86,60 @@ router.post(
       const id = uuidv4();
       const passwordHash = await bcrypt.hash(password, parseInt(process.env.BCRYPT_ROUNDS || '10'));
 
+      const [hasPasswordSnake, hasPasswordCamel, hasActiveSnake, hasActiveCamel] =
+        await Promise.all([
+          hasColumn('admins', 'password_hash'),
+          hasColumn('admins', 'passwordHash'),
+          hasColumn('admins', 'is_active'),
+          hasColumn('admins', 'isActive'),
+        ]);
+
+      if (!hasPasswordSnake && !hasPasswordCamel) {
+        throw new Error('admins table is missing both password_hash and passwordHash columns');
+      }
+
+      const insertColumns: string[] = [
+        'id',
+        'first_name',
+        'last_name',
+        'phone',
+        'username',
+        'email',
+        'role',
+        'permissions',
+      ];
+      const insertValues: any[] = [
+        id,
+        firstName || null,
+        lastName || null,
+        phone || null,
+        username,
+        email,
+        role,
+        JSON.stringify([]),
+      ];
+
+      if (hasPasswordSnake) {
+        insertColumns.push('password_hash');
+        insertValues.push(passwordHash);
+      }
+      if (hasPasswordCamel) {
+        insertColumns.push('passwordHash');
+        insertValues.push(passwordHash);
+      }
+      if (hasActiveSnake) {
+        insertColumns.push('is_active');
+        insertValues.push(true);
+      }
+      if (hasActiveCamel) {
+        insertColumns.push('isActive');
+        insertValues.push(true);
+      }
+
+      const placeholders = insertColumns.map(() => '?').join(', ');
       await pool.query(
-        `INSERT INTO admins (id, first_name, last_name, phone, username, email, password_hash, role, permissions, is_active)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, TRUE)`,
-        [
-          id,
-          firstName || null,
-          lastName || null,
-          phone || null,
-          username,
-          email,
-          passwordHash,
-          role,
-          JSON.stringify([]),
-        ]
+        `INSERT INTO admins (${insertColumns.join(', ')}) VALUES (${placeholders})`,
+        insertValues,
       );
 
       return res.status(201).json({
@@ -116,6 +164,13 @@ router.post(
 router.put('/:id', async (req: Request, res: Response) => {
   try {
     const { firstName, lastName, phone, username, email, password, role, isActive, permissions } = req.body;
+    const [hasPasswordSnake, hasPasswordCamel, hasActiveSnake, hasActiveCamel] =
+      await Promise.all([
+        hasColumn('admins', 'password_hash'),
+        hasColumn('admins', 'passwordHash'),
+        hasColumn('admins', 'is_active'),
+        hasColumn('admins', 'isActive'),
+      ]);
     
     // Check if username or email is already taken by another user
     if (username !== undefined || email !== undefined) {
@@ -177,16 +232,34 @@ router.put('/:id', async (req: Request, res: Response) => {
     }
     if (password) {
       const passwordHash = await bcrypt.hash(password, parseInt(process.env.BCRYPT_ROUNDS || '10'));
-      updates.push('password_hash = ?');
-      values.push(passwordHash);
+      if (hasPasswordSnake) {
+        updates.push('password_hash = ?');
+        values.push(passwordHash);
+      }
+      if (hasPasswordCamel) {
+        updates.push('passwordHash = ?');
+        values.push(passwordHash);
+      }
+      if (!hasPasswordSnake && !hasPasswordCamel) {
+        return res.status(500).json({ error: 'No password column found on admins table' });
+      }
     }
     if (role !== undefined) {
       updates.push('role = ?');
       values.push(role);
     }
     if (isActive !== undefined) {
-      updates.push('is_active = ?');
-      values.push(isActive);
+      if (hasActiveSnake) {
+        updates.push('is_active = ?');
+        values.push(isActive);
+      }
+      if (hasActiveCamel) {
+        updates.push('isActive = ?');
+        values.push(isActive);
+      }
+      if (!hasActiveSnake && !hasActiveCamel) {
+        return res.status(500).json({ error: 'No active-status column found on admins table' });
+      }
     }
     if (permissions !== undefined) {
       updates.push('permissions = ?');
