@@ -9,7 +9,9 @@ export default defineConfig({
   },
   build: {
     outDir: "dist",
-    sourcemap: true,
+    // Production source maps are expensive in memory/CPU during container builds.
+    sourcemap: false,
+    reportCompressedSize: false,
     chunkSizeWarningLimit: 1200,
   },
 });
