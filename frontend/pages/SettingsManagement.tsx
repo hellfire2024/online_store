@@ -269,7 +269,7 @@ const TermsEditor: React.FC<{
 };
 
 const SettingsManagement: React.FC = () => {
-  const { siteSettings, updateSiteSettings, uploadFavicon } = useSiteSettings();
+  const { siteSettings, updateSiteSettings, uploadFavicon, isLoading: settingsLoading } = useSiteSettings();
   const { pages, menus, updateMenu } = usePages();
 
   const [settings, setSettings] = useState<Partial<SiteSettings>>(siteSettings);
@@ -281,6 +281,7 @@ const SettingsManagement: React.FC = () => {
   );
   const [selectedLogoFile, setSelectedLogoFile] = useState<File | null>(null);
   const [activeDragItem, setActiveDragItem] = useState<FooterItem | null>(null);
+  const apiDataSynced = React.useRef(false);
 
   // --- State for Email Test Modal ---
   const [showEmailTestModal, setShowEmailTestModal] = useState(false);
@@ -322,10 +323,18 @@ const SettingsManagement: React.FC = () => {
   }, [hasSettingsUnsavedChanges, hasMenuUnsavedChanges, setHasUnsavedChanges]);
 
   useEffect(() => {
-    if (!hasSettingsUnsavedChanges) {
+    if (!settingsLoading && !apiDataSynced.current) {
+      // First time API data is ready: force-sync all local state from the server
+      setSettings(siteSettings);
+      setTaxRules(siteSettings.taxConfig?.rules || []);
+      setEnableTax(siteSettings.taxConfig?.enableTaxCollection ?? true);
+      setDefaultTaxRate(siteSettings.taxConfig?.defaultTaxRate ?? 0);
+      apiDataSynced.current = true;
+    } else if (!settingsLoading && !hasSettingsUnsavedChanges) {
+      // Subsequent context updates: only sync when no pending user edits
       setSettings(siteSettings);
     }
-  }, [siteSettings]);
+  }, [siteSettings, settingsLoading]);
 
   // --- Effects for Menu Editor ---
   useEffect(() => {

@@ -160,9 +160,8 @@ export async function seedDatabase(): Promise<void> {
     };
 
     await pool.query(
-      `INSERT INTO site_settings (id, settings) VALUES (1, ?)
-       ON DUPLICATE KEY UPDATE settings = ?`,
-      [JSON.stringify(defaultSettings), JSON.stringify(defaultSettings)],
+      `INSERT IGNORE INTO site_settings (id, settings) VALUES (1, ?)`,
+      [JSON.stringify(defaultSettings)],
     );
 
     console.log("[seed] Database seeded successfully");
