@@ -9,6 +9,14 @@ const router = Router();
 const normalizeUrl = (value: string): string => value.trim().replace(/\/$/, "");
 
 const getCanonicalApiBaseUrl = (): string => {
+  const forceExternal = process.env.USE_EXTERNAL_API_BASE === "1";
+
+  // Best-practice default for SPA + reverse proxy: keep API same-origin.
+  // This avoids frontend dependence on external DNS/API host drift.
+  if (!forceExternal) {
+    return "/api";
+  }
+
   const serviceUrl = normalizeUrl(process.env.SERVICE_URL_BACKEND || "");
   if (serviceUrl) {
     return serviceUrl.endsWith("/api") ? serviceUrl : `${serviceUrl}/api`;
