@@ -366,24 +366,22 @@ async function startServer() {
       const [adminCountRows]: any = await connectionModule.pool.query(
         "SELECT COUNT(*) as count FROM admins",
       );
-      const [galleryCountRows]: any = await connectionModule.pool.query(
-        "SELECT COUNT(*) as count FROM galleries",
+      const [settingsCountRows]: any = await connectionModule.pool.query(
+        "SELECT COUNT(*) as count FROM site_settings",
       );
       if (
         (Array.isArray(adminCountRows) &&
           adminCountRows.length > 0 &&
           adminCountRows[0].count === 0) ||
-        (Array.isArray(galleryCountRows) &&
-          galleryCountRows.length > 0 &&
-          galleryCountRows[0].count === 0)
+        (Array.isArray(settingsCountRows) &&
+          settingsCountRows.length > 0 &&
+          settingsCountRows[0].count === 0)
       ) {
-        appendLog("🌱 Seeding database (admins or galleries empty)...");
+        appendLog("🌱 Seeding database (admins or settings missing)...");
         await seedModule.seedDatabase();
         appendLog("✅ Database seeded");
       } else {
-        appendLog(
-          "🌱 Database already seeded (admin users and galleries exist)",
-        );
+        appendLog("🌱 Database already seeded (admin users and settings exist)");
       }
     } else {
       appendLog("⚠️  Skipping database check (DEMO_MODE enabled)");
@@ -394,8 +392,9 @@ async function startServer() {
     console.log(`🎧 Starting HTTP server on port ${PORT}...`);
     appendLog(`📍 PORT type: ${typeof PORT}, value: ${PORT}`);
     console.log(`📍 PORT type: ${typeof PORT}, value: ${PORT}`);
-    appendLog(`📍 Binding to: devapi.adaptivegis.com:${PORT}`);
-    console.log(`📍 Binding to: devapi.adaptivegis.com:${PORT}`);
+    const publicApiUrl = process.env.SERVICE_URL_BACKEND || "http://0.0.0.0";
+    appendLog(`📍 Binding to: 0.0.0.0:${PORT}`);
+    console.log(`📍 Binding to: 0.0.0.0:${PORT}`);
 
     // Start listening on all interfaces for healthcheck compatibility
     const server = app.listen(PORT, "0.0.0.0");
@@ -408,8 +407,8 @@ async function startServer() {
       appendLog(separator);
       appendLog(`🚀 SERVER LISTENING - port ${PORT}`);
       appendLog(`📍 Environment: ${process.env.NODE_ENV || "development"}`);
-      appendLog(`🌐 Bound to: devapi.adaptivegis.com (Docker DNS)`);
-      appendLog(`🌐 URL: https://devapi.adaptivegis.com`);
+      appendLog(`🌐 Bound to: 0.0.0.0 (container network)`);
+      appendLog(`🌐 Public URL: ${publicApiUrl}`);
       if (DEMO_MODE) {
         appendLog(`⚠️  DEMO_MODE: serving mock data`);
       }
@@ -419,8 +418,8 @@ async function startServer() {
       console.log(separator);
       console.log(`🚀 SERVER LISTENING - port ${PORT}`);
       console.log(`📍 Environment: ${process.env.NODE_ENV || "development"}`);
-      console.log(`🌐 Bound to: devapi.adaptivegis.com (Docker DNS)`);
-      console.log(`🌐 URL: https://devapi.adaptivegis.com`);
+      console.log(`🌐 Bound to: 0.0.0.0 (container network)`);
+      console.log(`🌐 Public URL: ${publicApiUrl}`);
       if (DEMO_MODE) {
         console.log(`⚠️  DEMO_MODE: serving mock data`);
       }
