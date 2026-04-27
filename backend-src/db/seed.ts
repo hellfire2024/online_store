@@ -21,12 +21,11 @@ export async function seedDatabase(): Promise<void> {
   console.log("[seed] Seeding database...");
 
   try {
-    const configuredApiBaseUrl =
-      isProduction
-        ? "/api"
-        : normalizeApiBaseUrl(
-            (process.env.SERVICE_URL_BACKEND || "").trim() || "/api",
-          );
+    const configuredApiBaseUrl = isProduction
+      ? "/api"
+      : normalizeApiBaseUrl(
+          (process.env.SERVICE_URL_BACKEND || "").trim() || "/api",
+        );
     const shouldSeedSampleData =
       process.env.SEED_SAMPLE_DATA === "1" || !isProduction;
 
