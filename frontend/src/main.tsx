@@ -59,6 +59,7 @@ function Root() {
 
   useEffect(() => {
     const loadSettings = async () => {
+      let apiBaseAppliedFromSettings = false;
       try {
         const response = await fetch("/api/settings", {
           headers: {
@@ -74,6 +75,7 @@ function Root() {
           if (settings?.apiBaseUrl && typeof settings.apiBaseUrl === "string") {
             if (shouldUseSettingsApiBaseUrl(settings.apiBaseUrl)) {
               setApiClientBaseUrl(normalizeUrl(settings.apiBaseUrl));
+              apiBaseAppliedFromSettings = true;
             } else {
               console.warn(
                 "Ignoring unsafe apiBaseUrl from settings in this environment:",
@@ -89,8 +91,19 @@ function Root() {
         );
       } finally {
         const envBaseUrl = import.meta.env.VITE_API_URL;
-        if (typeof envBaseUrl === "string" && envBaseUrl.trim()) {
-          setApiClientBaseUrl(normalizeUrl(envBaseUrl));
+        if (
+          !apiBaseAppliedFromSettings &&
+          typeof envBaseUrl === "string" &&
+          envBaseUrl.trim()
+        ) {
+          if (shouldUseSettingsApiBaseUrl(envBaseUrl)) {
+            setApiClientBaseUrl(normalizeUrl(envBaseUrl));
+          } else {
+            console.warn(
+              "Ignoring unsafe VITE_API_URL for this environment:",
+              envBaseUrl,
+            );
+          }
         }
         setLoading(false);
       }
