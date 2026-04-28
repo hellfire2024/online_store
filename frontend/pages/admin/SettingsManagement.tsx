@@ -1360,19 +1360,17 @@ const SettingsManagement: React.FC = () => {
               : "contactAddress"]: parsedValue,
         },
       }));
-      } else if (
-        ["siteTitle", "logoText", "logoTextAccent", "supportEmail"].includes(
-          name,
-        )
-      ) {
-        setSettings((prev: any) => ({
-          ...prev,
+    } else if (
+      ["siteTitle", "logoText", "logoTextAccent", "supportEmail"].includes(name)
+    ) {
+      setSettings((prev: any) => ({
+        ...prev,
+        [name]: parsedValue,
+        loadingDefaults: {
+          ...(prev.loadingDefaults || {}),
           [name]: parsedValue,
-          loadingDefaults: {
-            ...(prev.loadingDefaults || {}),
-            [name]: parsedValue,
-          },
-        }));
+        },
+      }));
     } else {
       setSettings((prev) => ({ ...prev, [name]: parsedValue }));
     }
