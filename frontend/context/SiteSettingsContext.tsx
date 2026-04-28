@@ -107,10 +107,12 @@ const defaultSettings: SiteSettings = {
 const LOADING_DEFAULTS_STORAGE_KEY = "site_loading_defaults";
 
 const normalizeLoadingDefaults = (raw: any) => ({
-  siteTitle: String(raw?.siteTitle || defaultSettings.siteTitle),
-  logoText: String(raw?.logoText || defaultSettings.logoText),
-  logoTextAccent: String(raw?.logoTextAccent || defaultSettings.logoTextAccent),
-  supportEmail: String(raw?.supportEmail || defaultSettings.supportEmail),
+  siteTitle: String(raw?.siteTitle ?? defaultSettings.siteTitle),
+  logoText: String(raw?.logoText ?? defaultSettings.logoText),
+  logoTextAccent: String(
+    raw?.logoTextAccent ?? defaultSettings.logoTextAccent,
+  ),
+  supportEmail: String(raw?.supportEmail ?? defaultSettings.supportEmail),
 });
 
 const applyLoadingDefaults = (
