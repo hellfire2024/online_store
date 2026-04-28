@@ -82,6 +82,11 @@ export async function runMigrations(): Promise<void> {
       reorder_pricing_mode ENUM('current','historical') DEFAULT 'current',
       image_url LONGTEXT,
       inventory INT DEFAULT 0,
+      package_weight DECIMAL(10,2) NULL,
+      package_length DECIMAL(10,2) NULL,
+      package_width DECIMAL(10,2) NULL,
+      package_height DECIMAL(10,2) NULL,
+      package_volume DECIMAL(12,4) NULL,
       customizable BOOLEAN DEFAULT FALSE,
       gallery_id VARCHAR(36),
       allow_custom_image_upload BOOLEAN DEFAULT FALSE,
@@ -640,6 +645,31 @@ export async function runMigrations(): Promise<void> {
       "products",
       "reorder_pricing_mode",
       "ENUM('current','historical') DEFAULT 'current'",
+    );
+    await alterTableAddColumn(
+      "products",
+      "package_weight",
+      "DECIMAL(10,2) NULL",
+    );
+    await alterTableAddColumn(
+      "products",
+      "package_length",
+      "DECIMAL(10,2) NULL",
+    );
+    await alterTableAddColumn(
+      "products",
+      "package_width",
+      "DECIMAL(10,2) NULL",
+    );
+    await alterTableAddColumn(
+      "products",
+      "package_height",
+      "DECIMAL(10,2) NULL",
+    );
+    await alterTableAddColumn(
+      "products",
+      "package_volume",
+      "DECIMAL(12,4) NULL",
     );
     await alterTableAddColumn("products", "gallery_id", "VARCHAR(36)");
 
