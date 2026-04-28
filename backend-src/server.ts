@@ -180,6 +180,19 @@ const toOriginFromDomain = (domain?: string): string | null => {
   return normalizeOrigin(`https://${trimmed}`);
 };
 
+const isProductionRuntime = process.env.NODE_ENV === "production";
+
+const isDevHostname = (hostname: string): boolean => {
+  const normalized = hostname.toLowerCase();
+  return (
+    normalized === "localhost" ||
+    normalized === "127.0.0.1" ||
+    normalized.startsWith("dev.") ||
+    normalized.startsWith("devapi.") ||
+    normalized.includes("-dev")
+  );
+};
+
 const corsOriginCandidates = [
   // Explicit CORS_ORIGIN supports comma-separated list.
   ...(process.env.CORS_ORIGIN || "")
@@ -191,27 +204,25 @@ const corsOriginCandidates = [
   process.env.SERVICE_URL_BACKEND,
   toOriginFromDomain(process.env.PROD_FRONTEND_DOMAIN),
   toOriginFromDomain(process.env.PROD_API_DOMAIN),
-  // Common production frontend variants.
-  "https://adaptivegis.com",
-  "https://www.adaptivegis.com",
-  // Existing dev hosts.
-  "https://dev.adaptivegis.com",
-  "https://devapi.adaptivegis.com",
+  // Optional explicit allow-list for local testing.
+  ...(process.env.ALLOW_LOCALHOST_CORS === "1"
+    ? ["http://localhost:5173", "http://127.0.0.1:5173"]
+    : []),
 ]
   .filter((v): v is string => typeof v === "string" && v.trim().length > 0)
   .map((v) => normalizeOrigin(v));
 
 const allowedOrigins = Array.from(new Set(corsOriginCandidates));
 
-const isTrustedPatternOrigin = (origin: string): boolean => {
+const isAllowedByEnvironmentTier = (origin: string): boolean => {
   try {
     const { hostname } = new URL(origin);
-    return (
-      hostname === "adaptivegis.com" ||
-      hostname.endsWith(".adaptivegis.com") ||
-      hostname === "localhost" ||
-      hostname === "127.0.0.1"
-    );
+    const originIsDev = isDevHostname(hostname);
+    // Never allow dev origins in production unless explicitly listed.
+    if (isProductionRuntime && originIsDev) {
+      return false;
+    }
+    return false;
   } catch {
     return false;
   }
@@ -225,7 +236,7 @@ app.use(
       if (!origin) return callback(null, true);
       if (
         allowedOrigins.includes(normalizeOrigin(origin)) ||
-        isTrustedPatternOrigin(origin)
+        isAllowedByEnvironmentTier(origin)
       ) {
         return callback(null, true);
       } else {

@@ -6,6 +6,17 @@ import { setApiClientBaseUrl } from "../services/apiClient";
 
 const normalizeUrl = (value: string) => value.trim().replace(/\/$/, "");
 
+const isDevHostname = (hostname: string): boolean => {
+  const normalized = hostname.toLowerCase();
+  return (
+    normalized === "localhost" ||
+    normalized === "127.0.0.1" ||
+    normalized.startsWith("dev.") ||
+    normalized.startsWith("devapi.") ||
+    normalized.includes("-dev")
+  );
+};
+
 const shouldUseSettingsApiBaseUrl = (value: string): boolean => {
   const trimmed = normalizeUrl(value);
   if (!trimmed) return false;
@@ -17,11 +28,11 @@ const shouldUseSettingsApiBaseUrl = (value: string): boolean => {
     const parsed = new URL(trimmed);
     const apiHost = parsed.hostname.toLowerCase();
     const siteHost = window.location.hostname.toLowerCase();
-    const isProductionSite =
-      siteHost !== "localhost" && siteHost !== "127.0.0.1";
+    const siteIsDev = isDevHostname(siteHost);
+    const apiIsDev = isDevHostname(apiHost);
 
-    // Production sites must never auto-switch to dev API hosts from persisted settings.
-    if (isProductionSite && (apiHost.startsWith("dev.") || apiHost.startsWith("devapi."))) {
+    // Keep environments isolated: dev site -> dev API, prod site -> prod API.
+    if (siteIsDev !== apiIsDev) {
       return false;
     }
 
