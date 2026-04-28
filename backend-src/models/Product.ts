@@ -685,9 +685,9 @@ async function saveOptionList(
   productId: string,
   list: ProductOptionList,
 ): Promise<void> {
-  const schema = await resolveProductSchemaConfig();
+  // Always use snake_case column names as defined in the migration
   await connection.query(
-    `INSERT INTO product_option_lists (id, ${schema.optionLists.productFk}, name, required, ${schema.optionLists.maxSelections}, ${schema.optionLists.orderCol})
+    `INSERT INTO product_option_lists (id, product_id, name, required, max_selections, list_order)
      VALUES (?, ?, ?, ?, ?, ?)`,
     [
       list.id,
@@ -701,7 +701,7 @@ async function saveOptionList(
 
   for (const option of list.options) {
     await connection.query(
-      `INSERT INTO product_options (id, ${schema.options.listFk}, name, ${schema.options.priceDelta}, ${schema.options.orderCol})
+      `INSERT INTO product_options (id, list_id, name, price_delta, option_order
        VALUES (?, ?, ?, ?, ?)`,
       [option.id, list.id, option.name, option.priceDelta, option.order],
     );
