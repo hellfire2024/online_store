@@ -174,9 +174,20 @@ export const SiteSettingsProvider: React.FC<{ children: ReactNode }> = ({
         try {
           const loadedSettings = await apiClient.settings.get();
           if (loadedSettings && typeof loadedSettings === "object") {
-            const loadingDefaults = normalizeLoadingDefaults(
-              loadedSettings.loadingDefaults,
-            );
+            const loadingDefaults = normalizeLoadingDefaults({
+              siteTitle:
+                loadedSettings.loadingDefaults?.siteTitle ||
+                loadedSettings.siteTitle,
+              logoText:
+                loadedSettings.loadingDefaults?.logoText ||
+                loadedSettings.logoText,
+              logoTextAccent:
+                loadedSettings.loadingDefaults?.logoTextAccent ||
+                loadedSettings.logoTextAccent,
+              supportEmail:
+                loadedSettings.loadingDefaults?.supportEmail ||
+                loadedSettings.supportEmail,
+            });
             saveCachedLoadingDefaults(loadingDefaults);
 
             // Check payment provider and keys
@@ -216,9 +227,7 @@ export const SiteSettingsProvider: React.FC<{ children: ReactNode }> = ({
           );
           if (attempt < MAX_RETRIES) {
             // exponential backoff: 1s, 2s
-            await new Promise((resolve) =>
-              setTimeout(resolve, 1000 * attempt),
-            );
+            await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
           }
         }
       }
