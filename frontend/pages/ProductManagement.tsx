@@ -982,7 +982,7 @@ const ProductManagement: React.FC = () => {
                   type="checkbox"
                   name="customizable"
                   id="customizable"
-                  checked={currentProduct.customizable}
+                  checked={Boolean(currentProduct.customizable)}
                   onChange={handleCheckboxChange}
                   className="h-4 w-4 rounded border-gray-300 text-sky-600 focus:ring-sky-500"
                 />
@@ -993,7 +993,7 @@ const ProductManagement: React.FC = () => {
                   Customizable
                 </label>
               </div>
-              {currentProduct.customizable && (
+              {Boolean(currentProduct.customizable) && (
                 <>
                   <div>
                     <label
