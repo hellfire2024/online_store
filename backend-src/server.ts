@@ -373,10 +373,10 @@ async function startServer() {
       if (
         (Array.isArray(adminCountRows) &&
           adminCountRows.length > 0 &&
-          adminCountRows[0].count === 0) ||
+          Number(adminCountRows[0].count) === 0) ||
         (Array.isArray(settingsCountRows) &&
           settingsCountRows.length > 0 &&
-          settingsCountRows[0].count === 0)
+          Number(settingsCountRows[0].count) === 0)
       ) {
         appendLog("🌱 Seeding database (admins or settings missing)...");
         await seedModule.seedDatabase();
