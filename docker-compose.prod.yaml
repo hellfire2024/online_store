@@ -16,6 +16,8 @@ services:
     ports:
       - "3002:3001"
     environment:
+      APP_ENV: prod
+      EXPECTED_DB_TAG: prod
       NODE_ENV: production
       DEMO_MODE: "0"
       PORT: 3001
