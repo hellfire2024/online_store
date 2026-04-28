@@ -701,7 +701,7 @@ async function saveOptionList(
 
   for (const option of list.options) {
     await connection.query(
-      `INSERT INTO product_options (id, list_id, name, price_delta, option_order
+      `INSERT INTO product_options (id, list_id, name, price_delta, option_order)
        VALUES (?, ?, ?, ?, ?)`,
       [option.id, list.id, option.name, option.priceDelta, option.order],
     );
