@@ -1132,23 +1132,23 @@ const SettingsManagement: React.FC = () => {
 
       finalSettings.loadingDefaults = {
         siteTitle: String(
-          (finalSettings as any)?.loadingDefaults?.siteTitle ||
-            finalSettings.siteTitle ||
+          finalSettings.siteTitle ||
+            (finalSettings as any)?.loadingDefaults?.siteTitle ||
             "",
         ).trim(),
         logoText: String(
-          (finalSettings as any)?.loadingDefaults?.logoText ||
-            finalSettings.logoText ||
+          finalSettings.logoText ||
+            (finalSettings as any)?.loadingDefaults?.logoText ||
             "",
         ).trim(),
         logoTextAccent: String(
-          (finalSettings as any)?.loadingDefaults?.logoTextAccent ||
-            finalSettings.logoTextAccent ||
+          finalSettings.logoTextAccent ||
+            (finalSettings as any)?.loadingDefaults?.logoTextAccent ||
             "",
         ).trim(),
         supportEmail: String(
-          (finalSettings as any)?.loadingDefaults?.supportEmail ||
-            finalSettings.supportEmail ||
+          finalSettings.supportEmail ||
+            (finalSettings as any)?.loadingDefaults?.supportEmail ||
             "",
         ).trim(),
       } as any;
@@ -1360,6 +1360,19 @@ const SettingsManagement: React.FC = () => {
               : "contactAddress"]: parsedValue,
         },
       }));
+      } else if (
+        ["siteTitle", "logoText", "logoTextAccent", "supportEmail"].includes(
+          name,
+        )
+      ) {
+        setSettings((prev: any) => ({
+          ...prev,
+          [name]: parsedValue,
+          loadingDefaults: {
+            ...(prev.loadingDefaults || {}),
+            [name]: parsedValue,
+          },
+        }));
     } else {
       setSettings((prev) => ({ ...prev, [name]: parsedValue }));
     }
