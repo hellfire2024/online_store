@@ -439,9 +439,8 @@ export async function findById(id: string): Promise<Product | null> {
 async function findOptionLists(
   productId: string,
 ): Promise<ProductOptionList[]> {
-  const schema = await resolveProductSchemaConfig();
   const [lists] = await pool.query<RowDataPacket[]>(
-    `SELECT * FROM product_option_lists WHERE ${schema.optionLists.productFk} = ? ORDER BY ${schema.optionLists.orderCol}`,
+    `SELECT * FROM product_option_lists WHERE product_id = ? ORDER BY list_order`,
     [productId],
   );
 
@@ -449,7 +448,7 @@ async function findOptionLists(
 
   for (const list of lists) {
     const [options] = await pool.query<RowDataPacket[]>(
-      `SELECT * FROM product_options WHERE ${schema.options.listFk} = ? ORDER BY ${schema.options.orderCol}`,
+      `SELECT * FROM product_options WHERE list_id = ? ORDER BY option_order`,
       [list.id],
     );
 
@@ -458,42 +457,18 @@ async function findOptionLists(
       name: list.name,
       required: Boolean(list.required),
       maxSelections:
-        getRowValue<any>(
-          list,
-          schema.optionLists.maxSelections,
-          schema.optionLists.maxSelections,
-        ) === null
+        getRowValue<any>(list, "max_selections", "maxSelections") === null
           ? undefined
-          : Number(
-              getRowValue<any>(
-                list,
-                schema.optionLists.maxSelections,
-                schema.optionLists.maxSelections,
-              ),
-            ),
-      order: Number(
-        getRowValue<any>(
-          list,
-          schema.optionLists.orderCol,
-          schema.optionLists.orderCol,
-        ) || 0,
-      ),
+          : Number(getRowValue<any>(list, "max_selections", "maxSelections")),
+      order: Number(getRowValue<any>(list, "list_order", "listOrder") || 0),
       options: options.map((option) => ({
         id: option.id,
         name: option.name,
         priceDelta: Number(
-          getRowValue<any>(
-            option,
-            schema.options.priceDelta,
-            schema.options.priceDelta,
-          ) || 0,
+          getRowValue<any>(option, "price_delta", "priceDelta") || 0,
         ),
         order: Number(
-          getRowValue<any>(
-            option,
-            schema.options.orderCol,
-            schema.options.orderCol,
-          ) || 0,
+          getRowValue<any>(option, "option_order", "optionOrder") || 0,
         ),
       })),
     });
@@ -666,7 +641,7 @@ export async function update(
     if (data.optionLists) {
       // Delete existing options
       await connection.query(
-        `DELETE FROM product_option_lists WHERE ${schema.optionLists.productFk} = ?`,
+        `DELETE FROM product_option_lists WHERE product_id = ?`,
         [id],
       );
 
