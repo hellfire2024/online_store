@@ -14,6 +14,39 @@ import { sendPasswordResetEmail } from "../services/emailService.js";
 
 const router = Router();
 
+const normalizeOrigin = (value: string): string =>
+  value.trim().replace(/\/$/, "");
+
+const getFrontendBaseUrl = (req: Request): string => {
+  const configured = String(
+    process.env.FRONTEND_URL || process.env.SERVICE_URL_FRONTEND || "",
+  ).trim();
+  if (configured) {
+    return normalizeOrigin(configured);
+  }
+
+  const requestOrigin = String(req.get("origin") || "").trim();
+  if (requestOrigin) {
+    return normalizeOrigin(requestOrigin);
+  }
+
+  const referer = String(req.get("referer") || "").trim();
+  if (referer) {
+    return normalizeOrigin(referer.split("/#")[0]);
+  }
+
+  const prodDomain = String(process.env.PROD_FRONTEND_DOMAIN || "").trim();
+  if (prodDomain) {
+    const withScheme =
+      prodDomain.startsWith("http://") || prodDomain.startsWith("https://")
+        ? prodDomain
+        : `https://${prodDomain}`;
+    return normalizeOrigin(withScheme);
+  }
+
+  return "http://localhost:5173";
+};
+
 // Admin login
 router.post(
   "/admin/login",
@@ -230,7 +263,8 @@ router.post(
       }
 
       const customerPasswordHash =
-        (typeof customer.password_hash === "string" && customer.password_hash) ||
+        (typeof customer.password_hash === "string" &&
+          customer.password_hash) ||
         (typeof customer.passwordHash === "string" && customer.passwordHash) ||
         "";
 
@@ -238,7 +272,10 @@ router.post(
         return res.status(401).json({ error: "Invalid credentials" });
       }
 
-      const validPassword = await bcrypt.compare(password, customerPasswordHash);
+      const validPassword = await bcrypt.compare(
+        password,
+        customerPasswordHash,
+      );
 
       if (!validPassword) {
         return res.status(401).json({ error: "Invalid credentials" });
@@ -405,11 +442,7 @@ router.post(
       );
 
       // Build reset URL - use production domain from request if FRONTEND_URL not set
-      const baseUrl =
-        process.env.FRONTEND_URL ||
-        req.get("origin") ||
-        req.get("referer")?.split("/#")[0] ||
-        "https://dev.adaptivegis.com";
+      const baseUrl = getFrontendBaseUrl(req);
       const resetUrl = `${baseUrl}/#/reset-password?token=${resetToken}`;
 
       // Send password reset email
@@ -497,11 +530,7 @@ router.post(
       );
 
       // Build reset URL - use production domain from request if FRONTEND_URL not set
-      const baseUrl =
-        process.env.FRONTEND_URL ||
-        req.get("origin") ||
-        req.get("referer")?.split("/#")[0] ||
-        "https://dev.adaptivegis.com";
+      const baseUrl = getFrontendBaseUrl(req);
       const resetUrl = `${baseUrl}/#/reset-password?token=${resetToken}`;
 
       // Send password reset email

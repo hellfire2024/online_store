@@ -12,6 +12,7 @@ import {
   saveStaffRoles,
   StaffRole,
 } from "../../services/staffRolesConfig";
+import { apiClient } from "../../services/apiClient";
 
 const StaffManagement: React.FC = () => {
   const { staff, isLoading, addStaff, updateStaff, deleteStaff } = useStaff();
@@ -112,53 +113,18 @@ const StaffManagement: React.FC = () => {
     try {
       if (selectedImageFile) {
         console.log("[StaffManagement] Uploading image...");
-        // Upload image to server
-        const formData = new FormData();
-        formData.append("image", selectedImageFile);
+        const data = await apiClient.upload.image(selectedImageFile, {
+          target: "generic",
+        });
 
-        const response = await fetch(
-          "https://devapi.adaptivegis.com/api/upload/image",
-          {
-            method: "POST",
-            body: formData,
-          },
-        );
-
-        if (!response.ok) {
-          console.error(
-            "[StaffManagement] Image upload failed with status:",
-            response.status,
-          );
+        if (!data?.imageUrl) {
+          console.error("[StaffManagement] Image upload returned no imageUrl");
           addToast("Image upload failed", "error");
           setIsSaving(false);
           return;
         }
 
-        const contentType = (
-          response.headers.get("content-type") || ""
-        ).toLowerCase();
-        const raw = await response.text();
-        console.log(
-          "[StaffManagement] Image upload raw response length:",
-          raw.length,
-          "first 200 chars:",
-          raw.substring(0, 200),
-        );
-        if (!contentType.includes("application/json")) {
-          console.error(
-            "[StaffManagement] Image upload returned non-JSON response",
-          );
-          addToast("Image upload returned invalid response", "error");
-          setIsSaving(false);
-          return;
-        }
-        const result = raw.trim() ? JSON.parse(raw) : {};
-        console.log("[StaffManagement] Parsed upload result:", {
-          hasImageUrl: !!result.imageUrl,
-          urlLength: result.imageUrl?.length || 0,
-          isDataUrl: result.imageUrl?.startsWith("data:") || false,
-        });
-        finalImageUrl = result.imageUrl || "";
+        finalImageUrl = data.imageUrl;
         console.log(
           "[StaffManagement] Image uploaded successfully, URL length:",
           finalImageUrl.length,
