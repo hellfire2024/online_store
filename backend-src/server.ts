@@ -117,9 +117,14 @@ const validateEnvironmentDatabaseIsolation = () => {
     return;
   }
 
-  const appEnv = String(process.env.APP_ENV || "").trim().toLowerCase();
+  const appEnv = String(process.env.APP_ENV || "")
+    .trim()
+    .toLowerCase();
   const dbName = String(
-    process.env.DB_NAME || process.env.DB_DATABASE || process.env.MYSQL_DATABASE || "",
+    process.env.DB_NAME ||
+      process.env.DB_DATABASE ||
+      process.env.MYSQL_DATABASE ||
+      "",
   )
     .trim()
     .toLowerCase();
