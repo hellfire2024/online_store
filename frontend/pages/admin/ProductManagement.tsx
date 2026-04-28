@@ -8,6 +8,7 @@ import Spinner from "../../components/Spinner";
 import Pagination from "../../components/Pagination";
 import { Product, ProductOption, ProductOptionList } from "../../types";
 import { useUnsavedChanges } from "../../context/UnsavedChangesContext";
+import { apiClient } from "../../services/apiClient";
 import {
   DndContext,
   closestCenter,
@@ -387,32 +388,9 @@ const ProductManagement: React.FC = () => {
     const file = e.target.files?.[0];
     if (file) {
       try {
-        // Upload image to server
-        const formData = new FormData();
-        formData.append("image", file);
-        formData.append("type", "products");
-
-        const apiUrl =
-          import.meta.env.VITE_API_URL || "https://devapi.adaptivegis.com/api";
-        const response = await fetch(`${apiUrl}/upload/image`, {
-          method: "POST",
-          body: formData,
+        const data = await apiClient.upload.image(file, {
+          target: "generic",
         });
-
-        if (!response.ok) {
-          throw new Error("Failed to upload image");
-        }
-
-        const contentType = (
-          response.headers.get("content-type") || ""
-        ).toLowerCase();
-        const raw = await response.text();
-        if (!contentType.includes("application/json")) {
-          throw new Error(
-            `Upload endpoint returned non-JSON response (${contentType || "unknown"})`,
-          );
-        }
-        const data = raw.trim() ? JSON.parse(raw) : {};
         const imageUrl = data.imageUrl;
 
         setImagePreview(imageUrl);

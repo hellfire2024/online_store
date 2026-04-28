@@ -209,11 +209,15 @@ export const SiteSettingsProvider: React.FC<{ children: ReactNode }> = ({
                 loadedSettings,
               );
             }
-            setSiteSettings((prev) => ({
-              ...prev,
-              ...loadedSettings,
-              loadingDefaults,
-            }));
+            setSiteSettings((prev) =>
+              applyLoadingDefaults(
+                {
+                  ...prev,
+                  ...loadedSettings,
+                } as SiteSettings,
+                loadingDefaults,
+              ),
+            );
           } else {
             setSettingsError("No site settings returned from backend.");
           }
@@ -247,14 +251,18 @@ export const SiteSettingsProvider: React.FC<{ children: ReactNode }> = ({
     const previousSettings = siteSettings;
     const previousCachedDefaults = loadCachedLoadingDefaults();
     try {
+      const normalizedLoadingDefaults = normalizeLoadingDefaults(
+        updates.loadingDefaults || siteSettings.loadingDefaults,
+      );
+
       // Create the updated settings object
-      const updatedSettings = {
-        ...siteSettings,
-        ...updates,
-        loadingDefaults: normalizeLoadingDefaults(
-          updates.loadingDefaults || siteSettings.loadingDefaults,
-        ),
-      };
+      const updatedSettings = applyLoadingDefaults(
+        {
+          ...siteSettings,
+          ...updates,
+        } as SiteSettings,
+        normalizedLoadingDefaults,
+      );
 
       saveCachedLoadingDefaults(updatedSettings.loadingDefaults);
 

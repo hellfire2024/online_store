@@ -19,6 +19,7 @@ const StaffManagement: React.FC = () => {
   const [showNewRoleInput, setShowNewRoleInput] = useState(false);
   const [newRoleName, setNewRoleName] = useState("");
   const [newStaffMember, setNewStaffMember] = useState<Omit<
+import { apiClient } from "../../services/apiClient";
     StaffMember,
     "id"
   > | null>(null);
@@ -100,32 +101,15 @@ const StaffManagement: React.FC = () => {
 
     if (selectedImageFile) {
       try {
-        // Upload image to server
-        const formData = new FormData();
-        formData.append("image", selectedImageFile);
+        const result = await apiClient.upload.image(selectedImageFile, {
+          target: "generic",
+        });
 
-        const response = await fetch(
-          "https://devapi.adaptivegis.com/api/upload/image",
-          {
-            method: "POST",
-            body: formData,
-          },
-        );
-
-        if (!response.ok) {
+        if (!result?.imageUrl) {
           addToast("Image upload failed", "error");
           return;
         }
 
-        const contentType = (
-          response.headers.get("content-type") || ""
-        ).toLowerCase();
-        const raw = await response.text();
-        if (!contentType.includes("application/json")) {
-          addToast("Image upload returned invalid response", "error");
-          return;
-        }
-        const result = raw.trim() ? JSON.parse(raw) : {};
         finalImageUrl = result.imageUrl;
         addToast("Image uploaded successfully!", "success");
       } catch (error) {

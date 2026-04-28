@@ -6,6 +6,17 @@ import { setApiClientBaseUrl } from "../services/apiClient";
 
 const normalizeUrl = (value: string) => value.trim().replace(/\/$/, "");
 
+const isDevHostname = (hostname: string): boolean => {
+  const normalized = hostname.toLowerCase();
+  return (
+    normalized === "localhost" ||
+    normalized === "127.0.0.1" ||
+    normalized.startsWith("dev.") ||
+    normalized.startsWith("devapi.") ||
+    normalized.includes("-dev")
+  );
+};
+
 const shouldUseSettingsApiBaseUrl = (value: string): boolean => {
   const trimmed = normalizeUrl(value);
   if (!trimmed) return false;
@@ -17,11 +28,11 @@ const shouldUseSettingsApiBaseUrl = (value: string): boolean => {
     const parsed = new URL(trimmed);
     const apiHost = parsed.hostname.toLowerCase();
     const siteHost = window.location.hostname.toLowerCase();
-    const isProductionSite =
-      siteHost !== "localhost" && siteHost !== "127.0.0.1";
+    const siteIsDev = isDevHostname(siteHost);
+    const apiIsDev = isDevHostname(apiHost);
 
-    // Production sites must never auto-switch to dev API hosts from persisted settings.
-    if (isProductionSite && (apiHost.startsWith("dev.") || apiHost.startsWith("devapi."))) {
+    // Keep environments isolated: dev site -> dev API, prod site -> prod API.
+    if (siteIsDev !== apiIsDev) {
       return false;
     }
 
@@ -48,6 +59,7 @@ function Root() {
 
   useEffect(() => {
     const loadSettings = async () => {
+      let apiBaseAppliedFromSettings = false;
       try {
         const response = await fetch("/api/settings", {
           headers: {
@@ -63,6 +75,7 @@ function Root() {
           if (settings?.apiBaseUrl && typeof settings.apiBaseUrl === "string") {
             if (shouldUseSettingsApiBaseUrl(settings.apiBaseUrl)) {
               setApiClientBaseUrl(normalizeUrl(settings.apiBaseUrl));
+              apiBaseAppliedFromSettings = true;
             } else {
               console.warn(
                 "Ignoring unsafe apiBaseUrl from settings in this environment:",
@@ -78,8 +91,19 @@ function Root() {
         );
       } finally {
         const envBaseUrl = import.meta.env.VITE_API_URL;
-        if (typeof envBaseUrl === "string" && envBaseUrl.trim()) {
-          setApiClientBaseUrl(normalizeUrl(envBaseUrl));
+        if (
+          !apiBaseAppliedFromSettings &&
+          typeof envBaseUrl === "string" &&
+          envBaseUrl.trim()
+        ) {
+          if (shouldUseSettingsApiBaseUrl(envBaseUrl)) {
+            setApiClientBaseUrl(normalizeUrl(envBaseUrl));
+          } else {
+            console.warn(
+              "Ignoring unsafe VITE_API_URL for this environment:",
+              envBaseUrl,
+            );
+          }
         }
         setLoading(false);
       }

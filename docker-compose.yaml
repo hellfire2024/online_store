@@ -20,6 +20,8 @@ services:
       SERVICE_URL_BACKEND: https://devapi.adaptivegis.com
       SERVICE_URL_FRONTEND: https://dev.adaptivegis.com
       SERVICE_URL_PHPMYADMIN: https://devmysql.adaptivegis.com
+      APP_ENV: dev
+      EXPECTED_DB_TAG: dev
       NODE_ENV: production
       DEMO_MODE: "0"
       PORT: 3001

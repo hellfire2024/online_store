@@ -1153,6 +1153,12 @@ const SettingsManagement: React.FC = () => {
         ).trim(),
       } as any;
 
+      finalSettings.siteTitle = finalSettings.loadingDefaults.siteTitle;
+      finalSettings.logoText = finalSettings.loadingDefaults.logoText;
+      finalSettings.logoTextAccent =
+        finalSettings.loadingDefaults.logoTextAccent;
+      finalSettings.supportEmail = finalSettings.loadingDefaults.supportEmail;
+
       const stripePublishableKey = String(
         (finalSettings.paymentApiKeys as any)?.stripePublishableKey || "",
       ).trim();
@@ -1365,6 +1371,7 @@ const SettingsManagement: React.FC = () => {
   ) => {
     setSettings((prev: any) => ({
       ...prev,
+      [field]: value,
       loadingDefaults: {
         ...(prev.loadingDefaults || {}),
         [field]: value,
