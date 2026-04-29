@@ -136,7 +136,17 @@ const validateEnvironmentDatabaseIsolation = () => {
   );
   const apiHost = parseHostname(process.env.SERVICE_URL_BACKEND);
 
+  const nodeEnv = String(process.env.NODE_ENV || "")
+    .trim()
+    .toLowerCase();
+  const requiresStrictEnv = nodeEnv === "production";
+
   if (!appEnv || !dbName) {
+    if (requiresStrictEnv) {
+      throw new Error(
+        `Environment isolation check failed: APP_ENV and DB_NAME are required in production (APP_ENV='${appEnv}', DB_NAME='${dbName}').`,
+      );
+    }
     appendLog("ℹ️  Skipping strict env/db guard (APP_ENV or DB_NAME missing)");
     return;
   }
@@ -275,6 +285,9 @@ const toOriginFromDomain = (domain?: string): string | null => {
 };
 
 const isProductionRuntime = process.env.NODE_ENV === "production";
+const appEnv = String(process.env.APP_ENV || "")
+  .trim()
+  .toLowerCase();
 
 const isDevHostname = (hostname: string): boolean => {
   const normalized = hostname.toLowerCase();
@@ -285,6 +298,30 @@ const isDevHostname = (hostname: string): boolean => {
     normalized.startsWith("devapi.") ||
     normalized.includes("-dev")
   );
+};
+
+const isOriginAllowedForAppEnv = (origin: string): boolean => {
+  try {
+    const { hostname } = new URL(origin);
+    const originIsDev = isDevHostname(hostname);
+
+    if (appEnv === "dev" || appEnv === "development") {
+      return originIsDev;
+    }
+
+    if (appEnv === "prod" || appEnv === "production") {
+      return !originIsDev;
+    }
+
+    // If APP_ENV is not set to a known value, fall back to NODE_ENV behavior.
+    if (isProductionRuntime) {
+      return !originIsDev;
+    }
+
+    return true;
+  } catch {
+    return false;
+  }
 };
 
 const corsOriginCandidates = [
@@ -306,21 +343,9 @@ const corsOriginCandidates = [
   .filter((v): v is string => typeof v === "string" && v.trim().length > 0)
   .map((v) => normalizeOrigin(v));
 
-const allowedOrigins = Array.from(new Set(corsOriginCandidates));
-
-const isAllowedByEnvironmentTier = (origin: string): boolean => {
-  try {
-    const { hostname } = new URL(origin);
-    const originIsDev = isDevHostname(hostname);
-    // Never allow dev origins in production unless explicitly listed.
-    if (isProductionRuntime && originIsDev) {
-      return false;
-    }
-    return false;
-  } catch {
-    return false;
-  }
-};
+const allowedOrigins = Array.from(new Set(corsOriginCandidates)).filter((o) =>
+  isOriginAllowedForAppEnv(o),
+);
 
 console.log("✅ Allowed CORS origins:", allowedOrigins);
 app.use(
@@ -328,10 +353,7 @@ app.use(
     origin: function (origin, callback) {
       // allow requests with no origin (like mobile apps, curl, etc.)
       if (!origin) return callback(null, true);
-      if (
-        allowedOrigins.includes(normalizeOrigin(origin)) ||
-        isAllowedByEnvironmentTier(origin)
-      ) {
+      if (allowedOrigins.includes(normalizeOrigin(origin))) {
         return callback(null, true);
       } else {
         console.error(`[CORS] Blocked origin: ${origin}`);

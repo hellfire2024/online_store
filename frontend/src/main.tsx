@@ -5,6 +5,8 @@ import "./index.css";
 import { setApiClientBaseUrl } from "../services/apiClient";
 
 const normalizeUrl = (value: string) => value.trim().replace(/\/$/, "");
+const ALLOW_CROSS_ORIGIN_API =
+  String(import.meta.env.VITE_ALLOW_CROSS_ORIGIN_API || "") === "1";
 
 const isDevHostname = (hostname: string): boolean => {
   const normalized = hostname.toLowerCase();
@@ -26,6 +28,13 @@ const shouldUseSettingsApiBaseUrl = (value: string): boolean => {
 
   try {
     const parsed = new URL(trimmed);
+    const siteOrigin = window.location.origin.toLowerCase();
+
+    // Default to strict same-origin API usage to prevent cross-environment bleed.
+    if (!ALLOW_CROSS_ORIGIN_API) {
+      return parsed.origin.toLowerCase() === siteOrigin;
+    }
+
     const apiHost = parsed.hostname.toLowerCase();
     const siteHost = window.location.hostname.toLowerCase();
     const siteIsDev = isDevHostname(siteHost);
