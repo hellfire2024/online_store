@@ -4,12 +4,13 @@ services:
   backend:
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.backend.rule=Host(`devapi.adaptivegis.com`)"
-      - "traefik.http.routers.backend.entrypoints=websecure"
-      - "traefik.http.routers.backend.tls.certresolver=letsencrypt"
-      - "traefik.http.services.backend.loadbalancer.server.port=3001"
-      - "traefik.http.services.backend.loadbalancer.healthcheck.path=/health"
-      - "traefik.http.services.backend.loadbalancer.healthcheck.interval=10s"
+      - "traefik.http.routers.backend-dev.rule=Host(`devapi.adaptivegis.com`)"
+      - "traefik.http.routers.backend-dev.entrypoints=websecure"
+      - "traefik.http.routers.backend-dev.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.backend-dev.service=backend-dev"
+      - "traefik.http.services.backend-dev.loadbalancer.server.port=3001"
+      - "traefik.http.services.backend-dev.loadbalancer.healthcheck.path=/health"
+      - "traefik.http.services.backend-dev.loadbalancer.healthcheck.interval=10s"
     build:
       context: .
       dockerfile: Dockerfile.backend
@@ -47,12 +48,13 @@ services:
   frontend:
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.frontend.rule=Host(`dev.adaptivegis.com`)"
-      - "traefik.http.routers.frontend.entrypoints=websecure"
-      - "traefik.http.routers.frontend.tls.certresolver=letsencrypt"
-      - "traefik.http.services.frontend.loadbalancer.server.port=8080"
-      - "traefik.http.services.frontend.loadbalancer.healthcheck.path=/healthz"
-      - "traefik.http.services.frontend.loadbalancer.healthcheck.interval=10s"
+      - "traefik.http.routers.frontend-dev.rule=Host(`dev.adaptivegis.com`)"
+      - "traefik.http.routers.frontend-dev.entrypoints=websecure"
+      - "traefik.http.routers.frontend-dev.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.frontend-dev.service=frontend-dev"
+      - "traefik.http.services.frontend-dev.loadbalancer.server.port=8080"
+      - "traefik.http.services.frontend-dev.loadbalancer.healthcheck.path=/healthz"
+      - "traefik.http.services.frontend-dev.loadbalancer.healthcheck.interval=10s"
     build:
       context: .
       dockerfile: Dockerfile
