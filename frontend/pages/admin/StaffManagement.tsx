@@ -171,6 +171,26 @@ const StaffManagement: React.FC = () => {
     }
   };
 
+  const handleDelete = async (staffMember: StaffMember) => {
+    const confirmed = window.confirm(
+      `Are you sure you want to delete "${staffMember.name}"? This action cannot be undone.`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      await deleteStaff(staffMember.id);
+      addToast("Staff member deleted successfully", "success");
+    } catch (error) {
+      addToast(
+        `Failed to delete staff member: ${error instanceof Error ? error.message : "Unknown error"}`,
+        "error",
+      );
+    }
+  };
+
   // Pagination logic
   const paginatedStaff =
     itemsPerPage === -1
@@ -221,15 +241,7 @@ const StaffManagement: React.FC = () => {
                 <EditIcon />
               </button>
               <button
-                onClick={() => {
-                  if (
-                    window.confirm(
-                      `Are you sure you want to delete "${staffMember.name}"? This action cannot be undone.`,
-                    )
-                  ) {
-                    deleteStaff(staffMember.id);
-                  }
-                }}
+                onClick={() => void handleDelete(staffMember)}
                 className="text-red-400 hover:text-red-300 p-2"
               >
                 <TrashIcon />
