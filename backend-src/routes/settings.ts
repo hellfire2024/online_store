@@ -6,6 +6,60 @@ import { requireAdmin } from "../middleware/auth.js";
 
 const router = Router();
 
+const getRuntimeAppEnv = (): "dev" | "staging" | "prod" => {
+  const appEnv = String(process.env.APP_ENV || "")
+    .trim()
+    .toLowerCase();
+  if (appEnv === "dev" || appEnv === "development") return "dev";
+  if (appEnv === "staging" || appEnv === "stage" || appEnv === "test") {
+    return "staging";
+  }
+
+  const nodeEnv = String(process.env.NODE_ENV || "")
+    .trim()
+    .toLowerCase();
+  if (nodeEnv === "development") return "dev";
+
+  return "prod";
+};
+
+const getConfiguredSiteSettingsId = (): number | null => {
+  const configured = String(process.env.SITE_SETTINGS_ID || "").trim();
+  if (!configured) {
+    return null;
+  }
+
+  const parsed = Number.parseInt(configured, 10);
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    throw new Error(
+      `Invalid SITE_SETTINGS_ID='${configured}'. Expected a positive integer.`,
+    );
+  }
+
+  return parsed;
+};
+
+const isUsingExplicitSiteSettingsId = (): boolean =>
+  getConfiguredSiteSettingsId() !== null;
+
+const getSiteSettingsRecordId = (): number => {
+  const configuredId = getConfiguredSiteSettingsId();
+  if (configuredId !== null) {
+    return configuredId;
+  }
+
+  const env = getRuntimeAppEnv();
+  const fallbackId = env === "dev" ? 2 : env === "staging" ? 3 : 1;
+
+  if (String(process.env.NODE_ENV || "").toLowerCase() === "production") {
+    throw new Error(
+      "SITE_SETTINGS_ID is required in production to enforce per-project isolation.",
+    );
+  }
+
+  return fallbackId;
+};
+
 const normalizeUrl = (value: string): string => value.trim().replace(/\/$/, "");
 
 const getCanonicalApiBaseUrl = (): string => {
@@ -321,8 +375,10 @@ const normalizeFromAddress = (fromAddress: any) => {
 };
 
 const readSettings = async (): Promise<any> => {
+  const settingsId = getSiteSettingsRecordId();
   const [rows] = await pool.query<RowDataPacket[]>(
-    "SELECT settings FROM site_settings WHERE id = 1",
+    "SELECT settings FROM site_settings WHERE id = ? LIMIT 1",
+    [settingsId],
   );
 
   if (!rows.length) {
@@ -1033,11 +1089,26 @@ router.get("/commerce-status", async (_req: Request, res: Response) => {
 // Get settings
 router.get("/", async (_req: Request, res: Response) => {
   try {
+    const settingsId = getSiteSettingsRecordId();
+    res.setHeader(
+      "Cache-Control",
+      "private, no-store, no-cache, must-revalidate",
+    );
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
+    res.setHeader("Vary", "Host, Origin");
     const [rows] = await pool.query<RowDataPacket[]>(
-      "SELECT settings FROM site_settings WHERE id = 1",
+      "SELECT settings FROM site_settings WHERE id = ? LIMIT 1",
+      [settingsId],
     );
 
     if (rows.length === 0) {
+      res.setHeader("x-app-env", getRuntimeAppEnv());
+      res.setHeader("x-settings-id", String(settingsId));
+      res.setHeader(
+        "x-settings-id-source",
+        isUsingExplicitSiteSettingsId() ? "explicit" : "fallback",
+      );
       return res.json({});
     }
 
@@ -1053,6 +1124,12 @@ router.get("/", async (_req: Request, res: Response) => {
       safeSettings.fromAddress = normalizeFromAddress(safeSettings.fromAddress);
     }
 
+    res.setHeader("x-app-env", getRuntimeAppEnv());
+    res.setHeader("x-settings-id", String(settingsId));
+    res.setHeader(
+      "x-settings-id-source",
+      isUsingExplicitSiteSettingsId() ? "explicit" : "fallback",
+    );
     return res.json(safeSettings);
   } catch (error) {
     console.error("Error fetching settings:", error);
@@ -1063,6 +1140,7 @@ router.get("/", async (_req: Request, res: Response) => {
 // Update settings
 router.put("/", requireAdmin, async (req: Request, res: Response) => {
   try {
+    const settingsId = getSiteSettingsRecordId();
     const payload = { ...(req.body || {}) };
 
     console.log(
@@ -1083,14 +1161,20 @@ router.put("/", requireAdmin, async (req: Request, res: Response) => {
     const settingsJson = JSON.stringify(guardedPayload);
 
     const [result] = await pool.query(
-      `INSERT INTO site_settings (id, settings) VALUES (1, ?)
+      `INSERT INTO site_settings (id, settings) VALUES (?, ?)
        ON DUPLICATE KEY UPDATE settings = ?`,
-      [settingsJson, settingsJson],
+      [settingsId, settingsJson, settingsJson],
     );
 
     console.log(
       "Settings saved successfully to database, affected rows:",
       (result as any).affectedRows,
+    );
+    res.setHeader("x-app-env", getRuntimeAppEnv());
+    res.setHeader("x-settings-id", String(settingsId));
+    res.setHeader(
+      "x-settings-id-source",
+      isUsingExplicitSiteSettingsId() ? "explicit" : "fallback",
     );
     return res.json(guardedPayload);
   } catch (error) {
