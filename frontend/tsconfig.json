@@ -8,19 +8,34 @@
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
 
-    /* Bundler mode */
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
     "noEmit": true,
     "jsx": "react-jsx",
 
-    /* Linting */
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    },
+
+    "ignoreDeprecations": "6.0"
   },
-  "include": ["index.tsx", "App.tsx", "components", "pages", "context", "hooks", "services", "types.ts"],
-  "exclude": ["node_modules", "dist", "backend-src", "frontend"]
+  "include": [
+    "index.html",
+    "src",
+    "components",
+    "pages",
+    "context",
+    "hooks",
+    "services",
+    "utils",
+    "types.ts"
+  ],
+  "references": [{ "path": "./tsconfig.node.json" }]
 }
