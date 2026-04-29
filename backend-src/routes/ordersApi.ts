@@ -61,8 +61,9 @@ const getSiteSettingsRecordId = (): number => {
   const fallbackId = env === "dev" ? 2 : env === "staging" ? 3 : 1;
 
   if (String(process.env.NODE_ENV || "").toLowerCase() === "production") {
-    throw new Error(
-      "SITE_SETTINGS_ID is required in production to enforce per-project isolation.",
+    console.warn(
+      `[ordersApi] SITE_SETTINGS_ID not set in production. Falling back to id=${fallbackId} (APP_ENV=${process.env.APP_ENV || "unset"}). ` +
+      "Set SITE_SETTINGS_ID in your deployment env vars to enforce per-project isolation.",
     );
   }
 
