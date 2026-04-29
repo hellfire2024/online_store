@@ -360,10 +360,29 @@ if (process.env.NODE_ENV === "development") {
 }
 
 // Rate limiting
+const rateLimitWindowMs = parseInt(
+  process.env.RATE_LIMIT_WINDOW_MS || "900000",
+);
+const rateLimitMaxRequests = parseInt(
+  process.env.RATE_LIMIT_MAX_REQUESTS || "100",
+);
+const publicReadRateLimitMax = parseInt(
+  process.env.RATE_LIMIT_PUBLIC_READ_MAX_REQUESTS || "600",
+);
+
+const isPublicReadEndpoint = (req: Request): boolean =>
+  req.method === "GET" &&
+  /^\/api\/(settings|services|reviews|staff)(\/|$)/.test(req.originalUrl);
+
 const limiter = rateLimit({
-  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || "900000"),
-  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || "100"),
-  message: "Too many requests from this IP, please try again later.",
+  windowMs: rateLimitWindowMs,
+  max: (req: Request) =>
+    isPublicReadEndpoint(req) ? publicReadRateLimitMax : rateLimitMaxRequests,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    error: "Too many requests from this IP, please try again later.",
+  },
 });
 app.use("/api/", limiter);
 

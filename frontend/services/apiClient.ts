@@ -134,6 +134,9 @@ class ApiClient {
 
     const method = (options.method || "GET").toUpperCase();
     const cacheKey = `${method}:${endpoint}`;
+    const isPublicBootstrapGet =
+      method === "GET" &&
+      /^\/(settings|services|reviews|staff)(\/|$)/.test(endpoint);
 
     if (method === "GET") {
       const cached = this.cache.get(cacheKey);
@@ -148,7 +151,7 @@ class ApiClient {
     }
 
     const execute = async (): Promise<T> => {
-      const maxRetries = 4;
+      const maxRetries = isPublicBootstrapGet ? 1 : 4;
       let attempt = 0;
 
       while (true) {
@@ -206,7 +209,10 @@ class ApiClient {
             ? retryAfterSeconds * 1000
             : Math.min(500 * Math.pow(2, attempt), 5000) +
               Math.floor(Math.random() * 200);
-          await new Promise((resolve) => setTimeout(resolve, delayMs));
+          const boundedDelayMs = isPublicBootstrapGet
+            ? Math.min(delayMs, 1500)
+            : delayMs;
+          await new Promise((resolve) => setTimeout(resolve, boundedDelayMs));
           continue;
         }
 

@@ -167,80 +167,64 @@ export const SiteSettingsProvider: React.FC<{ children: ReactNode }> = ({
       setIsLoading(true);
       setSettingsError(null);
 
-      const MAX_RETRIES = 3;
-      let lastError: unknown = null;
+      try {
+        const loadedSettings = await apiClient.settings.get();
+        if (loadedSettings && typeof loadedSettings === "object") {
+          const loadingDefaults = normalizeLoadingDefaults({
+            siteTitle:
+              loadedSettings.loadingDefaults?.siteTitle ||
+              loadedSettings.siteTitle,
+            logoText:
+              loadedSettings.loadingDefaults?.logoText ||
+              loadedSettings.logoText,
+            logoTextAccent:
+              loadedSettings.loadingDefaults?.logoTextAccent ||
+              loadedSettings.logoTextAccent,
+            supportEmail:
+              loadedSettings.loadingDefaults?.supportEmail ||
+              loadedSettings.supportEmail,
+          });
+          saveCachedLoadingDefaults(loadingDefaults);
 
-      for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-        try {
-          const loadedSettings = await apiClient.settings.get();
-          if (loadedSettings && typeof loadedSettings === "object") {
-            const loadingDefaults = normalizeLoadingDefaults({
-              siteTitle:
-                loadedSettings.loadingDefaults?.siteTitle ||
-                loadedSettings.siteTitle,
-              logoText:
-                loadedSettings.loadingDefaults?.logoText ||
-                loadedSettings.logoText,
-              logoTextAccent:
-                loadedSettings.loadingDefaults?.logoTextAccent ||
-                loadedSettings.logoTextAccent,
-              supportEmail:
-                loadedSettings.loadingDefaults?.supportEmail ||
-                loadedSettings.supportEmail,
-            });
-            saveCachedLoadingDefaults(loadingDefaults);
-
-            // Check payment provider and keys
-            const paymentProvider = loadedSettings.paymentProvider || "none";
-            const paymentApiKeys = loadedSettings.paymentApiKeys || {};
-            let paymentKey = "";
-            if (paymentProvider !== "none") {
-              paymentKey = String(paymentApiKeys[paymentProvider] || "").trim();
-            }
-            if (
-              paymentProvider !== "none" &&
-              (!paymentKey || paymentKey.length === 0)
-            ) {
-              setSettingsError(
-                `Payment provider '${paymentProvider}' is selected but credentials are missing. Check backend settings.`,
-              );
-              console.warn(
-                `[SiteSettings] Payment provider '${paymentProvider}' selected but credentials missing.`,
-                loadedSettings,
-              );
-            }
-            setSiteSettings((prev) =>
-              applyLoadingDefaults(
-                {
-                  ...prev,
-                  ...loadedSettings,
-                } as SiteSettings,
-                loadingDefaults,
-              ),
+          // Check payment provider and keys
+          const paymentProvider = loadedSettings.paymentProvider || "none";
+          const paymentApiKeys = loadedSettings.paymentApiKeys || {};
+          let paymentKey = "";
+          if (paymentProvider !== "none") {
+            paymentKey = String(paymentApiKeys[paymentProvider] || "").trim();
+          }
+          if (
+            paymentProvider !== "none" &&
+            (!paymentKey || paymentKey.length === 0)
+          ) {
+            setSettingsError(
+              `Payment provider '${paymentProvider}' is selected but credentials are missing. Check backend settings.`,
             );
-          } else {
-            setSettingsError("No site settings returned from backend.");
+            console.warn(
+              `[SiteSettings] Payment provider '${paymentProvider}' selected but credentials missing.`,
+              loadedSettings,
+            );
           }
-          setIsLoading(false);
-          return; // success — stop retrying
-        } catch (error) {
-          lastError = error;
-          console.warn(
-            `[SiteSettings] fetchSettings attempt ${attempt}/${MAX_RETRIES} failed:`,
-            error,
+          setSiteSettings((prev) =>
+            applyLoadingDefaults(
+              {
+                ...prev,
+                ...loadedSettings,
+              } as SiteSettings,
+              loadingDefaults,
+            ),
           );
-          if (attempt < MAX_RETRIES) {
-            // exponential backoff: 1s, 2s
-            await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
-          }
+        } else {
+          setSettingsError("No site settings returned from backend.");
         }
+      } catch (error) {
+        console.warn("[SiteSettings] fetchSettings failed:", error);
+        setSettingsError(
+          `Failed to load site settings: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      } finally {
+        setIsLoading(false);
       }
-
-      // All retries exhausted — surface the error but keep cached state
-      setSettingsError(
-        `Failed to load site settings: ${lastError instanceof Error ? lastError.message : String(lastError)}`,
-      );
-      setIsLoading(false);
     };
     fetchSettings();
   }, []);
