@@ -18,6 +18,57 @@ import {
 
 const router = Router();
 
+const getRuntimeAppEnv = (): "dev" | "staging" | "prod" => {
+  const appEnv = String(process.env.APP_ENV || "")
+    .trim()
+    .toLowerCase();
+  if (appEnv === "dev" || appEnv === "development") return "dev";
+  if (appEnv === "staging" || appEnv === "stage" || appEnv === "test") {
+    return "staging";
+  }
+
+  const nodeEnv = String(process.env.NODE_ENV || "")
+    .trim()
+    .toLowerCase();
+  if (nodeEnv === "development") return "dev";
+
+  return "prod";
+};
+
+const getConfiguredSiteSettingsId = (): number | null => {
+  const configured = String(process.env.SITE_SETTINGS_ID || "").trim();
+  if (!configured) {
+    return null;
+  }
+
+  const parsed = Number.parseInt(configured, 10);
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    throw new Error(
+      `Invalid SITE_SETTINGS_ID='${configured}'. Expected a positive integer.`,
+    );
+  }
+
+  return parsed;
+};
+
+const getSiteSettingsRecordId = (): number => {
+  const configuredId = getConfiguredSiteSettingsId();
+  if (configuredId !== null) {
+    return configuredId;
+  }
+
+  const env = getRuntimeAppEnv();
+  const fallbackId = env === "dev" ? 2 : env === "staging" ? 3 : 1;
+
+  if (String(process.env.NODE_ENV || "").toLowerCase() === "production") {
+    throw new Error(
+      "SITE_SETTINGS_ID is required in production to enforce per-project isolation.",
+    );
+  }
+
+  return fallbackId;
+};
+
 type PaymentStatus =
   | "unpaid"
   | "paid"
@@ -80,6 +131,16 @@ const parseSettings = (raw: unknown) => {
   }
 
   return {};
+};
+
+const readSiteSettings = async (): Promise<any> => {
+  const settingsId = getSiteSettingsRecordId();
+  const [rows] = await pool.query<SettingsRow[]>(
+    "SELECT settings FROM site_settings WHERE id = ? LIMIT 1",
+    [settingsId],
+  );
+
+  return rows.length ? parseSettings(rows[0].settings) : {};
 };
 
 const parseOrderData = (raw: string | null): Record<string, unknown> => {
@@ -259,11 +320,7 @@ const isLikelyEmail = (value: string): boolean =>
   /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 
 const readSalesRecipients = async (): Promise<string[]> => {
-  const [rows] = await pool.query<SettingsRow[]>(
-    "SELECT settings FROM site_settings WHERE id = 1 LIMIT 1",
-  );
-
-  const parsed = rows.length ? parseSettings(rows[0].settings) : {};
+  const parsed = await readSiteSettings();
 
   const candidates = [
     parsed?.salesEmail,
@@ -577,27 +634,14 @@ router.post(
       }
 
       // Load Stripe secret key from settings
-      const [settingsRows] = await pool.query<RowDataPacket[]>(
-        "SELECT settings FROM site_settings WHERE id = 1 LIMIT 1",
-      );
+      const rawSettings = await readSiteSettings();
       console.log(
-        "[Stripe] settingsRows from DB:",
-        JSON.stringify(settingsRows, null, 2),
+        "[Stripe] settings from DB:",
+        JSON.stringify(rawSettings, null, 2),
       );
-      if (settingsRows.length && settingsRows[0].settings) {
+      if (rawSettings && Object.keys(rawSettings).length > 0) {
         try {
-          let parsed: any = settingsRows[0].settings;
-          if (typeof parsed === "string") {
-            parsed = JSON.parse(parsed);
-          }
-          // If array, use first element
-          if (
-            Array.isArray(parsed) &&
-            parsed.length > 0 &&
-            typeof parsed[0] === "object"
-          ) {
-            parsed = parsed[0];
-          }
+          let parsed: any = rawSettings;
           console.log(
             "[Stripe] settings parsed (final):",
             JSON.stringify(parsed, null, 2),
@@ -658,12 +702,7 @@ router.post("/", async (req: Request, res: Response) => {
       return;
     }
 
-    const [settingsRows] = await pool.query<RowDataPacket[]>(
-      "SELECT settings FROM site_settings WHERE id = 1 LIMIT 1",
-    );
-    const rawSettings = settingsRows.length
-      ? parseSettings(settingsRows[0].settings)
-      : {};
+    const rawSettings = await readSiteSettings();
 
     const orderId = uuidv4();
     const subtotal = Number(orderData.subtotal || 0);
@@ -1519,12 +1558,7 @@ router.post(
         return res.status(400).json({ error: "Invalid payment amount" });
       }
 
-      const [settingsRows] = await pool.query<RowDataPacket[]>(
-        "SELECT settings FROM site_settings WHERE id = 1 LIMIT 1",
-      );
-      const rawSettings = settingsRows.length
-        ? parseSettings(settingsRows[0].settings)
-        : {};
+      const rawSettings = await readSiteSettings();
       const clientId = String(rawSettings?.paymentApiKeys?.paypal || "").trim();
       const clientSecret = String(
         (rawSettings?.paymentApiKeys as any)?.paypalSecret || "",
@@ -1595,12 +1629,7 @@ router.post(
         return res.status(400).json({ error: "PayPal orderId is required" });
       }
 
-      const [settingsRows] = await pool.query<RowDataPacket[]>(
-        "SELECT settings FROM site_settings WHERE id = 1 LIMIT 1",
-      );
-      const rawSettings = settingsRows.length
-        ? parseSettings(settingsRows[0].settings)
-        : {};
+      const rawSettings = await readSiteSettings();
       const clientId = String(rawSettings?.paymentApiKeys?.paypal || "").trim();
       const clientSecret = String(
         (rawSettings?.paymentApiKeys as any)?.paypalSecret || "",
@@ -1694,12 +1723,7 @@ router.post(
         return res.status(400).json({ error: "Invalid payment data" });
       }
 
-      const [settingsRows] = await pool.query<RowDataPacket[]>(
-        "SELECT settings FROM site_settings WHERE id = 1 LIMIT 1",
-      );
-      const rawSettings = settingsRows.length
-        ? parseSettings(settingsRows[0].settings)
-        : {};
+      const rawSettings = await readSiteSettings();
       const accessToken = String(
         rawSettings?.paymentApiKeys?.square || "",
       ).trim();
@@ -1789,12 +1813,7 @@ router.post(
         return res.status(400).json({ error: "Invalid payment data" });
       }
 
-      const [settingsRows] = await pool.query<RowDataPacket[]>(
-        "SELECT settings FROM site_settings WHERE id = 1 LIMIT 1",
-      );
-      const rawSettings = settingsRows.length
-        ? parseSettings(settingsRows[0].settings)
-        : {};
+      const rawSettings = await readSiteSettings();
       const { apiLoginId, transactionKey } = parseAuthorizeNetCredentials(
         rawSettings?.paymentApiKeys?.authorizeNet,
       );

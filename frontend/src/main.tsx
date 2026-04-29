@@ -71,8 +71,11 @@ function Root() {
       let apiBaseAppliedFromSettings = false;
       try {
         const response = await fetch("/api/settings", {
+          cache: "no-store",
           headers: {
             Accept: "application/json",
+            "Cache-Control": "no-cache",
+            Pragma: "no-cache",
           },
         });
 

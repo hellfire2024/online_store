@@ -8,6 +8,57 @@ import { ShippingRateRequest, ShippingRate } from "../types.js";
 
 const router = Router();
 
+const getRuntimeAppEnv = (): "dev" | "staging" | "prod" => {
+  const appEnv = String(process.env.APP_ENV || "")
+    .trim()
+    .toLowerCase();
+  if (appEnv === "dev" || appEnv === "development") return "dev";
+  if (appEnv === "staging" || appEnv === "stage" || appEnv === "test") {
+    return "staging";
+  }
+
+  const nodeEnv = String(process.env.NODE_ENV || "")
+    .trim()
+    .toLowerCase();
+  if (nodeEnv === "development") return "dev";
+
+  return "prod";
+};
+
+const getConfiguredSiteSettingsId = (): number | null => {
+  const configured = String(process.env.SITE_SETTINGS_ID || "").trim();
+  if (!configured) {
+    return null;
+  }
+
+  const parsed = Number.parseInt(configured, 10);
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    throw new Error(
+      `Invalid SITE_SETTINGS_ID='${configured}'. Expected a positive integer.`,
+    );
+  }
+
+  return parsed;
+};
+
+const getSiteSettingsRecordId = (): number => {
+  const configuredId = getConfiguredSiteSettingsId();
+  if (configuredId !== null) {
+    return configuredId;
+  }
+
+  const env = getRuntimeAppEnv();
+  const fallbackId = env === "dev" ? 2 : env === "staging" ? 3 : 1;
+
+  if (String(process.env.NODE_ENV || "").toLowerCase() === "production") {
+    throw new Error(
+      "SITE_SETTINGS_ID is required in production to enforce per-project isolation.",
+    );
+  }
+
+  return fallbackId;
+};
+
 interface SettingsRow extends RowDataPacket {
   settings: string | null;
 }
@@ -43,8 +94,10 @@ const isPOBoxAddress = (value: unknown): boolean => {
 };
 
 const readShippingConfig = async () => {
+  const settingsId = getSiteSettingsRecordId();
   const [rows] = await pool.query<SettingsRow[]>(
-    "SELECT settings FROM site_settings WHERE id = 1 LIMIT 1",
+    "SELECT settings FROM site_settings WHERE id = ? LIMIT 1",
+    [settingsId],
   );
 
   if (!rows.length || !rows[0].settings) {
