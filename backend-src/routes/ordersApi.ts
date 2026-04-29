@@ -63,7 +63,7 @@ const getSiteSettingsRecordId = (): number => {
   if (String(process.env.NODE_ENV || "").toLowerCase() === "production") {
     console.warn(
       `[ordersApi] SITE_SETTINGS_ID not set in production. Falling back to id=${fallbackId} (APP_ENV=${process.env.APP_ENV || "unset"}). ` +
-      "Set SITE_SETTINGS_ID in your deployment env vars to enforce per-project isolation.",
+        "Set SITE_SETTINGS_ID in your deployment env vars to enforce per-project isolation.",
     );
   }
 
