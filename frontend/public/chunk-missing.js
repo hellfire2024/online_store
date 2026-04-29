@@ -5,7 +5,9 @@ try {
 
   if (!alreadyReloaded) {
     sessionStorage.setItem(reloadKey, "1");
-    window.location.reload();
+    const url = new URL(window.location.href);
+    url.searchParams.set("__chunk_reload", String(Date.now()));
+    window.location.replace(url.toString());
   } else {
     console.error(
       "Chunk recovery reload already attempted once. Please hard refresh the page.",
@@ -15,4 +17,8 @@ try {
   console.error("Chunk recovery fallback failed:", error);
 }
 
-export {};
+// React.lazy expects a module with a default component export.
+// Returning null prevents minified React error #306 when this fallback is loaded.
+export default function ChunkMissingFallback() {
+  return null;
+}

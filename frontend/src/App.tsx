@@ -46,6 +46,8 @@ import AdminLoginModal from "../components/admin/AdminLoginModal";
 import SiteEffectHandler from "../components/SiteEffectHandler";
 import TestHeroRenderingPage from "../pages/TestHeroRenderingPage";
 
+const CHUNK_RECOVERY_KEY = "__chunk_missing_reload_once__";
+
 // Lazy load admin pages for better code splitting
 const AdminPage = React.lazy(() => import("../pages/admin/AdminPage"));
 const PagePreview = React.lazy(() => import("../pages/admin/PagePreview"));
@@ -106,6 +108,16 @@ const App: React.FC = () => {
 
     window.addEventListener("error", handleError);
     return () => window.removeEventListener("error", handleError);
+  }, []);
+
+  // Clear the one-time chunk recovery marker after a successful app boot.
+  // This allows future chunk misses to attempt one automatic cache-busting reload.
+  useEffect(() => {
+    try {
+      sessionStorage.removeItem(CHUNK_RECOVERY_KEY);
+    } catch {
+      // Ignore storage access errors.
+    }
   }, []);
 
   useAdminKeyListener(handleOpenAdminLogin);
