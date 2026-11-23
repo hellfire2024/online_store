@@ -281,10 +281,16 @@ router.post(
         return res.status(401).json({ error: "Invalid credentials" });
       }
 
-      // Update last login
+      // Update last login and purge expired password reset tokens
       await pool.query("UPDATE customers SET last_login = NOW() WHERE id = ?", [
         customer.id,
       ]);
+      pool
+        .query(
+          "DELETE FROM password_reset_tokens WHERE customer_id = ? AND (expires_at < NOW() OR used = TRUE)",
+          [customer.id],
+        )
+        .catch(() => {});
 
       // Generate JWT
       const secret: Secret = process.env.JWT_SECRET || "dev-secret";
@@ -729,7 +735,6 @@ router.get(
       }
       return res.status(500).json({
         error: "Failed to fetch customer profile",
-        details: error instanceof Error ? error.message : String(error),
       });
     }
   },

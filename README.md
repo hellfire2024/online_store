@@ -1,135 +1,124 @@
-# Custom Threads Online Store
+# AdaptiveGIS Online Store
 
-A React TypeScript ecommerce application with admin dashboard capabilities.
+Full-stack ecommerce platform. React/TypeScript frontend + Node.js/Express/TypeScript backend + MySQL, deployed via Coolify (Docker Compose + Traefik).
+
+> See `CLAUDE.md` for architecture details, constraints, and development guidance.
+
+## Stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | React 18, TypeScript, Vite 5, Tailwind CSS |
+| Backend | Node.js, Express, TypeScript |
+| Database | MySQL 8.0 |
+| Auth | JWT (admin + customer tokens) |
+| Payments | Stripe, PayPal, Square, Authorize.Net |
+| Shipping | EasyPost, Shippo, ShipStation |
+| Deploy | Coolify, Docker Compose, Traefik TLS |
 
 ## Prerequisites
 
-- Node.js (v18+) and npm
-- Git
+- Node.js 18+
+- Docker + Docker Compose (for full stack)
+- MySQL 8 (for local backend dev without Docker)
 
 ## Quick Start
 
-### 1. Install Dependencies
+### Local development (without Docker)
 
 ```bash
+# Install backend dependencies
 npm install
-```
 
-### 2. Start Development Server
+# Install frontend dependencies
+cd frontend && npm install && cd ..
 
-```bash
+# Copy env file and fill in values
+cp .env.example .env
+
+# Start backend (hot-reload)
 npm run dev
+
+# Start frontend (separate terminal)
+cd frontend && npm run dev
 ```
 
-The app will automatically open in your browser at `http://localhost:5173`
+Frontend: http://localhost:5173  
+Backend API: http://localhost:3001
 
-### 3. Build for Production
+### Docker Compose (local full stack)
 
 ```bash
+cp .env.example .env
+# Edit .env with your values (see Required Environment Variables below)
+docker compose -f docker-compose.yml up --build
+```
+
+## Required Environment Variables
+
+Copy `.env.example` to `.env` and set:
+
+| Variable | Description |
+|---|---|
+| `DB_USER` / `DB_PASSWORD` / `DB_NAME` | MySQL credentials |
+| `MYSQL_USER` / `MYSQL_PASSWORD` / `MYSQL_DATABASE` / `MYSQL_ROOT_PASSWORD` | MySQL Docker vars |
+| `JWT_SECRET` | Strong random string (min 32 chars) — **never use `dev-secret` in production** |
+| `CORS_ORIGIN` | Allowed frontend origin(s), comma-separated |
+| `INITIAL_ADMIN_USERNAME` / `INITIAL_ADMIN_PASSWORD` / `INITIAL_ADMIN_EMAIL` | Seeded on first deploy if admins table is empty |
+
+See `.env.example` for a full list.
+
+## Build
+
+```bash
+# Build backend
 npm run build
+
+# Build frontend
+cd frontend && npm run build
 ```
 
-### 4. Preview Production Build
+## Database
 
 ```bash
-npm run preview
+# Run migrations (idempotent — safe to re-run)
+npm run db:migrate
+
+# Seed initial data (first deploy only)
+npm run db:seed
 ```
 
-## GitHub Setup & Backup
+## Deployment (Coolify)
 
-### Initial Setup (First Time)
+All secrets are injected as environment variables via the Coolify UI — **never hardcode credentials in compose files**.
 
-If you haven't already set up a GitHub repository:
-
-1. **Create a GitHub repository** at https://github.com/new
-   - Repository name: `online_store` (or your preferred name)
-   - Make it private or public as needed
-   - Do NOT initialize with README (we already have files)
-   - Do NOT add .gitignore (we have one)
-
-2. **Initialize Git & Connect to GitHub** (run in the project directory):
-
-```bash
-git init
-git add .
-git commit -m "Initial commit: Project setup with Vite, TypeScript, and React"
-git branch -M main
-git remote add origin https://github.com/YOUR_USERNAME/online_store.git
-git push -u origin main
-```
-
-Replace `YOUR_USERNAME` and `online_store` with your actual GitHub username and repository name.
-
-### Regular Backup Workflow
-
-After making changes, save them to GitHub:
-
-```bash
-# Check status of changes
-git status
-
-# Stage all changes
-git add .
-
-# Commit with a descriptive message
-git commit -m "Description of your changes"
-
-# Push to GitHub
-git push
-```
-
-### VS Code Integration
-
-VS Code has built-in Git integration:
-
-- **Source Control tab** (Ctrl+Shift+G): View and manage changes
-- **Stage files**: Click the + button next to changed files
-- **Commit**: Type your message and click the checkmark
-- **Push/Pull**: Use the ... menu at the top of the Source Control panel
+- `docker-compose.yaml` → dev environment
+- `docker-compose.prod.yaml` → production environment
 
 ## Project Structure
 
 ```
-├── components/           # React components
-│   ├── admin/           # Admin-specific components
-│   └── ...              # General components
-├── pages/               # Page components
-│   └── admin/           # Admin pages
-├── context/             # React Context for state management
-├── hooks/               # Custom React hooks
-├── services/            # API and utility services
-├── App.tsx              # Root component
-├── index.tsx            # Entry point
-├── index.html           # HTML template
-└── types.ts             # TypeScript type definitions
+backend-src/       Express API source (TypeScript)
+  db/              Migrations, seed, connection
+  middleware/      JWT auth middleware
+  routes/          API route handlers
+  services/        Email, shipping provider wrappers
+  utils/           Helpers (encryption, templates, watermark)
+  server.ts        App entry point
+
+frontend/          React SPA (Vite)
+  src/App.tsx      Router root
+  pages/           Page components
+  components/      Shared UI components
+  context/         React Contexts
+  services/        API client and service helpers
+  hooks/           Custom React hooks
+
+dist/              Compiled backend (git-ignored)
 ```
-
-## Development Tips
-
-- **Auto-save**: VS Code can auto-commit changes. Configure in Settings > Git: Auto Fetch & Auto Commit
-- **Type checking**: Run `npm run type-check` to validate TypeScript
-- **Hot Module Replacement (HMR)**: Vite automatically reloads on file changes during development
-
-## Environment Variables
-
-Create a `.env` file in the project root for any API keys or configuration:
-
-```
-VITE_API_KEY=your_key_here
-```
-
-Access in code with: `import.meta.env.VITE_API_KEY`
-
-## Troubleshooting
-
-- **Port already in use**: Change the port in `vite.config.ts`
-- **node_modules issues**: Delete `node_modules` folder and `package-lock.json`, then run `npm install`
-- **Git authentication**: Use a GitHub Personal Access Token if SSH is not configured
 
 ## Support
 
-For issues with:
-
-- **Vite**: https://vitejs.dev
-- **React**: https://react.dev
-- **TypeScript**: https://www.typescriptlang.org
+- Vite: https://vitejs.dev
+- React: https://react.dev
+- Express: https://expressjs.com

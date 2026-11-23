@@ -3,6 +3,7 @@ import { pool } from "../db/connection.js";
 import { RowDataPacket } from "mysql2";
 import { encryptData, decryptData } from "../utils/encryption.js";
 import { Socket } from "net";
+import { requireAdmin } from "../middleware/auth.js";
 
 const router = Router();
 
@@ -25,7 +26,7 @@ interface EmailConfigRow extends RowDataPacket {
  * Get email configuration
  * Note: Sensitive fields (passwords, API keys) are decrypted but returned to admin only
  */
-router.get("/", async (_req: Request, res: Response) => {
+router.get("/", requireAdmin, async (_req: Request, res: Response) => {
   try {
     const [rows] = await pool.query<EmailConfigRow[]>(
       "SELECT * FROM email_config WHERE id = 1",
@@ -85,7 +86,7 @@ router.get("/", async (_req: Request, res: Response) => {
  * Update email configuration
  * Encrypts sensitive fields before storage
  */
-router.put("/", async (req: Request, res: Response) => {
+router.put("/", requireAdmin, async (req: Request, res: Response) => {
   try {
     console.log("=== EMAIL CONFIG PUT REQUEST ===");
     console.log("Body received:", JSON.stringify(req.body, null, 2));
@@ -209,7 +210,7 @@ router.put("/", async (req: Request, res: Response) => {
  * Network connectivity test
  * Tests raw TCP connectivity to SMTP server before attempting full SMTP
  */
-router.post("/test-connectivity", async (req: Request, res: Response) => {
+router.post("/test-connectivity", requireAdmin, async (req: Request, res: Response) => {
   try {
     const { host, port } = req.body;
 
@@ -304,7 +305,7 @@ router.post("/test-connectivity", async (req: Request, res: Response) => {
  * Validates SMTP configuration without actually sending an email
  * (Render and other PaaS platforms may block outbound SMTP connections)
  */
-router.post("/test", async (req: Request, res: Response) => {
+router.post("/test", requireAdmin, async (req: Request, res: Response) => {
   try {
     const { testEmail, emailConfig } = req.body;
 

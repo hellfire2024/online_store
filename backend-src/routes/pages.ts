@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 import { pool } from "../db/connection.js";
 import { RowDataPacket } from "mysql2";
+import { requireAdmin } from "../middleware/auth.js";
 
 const router = Router();
 
@@ -189,7 +190,7 @@ router.get("/:id", async (req: Request, res: Response) => {
 });
 
 // Create page
-router.post("/", async (req: Request, res: Response) => {
+router.post("/", requireAdmin, async (req: Request, res: Response) => {
   try {
     const { id, pageType, title, path, content, contentData } = req.body;
 
@@ -302,7 +303,7 @@ router.post("/", async (req: Request, res: Response) => {
 });
 
 // Update page
-router.put("/:id", async (req: Request, res: Response) => {
+router.put("/:id", requireAdmin, async (req: Request, res: Response) => {
   try {
     const { pageType, title, path, content, contentData } = req.body;
     const cols = await getAvailableColumns();
@@ -433,7 +434,7 @@ router.put("/:id", async (req: Request, res: Response) => {
 });
 
 // Delete page
-router.delete("/:id", async (req: Request, res: Response) => {
+router.delete("/:id", requireAdmin, async (req: Request, res: Response) => {
   try {
     const [result] = await pool.query("DELETE FROM pages WHERE id = ?", [
       req.params.id,

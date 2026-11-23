@@ -3,12 +3,13 @@ import { body, validationResult } from "express-validator";
 import { pool } from "../db/connection.js";
 import { RowDataPacket, ResultSetHeader } from "mysql2";
 import { v4 as uuidv4 } from "uuid";
-import bcrypt from "bcrypt";
+import { requireAdmin } from "../middleware/auth.js";
+import bcrypt from "bcryptjs";
 
 const router = Router();
 
 // Get all customers
-router.get("/", async (_req: Request, res: Response) => {
+router.get("/", requireAdmin, async (_req: Request, res: Response) => {
   try {
     const [rows] = await pool.query<RowDataPacket[]>(
       `SELECT c.id, c.first_name as firstName, c.last_name as lastName, c.name, c.email, c.phone, c.is_active as isActive,
@@ -30,7 +31,7 @@ router.get("/", async (_req: Request, res: Response) => {
 });
 
 // Get single customer with orders
-router.get("/:id", async (req: Request, res: Response) => {
+router.get("/:id", requireAdmin, async (req: Request, res: Response) => {
   try {
     const [customerRows] = await pool.query<RowDataPacket[]>(
       `SELECT id, first_name as firstName, last_name as lastName, name, email, phone, email_preferences as emailPreferences,
@@ -197,6 +198,7 @@ router.post(
 // Create customer (admin - without password requirement for admin-created accounts)
 router.post(
   "/",
+  requireAdmin,
   [
     body("firstName").optional().trim(),
     body("lastName").optional().trim(),
@@ -264,7 +266,7 @@ router.post(
 );
 
 // Update customer
-router.put("/:id", async (req: Request, res: Response) => {
+router.put("/:id", requireAdmin, async (req: Request, res: Response) => {
   try {
     const {
       firstName,
@@ -351,7 +353,7 @@ router.put("/:id", async (req: Request, res: Response) => {
 });
 
 // Delete customer
-router.delete("/:id", async (req: Request, res: Response) => {
+router.delete("/:id", requireAdmin, async (req: Request, res: Response) => {
   try {
     const [result] = await pool.query<ResultSetHeader>(
       "DELETE FROM customers WHERE id = ?",
@@ -370,7 +372,7 @@ router.delete("/:id", async (req: Request, res: Response) => {
 });
 
 // Toggle customer active status
-router.patch("/:id/toggle-active", async (req: Request, res: Response) => {
+router.patch("/:id/toggle-active", requireAdmin, async (req: Request, res: Response) => {
   try {
     const [result] = await pool.query<ResultSetHeader>(
       `UPDATE customers SET is_active = !is_active WHERE id = ?`,

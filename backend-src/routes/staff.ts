@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 import { pool } from "../db/connection.js";
 import { RowDataPacket } from "mysql2";
+import { requireAdmin } from "../middleware/auth.js";
 
 const router = Router();
 
@@ -37,7 +38,7 @@ router.get("/:id", async (req: Request, res: Response) => {
 });
 
 // Create staff member
-router.post("/", async (req: Request, res: Response) => {
+router.post("/", requireAdmin, async (req: Request, res: Response) => {
   try {
     console.log("[Staff API] POST request body:", req.body);
     const { id: clientId, name, role, imageUrl, image_url } = req.body;
@@ -98,7 +99,7 @@ router.post("/", async (req: Request, res: Response) => {
 });
 
 // Update staff member
-router.put("/:id", async (req: Request, res: Response) => {
+router.put("/:id", requireAdmin, async (req: Request, res: Response) => {
   try {
     const { name, role, imageUrl, image_url } = req.body;
     const finalImageUrl = imageUrl || image_url;
@@ -120,7 +121,7 @@ router.put("/:id", async (req: Request, res: Response) => {
 });
 
 // Delete staff member
-router.delete("/:id", async (req: Request, res: Response) => {
+router.delete("/:id", requireAdmin, async (req: Request, res: Response) => {
   try {
     const [result] = await pool.query("DELETE FROM staff WHERE id = ?", [
       req.params.id,

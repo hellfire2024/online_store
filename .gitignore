@@ -8,3 +8,15 @@ dist/
 *.log
 *.tsbuildinfo
 !server.js
+
+# Never commit real env files
+.env.dev
+.env.prod
+.env.production
+
+# Never commit DB config files containing credentials
+db/site_settings.json
+backend-src/db/site_settings.json
+
+# Claude Code local tooling
+.claude/

@@ -20,7 +20,12 @@ export function getAuthUser(req: Request): AuthUser | null {
   }
 
   const token = authHeader.substring(7);
-  const secret: Secret = process.env.JWT_SECRET || "dev-secret";
+  const jwtSecret = process.env.JWT_SECRET;
+  if (!jwtSecret && process.env.NODE_ENV === "production") {
+    console.error("[Auth] JWT_SECRET not set in production");
+    return null;
+  }
+  const secret: Secret = jwtSecret || "dev-secret";
 
   try {
     const decoded = jwt.verify(token, secret) as any;

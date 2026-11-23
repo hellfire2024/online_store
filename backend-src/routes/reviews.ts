@@ -2,6 +2,7 @@ import { Router, Request, Response } from "express";
 import { pool } from "../db/connection.js";
 import { RowDataPacket } from "mysql2";
 import { v4 as uuidv4 } from "uuid";
+import { requireAdmin } from "../middleware/auth.js";
 
 const router = Router();
 
@@ -147,8 +148,8 @@ router.post("/", async (req: Request, res: Response) => {
   }
 });
 
-// Update review
-router.put("/:id", async (req: Request, res: Response) => {
+// Update review (admin moderation)
+router.put("/:id", requireAdmin, async (req: Request, res: Response) => {
   try {
     const {
       author,
@@ -208,8 +209,8 @@ router.put("/:id", async (req: Request, res: Response) => {
   }
 });
 
-// Delete review
-router.delete("/:id", async (req: Request, res: Response) => {
+// Delete review (admin only)
+router.delete("/:id", requireAdmin, async (req: Request, res: Response) => {
   try {
     const [result] = await pool.query("DELETE FROM reviews WHERE id = ?", [
       req.params.id,

@@ -1,14 +1,17 @@
 version: '3.8'
+# Legacy compose file — superseded by docker-compose.yaml (Coolify dev) and docker-compose.prod.yaml (production).
+# Kept for local-only development without Coolify/Traefik.
+# Requires a .env file at the project root — see .env.example for required variables.
 services:
   mysql:
     image: mysql:8.0
     container_name: online_store_mysql
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: rootpassword
-      MYSQL_DATABASE: agis_dev_db
-      MYSQL_USER: adaptivegis-dev
-      MYSQL_PASSWORD: we1r9dveIPTzjJ84HMD6
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     ports:
       - "3306:3306"
     volumes:
@@ -34,9 +37,9 @@ services:
       - DEMO_MODE=0
       - DB_HOST=mysql
       - DB_PORT=3306
-      - DB_USER=adaptivegis-dev
-      - DB_PASSWORD=we1r9dveIPTzjJ84HMD6
-      - DB_NAME=agis_dev_db
+      - DB_USER=${MYSQL_USER}
+      - DB_PASSWORD=${MYSQL_PASSWORD}
+      - DB_NAME=${MYSQL_DATABASE}
     depends_on:
       mysql:
         condition: service_healthy
@@ -46,7 +49,6 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-    # entrypoint removed to use Dockerfile CMD
 
   frontend:
     build:

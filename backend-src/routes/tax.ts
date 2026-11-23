@@ -1,5 +1,6 @@
 import { Router, Request, Response } from "express";
 import Stripe from "stripe";
+import { requireAdmin } from "../middleware/auth.js";
 
 const router = Router();
 
@@ -7,7 +8,7 @@ const router = Router();
  * Tax calculation endpoint using Stripe Tax API
  * Requires Stripe API key to be configured
  */
-router.post("/calculate", async (req: Request, res: Response): Promise<any> => {
+router.post("/calculate", requireAdmin, async (req: Request, res: Response): Promise<any> => {
   try {
     const {
       cartItems,

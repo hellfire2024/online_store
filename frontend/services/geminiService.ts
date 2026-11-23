@@ -35,15 +35,13 @@ const withRetry = async <T>(
 
 // --- Gemini API Configuration ---
 
-// IMPORTANT: In a real-world frontend application, this API key should NOT be
-// hardcoded. It should be fetched from a secure backend endpoint that proxies
-// requests to the Gemini API. This prevents public exposure of the key.
-// For this demo, we use a placeholder.
-const API_KEY = "YOUR_GEMINI_API_KEY"; // <-- PASTE YOUR API KEY HERE
+// API key must be set via VITE_GEMINI_API_KEY environment variable.
+// Never hardcode API keys in source files.
+const API_KEY = import.meta.env.VITE_GEMINI_API_KEY as string | undefined;
 
 let model: GenerativeModel | null = null;
 
-if (!API_KEY || API_KEY === "YOUR_GEMINI_API_KEY") {
+if (!API_KEY) {
   // API key not configured - AI features will be disabled silently
 } else {
   const genAI = new GoogleGenerativeAI(API_KEY);

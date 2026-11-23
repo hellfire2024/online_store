@@ -3,6 +3,7 @@ import { RowDataPacket } from "mysql2";
 import { pool } from "../db/connection.js";
 import * as easypostService from "../services/easypostService.js";
 import * as shippoService from "../services/shippoService.js";
+import { requireAdmin } from "../middleware/auth.js";
 import * as shipstationService from "../services/shipstationService.js";
 import { ShippingRateRequest, ShippingRate } from "../types.js";
 
@@ -536,7 +537,7 @@ router.post("/rates", async (req: Request, res: Response) => {
  * Body: { carrier, rateId, shipmentId, shipmentData }
  * Returns: Label information
  */
-router.post("/label", async (req: Request, res: Response) => {
+router.post("/label", requireAdmin, async (req: Request, res: Response) => {
   try {
     const config = await readShippingConfig();
     const { carrier, rateId, shipmentId } = req.body;

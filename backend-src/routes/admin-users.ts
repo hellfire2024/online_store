@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs';
 import { pool } from '../db/connection.js';
 import { RowDataPacket, ResultSetHeader } from 'mysql2';
 import { v4 as uuidv4 } from 'uuid';
+import { requireAdmin } from '../middleware/auth.js';
 
 const router = Router();
 
@@ -16,7 +17,7 @@ async function hasColumn(table: string, column: string): Promise<boolean> {
 }
 
 // Get all admin users
-router.get('/', async (_req: Request, res: Response) => {
+router.get('/', requireAdmin, async (_req: Request, res: Response) => {
   try {
     const [rows] = await pool.query<RowDataPacket[]>(
       `SELECT id, first_name as firstName, last_name as lastName, phone,
@@ -32,7 +33,7 @@ router.get('/', async (_req: Request, res: Response) => {
 });
 
 // Get single admin user
-router.get('/:id', async (req: Request, res: Response) => {
+router.get('/:id', requireAdmin, async (req: Request, res: Response) => {
   try {
     const [rows] = await pool.query<RowDataPacket[]>(
       `SELECT id, first_name as firstName, last_name as lastName, phone,
@@ -58,10 +59,11 @@ router.get('/:id', async (req: Request, res: Response) => {
 // Create admin user
 router.post(
   '/',
+  requireAdmin,
   [
     body('username').trim().isLength({ min: 3 }).withMessage('Username must be at least 3 characters'),
     body('email').isEmail().normalizeEmail(),
-    body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+    body('password').isLength({ min: 12 }).withMessage('Password must be at least 12 characters'),
     body('role').isIn(['super_admin', 'admin', 'manager']).withMessage('Invalid role'),
   ],
   async (req: Request, res: Response) => {
@@ -161,7 +163,7 @@ router.post(
 );
 
 // Update admin user
-router.put('/:id', async (req: Request, res: Response) => {
+router.put('/:id', requireAdmin, async (req: Request, res: Response) => {
   try {
     const { firstName, lastName, phone, username, email, password, role, isActive, permissions } = req.body;
     const [hasPasswordSnake, hasPasswordCamel, hasActiveSnake, hasActiveCamel] =
@@ -297,7 +299,7 @@ router.put('/:id', async (req: Request, res: Response) => {
 });
 
 // Delete admin user
-router.delete('/:id', async (req: Request, res: Response) => {
+router.delete('/:id', requireAdmin, async (req: Request, res: Response) => {
   try {
     // Prevent deleting the only super admin
     const [superAdmins] = await pool.query<RowDataPacket[]>(
@@ -325,7 +327,7 @@ router.delete('/:id', async (req: Request, res: Response) => {
 });
 
 // Toggle admin user active status
-router.patch('/:id/toggle-active', async (req: Request, res: Response) => {
+router.patch('/:id/toggle-active', requireAdmin, async (req: Request, res: Response) => {
   try {
     const [result] = await pool.query<ResultSetHeader>(
       `UPDATE admins SET is_active = !is_active WHERE id = ?`,

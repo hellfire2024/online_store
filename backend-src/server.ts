@@ -10,30 +10,10 @@ import fs from "fs";
 import { testConnection } from "./db/connection.js";
 
 // ============================================
-// STARTUP LOGGING TO FILE
+// STARTUP LOGGING
 // ============================================
-const LOG_FILE = path.join(process.cwd(), "startup.log");
-
 function appendLog(msg: string) {
-  const ts = new Date().toISOString();
-  const line = `[${ts}] ${msg}\n`;
-  try {
-    fs.appendFileSync(LOG_FILE, line, "utf8");
-  } catch (e) {
-    // ignore
-  }
   console.log(msg);
-}
-
-// Initialize log file
-try {
-  fs.writeFileSync(
-    LOG_FILE,
-    `\n\n=== SERVER STARTUP ${new Date().toISOString()} ===\n`,
-    "utf8",
-  );
-} catch (e) {
-  // ignore
 }
 
 appendLog("🚀 server.ts LOADING");
@@ -70,8 +50,6 @@ appendLog("🔒 CORS_ORIGIN: " + process.env.CORS_ORIGIN);
 appendLog("🗃️  SKIP_DB_CHECK: " + process.env.SKIP_DB_CHECK);
 appendLog("🔒 DB_HOST: " + process.env.DB_HOST);
 appendLog("🔒 DB_PORT: " + process.env.DB_PORT);
-appendLog("🔒 DB_USER: " + process.env.DB_USER);
-appendLog("🔒 DB_PASSWORD: " + process.env.DB_PASSWORD);
 appendLog("🔒 DB_NAME: " + process.env.DB_NAME);
 
 console.log("🔧 Loading environment variables...");
@@ -84,8 +62,6 @@ console.log("🔒 CORS_ORIGIN:", process.env.CORS_ORIGIN);
 console.log("🗃️  SKIP_DB_CHECK:", process.env.SKIP_DB_CHECK);
 console.log("🔒 DB_HOST:", process.env.DB_HOST);
 console.log("🔒 DB_PORT:", process.env.DB_PORT);
-console.log("🔒 DB_USER:", process.env.DB_USER);
-console.log("🔒 DB_PASSWORD:", process.env.DB_PASSWORD);
 console.log("🔒 DB_NAME:", process.env.DB_NAME);
 
 const parseHostname = (input?: string): string => {
@@ -191,6 +167,15 @@ const validateEnvironmentDatabaseIsolation = () => {
 };
 
 validateEnvironmentDatabaseIsolation();
+
+if (
+  process.env.NODE_ENV === "production" &&
+  (!process.env.JWT_SECRET || process.env.JWT_SECRET === "dev-secret")
+) {
+  throw new Error(
+    "JWT_SECRET must be set to a strong random value in production. Refusing to start.",
+  );
+}
 
 // Log DB config loaded from site_settings.json
 try {
@@ -351,8 +336,12 @@ console.log("✅ Allowed CORS origins:", allowedOrigins);
 app.use(
   cors({
     origin: function (origin, callback) {
-      // allow requests with no origin (like mobile apps, curl, etc.)
-      if (!origin) return callback(null, true);
+      if (!origin) {
+        // In development, allow requests with no origin (curl, Postman, etc.)
+        // In production, require a valid origin.
+        if (!isProductionRuntime) return callback(null, true);
+        return callback(new Error("Not allowed by CORS"));
+      }
       if (allowedOrigins.includes(normalizeOrigin(origin))) {
         return callback(null, true);
       } else {
@@ -408,6 +397,18 @@ const limiter = rateLimit({
 });
 app.use("/api/", limiter);
 
+// Stricter rate limit for authentication endpoints to prevent brute force
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    error: "Too many authentication attempts, please try again later.",
+  },
+});
+app.use("/api/auth/", authLimiter);
+
 console.log("✅ Middleware configured successfully");
 
 // ============================================
@@ -416,21 +417,11 @@ console.log("✅ Middleware configured successfully");
 
 console.log("🛣️  Setting up routes...");
 
-app.get("/health", (req: Request, res: Response) => {
+app.get("/health", (_req: Request, res: Response) => {
   const healthStatus = {
     status: "ok",
     timestamp: new Date().toISOString(),
-    demo_mode: DEMO_MODE,
-    db_connected: true,
-    port: process.env.PORT || 3001,
-    node_version: process.version,
-    env: process.env.NODE_ENV,
-    host: req.hostname,
-    ip: req.ip,
-    url: req.protocol + "://" + req.get("host") + req.originalUrl,
-    headers: req.headers,
   };
-  appendLog("💚 Health check accessed: " + JSON.stringify(healthStatus));
   res.status(200).json(healthStatus);
 });
 

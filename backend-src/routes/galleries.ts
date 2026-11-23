@@ -2,6 +2,7 @@ import { Router, Request, Response } from "express";
 import { pool } from "../db/connection.js";
 import { RowDataPacket } from "mysql2";
 import { randomUUID } from "crypto";
+import { requireAdmin } from "../middleware/auth.js";
 
 const router = Router();
 
@@ -51,7 +52,7 @@ router.get("/:id/images", async (req: Request, res: Response) => {
 });
 
 // Create gallery
-router.post("/", async (req: Request, res: Response) => {
+router.post("/", requireAdmin, async (req: Request, res: Response) => {
   try {
     const id = randomUUID();
     await pool.query("INSERT INTO galleries (id, name) VALUES (?, ?)", [
@@ -65,7 +66,7 @@ router.post("/", async (req: Request, res: Response) => {
 });
 
 // Add image to gallery
-router.post("/:id/images", async (req: Request, res: Response) => {
+router.post("/:id/images", requireAdmin, async (req: Request, res: Response) => {
   try {
     const galleryId = req.params.id;
     const imageId = randomUUID();
@@ -109,7 +110,7 @@ router.post("/:id/images", async (req: Request, res: Response) => {
 });
 
 // Delete gallery
-router.delete("/:id", async (req: Request, res: Response) => {
+router.delete("/:id", requireAdmin, async (req: Request, res: Response) => {
   try {
     await pool.query("DELETE FROM galleries WHERE id = ?", [req.params.id]);
     return res.status(204).send();
@@ -121,6 +122,7 @@ router.delete("/:id", async (req: Request, res: Response) => {
 // Delete image
 router.delete(
   "/:galleryId/images/:imageId",
+  requireAdmin,
   async (req: Request, res: Response) => {
     try {
       await pool.query("DELETE FROM gallery_images WHERE id = ?", [
@@ -136,6 +138,7 @@ router.delete(
 // Update image
 router.put(
   "/:galleryId/images/:imageId",
+  requireAdmin,
   async (req: Request, res: Response) => {
     try {
       const updates: string[] = [];

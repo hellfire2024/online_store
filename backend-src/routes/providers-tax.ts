@@ -1,12 +1,13 @@
 import { Router, Request, Response } from "express";
 import Stripe from "stripe";
+import { requireAdmin } from "../middleware/auth.js";
 
 const router = Router();
 
 /**
  * Stripe Tax calculation endpoint
  */
-router.post("/stripe", async (req: Request, res: Response): Promise<any> => {
+router.post("/stripe", requireAdmin, async (req: Request, res: Response): Promise<any> => {
   try {
     const {
       cartItems,
@@ -97,7 +98,7 @@ router.post("/stripe", async (req: Request, res: Response): Promise<any> => {
 /**
  * TaxJar tax calculation endpoint
  */
-router.post("/taxjar", async (req: Request, res: Response): Promise<any> => {
+router.post("/taxjar", requireAdmin, async (req: Request, res: Response): Promise<any> => {
   try {
     const { cartItems, shippingCost, shippingState, shippingZip, apiKey } =
       req.body;
@@ -178,7 +179,7 @@ router.post("/taxjar", async (req: Request, res: Response): Promise<any> => {
 /**
  * Avalara AvaTax calculation endpoint
  */
-router.post("/avalara", async (req: Request, res: Response): Promise<any> => {
+router.post("/avalara", requireAdmin, async (req: Request, res: Response): Promise<any> => {
   try {
     const {
       cartItems,
@@ -291,7 +292,7 @@ router.post("/avalara", async (req: Request, res: Response): Promise<any> => {
 /**
  * TaxCloud tax calculation endpoint
  */
-router.post("/taxcloud", async (req: Request, res: Response): Promise<any> => {
+router.post("/taxcloud", requireAdmin, async (req: Request, res: Response): Promise<any> => {
   try {
     const {
       cartItems,
@@ -391,7 +392,7 @@ router.post("/taxcloud", async (req: Request, res: Response): Promise<any> => {
 /**
  * Zamp tax calculation endpoint
  */
-router.post("/zamp", async (req: Request, res: Response): Promise<any> => {
+router.post("/zamp", requireAdmin, async (req: Request, res: Response): Promise<any> => {
   try {
     const { cartItems, shippingCost, shippingState, shippingZip, apiKey } =
       req.body;
@@ -472,7 +473,7 @@ router.post("/zamp", async (req: Request, res: Response): Promise<any> => {
 /**
  * Anrok tax calculation endpoint
  */
-router.post("/anrok", async (req: Request, res: Response): Promise<any> => {
+router.post("/anrok", requireAdmin, async (req: Request, res: Response): Promise<any> => {
   try {
     const { cartItems, shippingCost, shippingState, shippingZip, apiKey } =
       req.body;

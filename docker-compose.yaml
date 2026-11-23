@@ -4,7 +4,7 @@ services:
   backend:
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.backend-dev.rule=Host(`devapi.adaptivegis.com`)"
+      - "traefik.http.routers.backend-dev.rule=Host(`${SERVICE_URL_BACKEND_HOST}`)"
       - "traefik.http.routers.backend-dev.entrypoints=websecure"
       - "traefik.http.routers.backend-dev.tls.certresolver=letsencrypt"
       - "traefik.http.routers.backend-dev.service=backend-dev"
@@ -16,26 +16,29 @@ services:
       dockerfile: Dockerfile.backend
     ports:
       - "3001:3001"
-    # Removed env_file. All environment variables are now defined directly below for Coolify visibility.
+    # All secrets are injected by Coolify — never hardcode values here
     environment:
-      SERVICE_URL_BACKEND: https://devapi.adaptivegis.com
-      SERVICE_URL_FRONTEND: https://dev.adaptivegis.com
-      SERVICE_URL_PHPMYADMIN: https://devmysql.adaptivegis.com
+      SERVICE_URL_BACKEND: ${SERVICE_URL_BACKEND}
+      SERVICE_URL_FRONTEND: ${SERVICE_URL_FRONTEND}
+      SERVICE_URL_PHPMYADMIN: ${SERVICE_URL_PHPMYADMIN}
       APP_ENV: dev
       EXPECTED_DB_TAG: dev
       NODE_ENV: production
       DEMO_MODE: "0"
       PORT: 3001
-      CORS_ORIGIN: https://dev.adaptivegis.com
+      CORS_ORIGIN: ${CORS_ORIGIN}
       DB_HOST: mysql
       DB_PORT: 3306
-      DB_USER: adaptivegis-dev
-      DB_PASSWORD: we1r9dveIPTzjJ84HMD6
-      DB_NAME: agis_dev_db
-      MYSQL_USER: adaptivegis-dev
-      MYSQL_PASSWORD: we1r9dveIPTzjJ84HMD6
-      MYSQL_DATABASE: agis_dev_db
-      JWT_SECRET: 2b1e7e2e-4c6a-4e2b-8c7e-7e2e4c6a8c7e-2026-02-12
+      DB_USER: ${MYSQL_USER}
+      DB_PASSWORD: ${MYSQL_PASSWORD}
+      DB_NAME: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      JWT_SECRET: ${JWT_SECRET}
+      INITIAL_ADMIN_USERNAME: ${INITIAL_ADMIN_USERNAME}
+      INITIAL_ADMIN_PASSWORD: ${INITIAL_ADMIN_PASSWORD}
+      INITIAL_ADMIN_EMAIL: ${INITIAL_ADMIN_EMAIL}
     depends_on:
       mysql:
         condition: service_healthy
@@ -48,7 +51,7 @@ services:
   frontend:
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.frontend-dev.rule=Host(`dev.adaptivegis.com`)"
+      - "traefik.http.routers.frontend-dev.rule=Host(`${SERVICE_URL_FRONTEND_HOST}`)"
       - "traefik.http.routers.frontend-dev.entrypoints=websecure"
       - "traefik.http.routers.frontend-dev.tls.certresolver=letsencrypt"
       - "traefik.http.routers.frontend-dev.service=frontend-dev"
@@ -71,30 +74,14 @@ services:
       retries: 5
       start_period: 20s
     environment:
-      SERVICE_URL_BACKEND: https://devapi.adaptivegis.com
-      SERVICE_URL_FRONTEND: https://dev.adaptivegis.com
-      SERVICE_URL_PHPMYADMIN: https://devmysql.adaptivegis.com
-  phpmyadmin:
-    image: phpmyadmin/phpmyadmin
-    restart: always
-    ports:
-      - "8081:80"
-    environment:
-      PMA_HOST: mysql
-      PMA_USER: adaptivegis-dev
-      PMA_PASSWORD: we1r9dveIPTzjJ84HMD6
-      SERVICE_URL_BACKEND: https://devapi.adaptivegis.com
-      SERVICE_URL_FRONTEND: https://dev.adaptivegis.com
-      SERVICE_URL_PHPMYADMIN: https://devmysql.adaptivegis.com
-    depends_on:
-      - mysql
-    healthcheck:
-      test: ["CMD", "curl", "-f", "https://devapi.adaptivegis.com/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 20
-      start_period: 120s
-    command: /bin/sh -c "echo 'ServerName devmysql.adaptivegis.com' >> /etc/apache2/apache2.conf && docker-php-entrypoint apache2-foreground"
+      SERVICE_URL_BACKEND: ${SERVICE_URL_BACKEND}
+      SERVICE_URL_FRONTEND: ${SERVICE_URL_FRONTEND}
+      SERVICE_URL_PHPMYADMIN: ${SERVICE_URL_PHPMYADMIN}
+  # phpMyAdmin: disabled by default. Enable only when needed and restrict to private access.
+  # phpmyadmin:
+  #   profiles: ["tools"]
+  #   image: phpmyadmin/phpmyadmin
+  #   ...
   mysql:
     image: mysql:8.0
     restart: unless-stopped
@@ -105,15 +92,13 @@ services:
       retries: 20
       start_period: 120s
     environment:
-      MYSQL_ROOT_PASSWORD: rootpassword
-      MYSQL_DATABASE: agis_dev_db
-      MYSQL_USER: adaptivegis-dev
-      MYSQL_PASSWORD: we1r9dveIPTzjJ84HMD6
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     ports:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
 volumes:
   mysql_data:
-
-

@@ -2,6 +2,7 @@ import { Router, Request, Response } from "express";
 import { pool } from "../db/connection.js";
 import { RowDataPacket } from "mysql2";
 import { randomUUID } from "crypto";
+import { requireAdmin } from "../middleware/auth.js";
 
 const router = Router();
 
@@ -68,7 +69,7 @@ router.get("/:id", async (req: Request, res: Response) => {
 });
 
 // Create service
-router.post("/", async (req: Request, res: Response) => {
+router.post("/", requireAdmin, async (req: Request, res: Response) => {
   try {
     const { title, description, icon } = req.body;
     const id = randomUUID();
@@ -114,7 +115,7 @@ router.post("/", async (req: Request, res: Response) => {
 });
 
 // Update service
-router.put("/:id", async (req: Request, res: Response) => {
+router.put("/:id", requireAdmin, async (req: Request, res: Response) => {
   try {
     const { title, description, icon } = req.body;
     const columns = await getServiceColumns();
@@ -160,7 +161,7 @@ router.put("/:id", async (req: Request, res: Response) => {
 });
 
 // Delete service
-router.delete("/:id", async (req: Request, res: Response) => {
+router.delete("/:id", requireAdmin, async (req: Request, res: Response) => {
   try {
     const [result] = await pool.query("DELETE FROM services WHERE id = ?", [
       req.params.id,

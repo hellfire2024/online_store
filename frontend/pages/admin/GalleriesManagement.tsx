@@ -1,12 +1,294 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  DragEvent,
+} from "react";
 import { useGalleries } from "../../context/GalleryContext";
-// WARNING: This page uses useGalleries and must be rendered within a GalleryProvider (see App.tsx)
-import { PlusIcon, TrashIcon } from "../../components/Icons";
+import { TrashIcon, PlusIcon, EditIcon, UploadIcon } from "../../components/Icons";
 import { useToast } from "../../hooks/useToast";
 import Spinner from "../../components/Spinner";
 import { useUnsavedChanges } from "../../context/UnsavedChangesContext";
 import Pagination from "../../components/Pagination";
 import { apiClient } from "../../services/apiClient";
+
+interface UploadJob {
+  id: string;
+  name: string;
+  status: "pending" | "uploading" | "done" | "error";
+  error?: string;
+}
+
+interface LightboxState {
+  images: { id: string; name: string; imageUrl: string }[];
+  index: number;
+}
+
+// ─── Image card with skeleton loader ──────────────────────────────────────────
+
+interface ImageCardProps {
+  image: { id: string; name: string; imageUrl: string };
+  isRenaming: boolean;
+  renamingValue: string;
+  onRenameStart: () => void;
+  onRenameChange: (v: string) => void;
+  onRenameSave: () => void;
+  onRenameCancel: () => void;
+  onDelete: () => void;
+  onPreview: () => void;
+}
+
+const ImageCard: React.FC<ImageCardProps> = ({
+  image,
+  isRenaming,
+  renamingValue,
+  onRenameStart,
+  onRenameChange,
+  onRenameSave,
+  onRenameCancel,
+  onDelete,
+  onPreview,
+}) => {
+  const [loaded, setLoaded] = useState(false);
+  const [imgError, setImgError] = useState(false);
+
+  return (
+    <div className="group relative flex flex-col bg-slate-800 rounded-xl border border-slate-700/60 overflow-hidden hover:border-slate-500 hover:shadow-lg hover:shadow-black/30 transition-all duration-200">
+      {/* Image area */}
+      <div
+        className="relative aspect-square overflow-hidden bg-slate-700 cursor-zoom-in"
+        onClick={onPreview}
+      >
+        {/* Skeleton shown while image is decoding */}
+        {!loaded && !imgError && (
+          <div className="absolute inset-0 bg-gradient-to-br from-slate-700 to-slate-600 animate-pulse" />
+        )}
+
+        {imgError ? (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-slate-500">
+            <svg
+              className="w-8 h-8"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+              />
+            </svg>
+            <span className="text-xs">Failed to load</span>
+          </div>
+        ) : (
+          <img
+            src={image.imageUrl}
+            alt={image.name}
+            loading="lazy"
+            decoding="async"
+            onLoad={() => setLoaded(true)}
+            onError={() => setImgError(true)}
+            className={`w-full h-full object-cover transition-opacity duration-300 ${
+              loaded ? "opacity-100" : "opacity-0"
+            }`}
+          />
+        )}
+
+        {/* Hover overlay */}
+        {!imgError && (
+          <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+            <div className="w-9 h-9 rounded-full bg-black/50 flex items-center justify-center backdrop-blur-sm">
+              <svg
+                className="w-4 h-4 text-white"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Name + actions bar */}
+      <div className="px-2.5 py-2 flex items-center gap-1 min-w-0 bg-slate-800">
+        {isRenaming ? (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              onRenameSave();
+            }}
+            className="flex-1 flex gap-1"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <input
+              autoFocus
+              value={renamingValue}
+              onChange={(e) => onRenameChange(e.target.value)}
+              onKeyDown={(e) => e.key === "Escape" && onRenameCancel()}
+              className="flex-1 min-w-0 px-2 py-0.5 text-xs bg-slate-700 border border-sky-500 rounded text-white focus:outline-none"
+            />
+            <button
+              type="submit"
+              className="text-sky-400 hover:text-sky-300 transition-colors"
+              title="Save"
+            >
+              <svg
+                className="w-3.5 h-3.5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2.5}
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+            </button>
+            <button
+              type="button"
+              onClick={onRenameCancel}
+              className="text-slate-400 hover:text-slate-300 transition-colors"
+              title="Cancel"
+            >
+              <svg
+                className="w-3.5 h-3.5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2.5}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </form>
+        ) : (
+          <>
+            <p
+              title={image.name}
+              onDoubleClick={onRenameStart}
+              className="flex-1 min-w-0 text-xs text-slate-300 truncate cursor-default select-none"
+            >
+              {image.name}
+            </p>
+            <div className="flex gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+              <button
+                onClick={onRenameStart}
+                className="p-1 rounded text-slate-400 hover:text-sky-400 hover:bg-slate-700 transition-colors"
+                title="Rename (or double-click name)"
+              >
+                <EditIcon className="w-3 h-3" />
+              </button>
+              <button
+                onClick={onDelete}
+                className="p-1 rounded text-slate-400 hover:text-red-400 hover:bg-slate-700 transition-colors"
+                title="Delete image"
+              >
+                <TrashIcon className="w-3 h-3" />
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ─── Lightbox ─────────────────────────────────────────────────────────────────
+
+const Lightbox: React.FC<{
+  state: LightboxState;
+  onClose: () => void;
+  onNav: (delta: number) => void;
+}> = ({ state, onClose, onNav }) => {
+  const img = state.images[state.index];
+  const hasPrev = state.index > 0;
+  const hasNext = state.index < state.images.length - 1;
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+      if (e.key === "ArrowLeft" && hasPrev) onNav(-1);
+      if (e.key === "ArrowRight" && hasNext) onNav(1);
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onClose, onNav, hasPrev, hasNext]);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center"
+      onClick={onClose}
+    >
+      {/* Close */}
+      <button
+        onClick={onClose}
+        className="absolute top-4 right-4 w-9 h-9 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+      >
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+
+      {/* Prev */}
+      <button
+        onClick={(e) => { e.stopPropagation(); onNav(-1); }}
+        disabled={!hasPrev}
+        className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white disabled:opacity-20 disabled:cursor-default transition-colors"
+      >
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+        </svg>
+      </button>
+
+      {/* Image */}
+      <div
+        className="max-w-[88vw] max-h-[90vh] flex flex-col items-center gap-3"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <img
+          key={img.id}
+          src={img.imageUrl}
+          alt={img.name}
+          className="max-w-full max-h-[80vh] object-contain rounded-lg shadow-2xl"
+        />
+        <div className="text-center">
+          <p className="text-white/80 text-sm font-medium">{img.name}</p>
+          <p className="text-white/40 text-xs mt-0.5">
+            {state.index + 1} / {state.images.length}
+          </p>
+        </div>
+      </div>
+
+      {/* Next */}
+      <button
+        onClick={(e) => { e.stopPropagation(); onNav(1); }}
+        disabled={!hasNext}
+        className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white disabled:opacity-20 disabled:cursor-default transition-colors"
+      >
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+        </svg>
+      </button>
+    </div>
+  );
+};
+
+// ─── Main component ────────────────────────────────────────────────────────────
 
 const GalleriesManagement: React.FC = () => {
   const {
@@ -16,356 +298,468 @@ const GalleriesManagement: React.FC = () => {
     fetchGalleryImages,
     addGalleryImage,
     deleteGalleryImage,
+    updateGalleryImage,
     addGallery,
     deleteGallery,
   } = useGalleries();
+
   const [newGalleryName, setNewGalleryName] = useState("");
   const [selectedGallery, setSelectedGallery] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(20);
+  const [itemsPerPage, setItemsPerPage] = useState(24);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [uploadQueue, setUploadQueue] = useState<UploadJob[]>([]);
+  const [lightbox, setLightbox] = useState<LightboxState | null>(null);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renamingValue, setRenamingValue] = useState("");
+
   const { addToast } = useToast();
   const { setHasUnsavedChanges } = useUnsavedChanges();
-
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const folderInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setHasUnsavedChanges(false);
   }, []);
 
   useEffect(() => {
-    if (folderInputRef.current) {
-      try {
-        folderInputRef.current.setAttribute("webkitdirectory", "");
-      } catch {}
+    if (galleries.length > 0 && !selectedGallery) {
+      setSelectedGallery(galleries[0].id);
     }
-  }, []);
+  }, [galleries, selectedGallery]);
+
+  useEffect(() => {
+    if (selectedGallery) {
+      fetchGalleryImages(selectedGallery).catch(() => {
+        addToast("Failed to load gallery images", "error");
+      });
+    }
+  }, [selectedGallery, fetchGalleryImages]);
+
+  const uploadFiles = useCallback(
+    async (files: File[]) => {
+      if (!selectedGallery) {
+        addToast("Select a gallery first", "error");
+        return;
+      }
+      const imageFiles = files.filter((f) => f.type.startsWith("image/"));
+      if (!imageFiles.length) {
+        addToast("No image files found in selection", "error");
+        return;
+      }
+
+      const jobs: UploadJob[] = imageFiles.map((f) => ({
+        id: `${f.name}-${Date.now()}-${Math.random()}`,
+        name: f.name,
+        status: "pending",
+      }));
+      setUploadQueue(jobs);
+
+      for (let i = 0; i < imageFiles.length; i++) {
+        const file = imageFiles[i];
+        const jobId = jobs[i].id;
+
+        setUploadQueue((q) =>
+          q.map((j) => (j.id === jobId ? { ...j, status: "uploading" } : j)),
+        );
+        try {
+          const upload = await apiClient.upload.image(file, {
+            target: "gallery",
+          });
+          if (!upload.success || !upload.imageUrl)
+            throw new Error("Upload endpoint returned no image URL");
+          await addGalleryImage(selectedGallery, {
+            name: file.name,
+            imageUrl: upload.imageUrl,
+          });
+          setUploadQueue((q) =>
+            q.map((j) => (j.id === jobId ? { ...j, status: "done" } : j)),
+          );
+        } catch (err) {
+          setUploadQueue((q) =>
+            q.map((j) =>
+              j.id === jobId
+                ? {
+                    ...j,
+                    status: "error",
+                    error: err instanceof Error ? err.message : "Failed",
+                  }
+                : j,
+            ),
+          );
+        }
+      }
+
+      setTimeout(() => setUploadQueue([]), 4000);
+    },
+    [selectedGallery, addGalleryImage, addToast],
+  );
+
+  const handleDrop = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    uploadFiles(Array.from(e.dataTransfer.files));
+  };
 
   const handleAddGallery = async () => {
-    if (newGalleryName.trim()) {
-      const newGallery = await addGallery({ name: newGalleryName.trim() });
+    if (!newGalleryName.trim()) return;
+    try {
+      const created = await addGallery({ name: newGalleryName.trim() });
       setNewGalleryName("");
-      addToast("Gallery created successfully!", "success");
-      // Auto-select the newly created gallery
-      if (newGallery && newGallery.id) {
-        setSelectedGallery(newGallery.id);
-      }
+      addToast("Gallery created!", "success");
+      if (created?.id) setSelectedGallery(created.id);
+    } catch {
+      addToast("Failed to create gallery", "error");
     }
   };
 
   const handleDeleteGallery = async (galleryId: string) => {
     if (
-      window.confirm(
-        "Are you sure you want to delete this gallery? This action cannot be undone.",
+      !window.confirm(
+        "Delete this gallery and all its images? This cannot be undone.",
       )
-    ) {
+    )
+      return;
+    try {
       await deleteGallery(galleryId);
-      if (selectedGallery === galleryId) {
-        setSelectedGallery(null);
-      }
-      addToast("Gallery deleted.", "success");
+      if (selectedGallery === galleryId) setSelectedGallery(null);
+      addToast("Gallery deleted", "success");
+    } catch {
+      addToast("Failed to delete gallery", "error");
     }
   };
 
-  useEffect(() => {
-    const init = async () => {
-      if (galleries.length > 0 && !selectedGallery) {
-        setSelectedGallery(galleries[0].id);
-      }
-    };
-    init();
-  }, [galleries, selectedGallery]);
-
-  useEffect(() => {
-    if (selectedGallery) {
-      fetchGalleryImages(selectedGallery).catch((error) => {
-        console.error("Failed to fetch gallery images:", error);
-        addToast(
-          `Failed to load gallery images: ${
-            error instanceof Error ? error.message : "Unknown error"
-          }`,
-          "error",
-        );
-      });
-    }
-  }, [selectedGallery, fetchGalleryImages, addToast]);
-
-  const handleFileSelected = async (
-    event: React.ChangeEvent<HTMLInputElement>,
-  ) => {
-    if (!selectedGallery) {
-      addToast("Please select a gallery first", "error");
+  const handleRename = async (galleryId: string, imageId: string) => {
+    if (!renamingValue.trim()) {
+      addToast("Image name cannot be empty", "error");
       return;
     }
-    const files = event.target.files;
-    if (!files || files.length === 0) return;
-
-    addToast(`Uploading ${files.length} image(s)...`, "info");
-    console.log(
-      `Starting upload of ${files.length} files to gallery ${selectedGallery}`,
-    );
-
-    const uploadPromises: Promise<{ name: string; success: boolean }>[] = [];
-
-    for (const file of Array.from(files)) {
-      if (file.type.startsWith("image/")) {
-        const uploadPromise = (async () => {
-          try {
-            console.log(`Uploading file ${file.name} (${file.size} bytes)`);
-            // First upload to the upload endpoint to get base64
-            const uploadResponse = await apiClient.upload.image(file, {
-              target: "gallery",
-            });
-
-            if (!uploadResponse.success || !uploadResponse.imageUrl) {
-              throw new Error("Upload endpoint failed to return image URL");
-            }
-
-            console.log(
-              `File ${file.name} uploaded to upload endpoint, adding to gallery...`,
-            );
-
-            // Then add the returned base64 URL to the gallery
-            await addGalleryImage(selectedGallery, {
-              name: file.name,
-              imageUrl: uploadResponse.imageUrl,
-            });
-
-            console.log(`Successfully added ${file.name} to gallery`);
-            return { name: file.name, success: true };
-          } catch (error) {
-            console.error(`Image upload failed for ${file.name}:`, error);
-            return { name: file.name, success: false };
-          }
-        })();
-        uploadPromises.push(uploadPromise);
-      }
-    }
-
-    // Wait for all uploads to complete
     try {
-      const results = await Promise.all(uploadPromises);
-      const successCount = results.filter((r) => r.success).length;
-      const failureCount = results.filter((r) => r.success === false).length;
-
-      console.log(
-        `Upload complete: ${successCount} succeeded, ${failureCount} failed`,
-      );
-
-      if (failureCount === 0) {
-        addToast(`Successfully uploaded ${successCount} image(s)`, "success");
-      } else if (successCount > 0) {
-        addToast(
-          `Uploaded ${successCount} image(s), ${failureCount} failed`,
-          "warning",
-        );
-      } else {
-        addToast(`All ${failureCount} upload(s) failed`, "error");
-      }
-    } catch (error) {
-      console.error("Upload error:", error);
-      addToast("Upload failed - check console for details", "error");
+      await updateGalleryImage(galleryId, imageId, {
+        name: renamingValue.trim(),
+      });
+      setRenamingId(null);
+      addToast("Image renamed", "success");
+    } catch {
+      addToast("Failed to rename image", "error");
     }
-
-    // Reset the input value to allow re-uploading the same file/folder
-    event.target.value = "";
   };
 
-  if (isLoading) {
-    return <Spinner />;
-  }
+  const currentImages = selectedGallery
+    ? galleryImages[selectedGallery] || []
+    : [];
+  const totalPages = Math.ceil(
+    currentImages.length / (itemsPerPage === -1 ? 1 : itemsPerPage),
+  );
+  const paginatedImages =
+    itemsPerPage === -1
+      ? currentImages
+      : currentImages.slice(
+          (currentPage - 1) * itemsPerPage,
+          currentPage * itemsPerPage,
+        );
+
+  if (isLoading) return <Spinner />;
 
   return (
-    <div className="w-full max-w-full overflow-hidden">
-      <h1 className="text-2xl sm:text-3xl font-bold text-white mb-6 sm:mb-8 wrap-break-word">
-        Galleries Management
-      </h1>
+    <>
+      {/* Lightbox portal */}
+      {lightbox && (
+        <Lightbox
+          state={lightbox}
+          onClose={() => setLightbox(null)}
+          onNav={(delta) =>
+            setLightbox((prev) =>
+              prev
+                ? { ...prev, index: Math.max(0, Math.min(prev.images.length - 1, prev.index + delta)) }
+                : null,
+            )
+          }
+        />
+      )}
 
-      <div className="grid grid-cols-1 xl:grid-cols-[380px_1fr] gap-4 lg:gap-6">
-        {/* Galleries List & Creation */}
-        <div className="bg-slate-800 p-4 sm:p-6 rounded-lg border border-slate-700 self-start w-full min-w-0">
-          <h2 className="text-xl font-semibold text-white mb-4">Galleries</h2>
-          <div className="flex gap-2 mb-4">
-            <input
-              type="text"
-              value={newGalleryName}
-              onChange={(e) => setNewGalleryName(e.target.value)}
-              placeholder="New gallery name"
-              className="grow p-2 bg-slate-700 border border-slate-600 rounded-md text-white text-sm"
-            />
-            <button
-              onClick={handleAddGallery}
-              className="bg-sky-500 text-white p-2 rounded-md hover:bg-sky-600"
-            >
-              <PlusIcon />
-            </button>
-          </div>
-          <div className="space-y-2">
-            {galleries.map((gallery) => (
-              <div
-                key={gallery.id}
-                onClick={() => setSelectedGallery(gallery.id)}
-                className={`flex justify-between items-center p-3 rounded-md cursor-pointer transition-colors ${
-                  selectedGallery === gallery.id
-                    ? "bg-sky-600 text-white"
-                    : "bg-slate-700 hover:bg-slate-600 text-gray-300"
-                }`}
+      <div className="w-full max-w-full">
+        <h1 className="text-2xl sm:text-3xl font-bold text-white mb-6">
+          Galleries
+        </h1>
+
+        <div className="grid grid-cols-1 xl:grid-cols-[280px_1fr] gap-5">
+          {/* ── Sidebar ── */}
+          <aside className="bg-slate-800 rounded-xl border border-slate-700 p-4 self-start">
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">
+              Your Galleries
+            </p>
+
+            {/* New gallery input */}
+            <div className="flex gap-2 mb-4">
+              <input
+                type="text"
+                value={newGalleryName}
+                onChange={(e) => setNewGalleryName(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleAddGallery()}
+                placeholder="New gallery name"
+                className="flex-1 min-w-0 px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white text-sm placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition"
+              />
+              <button
+                onClick={handleAddGallery}
+                disabled={!newGalleryName.trim()}
+                className="shrink-0 p-2 bg-sky-500 hover:bg-sky-400 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
+                title="Create gallery"
               >
-                <span className="wrap-break-word pr-2 text-sm">
-                  {gallery.name}
-                </span>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDeleteGallery(gallery.id);
-                  }}
-                  className="text-red-400 hover:text-red-300"
-                >
-                  <TrashIcon />
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
+                <PlusIcon className="w-4 h-4" />
+              </button>
+            </div>
 
-        {/* Selected Gallery Content */}
-        <div className="bg-slate-800 p-4 sm:p-6 rounded-lg border border-slate-700 min-w-0 w-full overflow-hidden">
-          {selectedGallery &&
-          galleries.find((g) => g.id === selectedGallery) ? (
-            <>
-              <div className="flex flex-col gap-4 mb-6">
-                <h2 className="text-xl sm:text-2xl font-semibold text-white wrap-break-word">
-                  {galleries.find((g) => g.id === selectedGallery)?.name}
-                </h2>
-                <div className="flex flex-col sm:flex-row flex-wrap gap-2">
+            {galleries.length === 0 ? (
+              <p className="text-slate-500 text-sm text-center py-6">
+                No galleries yet
+              </p>
+            ) : (
+              <ul className="space-y-0.5">
+                {galleries.map((g) => (
+                  <li key={g.id}>
+                    <div
+                      onClick={() => {
+                        setSelectedGallery(g.id);
+                        setCurrentPage(1);
+                      }}
+                      className={`group flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-colors ${
+                        selectedGallery === g.id
+                          ? "bg-sky-600 text-white"
+                          : "text-slate-300 hover:bg-slate-700"
+                      }`}
+                    >
+                      <span className="flex-1 text-sm truncate">{g.name}</span>
+                      <span
+                        className={`text-xs tabular-nums shrink-0 ${
+                          selectedGallery === g.id
+                            ? "text-sky-200"
+                            : "text-slate-500"
+                        }`}
+                      >
+                        {(galleryImages[g.id] || []).length}
+                      </span>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteGallery(g.id);
+                        }}
+                        className={`shrink-0 opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded ${
+                          selectedGallery === g.id
+                            ? "text-sky-200 hover:text-red-300"
+                            : "text-slate-500 hover:text-red-400"
+                        }`}
+                        title="Delete gallery"
+                      >
+                        <TrashIcon className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </aside>
+
+          {/* ── Main content ── */}
+          <main className="min-w-0 space-y-4">
+            {!selectedGallery ? (
+              <div className="bg-slate-800 rounded-xl border border-slate-700 flex flex-col items-center justify-center py-24 text-center px-6">
+                <div className="w-16 h-16 rounded-2xl bg-slate-700 flex items-center justify-center mb-4">
+                  <svg
+                    className="w-8 h-8 text-slate-500"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1.5}
+                      d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                    />
+                  </svg>
+                </div>
+                <p className="text-slate-300 font-semibold">
+                  Select a gallery to manage its images
+                </p>
+                <p className="text-slate-500 text-sm mt-1">
+                  or create a new one on the left
+                </p>
+              </div>
+            ) : (
+              <>
+                {/* Gallery header */}
+                <div className="flex items-baseline gap-3">
+                  <h2 className="text-xl font-semibold text-white">
+                    {galleries.find((g) => g.id === selectedGallery)?.name}
+                  </h2>
+                  <span className="text-slate-400 text-sm">
+                    {currentImages.length} image
+                    {currentImages.length !== 1 ? "s" : ""}
+                  </span>
+                </div>
+
+                {/* Upload dropzone */}
+                <div
+                  onDrop={handleDrop}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setIsDragOver(true);
+                  }}
+                  onDragLeave={() => setIsDragOver(false)}
+                  onClick={() => fileInputRef.current?.click()}
+                  className={`relative border-2 border-dashed rounded-xl px-6 py-7 text-center cursor-pointer select-none transition-all duration-150 ${
+                    isDragOver
+                      ? "border-sky-400 bg-sky-500/10 scale-[1.005]"
+                      : "border-slate-600 bg-slate-800/60 hover:border-slate-500 hover:bg-slate-800"
+                  }`}
+                >
                   <input
                     type="file"
                     ref={fileInputRef}
-                    onChange={handleFileSelected}
+                    onChange={(e) =>
+                      uploadFiles(Array.from(e.target.files || []))
+                    }
                     className="hidden"
                     multiple
                     accept="image/*"
                   />
-                  <input
-                    type="file"
-                    ref={folderInputRef}
-                    onChange={handleFileSelected}
-                    className="hidden"
-                    multiple
+                  <UploadIcon
+                    className={`w-7 h-7 mx-auto mb-2 transition-colors ${
+                      isDragOver ? "text-sky-400" : "text-slate-500"
+                    }`}
                   />
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    className="flex items-center justify-center gap-2 bg-slate-600 hover:bg-slate-500 text-white font-bold py-2 px-4 rounded-lg whitespace-nowrap w-full sm:w-auto"
+                  <p
+                    className={`font-medium text-sm transition-colors ${
+                      isDragOver ? "text-sky-300" : "text-slate-300"
+                    }`}
                   >
-                    <PlusIcon /> Add Image(s)
-                  </button>
-                  <button
-                    onClick={() => folderInputRef.current?.click()}
-                    className="flex items-center justify-center gap-2 bg-slate-600 hover:bg-slate-500 text-white font-bold py-2 px-4 rounded-lg whitespace-nowrap w-full sm:w-auto"
-                  >
-                    <PlusIcon /> Add Folder
-                  </button>
+                    {isDragOver
+                      ? "Release to upload"
+                      : "Drop images here, or click to browse"}
+                  </p>
+                  <p className="text-slate-500 text-xs mt-1">
+                    JPEG · PNG · WebP · GIF · up to 10 MB each
+                  </p>
                 </div>
-              </div>
 
-              {(() => {
-                const images = galleryImages[selectedGallery] || [];
-                console.log(
-                  `[GalleriesUI] Rendering gallery ${selectedGallery}: ${images.length} images`,
-                  images.map((img) => ({ id: img.id, name: img.name })),
-                );
-                const paginatedImages =
-                  itemsPerPage === -1
-                    ? images
-                    : images.slice(
-                        (currentPage - 1) * itemsPerPage,
-                        currentPage * itemsPerPage,
-                      );
-
-                return (
-                  <>
-                    <div className="mb-4 p-3 bg-slate-700 rounded text-xs text-gray-300">
-                      Gallery: {selectedGallery} | Total images: {images.length}{" "}
-                      | Displayed: {paginatedImages.length}
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                      {paginatedImages.map((image) => (
-                        <div
-                          key={image.id}
-                          className="relative group aspect-square overflow-hidden rounded-md bg-slate-700"
-                        >
-                          <img
-                            src={image.imageUrl}
-                            alt={image.name}
-                            className="w-full h-full object-cover"
+                {/* Upload progress */}
+                {uploadQueue.length > 0 && (
+                  <div className="bg-slate-800 rounded-xl border border-slate-700 p-4">
+                    <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">
+                      Uploading {uploadQueue.length} file
+                      {uploadQueue.length !== 1 ? "s" : ""}
+                    </p>
+                    <ul className="space-y-2">
+                      {uploadQueue.map((job) => (
+                        <li key={job.id} className="flex items-center gap-3">
+                          <span
+                            className={`w-2 h-2 rounded-full shrink-0 ${
+                              job.status === "done"
+                                ? "bg-green-400"
+                                : job.status === "error"
+                                  ? "bg-red-400"
+                                  : job.status === "uploading"
+                                    ? "bg-sky-400 animate-pulse"
+                                    : "bg-slate-600"
+                            }`}
                           />
-                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col p-3 gap-2">
-                            <div className="flex-1 min-h-0 overflow-hidden">
-                              <p
-                                className="text-white text-xs wrap-break-word overflow-hidden overflow-ellipsis"
-                                style={{
-                                  display: "-webkit-box",
-                                  WebkitLineClamp: 3,
-                                  WebkitBoxOrient: "vertical",
-                                }}
-                              >
-                                {image.name}
-                              </p>
-                            </div>
-                            <div className="flex justify-end items-end shrink-0">
-                              <button
-                                onClick={() => {
-                                  if (
-                                    window.confirm(
-                                      `Are you sure you want to delete "${image.name}"? This action cannot be undone.`,
-                                    )
-                                  ) {
-                                    deleteGalleryImage(
-                                      selectedGallery,
-                                      image.id,
-                                    );
-                                  }
-                                }}
-                                className="p-2 bg-red-500/90 rounded-full text-white hover:bg-red-600 shadow-lg"
-                              >
-                                <TrashIcon className="w-5 h-5" />
-                              </button>
-                            </div>
-                          </div>
-                        </div>
+                          <span className="flex-1 text-sm text-slate-300 truncate">
+                            {job.name}
+                          </span>
+                          <span
+                            className={`text-xs shrink-0 tabular-nums ${
+                              job.status === "done"
+                                ? "text-green-400"
+                                : job.status === "error"
+                                  ? "text-red-400"
+                                  : "text-slate-500"
+                            }`}
+                          >
+                            {job.status === "done"
+                              ? "Done"
+                              : job.status === "error"
+                                ? job.error || "Failed"
+                                : job.status === "uploading"
+                                  ? "Uploading…"
+                                  : "Waiting"}
+                          </span>
+                        </li>
                       ))}
-                    </div>
-                    {images.length > 0 && (
-                      <Pagination
-                        currentPage={currentPage}
-                        totalItems={images.length}
-                        itemsPerPage={itemsPerPage}
-                        onPageChange={setCurrentPage}
-                        onItemsPerPageChange={(value) => {
-                          setItemsPerPage(value);
-                          setCurrentPage(1);
-                        }}
-                      />
-                    )}
-                    {images.length === 0 && (
-                      <p className="text-center text-gray-400 mt-8">
-                        This gallery is empty. Add some images to get started.
-                      </p>
-                    )}
-                  </>
-                );
-              })()}
-            </>
-          ) : (
-            <div className="flex items-center justify-center h-full">
-              <p className="text-gray-400">
-                Select a gallery to view its images.
-              </p>
-            </div>
-          )}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Image grid */}
+                {currentImages.length === 0 && uploadQueue.length === 0 ? (
+                  <div className="bg-slate-800 rounded-xl border border-slate-700 py-16 text-center">
+                    <p className="text-slate-500 text-sm">
+                      This gallery is empty. Upload some images above.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+                    {paginatedImages.map((image, idx) => {
+                      const globalIdx =
+                        (currentPage - 1) *
+                          (itemsPerPage === -1
+                            ? currentImages.length
+                            : itemsPerPage) +
+                        idx;
+                      return (
+                        <ImageCard
+                          key={image.id}
+                          image={image}
+                          isRenaming={renamingId === image.id}
+                          renamingValue={renamingValue}
+                          onRenameStart={() => {
+                            setRenamingId(image.id);
+                            setRenamingValue(image.name);
+                          }}
+                          onRenameChange={setRenamingValue}
+                          onRenameSave={() =>
+                            handleRename(selectedGallery, image.id)
+                          }
+                          onRenameCancel={() => setRenamingId(null)}
+                          onDelete={() => {
+                            if (
+                              window.confirm(
+                                `Delete "${image.name}"? This cannot be undone.`,
+                              )
+                            ) {
+                              deleteGalleryImage(selectedGallery, image.id);
+                            }
+                          }}
+                          onPreview={() =>
+                            setLightbox({
+                              images: currentImages,
+                              index: globalIdx,
+                            })
+                          }
+                        />
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Pagination */}
+                {currentImages.length > 0 && totalPages > 1 && (
+                  <Pagination
+                    currentPage={currentPage}
+                    totalItems={currentImages.length}
+                    itemsPerPage={itemsPerPage}
+                    onPageChange={setCurrentPage}
+                    onItemsPerPageChange={(v) => {
+                      setItemsPerPage(v);
+                      setCurrentPage(1);
+                    }}
+                  />
+                )}
+              </>
+            )}
+          </main>
         </div>
       </div>
-    </div>
+    </>
   );
 };
 

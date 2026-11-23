@@ -1,7 +1,20 @@
 import crypto from "crypto";
 
-// Use environment variable for encryption key, fallback to a default for development
-// In production, this should be a strong, random key stored securely
+if (
+  process.env.NODE_ENV === "production" &&
+  !process.env.EMAIL_ENCRYPTION_KEY
+) {
+  throw new Error(
+    "EMAIL_ENCRYPTION_KEY must be set in production. Generate with: node -e \"console.log(require('crypto').randomBytes(32).toString('hex'))\"",
+  );
+}
+
+if (!process.env.EMAIL_ENCRYPTION_KEY) {
+  console.warn(
+    "[encryption] EMAIL_ENCRYPTION_KEY is not set. Using insecure default key — set this env var before storing any credentials.",
+  );
+}
+
 const ENCRYPTION_KEY = (
   process.env.EMAIL_ENCRYPTION_KEY || "default-dev-key-change-in-production"
 )

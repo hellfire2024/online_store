@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 import { body, validationResult } from "express-validator";
 import * as ProductModel from "../models/Product.js";
+import { requireAdmin } from "../middleware/auth.js";
 
 const router = Router();
 
@@ -34,6 +35,7 @@ router.get("/:id", async (req: Request, res: Response) => {
 // Create product
 router.post(
   "/",
+  requireAdmin,
   [
     body("name").trim().notEmpty().withMessage("Name is required"),
     body("price")
@@ -60,7 +62,7 @@ router.post(
 );
 
 // Update product
-router.put("/:id", async (req: Request, res: Response) => {
+router.put("/:id", requireAdmin, async (req: Request, res: Response) => {
   try {
     const product = await ProductModel.update(req.params.id, req.body);
     if (!product) {
@@ -74,7 +76,7 @@ router.put("/:id", async (req: Request, res: Response) => {
 });
 
 // Delete product
-router.delete("/:id", async (req: Request, res: Response) => {
+router.delete("/:id", requireAdmin, async (req: Request, res: Response) => {
   try {
     const success = await ProductModel.remove(req.params.id);
     if (!success) {

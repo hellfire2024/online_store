@@ -1,14 +1,10 @@
 import { Router, Request, Response } from "express";
 import nodemailer from "nodemailer";
+import { requireAdmin } from "../middleware/auth.js";
 
 const router = Router();
 
-/**
- * Test SMTP Connection
- * POST /api/smtp-test
- * Body: { host, port, secure, user, password, from_email }
- */
-router.post("/", async (req: Request, res: Response) => {
+router.post("/", requireAdmin, async (req: Request, res: Response) => {
   try {
     const { host, port, secure, user, password, from_email } = req.body;
 

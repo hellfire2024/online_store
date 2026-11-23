@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 import multer from "multer";
 import sharp from "sharp";
+import { requireAdmin } from "../middleware/auth.js";
 
 const router = Router();
 
@@ -23,9 +24,10 @@ const upload = multer({
   },
 });
 
-// Upload single image - returns base64 data URL
+// Upload single image - returns base64 data URL (admin only)
 router.post(
   "/image",
+  requireAdmin,
   upload.single("image"),
   async (req: Request, res: Response) => {
     try {

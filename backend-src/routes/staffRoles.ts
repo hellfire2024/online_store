@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 import { pool } from "../db/connection.js";
 import { RowDataPacket } from "mysql2";
+import { requireAdmin } from "../middleware/auth.js";
 
 const router = Router();
 
@@ -51,7 +52,7 @@ router.get("/", async (_req: Request, res: Response) => {
 });
 
 // Create staff role
-router.post("/", async (req: Request, res: Response) => {
+router.post("/", requireAdmin, async (req: Request, res: Response) => {
   try {
     const { key, label, description } = req.body;
 
@@ -74,7 +75,7 @@ router.post("/", async (req: Request, res: Response) => {
 });
 
 // Update staff role
-router.put("/:key", async (req: Request, res: Response) => {
+router.put("/:key", requireAdmin, async (req: Request, res: Response) => {
   try {
     const { label, description } = req.body;
 

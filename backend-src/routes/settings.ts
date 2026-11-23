@@ -101,7 +101,7 @@ const applyProductionSettingsGuard = (settings: any): any => {
 };
 
 // POST: Test PayPal configuration (Client ID and Secret)
-router.post("/paypal-config-test", async (_req: Request, res: Response) => {
+router.post("/paypal-config-test", requireAdmin, async (_req: Request, res: Response) => {
   try {
     const settings = await readSettings();
     const clientId = String(settings?.paymentApiKeys?.paypal || "").trim();
@@ -159,7 +159,7 @@ router.post("/paypal-config-test", async (_req: Request, res: Response) => {
 });
 
 // POST: Test Square configuration (Access Token + Location ID)
-router.post("/square-config-test", async (_req: Request, res: Response) => {
+router.post("/square-config-test", requireAdmin, async (_req: Request, res: Response) => {
   try {
     const settings = await readSettings();
     const accessToken = String(settings?.paymentApiKeys?.square || "").trim();
@@ -235,6 +235,7 @@ router.post("/square-config-test", async (_req: Request, res: Response) => {
 // POST: Test Authorize.Net configuration (API Login ID and Transaction Key)
 router.post(
   "/authorizeNet-config-test",
+  requireAdmin,
   async (_req: Request, res: Response) => {
     try {
       const settings = await readSettings();
@@ -373,6 +374,35 @@ const normalizeFromAddress = (fromAddress: any) => {
       ? String(fromAddress.street2).trim()
       : "",
   };
+};
+
+// Strip all server-side secrets from settings before sending to unauthenticated clients.
+// Payment/shipping/tax API keys are never needed by the browser — dedicated public config
+// endpoints (/stripe-config, /paypal-config, etc.) expose only the publishable tokens.
+const sanitizeForPublic = (settings: any): any => {
+  if (!settings || typeof settings !== "object") return settings;
+  const out = { ...settings };
+  if (out.paymentApiKeys) {
+    out.paymentApiKeys = {};
+  }
+  if (out.shippingApiKeys) {
+    out.shippingApiKeys = {};
+  }
+  if (out.shippingCarriers) {
+    const sanitizedCarriers: Record<string, any> = {};
+    for (const [carrier, config] of Object.entries(out.shippingCarriers as Record<string, any>)) {
+      sanitizedCarriers[carrier] = { ...config, apiKey: undefined, apiSecret: undefined };
+    }
+    out.shippingCarriers = sanitizedCarriers;
+  }
+  if (out.taxConfig?.credentials) {
+    out.taxConfig = { ...out.taxConfig, credentials: {} };
+  }
+  if (out.emailConfig) {
+    const { password: _pw, ...emailConfigPublic } = out.emailConfig;
+    out.emailConfig = emailConfigPublic;
+  }
+  return out;
 };
 
 const readSettings = async (): Promise<any> => {
@@ -1119,11 +1149,13 @@ router.get("/", async (_req: Request, res: Response) => {
         ? JSON.parse(rows[0].settings)
         : rows[0].settings;
 
-    const safeSettings = applyProductionSettingsGuard(settings);
+    let safeSettings = applyProductionSettingsGuard(settings);
 
     if (safeSettings?.fromAddress) {
       safeSettings.fromAddress = normalizeFromAddress(safeSettings.fromAddress);
     }
+
+    safeSettings = sanitizeForPublic(safeSettings);
 
     res.setHeader("x-app-env", getRuntimeAppEnv());
     res.setHeader("x-settings-id", String(settingsId));
@@ -1190,7 +1222,7 @@ router.put("/", requireAdmin, async (req: Request, res: Response) => {
 export default router;
 
 // POST: Test Stripe configuration (publishable and secret key)
-router.post("/stripe-config-test", async (_req: Request, res: Response) => {
+router.post("/stripe-config-test", requireAdmin, async (_req: Request, res: Response) => {
   try {
     const settings = await readSettings();
     const publishableKey = String(

@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import ProductCard from "../components/ProductCard";
 import RecentCreationsGallery from "../components/RecentCreationsGallery";
+import GalleryCarousel from "../components/GalleryCarousel";
 import { useProducts } from "../context/ProductContext";
 import { useReviews } from "../context/ReviewsContext";
 import { usePages } from "../context/PagesContext";
@@ -45,7 +46,6 @@ const HomePage: React.FC = () => {
     rating: 5,
   });
   const [reviewImages, setReviewImages] = useState<string[]>([]);
-  const [carouselIndex, setCarouselIndex] = useState(0);
 
   const galleryImages = useMemo<GalleryImageCompat[]>(
     () =>
@@ -80,28 +80,6 @@ const HomePage: React.FC = () => {
     () => (homePage?.contentData as HomePageContent) || {},
     [homePage],
   );
-
-  useEffect(() => {
-    if (
-      !homeContent.galleryRotationEnabled ||
-      !homeContent.galleryRotationId ||
-      galleriesLoading
-    ) {
-      return;
-    }
-
-    const filteredImages = normalizedGalleryImages.filter(
-      (img) => img.galleryId === homeContent.galleryRotationId,
-    );
-    if (filteredImages.length === 0) return;
-
-    const interval = homeContent.galleryRotationInterval || 5;
-    const timer = setInterval(() => {
-      setCarouselIndex((prev) => (prev + 1) % filteredImages.length);
-    }, interval * 1000);
-
-    return () => clearInterval(timer);
-  }, [homeContent, normalizedGalleryImages, galleriesLoading]);
 
   if (
     productsLoading ||
@@ -243,41 +221,24 @@ const HomePage: React.FC = () => {
 
       {homeContent.galleryRotationEnabled &&
         homeContent.galleryRotationId &&
-        !galleriesLoading && (
-          <div>
-            <h2 className="text-3xl font-bold text-white text-center mb-8">
-              Gallery
-            </h2>
-            {(() => {
-              const carouselImages = normalizedGalleryImages.filter(
-                (img) => img.galleryId === homeContent.galleryRotationId,
-              );
-              if (carouselImages.length === 0) return null;
-              const currentImage = carouselImages[carouselIndex];
-
-              return (
-                <div className="relative bg-slate-800 rounded-lg overflow-hidden">
-                  <img
-                    src={currentImage.imageUrl}
-                    alt={currentImage.name}
-                    className="w-full h-96 object-cover"
-                  />
-                  <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2">
-                    {carouselImages.map((_, idx: number) => (
-                      <button
-                        key={idx}
-                        onClick={() => setCarouselIndex(idx)}
-                        className={`w-2 h-2 rounded-full transition-colors ${
-                          idx === carouselIndex ? "bg-white" : "bg-gray-500"
-                        }`}
-                      />
-                    ))}
-                  </div>
-                </div>
-              );
-            })()}
-          </div>
-        )}
+        !galleriesLoading && (() => {
+          const carouselImages = normalizedGalleryImages.filter(
+            (img) => img.galleryId === homeContent.galleryRotationId,
+          );
+          if (carouselImages.length === 0) return null;
+          return (
+            <div>
+              <h2 className="text-3xl font-bold text-white text-center mb-8">
+                Gallery
+              </h2>
+              <GalleryCarousel
+                galleryImages={carouselImages}
+                autoScroll
+                autoScrollInterval={homeContent.galleryRotationInterval || 5}
+              />
+            </div>
+          );
+        })()}
 
       {homeContent.recentCreationsGalleryId && !galleriesLoading && (
         <RecentCreationsGallery
