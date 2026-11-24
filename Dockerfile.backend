@@ -29,7 +29,6 @@ COPY --from=build /app/demoRoutes.d.ts ./demoRoutes.d.ts
 COPY --from=build /app/demoRoutes.d.ts.map ./demoRoutes.d.ts.map
 COPY --from=build /app/backend-src/wait-for-mysql.sh ./backend-src/wait-for-mysql.sh
 COPY --from=build /app/backend-src/healthcheck-debug.sh ./backend-src/healthcheck-debug.sh
-COPY --from=build /app/backend-src/db/site_settings.json ./db/site_settings.json
 COPY --from=build /app/backend-src/healthcheck.js ./healthcheck.js
 RUN chmod +x /app/healthcheck.js
 EXPOSE 3001
