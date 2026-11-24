@@ -122,14 +122,22 @@ const GalleryCarousel: React.FC<GalleryCarouselProps> = ({
       {/* ── Main stage ── */}
       <div
         className="relative overflow-hidden bg-slate-900"
-        style={{ aspectRatio: "16 / 7" }}
+        style={{ aspectRatio: "4 / 3" }}
       >
+        {/* Blur backdrop: same image blurred + dimmed, fills letterbox areas */}
+        <img
+          src={galleryImages[frontIdx].imageUrl}
+          aria-hidden="true"
+          className="absolute inset-0 w-full h-full object-cover scale-110 blur-xl opacity-40 pointer-events-none select-none"
+          {...noInteract}
+        />
+
         {/* Back layer: outgoing image, fades out as front fades in */}
         <img
           src={galleryImages[backIdx].imageUrl}
           alt=""
           aria-hidden="true"
-          className={`absolute inset-0 w-full h-full object-cover pointer-events-none select-none transition-opacity duration-700 ${
+          className={`absolute inset-0 w-full h-full object-contain pointer-events-none select-none transition-opacity duration-700 ${
             frontVisible ? "opacity-0" : "opacity-100"
           }`}
           {...noInteract}
@@ -139,20 +147,10 @@ const GalleryCarousel: React.FC<GalleryCarouselProps> = ({
         <img
           src={galleryImages[frontIdx].imageUrl}
           alt={galleryImages[frontIdx].name}
-          className={`absolute inset-0 w-full h-full object-cover pointer-events-none select-none transition-opacity duration-700 ${
+          className={`absolute inset-0 w-full h-full object-contain pointer-events-none select-none transition-opacity duration-700 ${
             frontVisible ? "opacity-100" : "opacity-0"
           }`}
           {...noInteract}
-        />
-
-        {/* Vignette: darkens all four edges */}
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background:
-              "radial-gradient(ellipse at 50% 50%, transparent 40%, rgba(15,23,42,0.78) 100%)",
-          }}
         />
 
         {/* Bottom gradient: keeps caption text legible */}

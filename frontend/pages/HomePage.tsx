@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import ProductCard from "../components/ProductCard";
 import RecentCreationsGallery from "../components/RecentCreationsGallery";
 import GalleryCarousel from "../components/GalleryCarousel";
@@ -34,6 +34,7 @@ const HomePage: React.FC = () => {
   const {
     galleryImages: galleryImagesRecord = {},
     isLoading: galleriesLoading,
+    fetchGalleryImages,
   } = useGalleries();
   const { siteSettings } = useSiteSettings();
   const { addToast } = useToast();
@@ -80,6 +81,16 @@ const HomePage: React.FC = () => {
     () => (homePage?.contentData as HomePageContent) || {},
     [homePage],
   );
+
+  const rotationId = homeContent.galleryRotationId;
+  const recentId = homeContent.recentCreationsGalleryId;
+
+  useEffect(() => {
+    if (galleriesLoading) return;
+    if (rotationId) fetchGalleryImages(rotationId).catch(() => {});
+    if (recentId && recentId !== rotationId)
+      fetchGalleryImages(recentId).catch(() => {});
+  }, [galleriesLoading, rotationId, recentId, fetchGalleryImages]);
 
   if (
     productsLoading ||

@@ -66,7 +66,10 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({
       );
       setGalleryImages((prev) => ({
         ...prev,
-        [galleryId]: Array.isArray(images) ? images : [],
+        [galleryId]: (Array.isArray(images) ? images : []).map((img: any) => ({
+          ...img,
+          galleryId,
+        })),
       }));
     } catch (error) {
       console.error("Failed to fetch gallery images:", error);

@@ -261,6 +261,7 @@ export interface GalleryImage {
   id: string;
   imageUrl: string;
   name: string;
+  galleryId?: string;
 }
 
 export interface Gallery {
