@@ -56,12 +56,10 @@ const GalleryCarousel: React.FC<GalleryCarouselProps> = ({
 }) => {
   const count = galleryImages.length;
 
-  // Two-layer crossfade: "back" holds the outgoing image, "front" holds incoming
   const [backIdx, setBackIdx] = useState(0);
   const [frontIdx, setFrontIdx] = useState(0);
   const [frontVisible, setFrontVisible] = useState(true);
 
-  // Refs so the setInterval closure always reads current values
   const frontIdxRef = useRef(0);
   const busyRef = useRef(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -74,8 +72,6 @@ const GalleryCarousel: React.FC<GalleryCarouselProps> = ({
       setBackIdx(prev);
       setFrontIdx(next);
       frontIdxRef.current = next;
-      // Start new front at opacity-0 so the browser paints it invisible first,
-      // then the double-RAF triggers the CSS transition to opacity-100.
       setFrontVisible(false);
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
@@ -118,21 +114,13 @@ const GalleryCarousel: React.FC<GalleryCarouselProps> = ({
   };
 
   return (
-    <div className="rounded-2xl overflow-hidden shadow-2xl bg-slate-900">
-      {/* ── Main stage ── */}
+    <div className="rounded-2xl overflow-hidden shadow-2xl bg-slate-950">
+      {/* ── Main stage: 3:2 ratio, near-black bg, image contained ── */}
       <div
-        className="relative overflow-hidden bg-slate-900"
-        style={{ aspectRatio: "4 / 3" }}
+        className="relative bg-slate-950"
+        style={{ aspectRatio: "3 / 2" }}
       >
-        {/* Blur backdrop: same image blurred + dimmed, fills letterbox areas */}
-        <img
-          src={galleryImages[frontIdx].imageUrl}
-          aria-hidden="true"
-          className="absolute inset-0 w-full h-full object-cover scale-110 blur-xl opacity-40 pointer-events-none select-none"
-          {...noInteract}
-        />
-
-        {/* Back layer: outgoing image, fades out as front fades in */}
+        {/* Back layer */}
         <img
           src={galleryImages[backIdx].imageUrl}
           alt=""
@@ -143,7 +131,7 @@ const GalleryCarousel: React.FC<GalleryCarouselProps> = ({
           {...noInteract}
         />
 
-        {/* Front layer: incoming image, fades in */}
+        {/* Front layer */}
         <img
           src={galleryImages[frontIdx].imageUrl}
           alt={galleryImages[frontIdx].name}
@@ -153,24 +141,6 @@ const GalleryCarousel: React.FC<GalleryCarouselProps> = ({
           {...noInteract}
         />
 
-        {/* Bottom gradient: keeps caption text legible */}
-        <div
-          aria-hidden="true"
-          className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-slate-900/95 to-transparent pointer-events-none"
-        />
-
-        {/* Caption */}
-        <div className="absolute inset-x-0 bottom-0 px-6 pb-5 flex items-end justify-between gap-4 pointer-events-none">
-          <p className="text-white font-semibold text-lg tracking-wide drop-shadow-sm truncate">
-            {galleryImages[frontIdx].name}
-          </p>
-          {count > 1 && (
-            <span className="text-white/50 text-sm tabular-nums shrink-0">
-              {frontIdx + 1}&thinsp;/&thinsp;{count}
-            </span>
-          )}
-        </div>
-
         {/* Navigation arrows */}
         {count > 1 && (
           <>
@@ -179,42 +149,36 @@ const GalleryCarousel: React.FC<GalleryCarouselProps> = ({
                 navigate(frontIdx === 0 ? count - 1 : frontIdx - 1)
               }
               aria-label="Previous image"
-              className="absolute left-3 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-black/40 hover:bg-black/70 backdrop-blur-sm text-white flex items-center justify-center transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-white"
+              className="absolute left-3 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-black/50 hover:bg-black/80 backdrop-blur-sm text-white flex items-center justify-center transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-white"
             >
               <Icons.ChevronLeft size={20} />
             </button>
             <button
               onClick={() => navigate((frontIdx + 1) % count)}
               aria-label="Next image"
-              className="absolute right-3 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-black/40 hover:bg-black/70 backdrop-blur-sm text-white flex items-center justify-center transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-white"
+              className="absolute right-3 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-black/50 hover:bg-black/80 backdrop-blur-sm text-white flex items-center justify-center transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-white"
             >
               <Icons.ChevronRight size={20} />
             </button>
           </>
         )}
+      </div>
 
-        {/* Pill-dot indicators (top-centre, hidden when count > 15) */}
-        {count > 1 && count <= 15 && (
-          <div className="absolute top-4 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
-            {galleryImages.map((_, idx) => (
-              <button
-                key={idx}
-                onClick={() => navigate(idx)}
-                aria-label={`Image ${idx + 1}`}
-                className={`rounded-full transition-all duration-300 ${
-                  idx === frontIdx
-                    ? "w-5 h-2 bg-white"
-                    : "w-2 h-2 bg-white/40 hover:bg-white/70"
-                }`}
-              />
-            ))}
-          </div>
+      {/* ── Caption + counter ── */}
+      <div className="bg-slate-900 px-5 py-3 flex items-center justify-between gap-4 border-t border-slate-800">
+        <p className="text-white font-medium text-sm truncate">
+          {galleryImages[frontIdx].name}
+        </p>
+        {count > 1 && (
+          <span className="text-slate-400 text-sm tabular-nums shrink-0">
+            {frontIdx + 1}&thinsp;/&thinsp;{count}
+          </span>
         )}
       </div>
 
       {/* ── Thumbnail strip ── */}
       {count > 1 && (
-        <div className="bg-slate-900/80 px-4 py-3 flex gap-2.5 overflow-x-auto">
+        <div className="bg-slate-900/80 px-4 py-3 flex gap-2.5 overflow-x-auto border-t border-slate-800">
           {galleryImages.map((img, idx) => (
             <ThumbnailBtn
               key={img.id}
